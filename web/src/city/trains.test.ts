@@ -1,6 +1,8 @@
 import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Line } from '../vignette/geom';
+import { Line, segDist } from '../vignette/geom';
+import { CAR_BOGIES } from '../vignette/cq400';
+import { MARTA_TRACK_OFFSET } from '../vignette/world';
 import { carInDaylight, CityTracks, CityTrains } from './trains';
 
 describe('City train placement', () => {
@@ -29,6 +31,34 @@ describe('City train placement', () => {
     const forward = trains.group.children.find(c => c.userData.trainId)!.getWorldDirection(new Vector3());
     expect(forward.x).toBeCloseTo(1);
     expect(forward.y).toBeCloseTo(0);
+  });
+
+  it('seats every car on both bogies on a 100 m curve, as freight and the streetcar ride', () => {
+    // A quarter arc of radius 100 m through the origin, heading east there.
+    const pts: [number, number][] = [];
+    for (let a = -45; a <= 45; a += 1) pts.push([100 * Math.sin((a * Math.PI) / 180), 100 - 100 * Math.cos((a * Math.PI) / 180)]);
+    const line = new Line(pts);
+    const bounds = { minX: -200, maxX: 200, minZ: -200, maxZ: 200 };
+    const trains = new CityTrains([{ line, elev: () => 0 }], {
+      name: 'curve', origin: { lon: 0, lat: 0 }, bounds, notes: '', sources: [],
+      profiles: { track: { s0: 0, step: 1, z: [0] } },
+    }, bounds, new Map([['blue', '#0075b2']]), []);
+    trains.update([{ id: 'trip', routeId: 'blue', pathId: 'track', heading: 90, lon: 0, lat: 0,
+      s: { value: 100, tier: 'scheduled', source: 'test', asOf: '' }, headsign: 'East', vehicleType: 'rail',
+      lengthM: { value: 70, tier: 'illustrative', source: 'test', asOf: '' } }], 0);
+    const cars = trains.group.children.filter(c => c.userData.trainId);
+    expect(cars.length).toBe(3);
+    const fromLine = (x: number, z: number) => Math.min(...line.pts.slice(1).map((b, k) => segDist(x, z, line.pts[k], b)));
+    for (const car of cars) {
+      car.updateMatrixWorld(true);
+      // Each bogie centre stands on the offset track, to within the 1-degree polyline's own sag
+      // (3 cm). The old placement centred the car on the track and aimed it along it, which left
+      // its bogies about 0.1-0.2 m off the rails on this curve.
+      for (const bz of CAR_BOGIES) {
+        const b = new Vector3(0, 0, bz).applyMatrix4(car.matrixWorld);
+        expect(Math.abs(fromLine(b.x, b.z) - MARTA_TRACK_OFFSET)).toBeLessThan(0.03);
+      }
+    }
   });
 
   it('uses known cover independently of elevation and retains the relative profile for unknown spans', () => {
