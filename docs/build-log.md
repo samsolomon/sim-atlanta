@@ -2950,3 +2950,12 @@ block. Two studies put the brightest stone at the 0.5 m base and fade the wash
 to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
 region in plan, so the falloff follows the tower's own masonry vertices.
 [Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
+
+### 2026-11-23 — Three footprints at Tech Square
+
+Coda's 118.9 m tower shares its block with a five-floor computing center and
+the retained Crum & Forster building. The archive supplies three separate
+footprints. Putting a solid base under the tower would close the 19.2 m arcade,
+so the west podium stops short and the soffit spans the opening. A ray from
+pedestrian height crosses the passage and a second ray hits the soffit overhead.
+[High daylight comparison](log/ui/coda/high-day.jpg) · [High night comparison](log/ui/coda/high-night.jpg).

@@ -12,3 +12,19 @@ Implementation plan: use mapped L shell with lower glazed podium, elevated upper
 Architect review — 2026-11-23: existing localLandmarkShell is suitable and retains generic fallback for missing ground/ring. Significant plan correction: Coda and Crum & Forster are disjoint mapped ways, so each must be independently dispatched rather than swallowing an adjacent building via Coda's callback. AIA ground-floor plan confirms open east/west passage; omit the generic full-footprint plinth across this opening. Normalize ring winding before facade offsets. Any new plaza must preserve terrain continuity rather than float above grade.
 
 Product design review — 2026-11-23: no new UI, labels or interactions needed. Model identity rests on the cantilever, slot, rounded glass core and preserved brick facade, not logos or video-screen artwork. Night occupancy/brightness is illustrative; evidence establishes fixture placement only. Use restrained white passage strips and a few window panels rather than a uniformly glowing tower. Keep the GT stack separate per coordinator's correction.
+
+### City model
+
+The archive supplies the 118.9 m tower and the 23.33 m, five-floor computing
+center. The 19.2 m arcade clearance follows the architect's description. The
+podium inset, collaboration core radius (6 m), upper slot (4 m), historic
+cornice (11.5 m) and tile ridge (15 m) are estimates from the photographs.
+The historic entrance faces west with three masonry arches. The computing
+center's louver spacing and rooftop equipment are illustrative. Sparse office
+occupancy and the brightness of the white soffit strips are also estimates.
+
+Matched City camera `326,-2402,245,45,840`, November 20 at 14:00 and 21:00
+Eastern. [Day high](log/ui/coda/high-day.jpg) · [night high](log/ui/coda/high-night.jpg)
+· [day low](log/ui/coda/low-day.jpg) · [night low](log/ui/coda/low-night.jpg).
+[West overview](log/ui/coda/west-day.jpg), camera `326,-2402,98,48,795`.
+[Crum & Forster entry](log/ui/coda/front-day.jpg), camera `281,-2425,65,62,110`.
