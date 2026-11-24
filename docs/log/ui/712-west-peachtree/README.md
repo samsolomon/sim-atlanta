@@ -10,7 +10,7 @@ The tower postdates the 2018 USGS lidar this repo samples, so City keeps the map
 
 The first version was mostly flat navy. The coordinator's review called it a recoloured block, so the shaft now carries the curtain-wall rhythm in geometry:
 
-- **Glass value:** a mid blue-grey (`#66819c`) in plain vertex colour (no library surface, so the body batches), close to its neighbours' value so it doesn't read as a dark hole.
+- **Glass value:** a mid blue-grey (`#7289a1`) in plain vertex colour (no library surface, so the body batches), close to its neighbours' value so it doesn't read as a dark hole.
 - **Spandrels (estimated):** a 0.9 m grey-blue band at every 3.83 m floor line. The two crown floors use a pale cap colour.
 - **Mullion fins (estimated):** a 0.24 m pale fin every 3 m.
 - **Corner reveals (estimated):** a 0.9 m dark reveal 4 m in from each end of every mapped edge 16 m or longer, between the first spandrel and the cap.
@@ -33,4 +33,14 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T<time>-05:00`, clear weather.
 | Spec starting camera | `357,-2258,32,60,380` | [Day](start-day.jpg) | [Night](start-night.jpg) |
 | Close: the day camera with a 2.4× lens (`&dev`, then `__setView(-75,52,520,357,-2258,2.4)`) | `357,-2258,-75,52,520` | [Close](close.jpg) | |
 
-Glass bases (provisional rules: V ≥ 40%, S ≤ 36%): shaft `#66819c` (S 35%, V 61%), crown floors `#97adc2` (S 22%, V 76%), deck-level transition `#4a5d70` (S 34%, V 44%).
+Glass bases, under the base-value table in docs/glass-palette.md: shaft `#7289a1` (S 28%, V 63%), crown floors `#97adc2` (S 22%, V 76%), deck-level transition `#646d75` (S 15%, V 46%).
+
+Rendered sample at 11:30, clear, from camera `357,-2258,10,55,480` ([frame](glass-sample.jpg)), median of each face:
+
+| Face | S | V |
+|---|---|---|
+| 712 south face, sunlit | 33 | 56 |
+| 712 west face, shaded | 91 | 29 |
+| Generic slab south face, sunlit (left) | 6 | 78 |
+| Generic slab west face, shaded (left, thin) | 84 | 21 |
+| Generic tower, shaded (right) | 36 | 40 |

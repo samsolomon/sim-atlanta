@@ -29,8 +29,8 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
   const datum = site.floorY === undefined ? s.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const roof = datum + tower.h, garageTop = datum + podium.h, seed = seedOf(westPeachtree712Id);
   // Glass value sits with the neighbouring curtain walls; spandrels and fins carry the rhythm.
-  const blue = '#66819c', spandrel = '#8a9bad', fin = '#aab6c2', pale = '#97adc2', reveal = '#3d5168',
-    transition = '#4a5d70', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
+  const blue = '#7289a1', spandrel = '#8a9bad', fin = '#aab6c2', pale = '#97adc2', reveal = '#3d5168',
+    transition = '#646d75', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
   const FLOOR = 3.83;
   const top = roof - 7.7;
 
