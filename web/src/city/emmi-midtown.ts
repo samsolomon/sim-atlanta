@@ -100,6 +100,9 @@ export function createEmmiMidtown(buildings: VBuilding[], site: VBuilding, grid:
       for (let f = 1; f < floors; f++) {
         const y = lobby + f * pitch;
         quad(0.3, 0.7, y - 0.1, y + 0.12, 0.6, slab);
+        // The slab's top: a deck from the wall out to the edge, so each
+        // balcony is a plate on the building rather than a floating strip.
+        s.body.quad(at(0.3, y + 0.12, 0.02), at(0.3, y + 0.12, 0.6), at(0.7, y + 0.12, 0.6), at(0.7, y + 0.12, 0.02), slab);
       }
     }
     // Dark panel runs: two or three floors tall, one module wide, staggered.
