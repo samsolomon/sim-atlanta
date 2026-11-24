@@ -19,6 +19,7 @@
 import type { P2 } from '../vignette/geom';
 import type { VGround, VRoad } from '../vignette/world';
 import { hash01 } from './species';
+import { runSync, type Build } from '../core/slice';
 
 type FirstSpecies = 'crape-myrtle' | 'loblolly-pine' | 'sweetgum' | 'japanese-maple';
 const SECOND_MIX = {
@@ -187,7 +188,15 @@ export function fitsSpecies(sp: RolloutSpecies, h: number, r: number) {
 }
 const specimenAt = (sp: RolloutSpecies) => sp in SPECIMEN_AT ? SPECIMEN_AT[sp as FirstSpecies] : 24;
 
-export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, roundTwo, inAnsley = () => false, preview }: RolloutInput): RolloutPlan {
+export function planRollout(input: RolloutInput): RolloutPlan {
+  return runSync(buildPlanRollout(input));
+}
+
+/**
+ * planRollout as a build that yields per island and every 64 crowns (core/slice.ts). Every draw
+ * is seeded by position, so a yield changes nothing; there is none between the sort and the slice.
+ */
+export function* buildPlanRollout({ crowns, roads, ground = [], buildings = [], bounds, roundTwo, inAnsley = () => false, preview }: RolloutInput): Build<RolloutPlan> {
   let places = roundTwo ? rowLimits[roundTwo.id] ?? 0 : 0;
   const candidates: PlacedSpecies[] = [];
   const near = roadIndex(roads);
@@ -202,6 +211,7 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
   // Islands first: their crowns are cleared and replanted.
   const islands = inAnsleyIslands(ground, near, inAnsley);
   for (const isl of islands) {
+    yield 'rollout island';
     for (const [x, z] of crowns) if (inRing(x, z, isl.ring)) plan.cleared.add(crownKey(x, z));
     if (isl.round) {
       // One large hardwood at the centre (the generic broadleaf, at specimen size).
@@ -230,7 +240,9 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
   }
 
   const keys = new Set(crowns.map(([x, z]) => crownKey(x, z)));
+  let visited = 0;
   for (const [x, z, h, r] of crowns) {
+    if (++visited % 64 === 0) yield 'rollout crowns';
     const key = crownKey(x, z);
     if (plan.cleared.has(key)) continue;
     const ctx = contextOf(x, z);

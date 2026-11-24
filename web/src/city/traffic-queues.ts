@@ -51,7 +51,8 @@ export class MovingQueue {
           return this.shown[i];
         });
       }
-      this.cohort = trips;
+      // A copy: callers may reuse and update their trip objects in place between frames.
+      this.cohort = trips.map(trip => ({ ...trip }));
       this.key = key;
       this.tick = Math.floor(Math.min(...trips.map(t => t.start)) / STEP);
       this.positions = trips.map(() => null);

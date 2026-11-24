@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PlacementIndex } from './spatial';
+import { PlacementIndex, insideAny } from './spatial';
 import { pointInRing, segDist, type P2 } from './geom';
 
 describe('placement broad phase', () => {
@@ -31,5 +31,29 @@ describe('placement broad phase', () => {
       expect(nearest(index.at(x, z))).toBe(nearest(segments));
     }
     expect(index.at(10000, 10000)).toEqual([]);
+  });
+});
+
+describe('insideAny', () => {
+  it('answers exactly as a linear scan of every ring (lamp placement relies on it)', () => {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const rings = Array.from({ length: 120 }, () => {
+      // Concave stars of every size, some spanning many index cells, some smaller than one.
+      const cx = rnd() * 2800 - 1000, cz = rnd() * 800 - 3300, r = 3 + rnd() ** 3 * 400, n = 3 + Math.floor(rnd() * 9);
+      return Array.from({ length: n }, (_, i) => {
+        const a = (i / n) * Math.PI * 2, k = i % 2 ? 0.45 + rnd() * 0.5 : 1;
+        return [cx + Math.cos(a) * r * k, cz + Math.sin(a) * r * k] as [number, number];
+      });
+    });
+    const fast = insideAny(rings);
+    let inside = 0;
+    for (let i = 0; i < 20000; i++) {
+      const x = rnd() * 3000 - 1100, z = rnd() * 1000 - 3400;
+      const slow = rings.some(ring => pointInRing(x, z, ring));
+      expect(fast(x, z)).toBe(slow);
+      if (slow) inside++;
+    }
+    expect(inside).toBeGreaterThan(500);
   });
 });
