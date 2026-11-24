@@ -340,3 +340,25 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 - **Once #512 lands:** drop `DOWNTOWN_PROFILE.exclude` (autorack) and set the downtown intermodal weight above 0 in the stack, after re-measuring car-pose curvature.
 - **Merge queue:** the skyline lead (studio-midtown-skyline) hands out merge slots. Ask for one and wait for "your turn".
 - **Next:** road-vehicle variety.
+
+### Update — 2026-11-24 morning, later (Opus session bceb5cfc)
+
+- **#512 merged** (`6f994bfa`): freight centreline smoothing. **Needs `pnpm data`.**
+  - The only generated change is `scene/downtown/vignette.json` `terrainTransport.rail[].pts` for the 13 `freightS` runs.
+  - The curvature test skips on stale data (79 freight vertices on stale data against 176 after).
+  - Once release data includes this, lift `DOWNTOWN_PROFILE.exclude` and turn downtown intermodal back on in the stack, after re-measuring car-pose curvature.
+- **#541: high-tier road-vehicle variety, held for Sam.**
+  - Adds hatch, pickup and van, plus a rigid 19.16 m semi, with `semiShare` 0.7 on the Connector.
+  - Trucks appear only above 25% of the hourly share.
+  - `instanceColor` is now allocated at build (fixes the prewarm program).
+  - Low is unchanged.
+  - The road-traffic owner (studio-midtown-connector) has been told.
+- **MARTA/streetcar radius note** sent to 54bca5c0 for the morning.
+- **Rules (coordinator):**
+  - No pattern kills.
+  - Use your own Chrome via `scripts/chrome-cdp.mjs launchChrome`, and check the URL before navigating.
+  - Merge slots come from the skyline lead.
+- **Held for Sam:** #404, #424 → #436 → #443 → #456 → #492 → #496, #541.
+- **Gotchas:**
+  - `origin/main` moves under you, because fetches are shared across worktrees. Pin the main SHA when you compare builds.
+  - #424 must rebase onto `23cc47a0` or later (#467) and re-measure the ceilings.
