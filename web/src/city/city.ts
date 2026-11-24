@@ -137,6 +137,7 @@ import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEnt
 import { surfaceDefaults } from '../materials';
 import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
@@ -1498,7 +1499,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Capped at a quarter of the shadow box (260 m on low): an uncapped 0.15 x orbit is ~3.2 km at
     // the default view, three times the box, and with the 0.6 hysteresis the target could pan ~1.9 km
     // away from its shadows before the box followed. Far orbits are the far-shadow rule's to handle.
-    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.min((2 * SH) / 4, Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t))) : SHADOW_STEP_M;
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? shadowStepM(camera.position.distanceTo(t), SHADOW_STEP_M, 2 * SH) : SHADOW_STEP_M;
     const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
