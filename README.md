@@ -91,3 +91,9 @@ pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 - City's phone performance gate, moving vehicles, real terrain, a ride-along camera,
   and growing out to I-285 (see docs/city-plan.md and docs/art-backlog.md).
 - Freight positions. No free source exists; see docs/data-model.md.
+
+## Licence
+
+The code is MIT (see `LICENSE`). The radio music and covers in `web/public/music/` are
+not covered by it and are not for reuse. Map and open data keep their own licences,
+credited in the app's About & credits.
