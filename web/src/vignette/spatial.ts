@@ -24,6 +24,9 @@ export class PlacementIndex<T> {
     }
   }
 
+  /** Index rings by their own points. */
+  addAll(this: PlacementIndex<P2[]>, rings: P2[][]) { for (const ring of rings) this.add(ring, ring); return this; }
+
   at(x: number, z: number): readonly T[] {
     return this.cells.get(this.key(Math.floor(x / this.step), Math.floor(z / this.step))) ?? [];
   }

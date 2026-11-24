@@ -876,6 +876,45 @@ and [low night](log/ui/tree-species/rollout/1180-low-night-sheet.jpg).
 Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 [pan counts](log/ui/tree-species/rollout/pan-results.json) preserve the measurement runs.
 
+### All-species preview
+
+`?trees=all-species` is an opt-in look at City with every canopy-row crown converted, so Sam can
+judge the fully converted look before more rollout. Without it, City is unchanged.
+
+**How the remainder is assigned.** The ordinary plan runs first and keeps all its placements:
+the four first-round species, the round-two 300, Ansley's island trees and its enlarged and
+paired crowns. Then each crown still drawn generic draws one of the ten City-wired species. The
+draw uses the crown's context weights (street, yard or park, from `MIX` plus `SECOND_MIX`, with
+Ansley's yard maple bias), renormalised over the species whose size fit accepts the crown, on its
+own position-seeded hash channel. That keeps species identical across tiers and reloads.
+
+Unmodelled shares are dropped, not redrawn as look-alikes. That covers red maple, tulip poplar,
+southern red oak, ginkgo, river birch, Yoshino cherry, pistache and other broadleaf (19, 16 and
+11 % of street, yard and park). So the preview over-represents oaks, elm, magnolia and, because
+small crowns fit only a few species, crape myrtle and dogwood. Zeros stay zeros: no loblolly,
+sweetgum or Japanese maple at the curb. A crown no wired species fits stays generic and is
+counted (1–3 % per row, mostly small yard crowns). Named sites (trees/sites.ts), landmark
+plantings, crowns the generic World would skip (off-board, inside a building) and boards
+without a canopy rollout (downtown, King Memorial, Sweet Auburn and the north and south bands)
+are untouched. Everything stays `illustrative`.
+
+| Row | Crowns (high / low) | Species trees, ordinary (high / low) | Species trees, preview (high / low) | Left generic (high) |
+|---|---:|---:|---:|---:|
+| midtown-south | 1,962 / 923 | 265 / 151 | 1,936 / 909 | 26 |
+| midtown-central | 2,448 / 1,071 | 346 / 180 | 2,412 / 1,048 | 36 |
+| midtown-upper | 2,439 / 1,023 | 492 / 256 | 2,419 / 1,011 | 33 |
+| brookwood-south | 3,377 / 1,323 | 532 / 267 | 3,370 / 1,315 | 64 |
+| brookwood-station | 4,067 / 1,557 | 558 / 244 | 4,027 / 1,527 | 63 |
+
+Realised preview mix, all five rows at high (species trees, ordinary placements included):
+
+| Context | Mix |
+|---|---|
+| Street (1,533) | crape myrtle 512, willow oak 463, American elm 297, magnolia 125, water oak 81, dogwood 55 |
+| Yard (10,863) | water oak 2,091, willow oak 1,477, loblolly 1,445, magnolia 1,405, sweetgum 1,070, crape myrtle 928, white oak 920, dogwood 789, Japanese maple 583, American elm 155 |
+| Park (1,671) | loblolly 456, sweetgum 370, dogwood 225, water oak 210, magnolia 189, white oak 142, willow oak 49, American elm 30 |
+| Planted (Ansley pairs and islands, 97) | willow oak 25, American elm 25, crape myrtle 24, magnolia 8, water oak 6, Japanese maple 5, dogwood 4 |
+
 ### White oak
 
 `web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.

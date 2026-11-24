@@ -7,6 +7,7 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
+import { PlacementIndex } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
@@ -38,7 +39,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { rolloutPlantings, rolloutRow, rolloutSpecies } from '../trees/rollout-city';
+import { allSpeciesPreview, rolloutPlantings, rolloutRow, rolloutSpecies } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -271,6 +272,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
     allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
+    // `?trees=all-species`: convert only crowns the generic World would draw (its bounds and
+    // building test), and leave named sites to trees/sites.ts.
+    preview: typeof location !== 'undefined' && allSpeciesPreview(location.search) ? (blocks => ({
+      drawn: (x, z) => x > city.bounds.minX + 1 && x < city.bounds.maxX - 1 && z > city.bounds.minZ + 1 && z < city.bounds.maxZ - 1
+        && !blocks.at(x, z).some(ring => pointInRing(x, z, ring)),
+      managed: namedReplace ?? undefined,
+    }))(new PlacementIndex<P2[]>().addAll(sceneryCity.buildings.map(bd => bd.rings[0]))) : undefined,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
   const replace: World['replacedTree'] = rollout

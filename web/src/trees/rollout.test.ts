@@ -141,3 +141,55 @@ describe('tree rollout plan', () => {
     expect(JSON.stringify(planRollout(input).species)).toBe(JSON.stringify(planRollout(input).species));
   });
 });
+
+describe('all-species preview (?trees=all-species)', () => {
+  const drawn = () => true;
+  function both(row: string) {
+    const c = JSON.parse(readFileSync(new URL(`${row}/context.json`, scene), 'utf8'));
+    const low: Crown[] = c.trees.slice(0, c.treeLowCount);
+    const input = { roundTwo: { id: row, eligible: new Set(low.map(([x, z]) => crownKey(x, z))) }, crowns: c.trees as Crown[], roads: c.roads, ground: c.ground,
+      buildings: c.buildings.map((b: { rings: number[][][] }) => b.rings[0]), bounds: c.bounds, inAnsley: ansley() };
+    const off = planRollout(input), on = planRollout({ ...input, preview: { drawn } });
+    return { c, low, off, on };
+  }
+
+  it.skipIf(!staged)('keeps every ordinary placement and converts the rest, the same at both tiers', () => {
+    for (const row of ROWS) {
+      const { c, low, off, on } = both(row);
+      expect(off.preview).toBeUndefined();
+      // Ordinary placements come first, unchanged.
+      expect(on.species.slice(0, off.species.length)).toEqual(off.species);
+      expect(on.enlarged).toEqual(off.enlarged);
+      expect(on.added).toEqual(off.added);
+      for (const k of off.replaced) expect(on.replaced.has(k)).toBe(true);
+      // Every drawn crown is now a species, cleared, or counted as one no wired species fits.
+      const generic = Object.values(on.preview!.generic).reduce((a, b) => a + b, 0);
+      const left = (c.trees as Crown[]).filter(([x, z]) => !on.replaced.has(crownKey(x, z)) && !on.cleared.has(crownKey(x, z))).length
+        + on.added.filter(({ crown: [x, z] }) => !on.replaced.has(crownKey(x, z))).length;
+      expect(left).toBe(generic);
+      // Tier identity: low is a subset of high with the same species, size class aside.
+      const hi = new Map(tierPlan(on, c.trees).species.map(s => [crownKey(s.x, s.z), s.species]));
+      const lo = tierPlan(on, low);
+      for (const s of lo.species) expect(hi.get(crownKey(s.x, s.z))).toBe(s.species);
+      // A planted pair's species appears only where its source crown is in the tier.
+      const kept = new Set(lo.added.map(a => crownKey(a.crown[0], a.crown[1])));
+      for (const { crown: [x, z] } of on.added) if (!kept.has(crownKey(x, z)))
+        expect(lo.species.some(s => crownKey(s.x, s.z) === crownKey(x, z))).toBe(false);
+    }
+  });
+
+  it.skipIf(!staged)('keeps zero weights at zero and leaves managed crowns alone', () => {
+    for (const row of ROWS) {
+      const { on } = both(row);
+      for (const s of on.species.slice(-50)) {
+        const ctx = on.context.get(crownKey(s.x, s.z)) ?? 'street';
+        if (ctx === 'street') expect(['loblolly-pine', 'sweetgum', 'japanese-maple']).not.toContain(s.species);
+      }
+    }
+    const { c, off } = both('brookwood-south');
+    const [x, z] = (c.trees as Crown[]).find(([x, z]) => !off.replaced.has(crownKey(x, z)))!;
+    const managed = planRollout({ crowns: c.trees, roads: c.roads, ground: c.ground, bounds: c.bounds, inAnsley: ansley(),
+      preview: { drawn, managed: (mx, mz) => mx === x && mz === z } });
+    expect(managed.replaced.has(crownKey(x, z))).toBe(false);
+  });
+});

@@ -43,6 +43,15 @@ export function treeProbe(search: string, quality: TreeQuality) {
   return ['mask-on', 'mask-off', 'shadow-off', 'foliage-off', 'carpet-off'].includes(probe ?? '') ? probe : null;
 }
 
+/**
+ * `?trees=all-species`: an opt-in look at City with every canopy-row crown drawn as a wired
+ * species (trees/rollout.ts allSpecies), for judging the fully converted look before more rollout.
+ * Any other value, or none, is the ordinary view.
+ */
+export function allSpeciesPreview(search: string) {
+  return new URLSearchParams(search).get('trees') === 'all-species';
+}
+
 export interface RolloutRowInput {
   roads: VRoad[];
   ground?: VGround[];
@@ -54,12 +63,15 @@ export interface RolloutRowInput {
   /** This tier's crowns (a subset of allCrowns at low detail). */
   tierCrowns: Crown[];
   inAnsley?: (x: number, z: number) => boolean;
+  /** The all-species preview's filters (trees/rollout.ts RolloutInput.preview), when it is on. */
+  preview?: NonNullable<Parameters<typeof planRollout>[0]['preview']>;
 }
 
 /** Plans a row; returns what the generic World needs before its trees are built. */
 export function rolloutRow(input: RolloutRowInput) {
   const full = planRollout({
     roundTwo: input.roundTwo, crowns: input.allCrowns, roads: input.roads, ground: input.ground, bounds: input.bounds, inAnsley: input.inAnsley,
+    preview: input.preview,
     buildings: input.buildings.map(b => b.rings[0] as P2[]),
   });
   const plan = tierPlan(full, input.tierCrowns);
