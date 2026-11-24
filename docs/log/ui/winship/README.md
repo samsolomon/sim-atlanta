@@ -32,6 +32,23 @@ The photographs are Dave Burk (© SOM) and David Kresses (© May Architecture), 
 
 There is no full-night exterior. This is an inpatient and research building, so the night view lights about a third of the panes, through skin-kit's `litHash(seedOf(id), face, floor, bay)`. That is more than an office tower and less than housing. The podium storefront is lit, and downlights dot the canopy soffit (an estimate: the photographs are daytime only). The crown stays unlit.
 
+## Glass
+
+The tower glass is `#a7bcc2` (S14 V76). The podium glass behind the fin screen was `#5d6c73` (S19 V45). Rendered in shade it read H215 S84 V18, so it was lifted to `#7c8387` (S8 V53), inside the provisional dark-glass rule.
+
+Rendered medians at 11:30, high tier:
+
+| Patch | Camera | H | S | V |
+|---|---|---|---|---|
+| Podium, sunlit | `575,-1760,340,62,260` | 129 | 19 | 43 |
+| Podium, deep shade | `575,-1760,160,62,300` | 216 | 54 | 20 |
+| Tower end, sunlit | `575,-1760,340,62,260` | 108 | 9 | 70 |
+| Generic tower, sunlit | `575,-1760,340,62,260` | 136 | 6 | 74 |
+| Tower long face, shade | `575,-1760,160,62,300` | 209 | 41 | 37 |
+| Generic tower face, shade | `575,-1760,160,62,300` | 212 | 37 | 43 |
+
+[Podium crop, sunlit](podium-glass-day.jpg) · [Podium crop, shade](podium-glass-shade.jpg)
+
 ## Captures
 
 | View | Camera | Local time, November 20, 2026 | Capture |
