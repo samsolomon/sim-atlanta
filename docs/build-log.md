@@ -4149,3 +4149,7 @@ before any screenshot did.
 ### 2026-11-24 · 715 Peachtree, the white cube that isn't generic
 
 A white 10-storey egg-crate office cube looks, at 500 m, almost exactly like the generic beige grid it replaces, so this skin leans on the differences the photographs show. The frame is a step brighter white, each window is a deep dark reveal rather than a pale pane, there's a penthouse block on the roof (the lidar's 44–45 m), and a warm wood-clad retail base faces Peachtree. [Before/after, views and four-side sheet](log/ui/715-peachtree/README.md)
+
+### 2026-11-24 · The Mitchell at Centennial Yards
+
+The Mitchell opened in September 2025, six years after the lidar flight, so for once the lidar had nothing to say: the lot was empty in 2019. Its 19 storeys are reported, and Overture's 62.7 m fits them. April 2026 Street View from Mitchell Street put the slab on the Elliott Street side over a charcoal brick podium. The block that filled the whole lot is now a slender tower with a garage base. [Before/after](log/ui/the-mitchell/README.md)
