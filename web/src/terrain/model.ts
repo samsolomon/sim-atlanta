@@ -390,7 +390,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
-    const onSite = (x: number, z: number) => sites.some(ring => pointInRing(x, z, ring));
+    // Indexed: a linear scan over every site ring per lamp candidate was ~40% of a Midtown row's build.
+    const siteIndex = new PlacementIndex<P2[]>().addAll(sites);
+    const onSite = (x: number, z: number) => siteIndex.at(x, z).some(ring => pointInRing(x, z, ring));
     const reclaimedBed = (x: number,z: number) => {
       if (!options.underpass) return false;
       const [s,t] = options.underpass.local(x,z);
