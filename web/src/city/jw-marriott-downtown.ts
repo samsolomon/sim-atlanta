@@ -64,7 +64,7 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
     const plan = local(part.rings[0]);
     if (part.id === slabId) {
       // The 1.7 m east bumps are balcony stacks, drawn separately; the slab is the wall behind them.
-      slab = plan.filter(([x]) => x < 231.65 - origin[0]);
+      slab = plan.filter(([x]) => x < 232.5 - origin[0]);
       continue;
     }
     if (part.id === southBlockId) { south = plan; continue; }
@@ -75,9 +75,11 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
     plan.forEach((a, i) => {
       const b = plan[(i + 1) % plan.length];
       if (Math.hypot(b[0] - a[0], b[1] - a[1]) <= 6) return;
-      panel(s.body, a, b, 0.02, 0.98, s.base + 0.5, Math.min(top - 1.5, s.base + 6), 0.05, podiumGlass);
+      // Glass follows the grade under each wall: the site falls about 5 m to the south-west.
+      const street = Math.max(s.base + 0.35, ...[a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? -Infinity));
+      panel(s.body, a, b, 0.02, 0.98, street + 0.3, Math.min(top - 1.5, street + 5), 0.05, podiumGlass);
       // Upper podium floors: a ribbon window per floor.
-      for (let h = s.base + 8; h + 1.6 < top - 1; h += 3.6) panel(s.body, a, b, 0.03, 0.97, h, h + 1.6, 0.05, podiumGlass);
+      for (let h = street + 7; h + 1.6 < top - 1; h += 3.6) panel(s.body, a, b, 0.03, 0.97, h, h + 1.6, 0.05, podiumGlass);
     });
   }
   if (!slab) return null;
@@ -88,7 +90,8 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
   if (south) s.prism(south, y(deckH), y(southH), glass, roof);
 
   // Floor bands and lit rooms. Hotel and condominium windows are noticeably lit at 23:30.
-  const floors = Math.floor((parapetH - podiumBase) / pitch);
+  // Rooms stop at the roof deck; the glass above it is parapet.
+  const floors = Math.floor((deckH - podiumBase) / pitch);
   slab.forEach((a, edge) => {
     const b = slab![(edge + 1) % slab!.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);

@@ -31,6 +31,9 @@ it('sets the slab deck, south block and podium at their lidar heights', () => {
   expect(top(220, -1230)).toBeCloseTo(301.5 + 98, 1); // roof deck inside the parapet
   expect(top(220, -1265)).toBeCloseTo(301.5 + 106, 1); // taller south block
   expect(top(190, -1250)).toBeCloseTo(301.5 + 22, 1); // podium
+  // The slab keeps its south-east corner under the south block.
+  const east = new Raycaster(new Vector3(260, 60, -1272), new Vector3(-1, 0, 0)).intersectObject(result.group, true)[0];
+  expect(east.point.x).toBeGreaterThan(231.3);
 });
 
 it('lights hotel and condominium rooms and stays inside the landmark budget', () => {
