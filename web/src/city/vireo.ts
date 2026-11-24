@@ -138,5 +138,9 @@ export function createVireo(buildings: VBuilding[], site: VBuilding, grid: Groun
   flat(north, 0.25, 0.75, y0 + 5, 0, 5.5, wood);
   panel(north, 0.25, 0.75, y0 + 4.2, y0 + 5, 5.5, wood);
   panel(north, 0.08, 0.92, y0 + 0.3, y0 + 4.5, 0.06, glass, true);
-  return s.finish('#ffdcae', 0.62);
+  const model = s.finish('#ffdcae', 0.62);
+  // Smallwood's case study: the front porch has "an extended roof reaching the public sidewalk",
+  // 5.5 m past the 13th Street wall, so the footprint audit allows 6 m here.
+  model.group.userData.footprint = { maxProjection: 6 };
+  return model;
 }
