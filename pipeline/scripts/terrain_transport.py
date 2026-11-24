@@ -116,6 +116,90 @@ def distance_on_axis(points, at):
     return round(nearest[1], 2)
 
 
+# Curvature-limited smoothing of the freight centreline (docs/terrain-transport.md). Source vertices
+# are hard corners; long cars spanning one swing off the rails. Each interior vertex gets a circular
+# fillet of at most MIN_RADIUS_M, smaller only where the neighbouring segments are too short.
+MIN_RADIUS_M = 150.0
+MICRO_SEGMENT_M = 0.01
+MAX_SHIFT_M = {"ground": 2.0, "bridge": 0.5}  # keeps the track inside its cut or on its deck
+ARC_STEP_RAD = math.radians(1.5)
+
+
+def _key(p):
+    return (round(p[0], 2), round(p[1], 2))
+
+
+def _drop_micro_segments(pts, pinned):
+    """Remove vertices closer than MICRO_SEGMENT_M to a neighbour, never a pinned one."""
+    out = [pts[0]]
+    for p in pts[1:-1]:
+        if math.dist(p, out[-1]) >= MICRO_SEGMENT_M or _key(p) in pinned:
+            out.append(p)
+    end = pts[-1]
+    while len(out) > 1 and math.dist(out[-1], end) < MICRO_SEGMENT_M and _key(out[-1]) not in pinned:
+        out.pop()
+    out.append(end)
+    return out
+
+
+def smooth_centreline(pts, pinned, max_shift):
+    """Return (points, report): fillets at unpinned interior vertices, endpoints and pins exact."""
+    pts = _drop_micro_segments(pts, pinned)
+    if len(pts) < 3:
+        return pts, {"min_radius": None, "max_shift": 0.0, "short": []}
+    seg = [math.dist(a, b) for a, b in zip(pts, pts[1:])]
+    out, radii, shifts, short = [pts[0]], [], [0.0], []
+    for i in range(1, len(pts) - 1):
+        a, b, c = pts[i - 1], pts[i], pts[i + 1]
+        u1 = ((a[0] - b[0]) / seg[i - 1], (a[1] - b[1]) / seg[i - 1])
+        u2 = ((c[0] - b[0]) / seg[i], (c[1] - b[1]) / seg[i])
+        cos_phi = max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))
+        turn = math.pi - math.acos(cos_phi)
+        if _key(b) in pinned or turn < 1e-4:
+            out.append(b)
+            continue
+        # A neighbour that is itself filleted shares its segment, so each corner gets half of it.
+        room = [seg[i - 1] if i - 1 == 0 or _key(a) in pinned else seg[i - 1] / 2,
+                seg[i] if i + 1 == len(pts) - 1 or _key(c) in pinned else seg[i] / 2]
+        half = math.tan(turn / 2)
+        radius = min(MIN_RADIUS_M, min(room) / half)
+        shift_per_r = 1 / math.cos(turn / 2) - 1
+        radius = min(radius, max_shift / shift_per_r) if shift_per_r > 0 else radius
+        if radius < MIN_RADIUS_M:
+            short.append({"at": [round(b[0], 1), round(b[1], 1)], "radius": round(radius, 1)})
+        tangent = radius * half
+        p1 = (b[0] + u1[0] * tangent, b[1] + u1[1] * tangent)
+        bis = (u1[0] + u2[0], u1[1] + u2[1])
+        norm = math.hypot(*bis)
+        centre = (b[0] + bis[0] / norm * radius / math.cos(turn / 2), b[1] + bis[1] / norm * radius / math.cos(turn / 2))
+        start = math.atan2(p1[1] - centre[1], p1[0] - centre[0])
+        cross = u1[0] * u2[1] - u1[1] * u2[0]  # the arc turns away from the incoming direction
+        sweep = turn if cross < 0 else -turn
+        steps = max(2, math.ceil(turn / ARC_STEP_RAD))
+        for k in range(steps + 1):
+            ang = start + sweep * k / steps
+            out.append([round(centre[0] + radius * math.cos(ang), 3), round(centre[1] + radius * math.sin(ang), 3)])
+        radii.append(radius)
+        shifts.append(radius * shift_per_r)
+    out.append(pts[-1])
+    return out, {"min_radius": round(min(radii), 1) if radii else None, "max_shift": round(max(shifts), 3), "short": short}
+
+
+def smooth_freight(rail):
+    """Smooth every freightS run in place; returns a per-run report."""
+    pinned = set()
+    for i, item in enumerate(rail):
+        pinned.update(_key(p) for p in (item["pts"][0], item["pts"][-1]))
+    for i, item in enumerate(rail):
+        if not item.get("freightS"):
+            continue
+        others = {_key(p) for j, other in enumerate(rail) if j != i for p in other["pts"]}
+        item_pins = pinned | {_key(p) for p in item["pts"] if _key(p) in others}
+        pts, report = smooth_centreline(item["pts"], item_pins, MAX_SHIFT_M[item["kind"]])
+        item["pts"] = [list(p) for p in pts]
+        yield i, item["kind"], report
+
+
 def bake(roads, rails, bounds):
     result = {"version": 1, "roads": [], "rail": []}
     axis = freight_axis(rails, bounds)
@@ -140,6 +224,8 @@ def bake(roads, rails, bounds):
                         if key == "rail" and axis is not None and p.get("id") in route_ids:
                             item["freightS"] = [distance_on_axis(axis, xz) for xz in (pts[0], pts[-1])]
                         result[key].append(item)
+    for _ in smooth_freight(result["rail"]):
+        pass
     return result
 
 
