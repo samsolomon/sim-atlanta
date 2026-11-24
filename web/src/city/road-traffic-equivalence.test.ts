@@ -280,7 +280,9 @@ describe('road traffic bridges cracks narrower than a tyre, and nothing wider', 
     const { Line } = await import('../vignette/geom');
     const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
     const course = { line: new Line(pts), roads: pts.slice(1).map(() => road), speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
-    const layer = new RoadTraffic({ city, quality: 'low', hourly, roadHeight }, [course], 64, 1, 'test') as unknown as Inner;
+    const layer = new RoadTraffic({ city, quality: 'low', hourly, roadHeight }, [course], 64, 1, 'test') as unknown as Inner & { fillIdle(d: number): boolean };
+    // Steps are classified and refined in idle time; until then cars sample exactly.
+    layer.fillIdle(Infinity);
     return { layer, lane: layer.lanes[0] };
   }
 
@@ -354,6 +356,9 @@ it('bridges a crack centred on a profile step boundary', async () => {
   // Codex's case: a 10 cm dip centred on the 10 m boundary between two 2 m steps.
   const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
     hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: (_x, z) => z > 9.95 && z < 10.05 ? -6 : 0 }, [course], 64, 1, 't');
-  const inner = layer as unknown as { lanes: unknown[]; heightAt(l: unknown, s: number, x: number, z: number): number | null };
+  const inner = layer as unknown as { lanes: unknown[]; heightAt(l: unknown, s: number, x: number, z: number): number | null; fillIdle(d: number): boolean };
+  // Before the idle fill a car samples exactly (as legacy did); after it, the crack is bridged.
+  expect(inner.heightAt(inner.lanes[0], 10, 0, 10)).toBe(-6);
+  inner.fillIdle(Infinity);
   for (const s of [9.96, 10, 10.04]) expect(inner.heightAt(inner.lanes[0], s, 0, s)).toBeCloseTo(0, 6);
 });

@@ -86,6 +86,9 @@ interface LaneState {
   /** For steps that sample exactly (`smooth` 2): heights at the step's eighths (NaN off the
    * road) and, per eighth, 1 if it interpolates within PROFILE_TOLERANCE at its midpoint. */
   fine: Map<number, Float64Array>;
+  /** This lane's position in `lanes`, and steps already in the fill's queue. */
+  index: number;
+  queued: Uint8Array;
   /** Distance rate: far (with hysteresis), the 1/FAR_HZ tick last posed, this lane's offset
    * into that tick (so far lanes don't all re-pose on one frame), and the cars it held. */
   far: boolean;
@@ -228,6 +231,7 @@ export class RoadTraffic {
     });
     this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed) : [];
     this.lanes = this.buildLanes(courses);
+    this.lanes.forEach((lane, k) => { lane.index = k; });
     if (this.heads) this.headPhases = new Uint8Array(this.heads.signals.length).fill(255);
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
     const fade = courses.some(course => course.fadeStartM || course.fadeEndM);
@@ -314,7 +318,7 @@ export class RoadTraffic {
         period: course.line.length + offstage(course),
         active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
         heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
-        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n), fine: new Map(),
+        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n), fine: new Map(), index: 0, queued: new Uint8Array(n),
         far: false, farTick: NaN, stagger: (index * 0.6180339887) % 1, held: [], heldCount: 0,
       }];
     });
@@ -336,7 +340,8 @@ export class RoadTraffic {
 
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
-    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); lane.fine.clear(); }
+    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); lane.fine.clear(); lane.queued.fill(0); }
+    this.wanted.length = 0;
     this.fillLane = this.fillStep = 0;
   }
 
@@ -355,11 +360,14 @@ export class RoadTraffic {
       const a = this.profile(lane, i);
       return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
-    const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
+    // The frame never classifies or refines a step: until the idle fill has, a car samples it
+    // exactly (what every car did before the profile) and the step joins the fill's queue.
+    const smooth = lane.smooth[i];
     if (smooth === 1) return this.interpolate(lane, i, s0, span, s);
+    const fine = smooth === 2 ? lane.fine.get(i) : undefined;
+    if (!fine) { this.request(lane, i); return this.exactHeight(lane, s, x, z); }
     // A step with a fold, a deck edge or a hole in it: interpolate within its eighths that pass
     // their own midpoint check, and sample exactly only inside the eighths that don't.
-    const fine = lane.fine.get(i) ?? this.refine(lane, i, s0, span);
     const u = (s - s0) / span * 8, k = Math.min(7, Math.floor(u));
     return fine[9 + k] ? fine[k] + (fine[k + 1] - fine[k]) * (u - k) : this.exactHeight(lane, s, x, z);
   }
@@ -376,6 +384,21 @@ export class RoadTraffic {
     return lane.smooth[i] = smooth;
   }
 
+  /** Steps cars have reached before the fill: lane index and step, ready first. */
+  private readonly wanted: number[] = [];
+  private request(lane: LaneState, i: number) {
+    if (lane.queued[i]) return;
+    lane.queued[i] = 1;
+    this.wanted.push(lane.index, i);
+  }
+  /** Classify (and refine if needed) one step; true once it is ready for the frame loop. */
+  private prepare(lane: LaneState, i: number) {
+    const length = lane.course.line.length, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+    if (!(span > 0)) return;
+    const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
+    if (smooth === 2 && !lane.fine.has(i)) this.refine(lane, i, s0, span);
+  }
+
   /** Where `fillIdle` resumes: a lane, and a step within it. */
   private fillLane = 0;
   private fillStep = 0;
@@ -386,15 +409,22 @@ export class RoadTraffic {
    * it stopped; returns true once every step of every lane is ready.
    */
   fillIdle(deadline: number) {
+    // Steps cars are on now come first, newest last in, in arrival order.
+    let w = 0;
+    while (w < this.wanted.length) {
+      if (performance.now() >= deadline) { this.wanted.splice(0, w); return false; }
+      const lane = this.lanes[this.wanted[w]], i = this.wanted[w + 1];
+      w += 2;
+      lane.queued[i] = 0;
+      this.prepare(lane, i);
+    }
+    this.wanted.length = 0;
     while (this.fillLane < this.lanes.length) {
       const lane = this.lanes[this.fillLane], length = lane.course.line.length;
       const steps = Math.ceil(length / HEIGHT_STEP);
       while (this.fillStep < steps) {
         if (performance.now() >= deadline) return false;
-        const i = this.fillStep++, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
-        if (!(span > 0)) continue;
-        const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
-        if (smooth === 2 && !lane.fine.has(i)) this.refine(lane, i, s0, span);
+        this.prepare(lane, this.fillStep++);
       }
       this.fillLane++;
       this.fillStep = 0;
