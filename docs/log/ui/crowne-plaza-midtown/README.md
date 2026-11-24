@@ -20,17 +20,17 @@ From the April 2019 3DEP lidar, above the 303.2 m NAVD88 ground ring:
 
 | Part | Mapped | Lidar | Model |
 |---|---|---|---|
-| Slab, `osm:way:1456370858` | 98 m | median 81.2, p95 82.4 | 81.2, plus a 1.2 m white parapet and rooftop plant |
+| Slab, `osm:way:1456370858` | 98 m | median 81.2, p95 82.4 | Roof 81.2, including a 1.2 m white parapet band, plus rooftop plant |
 | Podium, `osm:way:1456370857` | 15.7 m | median 17.1 | 17.1 |
 
 The mapped 98 m overstated the slab by 17 m.
 
 ## Estimates
 
-- **Floors:** 3.2 m each, from the podium roof to the parapet (19 floors).
-- **Piers:** about 3.8 m apart on the long faces, standing 0.45 m off the glass, with a white floor slab at each floor.
+- **Floors:** 19, spaced evenly (about 3.3 m) from the podium roof to the parapet.
+- **Piers:** about 3.8 m apart on the long faces, standing 0.45 m off the glass, each with a side face. A white floor slab with a top runs past both ends of each long face to close the corners.
 - **Ends:** the east and west ends and the short sides of the north-face jog are blank white walls, as the Street View end wall shows.
-- **Podium:** white panels over a storefront band, with one upper ribbon window where the podium is tall enough. Each wall follows its own street grade.
+- **Podium:** white panels over a storefront band, with one upper ribbon window where the podium is tall enough. Long walls are split into segments of about 12 m, each set on its own sampled grade, because the north and south walls climb about 8.6 m from Spring Street to West Peachtree.
 - **Materials:** flat vertex colours, because of the shader program budget.
 
 ### Rendered-pixel check

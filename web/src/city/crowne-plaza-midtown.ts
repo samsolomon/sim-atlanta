@@ -17,8 +17,11 @@ const towerId = 'osm:way:1456370858';
 // Heights above the 2019 lidar ground ring (303.2 m NAVD88): tower roof 81.2 (median), podium 17.1.
 const groundNavd = 303.2, roofH = 81.2, podiumH = 17.1, parapetH = 1.2;
 const pitch = 3.2, pierPitch = 3.8;
+/** Share of hotel rooms lit at 23:30. */
+export const occupancy = 0.3;
 
-// Flat vertex colours: a painted library surface compiles its own shader program.
+// Flat vertex colours, not library surfaces: a painted mesh compiles its own shader program and
+// the low tier has none to spare (the One Georgia Center precedent).
 // Window glass #87949a: S 0.13, V 0.60 (recessed between white piers; rendered check in the PR).
 const white = '#ece9e1', whiteShade = '#d8d4ca', glass = '#87949a', glassLit = '#89969c';
 const podiumWall = '#e2ded5', podiumGlass = '#4e5c63', roof = '#a3a49e';
@@ -56,18 +59,30 @@ export function createCrownePlaza(buildings: VBuilding[], site: VBuilding, grid:
   // The podium under everything: white panels over a dark storefront band, following the grade.
   const podium = straighten(ccw(s.ring));
   s.prism(podium, s.base, y(podiumH), podiumWall, roof);
+  // The long walls climb about 8.6 m from Spring Street to West Peachtree, so each runs in
+  // segments of about 12 m that sit on their own sampled grade.
   podium.forEach((a, i) => {
     const b = podium[(i + 1) % podium.length];
-    if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 8) return;
-    const street = Math.max(s.base + 0.35, ...[a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? -Infinity));
-    panel(false, a, b, 0.02, 0.98, street + 0.3, Math.min(street + 4.5, y(podiumH) - 2), 0.05, podiumGlass);
-    if (y(podiumH) - street > 9) panel(false, a, b, 0.02, 0.98, street + 7, street + 8.2, 0.05, podiumGlass);
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (length < 8) return;
+    const parts = Math.max(1, Math.round(length / 12));
+    for (let k = 0; k < parts; k++) {
+      const t0 = k / parts, t1 = (k + 1) / parts;
+      const at = (t: number): P2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      const street = Math.max(s.base + 0.35, ...[at(t0), at(t1)].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? -Infinity));
+      const top = y(podiumH);
+      if (top - street < 3) continue;
+      panel(false, a, b, t0 + 0.15 / length, t1 - 0.15 / length, street + 0.3, Math.min(street + 4.5, top - 1.5), 0.05, podiumGlass);
+      if (top - street > 9) panel(false, a, b, t0 + 0.15 / length, t1 - 0.15 / length, street + 7, street + 8.2, 0.05, podiumGlass);
+    }
   });
 
   // The slab: a dark window box, white parapet, and the white grid on the long faces.
   const plan = straighten(ccw(tower.rings[0].map(([x, z]): P2 => [x - origin[0], z - origin[1]])));
   s.prism(plan, y(podiumH), y(roofH), glass, roof);
-  const floors = Math.floor((roofH - parapetH - podiumH) / pitch);
+  // Floors fill the shaft evenly between the podium roof and the parapet.
+  const floors = Math.round((roofH - parapetH - podiumH) / pitch);
+  const floorPitch = (roofH - parapetH - podiumH) / floors;
   plan.forEach((a, edge) => {
     const b = plan[(edge + 1) % plan.length];
     const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
@@ -79,20 +94,28 @@ export function createCrownePlaza(buildings: VBuilding[], site: VBuilding, grid:
       return;
     }
     const bays = Math.round(length / pierPitch);
+    const ext = 0.45 / length;
+    const foot = (t: number, out: number): P2 => [a[0] + t * dx + out * dz / length, a[1] + t * dz - out * dx / length];
+    // Piers: a face and one side each, so they read as solid from an angle.
     for (let i = 0; i <= bays; i++) {
       const t = i / bays, w = 0.45 / length;
-      panel(false, a, b, Math.max(0, t - w), Math.min(1, t + w), y(podiumH), y(roofH - parapetH), 0.45, white);
+      panel(false, a, b, t - w, t + w, y(podiumH), y(roofH - parapetH), 0.45, white);
+      const [p0, p1] = [foot(t - w, 0), foot(t - w, 0.45)];
+      s.body.quad([p0[0], y(podiumH), p0[1]], [p0[0], y(roofH - parapetH), p0[1]], [p1[0], y(roofH - parapetH), p1[1]], [p1[0], y(podiumH), p1[1]], whiteShade);
     }
+    // Floor slabs: a face and a top, run past both ends so the corners close against the end walls.
     for (let f = 1; f <= floors; f++) {
-      const h = y(podiumH + f * pitch);
-      panel(false, a, b, 0, 1, h - 0.6, h, 0.45, whiteShade);
+      const h = y(podiumH + f * floorPitch);
+      panel(false, a, b, -ext, 1 + ext, h - 0.6, h, 0.45, whiteShade);
+      const [q0, q1, q2, q3] = [foot(-ext, 0), foot(1 + ext, 0), foot(1 + ext, 0.45), foot(-ext, 0.45)];
+      s.body.quad([q0[0], h, q0[1]], [q1[0], h, q1[1]], [q2[0], h, q2[1]], [q3[0], h, q3[1]], white);
     }
     // A hotel at 23:30: about three rooms in ten lit.
     for (let f = 0; f < floors; f++) {
-      const lo = y(podiumH + f * pitch);
+      const lo = y(podiumH + f * floorPitch);
       for (let i = 0; i < bays; i++) {
-        if (litHash(seed, edge, f, i) >= 0.3) continue;
-        panel(true, a, b, (i + 0.12) / bays, (i + 0.88) / bays, lo + 0.1, lo + pitch - 0.7, 0.06, glassLit);
+        if (litHash(seed, edge, f, i) >= occupancy) continue;
+        panel(true, a, b, (i + 0.12) / bays, (i + 0.88) / bays, lo + 0.1, lo + floorPitch - 0.7, 0.06, glassLit);
       }
     }
   });
