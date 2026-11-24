@@ -48,8 +48,6 @@ class SurfaceWaysTest(unittest.TestCase):
         self.assertFalse(any("freightS" in run for run in incomplete["rail"]))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class FreightSmoothingTest(unittest.TestCase):
@@ -110,3 +108,6 @@ class FreightSmoothingTest(unittest.TestCase):
         self.assertEqual(sum(1 for p in out if p[0] == 1000.0), 1)
         self.assertTrue(all(math.dist(a, b) > 1e-6 for a, b in zip(out, out[1:])))
 
+
+if __name__ == "__main__":
+    unittest.main()
