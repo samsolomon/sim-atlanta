@@ -130,7 +130,7 @@ const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
+import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, SHADOW_ONLY_LAYER, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
@@ -645,7 +645,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
-          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
@@ -866,6 +866,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   sc.bottom = -SH;
   sc.near = 100;
   sc.far = 4000;
+  // Full-detail landmark batches a cell has swapped for its far version still cast the shadows.
+  sc.layers.enable(SHADOW_ONLY_LAYER);
   const shadowSize = typeof perfOverrides.shadow === 'number' ? perfOverrides.shadow : low ? 1024 : 4096;
   sun.shadow.mapSize.set(shadowSize, shadowSize);
   sun.shadow.bias = -0.0016;

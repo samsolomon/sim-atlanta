@@ -1,6 +1,6 @@
-import { BoxGeometry, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three';
+import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { batchLandmarks, StaticLandmarkMaterial } from './landmark-batch';
+import { batchLandmarks, buildLandmarkBatches, SHADOW_ONLY_LAYER, StaticLandmarkMaterial } from './landmark-batch';
 
 /** A landmarkShell-like site: a shadowed body and an unshadowed lit-window mesh with its own night factor. */
 function landmark(x: number, glow = '#f2d5a5', factor = 0.64, z = 20) {
@@ -132,5 +132,92 @@ describe('batchLandmarks', () => {
       if (face.dot(normal.fromBufferAttribute(n, t)) > 0) agree++;
     }
     expect(agree).toBe(p.count / 3);
+  });
+
+  it('draws a far cell with its panes baked into the walls by day, in full up close and at night', async () => {
+    // A 40 x 40 m facade with 1 x 2 m panes 7 cm proud of it, as a body, per landmark.
+    const facade = () => {
+      const P: number[] = [];
+      const quad = (x0: number, y0: number, x1: number, y1: number, z: number) =>
+        P.push(x0, y0, z, x1, y0, z, x1, y1, z, x0, y0, z, x1, y1, z, x0, y1, z);
+      quad(0, 0, 40, 40, 0);
+      for (let x = 1; x < 39; x += 3) for (let y = 1; y < 38; y += 4) quad(x, y, x + 1, y + 2, 0.07);
+      const g = new BufferGeometry();
+      g.setAttribute('position', new Float32BufferAttribute(P, 3));
+      g.setAttribute('color', new Float32BufferAttribute(P.map(() => 0.5), 3));
+      g.computeVertexNormals();
+      return g;
+    };
+    const container = new Group();
+    const sites = [10, 60].map(x => {
+      const s = landmark(x);
+      s.body.geometry = facade();
+      return s;
+    });
+    for (const s of sites) container.add(s.group);
+    // As landmarkShell builds them since #484: lit panes share the body's shadow flags.
+    for (const s of sites) {
+      s.lamps.castShadow = s.lamps.receiveShadow = true;
+      s.lamps.material.side = DoubleSide;
+    }
+    const b = batchLandmarks(sites, container, { lod: { farM: 700, nearM: 600, minArea: 4 } });
+    container.add(b.group);
+    container.updateMatrixWorld(true);
+    const cell = [...b.cells.values()][0];
+    // The far version arrives after batching (from a worker in the browser).
+    expect(b.group.getObjectByName('landmark batch (far)')).toBeUndefined();
+    await b.farReady;
+    const far = b.group.getObjectByName('landmark batch (far)') as Mesh;
+    const farTris = far.geometry.index!.count / 3;
+    // Walls and lit panes share one day draw; that is the full version a far cell swaps out.
+    const near = meshes(b.group).find(m => m.name === 'landmark batch (day)')!;
+    // Two walls (four triangles) stand in for ~500 pane triangles; the lamp cubes sit on no wall and stay.
+    expect(farTris).toBeLessThan(30);
+    expect(farTris).toBeGreaterThanOrEqual(4);
+    expect(far.castShadow).toBe(false);
+    // One buffer: the far index reads the class's (grown) buffer, as the full draws do.
+    expect(far.geometry.attributes.position).toBe(near.geometry.attributes.position);
+    const camera = new PerspectiveCamera();
+    const at = (d: number) => { camera.position.set(30, 10, 20 + d); camera.updateMatrixWorld(); cell.update(camera); };
+    at(2000);
+    expect([far.visible, near.layers.mask]).toEqual([true, 1 << SHADOW_ONLY_LAYER]);
+    // Hysteresis: 650 m is still far, 550 m is near.
+    at(650);
+    expect(far.visible).toBe(true);
+    at(550);
+    expect([far.visible, near.layers.mask]).toEqual([false, 1]);
+    // A streaming ring can pin a level.
+    b.setCellDetail(`${cell.cell}`, 'lod');
+    at(550);
+    expect(far.visible).toBe(true);
+    // At night the lit panes, which share the walls' day draw, change, so the cell draws in full.
+    for (const s of sites) s.setNight(1);
+    b.sync();
+    expect(far.visible).toBe(false);
+    expect(near.layers.mask).toBe(1);
+    const lit = meshes(b.group).filter(m => m.visible && (m.material as MeshLambertMaterial).emissiveIntensity > 0);
+    expect(lit.length).toBeGreaterThan(0);
+  });
+
+  it('builds the same batches as a sliced generator as all at once', () => {
+    const make = () => {
+      const container = new Group();
+      const sites = [10, 30, 50, 1100].map(x => landmark(x, x === 30 ? '#e4d3a2' : '#f2d5a5'));
+      for (const s of sites) container.add(s.group);
+      return { container, sites };
+    };
+    const a = make(), b = make();
+    const whole = batchLandmarks(a.sites, a.container);
+    const steps = buildLandmarkBatches(b.sites, b.container);
+    const labels: (string | void)[] = [];
+    let step = steps.next();
+    while (!step.done) { labels.push(step.value); step = steps.next(); }
+    const sliced = step.value;
+    expect(labels.filter(l => l === 'landmark probe')).toHaveLength(4);
+    expect(labels).toContain('landmark cell');
+    const shape = (g: Group) => meshes(g).map(m => [m.name, m.geometry.drawRange.start, m.geometry.drawRange.count, m.visible,
+      Array.from(m.geometry.attributes.position.array as Float32Array).reduce((x, y) => x + y, 0).toFixed(3)]);
+    expect(shape(sliced.group)).toEqual(shape(whole.group));
+    expect(sliced.stats.merged).toBe(whole.stats.merged);
   });
 });
