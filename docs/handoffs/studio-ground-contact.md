@@ -1,11 +1,18 @@
-# Studio ground-contact handoff (Claude Opus → Codex, 2026-11-24)
+# Studio ground-contact handoff
 
-Previous session: `orca_session_id:a761d59f-dbff-4e39-95d4-51790b17cb47` (read it with `orca agent read`).
-Coordinator: `term_09e1b3da` on Sam's MacBook Air. Merge slots: the skyline lead
-`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`. Nothing merges without the coordinator relaying Sam's OK
-(or, where stated below, the coordinator's own approval).
+## Current handoff · 24 November 2026
 
-## Medium successor · 24 November, 08:42 EST
+**Accountable owner.** Ground contact owns Capitol Gateway integration on `samsolomon/capitol-crossing-trace`, based on deployed commit `e1667baa27bd057fdbf8992aac66e719403390ac`. Connector and rail supplied evidence and reported no overlapping geometry edits. Ground contact integrates the reviewed correction once.
+
+**Next action.** Compare the baseline oblique render with Sam’s screenshot, inspect the overhead and low side frames, and fit the upper deck profile from lidar. Keep the correction within deck 1451206624 and its attached road and pedestrian surfaces. Check both freeway directions beneath it and continuity across the downtown/south-band seam.
+
+**Capitol evidence.** The shape and shared endpoints identify Memorial Drive and Capitol Avenue at (357.91, 777.21). Covered freeway ways 39160888 and 39160890 pass below. Bare-earth samples imply consecutive sidewalk grades of +19.2% and −14.8%. The trace is in `docs/log/capitol-gateway/trace.md` in the isolated Capitol checkout. The original screenshot is available in Studio artifacts. Camera registration, overhead and low side before/after pairs, longitudinal profiles, cross-section, vertical-order and vehicle/tread tests, build, performance and independent review are pending. The Capitol checkout contains an uncommitted trace and local dependency/data links.
+
+**Existing bridge work.** `samsolomon/footpath-rail` is based on handoff commit `cbb5261a070b6f568346f6eaff839c06b1522a68`. The end-node lookup and two-junction regression are uncommitted. The [bridge sheet](../log/footpath-rail/bridge-review.md) records 96 changed runs and 7.23984 m minimum sampled freight clearance on both tiers. Three traffic nulls across two cells still require verification. Next run the junction test and obtain the matched Connector sweep before the final screenshots, tests, build, perf and review. The bridge PR is pending. #418 and #476 remain held. The far-slice rebase is preserved at `bb8e5722`.
+
+**Shared resources.** #670 has the Studio timing window. The Capitol baseline capture, lidar survey and bridge-junction test are queued separately on the shared lock. Preserve all three jobs, their working directories, staged data links and scratch files.
+
+## Historical handoff · medium successor · 24 November, 08:42 EST
 
 **Release 11 load pause is active.** Wait for the skyline lead's broadcast before any build, test, capture, perf sweep or dev server. The merge queue belongs to the skyline successor. The coordinator reviews the sheet before merge. No bridge PR yet. #418 and #476 remain held.
 
