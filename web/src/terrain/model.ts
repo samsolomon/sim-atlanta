@@ -23,7 +23,7 @@ import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { houseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
-import { winnPark } from '../city/winn-park';
+import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -273,7 +273,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
   // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
-  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt) : null;
+  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
+    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
   // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
   const planted = rolloutPlantings(landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
     .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ), options.quality);
