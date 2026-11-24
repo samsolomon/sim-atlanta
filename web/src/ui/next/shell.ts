@@ -256,7 +256,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
     play.innerHTML = SVG(radio.playing ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
     play.setAttribute('aria-label', radio.playing ? 'Pause' : 'Play');
     radioBtn.classList.toggle('a2-playing', radio.playing);
-    radioBtn.setAttribute('aria-label', radio.playing ? 'Radio, playing' : 'Radio');
+    const radioLabel = !radio.playing ? 'Radio' : radio.track.src ? 'Radio, playing' : 'Radio, playing preview · no audio yet';
+    radioBtn.setAttribute('aria-label', radioLabel);
+    radioBtn.title = radioLabel;
     progress.max = radio.track.durationS;
     progress.value = radio.elapsedS;
   };
