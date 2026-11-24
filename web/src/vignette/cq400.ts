@@ -26,6 +26,8 @@ import * as THREE from 'three';
 
 export const CAR_LENGTH = 22.9;
 export const CAR_GAP = 0.9; // gangway between cars
+/** Bogie centres along the car (local z): a placed car rides with both on the track. */
+export const CAR_BOGIES = [-7.75, 7.0] as const;
 export const CAR_WIDTH = 3.2;
 const W = CAR_WIDTH;
 const FLOOR = 1.12;
@@ -448,7 +450,7 @@ export function cq400Geometry(spec: CarSpec, line: string) {
   // Underframe skirt, equipment and bogies.
   k.box(W - 0.4, 0.5, L - 5.5, 0, FLOOR - 0.45, -0.4, C.under, 0);
   const wheel = new THREE.CylinderGeometry(0.42, 0.42, 0.13, 12).rotateZ(Math.PI / 2);
-  for (const bz of [-7.75, 7.0]) {
+  for (const bz of CAR_BOGIES) {
     k.box(2.1, 0.32, 2.5, 0, 0.8, bz, C.bogie, 0);
     for (const s of [-1, 1]) {
       k.box(0.16, 0.38, 2.75, s * 1.0, 0.55, bz, C.bogie, 0);

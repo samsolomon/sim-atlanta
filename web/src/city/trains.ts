@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { TrainState } from '../model/types';
-import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
+import { CAR_BOGIES, CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { PlacementIndex } from '../vignette/spatial';
 import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '../vignette/world';
 
@@ -112,6 +112,19 @@ export class CityTrains {
     this.bounds = bounds;
   }
 
+  /**
+   * Place a car with its two bogies on the track at b0 and b1 (CAR_BOGIES[0] and [1] in car-local
+   * z): it rides the chord between them, as freight and the streetcar do, instead of centring on
+   * the track and aiming along it, which swung its ends wide on tight curves.
+   */
+  private seat(car: THREE.Object3D, x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) {
+    const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0) || 1;
+    const ux = (x1 - x0) / len, uy = (y1 - y0) / len, uz = (z1 - z0) / len, back = -CAR_BOGIES[0];
+    car.position.set(x0 + ux * back, y0 + uy * back, z0 + uz * back);
+    this.direction.set(car.position.x + ux, car.position.y + uy, car.position.z + uz);
+    car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
+  }
+
   private car(trainId: string, color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
     const key = color + role + (placement?.clipped ? placement.name + placement.clipped : '');
     let pool = this.pools.get(key);
@@ -164,10 +177,12 @@ export class CityTrains {
         const placement = mapped?.routeId === t.routeId ? mapped.car(t.s.value, offset) : undefined;
         if (placement) {
           const car = this.car(t.id, color, role, placement);
-          car.position.set(placement.x, this.cut!.treadY, placement.z);
-          this.direction.set(placement.x + placement.dx, this.cut!.treadY, placement.z + placement.dz);
-          car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
-          if (i >= units / 2) car.rotateY(Math.PI);
+          // Seat both bogies on the cut's track. A rear car faces back along the train.
+          const k = i >= units / 2 ? -1 : 1;
+          // Past the cut's mapped end, continue straight along the car's own heading.
+          const [b0, b1] = CAR_BOGIES.map(bz => mapped!.car(t.s.value, offset + k * bz)
+            ?? { x: placement.x + placement.dx * k * bz, z: placement.z + placement.dz * k * bz });
+          this.seat(car, b0.x, this.cut!.treadY, b0.z, b1.x, this.cut!.treadY, b1.z);
           this.surfaceCars++;
           continue;
         }
@@ -181,12 +196,12 @@ export class CityTrains {
         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;
         const car = this.car(t.id, color, role);
-        car.position.set(cx, al.elev(sc) + 0.55, cz);
-        const q = al.line.at(sc + dir * 4);
-        this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off);
-        // Both points are in track-local coordinates, including in terrain-anchored groups.
-        car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
-        if (i >= units / 2) car.rotateY(Math.PI);
+        // Seat both bogies on the offset track (in track-local coordinates, including in
+        // terrain-anchored groups). A rear car faces back along the train.
+        const k = i >= units / 2 ? -dir : dir;
+        const [a0, a1] = CAR_BOGIES.map(bz => sc + k * bz);
+        const q0 = al.line.at(a0), q1 = al.line.at(a1);
+        this.seat(car, q0.x - q0.nx * off, al.elev(a0) + 0.55, q0.z - q0.nz * off, q1.x - q1.nx * off, al.elev(a1) + 0.55, q1.z - q1.nz * off);
         this.surfaceCars++;
       }
     }

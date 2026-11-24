@@ -3,7 +3,7 @@ import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { nearestOnPath } from '../sched/engine';
 import type { TransportRun } from '../terrain/transport-data';
-import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
+import { CAR_BOGIES, CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
 import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
@@ -275,12 +275,7 @@ export function createNorthLine(
         const place = northCar(run, t.s.value + ((n - 1) / 2 - i) * (CAR_LENGTH + CAR_GAP));
         if (!place) continue;
         const clamp = (along: number) => THREE.MathUtils.clamp(along, 0.05, run.line.length - 2);
-        const p = run.line.at(clamp(place.along)),
-          ahead = run.line.at(clamp(place.along + run.dir * 2)),
-          back = run.line.at(clamp(place.along - run.dir * 2));
-        const y = height(run.line, clamp(place.along)),
-          front = height(run.line, clamp(place.along + run.dir * 2)),
-          rear = height(run.line, clamp(place.along - run.dir * 2));
+        const y = height(run.line, clamp(place.along));
         const role = i === 0 ? 1 : i === n - 1 ? -1 : 0,
           key = [t.routeId, run.dir, role].join('/');
         let pool = pools.get(key);
@@ -300,15 +295,23 @@ export function createNorthLine(
           cars.add(car);
           car.receiveShadow = true;
         }
-        car.position.set(place.x, y, place.z);
+        // Seat both bogies on the guideway (a rear car faces back along the train): the car rides
+        // the chord between them instead of centring on the track, as freight and the streetcar do.
+        const k = i >= n / 2 ? -1 : 1;
+        const sc = t.s.value + ((n - 1) / 2 - i) * (CAR_LENGTH + CAR_GAP);
+        const [b0, b1] = CAR_BOGIES.map((bz) => {
+          const q = northCar(run, sc + k * bz);
+          if (!q) return { x: place.x + place.dx * k * bz, y, z: place.z + place.dz * k * bz };
+          return { x: q.x, y: height(run.line, clamp(q.along)), z: q.z };
+        });
+        const len = Math.hypot(b1.x - b0.x, b1.z - b0.z) || 1,
+          ux = (b1.x - b0.x) / len,
+          uz = (b1.z - b0.z) / len,
+          back0 = -CAR_BOGIES[0];
+        const span = CAR_BOGIES[1] - CAR_BOGIES[0];
+        car.position.set(b0.x + ux * back0, b0.y + ((b1.y - b0.y) * back0) / span, b0.z + uz * back0);
         car.rotation.order = 'YXZ';
-        car.rotation.set(
-          -Math.atan2(front - rear, Math.hypot(ahead.x - back.x, ahead.z - back.z)),
-          Math.atan2(place.dx, place.dz),
-          0,
-          'YXZ',
-        );
-        if (i >= n / 2) car.rotateY(Math.PI);
+        car.rotation.set(-Math.atan2(b1.y - b0.y, len), Math.atan2(ux, uz), 0, 'YXZ');
         car.userData.trainId = t.id;
         car.userData.inferredTrack = true;
         car.visible = true;

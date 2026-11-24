@@ -31,7 +31,8 @@ describe('attached City passenger stock', () => {
       const clipped = cars.filter(c=>real(c).length);
       expect(clipped.length).toBe(1);
       const pose = route.car(s,0)!;
-      expect(clipped[0].position.distanceTo(new Vector3(pose.x,-7,pose.z))).toBeLessThan(.00001);
+      // Seated on both bogies, a car on a curve rides the chord: its centre stays within 1 cm of the pose.
+      expect(clipped[0].position.distanceTo(new Vector3(pose.x,-7,pose.z))).toBeLessThan(.01);
       expect(real(clipped[0])[0]).toBe(pose.plane);
     }
     fleet.update([stock(590)],0);
