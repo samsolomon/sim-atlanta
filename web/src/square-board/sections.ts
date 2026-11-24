@@ -1,7 +1,7 @@
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
-import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
+import { midtownConnectorDecks, withoutLandBridgeTrees } from '../terrain/midtown-connector-decks';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
@@ -193,7 +193,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
       const city = id in rowBounds ? midtownConnectorDecks(contextWithDecks) : contextWithDecks;
-      const area = yield* buildDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+      const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
+      const area = yield* buildDowntownTerrain(grid, city, neighborhoodTrees(canopy, quality), {
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
@@ -201,7 +202,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         underpass: id === 'midtown-south' ? northAvenue : undefined,
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
-        rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
+        rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
         surface: takeSurface(patchIndex),
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
