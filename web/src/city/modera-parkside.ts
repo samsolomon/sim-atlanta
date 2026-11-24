@@ -74,7 +74,7 @@ export function createModeraParkside(buildings: VBuilding[], site: VBuilding, gr
   const visorLo = amenityTop + 0.6, visorHi = amenityTop + 1.6;
   slab.forEach((p, i) => {
     const q = slab[(i + 1) % slab.length], len = Math.hypot(q[0] - p[0], q[1] - p[1]);
-    const nx = (q[1] - p[1]) / len * 1.4, nz = -(q[0] - p[0]) / len * 1.4; // inward for a counter-clockwise ring
+    const nx = -(q[1] - p[1]) / len * 1.4, nz = (q[0] - p[0]) / len * 1.4; // inward for a counter-clockwise ring
     const band: P2[] = [p, q, [q[0] + nx, q[1] + nz], [p[0] + nx, p[1] + nz]];
     shell.prism(band, visorLo, visorHi, white, white);
   });
