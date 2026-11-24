@@ -16,7 +16,7 @@ const wingIds = ['osm:way:1343480981', 'osm:way:1343480982'];
 const slabCentre: P2[] = [[-33, -10.9], [7, -7.9], [5.6, 9.9], [-33.9, 7.3]];
 // Mural colours from the deck photograph: broad abstract bands of pink, orange, yellow,
 // green and blue on the walls that rise above the deck.
-const mural = ['#d9568f', '#e88a3a', '#e9c845', '#5fb06a', '#4f86c6', '#8e6cc0'];
+const mural = ['#c37597', '#d1a47d', '#d2c17e', '#5f9e68', '#6b8cb2', '#8468ad'];
 
 export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid, quality: TerrainQuality) {
   // Low tier groups windows in pairs, halves the mural bands and keeps the street glass coarse.
