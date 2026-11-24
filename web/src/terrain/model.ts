@@ -8,6 +8,7 @@ import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventee
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
 import { createSkyhouseSouth, skyhouseSouthId } from '../city/skyhouse-south';
+import { createNine15Midtown, nine15MidtownId } from '../city/nine15-midtown';
 import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
 import { createUniversityHouse, universityHouseId } from '../city/university-house';
 import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
@@ -22,6 +23,7 @@ import { createTheStandard, theStandardId } from '../city/the-standard';
 import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createAtlanticHouse, atlanticHouseId } from '../city/atlantic-house';
 import { createProscenium, prosceniumId } from '../city/proscenium';
 import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
 import { createSora, soraId } from '../city/sora';
@@ -39,6 +41,8 @@ import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { createLoews, loewsId } from '../city/loews-atlanta';
 import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
+import { createRegistry, registryId } from '../city/registry-on-the-park';
+import { createParkCentral, parkCentralId } from '../city/park-central';
 import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
 import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
@@ -240,6 +244,30 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
  * skyline (~4.5 km) views are well beyond it, street views well inside.
  */
 export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
+/**
+ * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
+ * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
+ * error at City's tilt is under a pixel there; only the default (~21 km) and wider orbits reach
+ * it. 115k -> 19k ground triangles across the 12 boards. `?perf&veryfar=0` keeps the far level.
+ */
+export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
+const veryFarOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('veryfar') === '0';
+})();
+/** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
+const veryFarQueue: (() => void)[] = [];
+let veryFarPumping = false;
+function pumpVeryFar() {
+  if (veryFarPumping) return;
+  veryFarPumping = true;
+  const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 16));
+  const step = () => {
+    veryFarQueue.shift()?.();
+    if (veryFarQueue.length) idle(step); else veryFarPumping = false;
+  };
+  idle(step);
+}
 let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
@@ -311,6 +339,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === skyhouseSouthId ? createSkyhouseSouth(sceneryCity.buildings, grid, options.quality)
+      : site.id === nine15MidtownId ? createNine15Midtown(sceneryCity.buildings, grid, options.quality)
       : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === universityHouseId ? createUniversityHouse(sceneryCity.buildings, grid, options.quality)
       : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
@@ -326,6 +355,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === atlanticHouseId ? createAtlanticHouse(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
       : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
       : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
@@ -343,6 +373,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
       : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === registryId ? createRegistry(sceneryCity.buildings, site, grid)
+      : site.id === parkCentralId ? createParkCentral(sceneryCity.buildings, site, grid, options.quality)
       : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
       : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)
@@ -368,8 +400,13 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
   const nearGeometry = mesh.geometry;
   const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
+  // Low tier, very far (VERY_FAR_M and out): the same far quadtree at VERY_FAR_ERROR_M, settled
+  // below the DEM so nothing drawn on the ground is buried. Built lazily, one board per idle
+  // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.
+  let veryFarGeometry: THREE.BufferGeometry | null = null;
+  let veryFarQueued = false;
   const bb = grid.manifest.bounds;
-  let far = false;
+  let far = false, veryFar = false, disposed = false;
   yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
@@ -525,7 +562,18 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       const dx = Math.max(bb.minX - p.x, 0, p.x - bb.maxX), dz = Math.max(bb.minZ - p.z, 0, p.z - bb.maxZ);
       const d = Math.hypot(dx, dz, Math.max(0, p.y - mesh.minY));
       const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
-      if (next !== far) { far = next; board.geometry = far ? farGeometry : nearGeometry; groundLodChanged = true; }
+      if (!veryFarOff && !veryFarQueued && d > VERY_FAR_BUILD_M) {
+        veryFarQueued = true;
+        veryFarQueue.push(() => { if (!disposed) veryFarGeometry = mesh.farGeometry(VERY_FAR_ERROR_M, 160, true); });
+        pumpVeryFar();
+      }
+      const nextVery = veryFarGeometry !== null && (veryFar ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M);
+      if (next !== far || nextVery !== veryFar) {
+        far = next;
+        veryFar = nextVery;
+        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : nearGeometry;
+        groundLodChanged = true;
+      }
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
@@ -546,8 +594,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
       });
-      // The traverse disposed whichever ground is attached; release the other one.
-      (board.geometry === nearGeometry ? farGeometry : nearGeometry)?.dispose();
+      // The traverse disposed whichever ground is attached; release the others.
+      disposed = true;
+      for (const g of [nearGeometry, farGeometry, veryFarGeometry]) if (g && g !== board.geometry) g.dispose();
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();
