@@ -75,14 +75,12 @@ export function createSkyhouseSouth(buildings: VBuilding[], grid: GroundGrid, qu
     const at = (u: number, y: number) => [a[0] + ux * u + nx * 0.1, y, a[1] + uz * u + nz * 0.1];
     shell.body.quad(at(0, roof - 1.6), at(0, roof + 0.4), at(length, roof + 0.4), at(length, roof - 1.6), '#86a2c4');
     // White piers proud of the glass, rising past the parapet as the SkyHouse crown frame.
-    // Their top 3 m glow at night, as on the SkyHouse program's dusk photograph.
     const piers = broad ? Math.round(length / 7.4) : 2;
     for (let k = 0; k <= piers; k++) {
       const c = Math.min(length - 0.5, Math.max(0.5, k * length / piers));
       const top = crownTop + (k % 2 ? 1.2 : 2.6);
       const q = (u: number, out: number, y: number) => [a[0] + ux * (c + u) + nx * out, y, a[1] + uz * (c + u) + nz * out];
-      shell.body.quad(q(-0.5, 0.45, lobbyTop), q(-0.5, 0.45, top - 3), q(0.5, 0.45, top - 3), q(0.5, 0.45, lobbyTop), white);
-      shell.lights.quad(q(-0.5, 0.45, top - 3), q(-0.5, 0.45, top), q(0.5, 0.45, top), q(0.5, 0.45, top - 3), white);
+      shell.body.quad(q(-0.5, 0.45, lobbyTop), q(-0.5, 0.45, top), q(0.5, 0.45, top), q(0.5, 0.45, lobbyTop), white);
       if (high) {
         shell.body.quad(q(-0.5, 0, lobbyTop), q(-0.5, 0, top), q(-0.5, 0.45, top), q(-0.5, 0.45, lobbyTop), '#d9d7d0');
         shell.body.quad(q(0.5, 0.45, lobbyTop), q(0.5, 0.45, top), q(0.5, 0, top), q(0.5, 0, lobbyTop), '#d9d7d0');

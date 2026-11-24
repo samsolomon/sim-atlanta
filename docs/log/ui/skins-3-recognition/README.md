@@ -10,7 +10,7 @@ Identifying features from the property photograph ([Equity Residential](https://
 2. A storey of blue square panels around the rooftop deck.
 
 - **Changes:** white piers about 7.4 m apart, proud of the glass and rising 1.2–2.6 m above the deck in alternating heights. A row of blue square panels (`#7b98c2`) tops the deck; the low tier uses a single blue band. The glass is deeper teal, `#7fb3ad` (S 29%, V 70%), instead of the pale `#98bdbe`.
-- **Night:** the top 3 m of each pier glows in the shared warm lamp colour. This is program-level evidence: the primary image on the [SkyHouse program page](https://smallwood-us.com/projects/skyhouse-program/) is another city's SkyHouse at dusk, with its crown fins lit. No night photograph of SkyHouse South was found, and its lighting colour is unverified.
+- **Night:** unchanged. The lit crown seen on other SkyHouse towers isn't backed by a photo of this building, so it is omitted.
 
 ## Nine15 Midtown (#511)
 
