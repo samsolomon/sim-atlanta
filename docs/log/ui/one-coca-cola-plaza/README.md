@@ -19,7 +19,7 @@ The facade is cream precast in a deep eggcrate grid. Each face has 13 window bay
 
 ## Lighting
 
-No full-night exterior of this tower was available. The 2011 anniversary projection (AJC, Adweek) was a one-off event and is not ordinary lighting. The night view uses office occupancy: a sparse, stable set of warm panes (about 3% of windows), a warm lobby behind the recessed glass and a dark crown. The lit red signs are omitted with the logos.
+No full-night exterior of this tower was available. The 2011 anniversary projection (AJC, Adweek) was a one-off event and is not ordinary lighting. The night view uses office occupancy: a sparse, stable set of warm panes (about 3% of windows, from skin-kit `litHash`; the first version's linear rule stacked them on diagonals, see [before and after](night-before-after.jpg)), a warm lobby behind the recessed glass and a dark crown. The lit red signs are omitted with the logos.
 
 ## Captures
 

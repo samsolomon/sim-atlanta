@@ -3483,3 +3483,47 @@ The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th 
 ### 2026-11-24 · 271 Seventeenth's Streamline bands
 
 TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
+
+## 2026-11-24: Regions Plaza, and a false alarm about windows
+
+Regions Plaza is now pink granite. It has notched corners at 84 m, an arched top storey with pinnacles, and a hip roof that the lidar puts at 104 m. At night that roof is floodlit as one even glow, as in the Commons night photo. The near-black windows at noon looked like a geometry bug. I briefly suspected litFacade's winding and warned the lead, then retracted it. The real cause was the tall neighbour's shadow falling across the face. A sunlit strip of the same face measures S 12–16%, V 43–46%. The lesson: measure the pixels where the sun actually falls before blaming the mesh.
+[Before and after](log/ui/regions-plaza/compare.jpg) · [day and night](log/ui/regions-plaza/daynight.jpg) · [close](log/ui/regions-plaza/close.jpg)
+
+### 2026-11-24 · One Georgia Center's marble grid
+
+The 113 m tower at 600 West Peachtree had no name in the data. A reverse lookup and the OSM tags (built 1968) identified it as One Georgia Center, the Life of Georgia headquarters, clad in white Georgia marble. Its face is a deep eggcrate: close vertical fins and projecting floor slabs over pale glass. In City it is drawn as full-height marble strips and slabs standing 0.9 m off a glass box, with a colonnade base and a solid ribbed band at the top. The grid shades its own panes. The first glass colour passed the palette table, but the rendered-pixel check measured sunlit glass at V 37, under the floor, so the base went up to V 76 and the panes landed at V 42. A 2020 Commons night photo shows the marble uplit cool white. The first version lit the whole frame flat from pavement to crown, which read as a daytime texture pasted into the night, so the floodlight is now three height bands that fall to a third at the crown. The building is landmark tier: about 1,600 low-tier triangles and five meshes. [Before and after](log/ui/one-georgia-center/compare-west.jpg)
+
+### 2026-11-24 · SkyHouse South in white and teal
+
+SkyHouse South on 6th Street was a generic 90 m block. The 2019 lidar puts its roof at 75.6 m, with a set-back sky deck to 79.5 m. The property photograph supplied the rest: a white precast frame around teal-green glass, balcony stacks at the corners and centre, and a blue glass band under the deck. It is the first skin built under the provisional glass rules. Its photo-matched teal at V 66 rendered too dark in sun, so the base went up to V 75 to land sunlit windows at V 40–42. On the phone tier it costs about 190 triangles and one draw. [Before/after, day and night](log/ui/skyhouse-south/README.md)
+
+### 2026-11-24 · Norfolk Southern from roof slabs to towers
+
+OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13, floating over thin end masses, and the 2019 lidar predates the site. The sources didn't agree on storey counts: HOK says 17- and 10-storey towers over a five-storey podium, the structural engineer says 12 and 5 over 11, and CoStar says 22. City takes HOK's 22 and 15 floors and keeps OSM's massing by shifting its levels up two, which gives 86 m and 58 m, both inferred. Each tower is two knife-edged glass halves either side of a slot 2 m lower, as in the photos. [Before and after](log/ui/norfolk-southern/day-before-after.jpg) · [night](log/ui/norfolk-southern/night-before-after.jpg)
+
+
+**2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
+### 2026-11-24 · Building an area without stopping the frame
+
+Growing City toward I-285 means loading areas while the camera moves. A Midtown row is one
+synchronous build: about 1.6 s on a phone-class CPU (the Studio throttled 6×), and a pan stops
+dead while it runs. The first profile found a free win. Street-lamp placement scanned every
+landmark site for every lamp candidate, which was 38% of the row. Indexing it (#478) made every
+Midtown row build about 30% faster with identical lamps.
+
+The rest is slicing. Each build is now a generator that yields between units of work: stages,
+landmarks, every 8 houses, every 6 buildings, every 64 to 128 trees, every 64 crowns of the tree
+plan, every 16 streets of lamps. One driver runs it straight through (boot, tests). Another runs
+4 ms of it per frame (8 ms on high, half that while you drag). The hard part was proving that
+"where it yields" never changes the result. Nearly every random draw here is seeded per
+building, per tree or per position, never from a shared stream, which is what makes it possible.
+A Brookwood row with its 4,000 crowns, the tree plan and a November season fingerprints
+identically before and after, and identically when sliced at every step. Two real bugs turned up
+on the way: a seam that failed validation leaked both of its new areas, and deferred trees could
+have sampled the ground after a rail cut had lowered it.
+
+The gate metric surprised me. At 6× CPU, City's own frames are already 60 to 140 ms long tasks,
+so "no long task" can't measure the build. The driver now reports the longest run of build work
+inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
+batching, which the buildings agent is turning into a generator. A row now mounts over about 200
+frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
