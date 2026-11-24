@@ -10,6 +10,12 @@ import { buildSurfaceArrays, nodeHeights, type TerrainJoins, type TerrainQuality
 
 let worker: Worker | undefined;
 let seq = 0;
+let idle: ReturnType<typeof setTimeout> | undefined;
+/** An idle Worker keeps its own heap; close it once no build has been asked for in 2 s. */
+function closeWhenIdle() {
+  clearTimeout(idle);
+  if (!pending.size) idle = setTimeout(() => { if (!pending.size) { worker?.terminate(); worker = undefined; } }, 2000);
+}
 const pending = new Map<number, { resolve: (b: BuiltSurface) => void; reject: (e: Error) => void }>();
 
 function start() {
@@ -21,6 +27,7 @@ function start() {
     pending.delete(e.data.id);
     if (e.data.built) p.resolve(e.data.built);
     else p.reject(Error(e.data.error ?? 'surface worker failed'));
+    closeWhenIdle();
   };
   // A Worker that fails (to load, or later) is dropped, so the next request starts a fresh one.
   worker.onerror = e => {
@@ -42,6 +49,7 @@ export function prebuildSurface(grid: GroundGrid, quality: TerrainQuality, openi
   const fallback = { ...input, heights: heights.slice() };
   return new Promise<BuiltSurface>((resolve, reject) => {
     pending.set(id, { resolve, reject });
+    clearTimeout(idle);
     start().postMessage({ id, input }, [heights.buffer]);
   }).catch(error => {
     console.warn('Surface worker unavailable; building on the main thread', error);

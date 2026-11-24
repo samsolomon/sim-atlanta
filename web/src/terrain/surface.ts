@@ -31,7 +31,8 @@ export class GroundSurface {
   /** Scene heights per grid node, as drawn (NaN in voids). */
   private heights!: Float32Array;
 
-  private built?: BuiltSurface;
+  /** Only the far mesh is kept from a prebuilt surface: a carve replaces the near arrays. */
+  private prebuiltFar?: BuiltSurface['far'];
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
     private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface) {
     if (built) this.adopt(built);
@@ -40,7 +41,7 @@ export class GroundSurface {
 
   /** Take a mesh built off the main thread; a later carve rebuilds here as usual. */
   private adopt(b: BuiltSurface) {
-    this.built = b;
+    this.prebuiltFar = b.far;
     this.minY = b.minY;
     this.heights = b.heights;
     this.starts = b.starts;
@@ -100,7 +101,8 @@ export class GroundSurface {
    * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
    */
   farGeometry(errorM: number, maxCellM = 160) {
-    const far = this.built?.far;
+    const far = this.prebuiltFar;
+    this.prebuiltFar = undefined;
     if (far && far.errorM === errorM && maxCellM === 160) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(far.pos, 3));
