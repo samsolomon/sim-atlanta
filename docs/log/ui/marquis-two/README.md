@@ -28,3 +28,7 @@ Use `/?view=city&cam=<camera>&t=<ISO timestamp>`, with November 20, 2026 and cle
 | Peachtree Center Avenue, both towers | `660,-858,95,56,620` | 11:30 AM EST | [Avenue pair](pca-day.jpg) |
 | Lion stair (close, `&dev&mindist=20`) | `527,-903,40,65,45` | 11:30 AM EST | [Stair](avenue-day.jpg) |
 | Marquis One before and after, 490 m | `557,-862,-14,52,490` | 11:30 AM / PM EST | [Day](one-compare-day.jpg) · [Night](one-compare-night.jpg) |
+
+## Night pattern (2026-11-24)
+
+Both towers now pick lit panes with skin-kit `litHash(seedOf(id), face, floor, bay)` at the old density, 1 in 83 panes. The earlier linear modulus `(floor·29 + bay·17 + edge·41) % 83` lit panes on a fixed diagonal lattice. Glass colours and geometry are unchanged. [Before and after, 2.2× crops at 11:30 PM](lithash-compare.jpg): Marquis One from `557,-862,-14,52,490` and Marquis Two from `553,-890,215,52,480`, each then `__setView(…, 2.2)` with `&dev`.
