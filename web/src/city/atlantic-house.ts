@@ -1,8 +1,8 @@
 import type { GroundGrid } from '../terrain/grid';
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 export const atlanticHouseId = 'osm:way:505414294';
 const SLAB = 'osm:way:505414295', CORE = 'osm:way:885777452', DECK = 'osm:way:885777449';
@@ -16,7 +16,8 @@ const origin: P2 = [392, -3560.5];
  */
 export const ATLANTIC_HOUSE = { ends: 388.1, roof: 392.2, crown: 398.0, deck: 316.3, deckWall: 321.8 } as const;
 
-const glassTeal = '#4f7279', stone = '#d8ccb6', balcony = '#9a9c98', concrete = '#c9c1b2', slot = '#3c4147',
+// Teal-grey glass backed by the architect's photographs, under the base-value table (S 26, V 62).
+const glassTeal = '#75979e', spandrel = '#9aa9a8', stone = '#d8ccb6', balcony = '#9a9c98', concrete = '#c9c1b2', slot = '#3c4147',
   roofGrey = '#a19c92';
 
 export function createAtlanticHouse(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
@@ -31,18 +32,16 @@ export function createAtlanticHouse(buildings: VBuilding[], site: VBuilding, gri
     const area = pts.reduce((sum, [x, z], i) => sum + x * pts[(i + 1) % pts.length][1] - pts[(i + 1) % pts.length][0] * z, 0);
     return area < 0 ? pts.reverse() : pts;
   };
-  const H = ATLANTIC_HOUSE, base = s.base, random = rng(1163);
-  const glass = surfaces.curtainGlass({ tint: 'blueGreen', mullion: 1.6, floor: 3.2 });
-  const slabs = surfaces.curtainGlass({ tint: 'silver', mullion: 40, floor: 3.2 });
+  const H = ATLANTIC_HOUSE, base = s.base, seed = seedOf(atlanticHouseId), FLOOR = 3.2;
 
   // Slab tower on its mapped outline; the 19 m centre rises 4.1 m above the end bays.
   const tower = local(slab.rings[0]);
   const xs = tower.map(p => p[0]), zs = tower.map(p => p[1]);
   const [west, east, north, south] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
-  s.prism(tower, base, H.ends, glassTeal, roofGrey, { wall: glass });
-  s.prism(local(core.rings[0]), base, H.ends, stone, roofGrey, { wall: surfaces.precast({ width: 3, height: 3.2 }) });
+  s.prism(tower, base, H.ends, glassTeal, roofGrey);
+  s.prism(local(core.rings[0]), base, H.ends, stone, roofGrey);
   const centre: P2[] = [[-19, north], [19, north], [19, south], [-19, south]];
-  s.prism(centre, H.ends, H.roof, glassTeal, roofGrey, { wall: glass });
+  s.prism(centre, H.ends, H.roof, glassTeal, roofGrey);
 
   const quad = (a: number[], b: number[], c: number[], d: number[], colour: string) => s.body.quad(a, b, c, d, colour);
   const box = (u0: number, u1: number, v0: number, v1: number, lo: number, hi: number, colour: string) => {
@@ -61,19 +60,23 @@ export function createAtlanticHouse(buildings: VBuilding[], site: VBuilding, gri
       const top = Math.abs(u) < 19.5 ? H.roof : H.ends;
       quad([u - w, base, v], [u - w, top + 0.6, v], [u + w, top + 0.6, v], [u + w, base, v], stone);
     }
-    s.paint(slabs, () => {
+    {
       for (let k = 0; k < stacks; k++) {
         const u = west + (k + 0.5) * bay, top = Math.abs(u) < 19 ? H.roof - 3 : H.ends - 3;
         box(u - 2, u + 2, Math.min(face, face + out * 1.7), Math.max(face, face + out * 1.7), lo + 6, top, balcony);
       }
-    });
+    }
+    // A slab edge at every floor line across the glass.
+    for (let y = H.deck + FLOOR; y < H.ends - 1; y += FLOOR) {
+      quad([west, y - 0.22, face + out * 0.1], [west, y + 0.22, face + out * 0.1], [east, y + 0.22, face + out * 0.1], [east, y - 0.22, face + out * 0.1], spandrel);
+    }
   }
   // Narrow ends: stone corners and one central balcony stack.
   for (const [u, out] of [[west, -1], [east, 1]] as const) {
     for (const v of [north + 1, south - 1]) {
       quad([u + out * 0.2, base, v - 1], [u + out * 0.2, H.ends + 0.6, v - 1], [u + out * 0.2, H.ends + 0.6, v + 1], [u + out * 0.2, base, v + 1], stone);
     }
-    s.paint(slabs, () => box(Math.min(u, u + out * 1.7), Math.max(u, u + out * 1.7), -2.5, 2.5, lo + 6, H.ends - 3, balcony));
+    box(Math.min(u, u + out * 1.7), Math.max(u, u + out * 1.7), -2.5, 2.5, lo + 6, H.ends - 3, balcony);
   }
 
   // Crown: stone piers along both broad faces of the centre, and a stone band round the ends.
@@ -91,7 +94,7 @@ export function createAtlanticHouse(buildings: VBuilding[], site: VBuilding, gri
 
   // Parking deck: precast to the tennis-court roof, its perimeter walls above, an open band per level.
   const outer = local(deck.rings[0]);
-  s.prism(outer, base, H.deck, concrete, '#7d8f6e', { wall: surfaces.precast({ width: 3, height: 3.4 }) });
+  s.prism(outer, base, H.deck, concrete, '#7d8f6e');
   for (const part of walls) s.prism(local(part.rings[0]), H.deck, H.deckWall, concrete, roofGrey);
   const dx = outer.map(p => p[0]), dz = outer.map(p => p[1]);
   const [d0, d1, dn] = [Math.min(...dx) - 0.06, Math.max(...dx) + 0.06, Math.min(...dz) - 0.06];
@@ -104,17 +107,17 @@ export function createAtlanticHouse(buildings: VBuilding[], site: VBuilding, gri
   // Residential windows: about two in five units either side of each pilaster are lit.
   const lit = (a: number[], b: number[], y: number) =>
     s.lights.quad([a[0], y, a[1]], [a[0], y + 2.4, a[1]], [b[0], y + 2.4, b[1]], [b[0], y, b[1]], glassTeal);
-  for (const [face, out] of [[north, -1], [south, 1]] as const) {
+  ([[north, -1], [south, 1]] as const).forEach(([face, out], side) => {
     const v = face + out * 0.06;
-    for (let y = H.deck + 1; y + 3 < H.ends; y += 3.2) {
+    for (let floor = 0, y = H.deck + 1; y + 3 < H.ends; floor++, y += FLOOR) {
       for (let k = 0; k <= stacks; k++) {
-        if (random() > 0.4) continue;
+        if (litHash(seed, side, floor, k) >= 0.4) continue;
         const u = west + k * bay;
         const a = k === 0 ? u + 0.3 : u - bay / 2 + 2.2, b = k === stacks ? u - 0.3 : u + bay / 2 - 2.2;
         if (out < 0) lit([b, v], [a, v], y); else lit([a, v], [b, v], y);
       }
     }
-  }
+  });
   // The rooftop club floor glows warm behind the crown piers (dusk photograph).
   for (const [face, out] of [[north, -1], [south, 1]] as const) {
     const v = face + out * 0.1;

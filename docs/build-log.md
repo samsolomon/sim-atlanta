@@ -3440,3 +3440,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 · Atlantic House
+
+The map gave Atlantic House 125 m. The lidar puts its stone crown about 110 m above its low corner, with end bays 10 m lower. That matches CTBUH's 109 m to within the site's 7 m of slope. It is the first skin built entirely to the overnight rules. It uses vertex colour only, so it batches with zero added draws. Its teal-grey glass sits under the rendered saturation cap (S 29, V 54 sunlit), and lit units come from the shared `litHash` rather than a random stream. The look comes from geometry: cream pilasters, balcony stacks, a slab edge per floor and the crown's stone piers. [Day](log/ui/atlantic-house/day.jpg) · [Night](log/ui/atlantic-house/night.jpg)
