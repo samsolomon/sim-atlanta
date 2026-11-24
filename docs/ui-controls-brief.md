@@ -126,6 +126,13 @@ Not yet: Street view, layers and tours (see Follow-ups).
   when a model exists. It switches to Models with that model loaded.
 - **Details panel** (right): camera (Front, Side, Rear, Top), display (Day, Night, Ink),
   line colour and platform where they apply.
+- **One surface:** the card and the browser are one glass panel (left 8, top 8, bottom
+  72, 400 px wide), not two stacked panels. The chevron after the model name is the
+  collapse control (⌄ closed, ⌃ open); desktop has no ✕ and no "Models" header. Only the
+  list scrolls (header, search and chips stay put), with an overlay scrollbar: 6 px thumb
+  `rgba(60,45,30,.28)` (night `rgba(255,255,255,.3)`), no track or gutter, 3 px from the
+  edge, plus a 16 px fade at a list edge that has more to scroll. Phones use a sheet
+  titled "Models" with ✕ (P7).
 - **Browser:** ⌄ on the model card grows the card down the left side into the browser
   (Final 10). It has search, category chips with counts, a Recent row once the catalogue
   is large, and a list whose rows have a thumbnail coloured by service, a name and one
