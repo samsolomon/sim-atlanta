@@ -3787,3 +3787,7 @@ With the sun behind dry cloud, the north-facing walls around the arts campus loo
 From the same 1,200 m orbit, dry-overcast noon raised the central crop’s mean display luma from 83.5 to 125.8 on Low and 78.8 to 119.7 on High (0–255). At 07:23, cool shade remained visible between the warmer façades. The full-night, storm and dusk controls matched to the nearest tenth of a luma unit on both tiers. All 20 frames use Atlanta time on November 20, 2026, a paused clock and camera `565,-3965,-101,55,1200`.
 
 [Low noon, dawn and night](log/city-sky/low-study.jpg) · [High noon, dawn and night](log/city-sky/high-study.jpg) · [Low storm and dusk](log/city-sky/low-controls.jpg) · [High storm and dusk](log/city-sky/high-controls.jpg)
+
+### 2026-11-24 — Choosing the cloud fill at noon
+
+The first overcast pass made the dark tower easier to read, but the arts-center roof, pavement and lawn began to blend together. Sam selected the right-hand frame in the [three-way comparison](https://share.onorca.dev/a/2xr828hqBC6T). Halving the extra dry-cloud hemisphere intensity from +0.8 to +0.4 kept the soft shadows and brought the matched High noon crop to 107.6 mean display luma, between clear noon at 100.6 and the first overcast pass at 119.7. The sunrise palette and eastern-sun blend carry forward as reviewed. [Selected frame with matched arts-center details](log/city-sky/high-noon-selection.jpg)

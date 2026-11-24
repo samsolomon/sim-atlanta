@@ -1707,7 +1707,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const diffuse = sm(0.55, 1, cl) * dry * (1 - sm(0.35, 0.85, wx.fog)) * day;
     hemi.color.lerp(pal.overcastSky, diffuse);
     hemi.groundColor.lerp(pal.overcastGround, diffuse);
-    hemi.intensity += 0.8 * diffuse;
+    hemi.intensity += 0.4 * diffuse;
     bg.lerp(pal.overcastHaze, diffuse);
     // The rising sun is east of the meridian. Ease from civil dawn into the morning sky.
     const morning = sm(-6, 2, el) * (1 - sm(4, 24, el)) * sm(0, 0.65, Math.sin(az))
