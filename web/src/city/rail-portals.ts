@@ -27,9 +27,9 @@ export type MouthKind = 'hillside' | 'under' | 'cut-end' | 'terminus';
  * drawn building or deck at grade; `cut-end` is an end of the Five Points east cut, which still
  * lacks its end face (known, a separate fix); `terminus` is a real end of track.
  */
-export const DOWNTOWN_RAIL_ENDS: { at: P2; kind: MouthKind; why: string }[] = [
+export const DOWNTOWN_RAIL_ENDS: { at: P2; kind: MouthKind; faceInset?: number; why: string }[] = [
   { at: [-368, -592], kind: 'hillside', why: 'freight main into the tunnel under Centennial Olympic Park Dr, The CTR (ex-CNN Center) and the plaza; 8 m of cover' },
-  { at: [10, -41], kind: 'hillside', why: 'freight main into the tunnel under Underground Atlanta and Five Points; 9 m of cover' },
+  { at: [10, -41], kind: 'hillside', faceInset: 7, why: 'freight main into the tunnel under Underground Atlanta and Five Points; 9 m of cover' },
   { at: [-274, -345], kind: 'under', why: 'freight main under the Centennial Olympic Park Dr deck at grade' },
   { at: [-251, -288], kind: 'under', why: 'freight main into the Gulch deck structure at grade' },
   { at: [-199, -202], kind: 'under', why: 'freight main out of the Gulch deck structure at grade' },
@@ -55,6 +55,8 @@ export interface RailMouth {
   /** Scene y of the rail at the face, and of the cover over it. */
   railY: number;
   coverY: number;
+  /** Distance from the mapped rail end to the retaining face set into the hill. */
+  faceInset?: number;
 }
 
 /** Rail ends that neither meet another run nor a board edge. */
@@ -94,7 +96,8 @@ export function railMouths(rail: readonly Run[], bounds: { minX: number; maxX: n
   const zero = ground.manifest.vertical.sceneZeroNavd88M;
   const mouths: RailMouth[] = [];
   for (const end of looseRailEnds(rail, bounds)) {
-    if (declaredEnd(end.at)?.kind !== 'hillside') continue;
+    const declaration = declaredEnd(end.at);
+    if (declaration?.kind !== 'hillside') continue;
     const len = Math.hypot(end.at[0] - end.toward[0], end.at[1] - end.toward[1]) || 1;
     const dx = (end.at[0] - end.toward[0]) / len,
       dz = (end.at[1] - end.toward[1]) / len;
@@ -122,6 +125,7 @@ export function railMouths(rail: readonly Run[], bounds: { minX: number; maxX: n
       z: end.at[1] + dx * mid,
       dx,
       dz,
+      faceInset: declaration.faceInset,
       half: (hi - lo) / 2 + 3.2,
       railY: rail0 - zero,
       coverY: cover - zero,
@@ -133,8 +137,8 @@ export function railMouths(rail: readonly Run[], bounds: { minX: number; maxX: n
 /** Terrain openings so the lidar slope never fills a mouth: from 2 m outside the face to 16 m in. */
 export function railPortalOpenings(mouths: readonly RailMouth[]): OpenSlot[] {
   return mouths.map((m) => ({
-    start: [m.x - m.dx * 2, m.railY - 0.4, m.z - m.dz * 2] as const,
-    end: [m.x + m.dx * SLOT_END, m.railY - 0.4, m.z + m.dz * SLOT_END] as const,
+    start: [m.x - m.dx * 2, m.railY - (m.faceInset ? 1.2 : 0.4), m.z - m.dz * 2] as const,
+    end: [m.x + m.dx * (m.faceInset ?? SLOT_END), m.railY - (m.faceInset ? 1.2 : 0.4), m.z + m.dz * (m.faceInset ?? SLOT_END)] as const,
     halfWidthM: m.half + SLOT_MARGIN,
   }));
 }
@@ -172,6 +176,53 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, t
       clear = Math.min(7, Math.max(5.6, m.coverY - m.railY - 1.2)),
       top = Math.max(m.railY + clear + 1, m.coverY + 0.4),
       h = m.half;
+    if (m.faceInset) {
+      // At the south plaza the mapped track ends at the toe of a steep bank.
+      // Cut only the approach. The original terrain covers the entire tunnel.
+      const face = m.faceInset, outer = h + SLOT_MARGIN;
+      const rim = (u: number, w: number) => {
+        const [x, , z] = P(u, 0, w);
+        return terrainAt(x, z) ?? (ground.sample(x, z) ?? m.coverY + ground.manifest.vertical.sceneZeroNavd88M) - ground.manifest.vertical.sceneZeroNavd88M;
+      };
+      const ceiling = m.railY + 6;
+      for (const side of [-1, 1]) {
+        const u = side * outer;
+        // Wings meet the cut bank along its actual slope.
+        for (let w = -2; w < face; w++) {
+          const topAt = (s: number) => Math.max(y0, rim(u + side * .01, s));
+          quad([u,y0,w], [u,y0,w+1], [u,topAt(w+1),w+1], [u,topAt(w),w], CONCRETE_SIDE);
+        }
+        quad([side*h,y0,face], [u,y0,face], [u,ceiling,face], [side*h,ceiling,face], CONCRETE);
+        quad([side*h,y0,face], [side*h,ceiling,face], [side*h,ceiling,face+8], [side*h,y0,face+8], '#353330');
+      }
+      for (let u = -outer; u < outer; u += .5) {
+        const v = Math.min(outer,u+.5);
+        quad([u,ceiling,face], [v,ceiling,face], [v,rim(v,face+.01),face], [u,rim(u,face+.01),face], CONCRETE);
+      }
+      quad([-h,ceiling,face], [h,ceiling,face], [h,ceiling,face+8], [-h,ceiling,face+8], '#383531');
+      quad([-h,y0,face+8], [h,y0,face+8], [h,ceiling,face+8], [-h,ceiling,face+8], '#050505');
+      // The terrain slot clips the mapped tread just before its surveyed
+      // endpoint. Continue the rails from the last supported approach.
+      const approach = -3.5;
+      const tread = rim(0, approach) + .13;
+      const strip = (left: number, right: number, w0: number, w1: number, y: number, colour: string) => {
+        const vertex = (u: number, w: number) => {
+          const [x, , z] = P(u, 0, w);
+          const drawn = w <= -2 ? terrainAt(x, z) : null;
+          return [u, drawn === null ? y : Math.max(y, drawn + .04 + y - (tread-.09)), w];
+        };
+        for (let w = w0; w < w1; w += .5) {
+          const end = Math.min(w+.5,w1);
+          quad(vertex(left,w), vertex(right,w), vertex(right,end), vertex(left,end), colour);
+        }
+      };
+      quad([-outer,tread-.13,-2], [outer,tread-.13,-2], [outer,tread-.13,face], [-outer,tread-.13,face], '#645e53');
+      strip(-2.1, 2.1, approach, face+8, tread-.09, BALLAST);
+      for (let w = approach; w < face+7; w += .8)
+        strip(-1.15, 1.15, w, w+.18, tread-.045, '#4c453f');
+      for (const u of [-.7175,.7175]) strip(u-.065, u+.065, approach, face+8, tread, '#89877f');
+      continue;
+    }
     // Headwall: two piers and a lintel over the opening, with a coping.
     box(-h - 1.4, -h, y0, top, -0.4, 0.6, CONCRETE);
     box(h, h + 1.4, y0, top, -0.4, 0.6, CONCRETE);
@@ -223,8 +274,8 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, t
         if (terrainAt.triangles) {
           const point = ([x, y, z]: number[]) => [x, Math.max(y, (terrainAt(x, z) ?? -Infinity) + 0.12), z];
           const emit = (p: number[], q: number[], r: number[]) => body.tri(point(p), point(q), point(r), LID);
-          drapeTriangle(terrainAt.triangles, a, b, c1, 0.12, emit, Infinity, true);
-          drapeTriangle(terrainAt.triangles, a, c1, d, 0.12, emit, Infinity, true);
+          drapeTriangle(terrainAt.triangles, a, b, c1, 0.12, emit);
+          drapeTriangle(terrainAt.triangles, a, c1, d, 0.12, emit);
         } else body.quad(a, b, c1, d, LID);
       }
       for (const u of [-outer, outer]) quad([u, y0, w], [u, lid(u, w), w], [u, lid(u, w1), w1], [u, y0, w1], CONCRETE_SIDE);
@@ -256,8 +307,8 @@ export function extendFreightIntoMouths(treads: FreightTreadPoint[][], mouths: r
       const p = section[i].position;
       const mouth = mouths.find((m) => Math.hypot(m.x - p.x, m.z - p.z) < m.half + 3);
       if (!mouth) continue;
-      const step = new THREE.Vector3(mouth.dx, 0, mouth.dz).multiplyScalar(depth);
-      const ds = sign * depth * Math.sign(section[section.length - 1].s - section[0].s || 1);
+      const step = new THREE.Vector3(mouth.dx, 0, mouth.dz).multiplyScalar(depth + (mouth.faceInset ?? 0));
+      const ds = sign * (depth + (mouth.faceInset ?? 0)) * Math.sign(section[section.length - 1].s - section[0].s || 1);
       const point = { s: section[i].s + ds, position: p.clone().add(step) };
       point.position.y = p.y;
       if (i === 0) section.unshift(point);

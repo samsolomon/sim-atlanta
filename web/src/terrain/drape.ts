@@ -35,7 +35,7 @@ type V = readonly number[];
  * a void or off the board, abc is emitted unchanged: there is no terrain to clear.
  */
 export function drapeTriangle(src: TriangleSource, a: V, b: V, c: V, lift: number,
-  emit: (p: DrapedVertex, q: DrapedVertex, r: DrapedVertex) => void, maxRaise = Infinity, drapeAtVoid = false) {
+  emit: (p: DrapedVertex, q: DrapedVertex, r: DrapedVertex) => void, maxRaise = Infinity) {
   const area = (b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0]);
   const whole = () => emit([a[0], a[1], a[2], 1, 0, 0], [b[0], b[1], b[2], 0, 1, 0], [c[0], c[1], c[2], 0, 0, 1]);
   if (Math.abs(area) < 1e-9) { whole(); return; }
@@ -86,22 +86,7 @@ export function drapeTriangle(src: TriangleSource, a: V, b: V, c: V, lift: numbe
     }));
   });
   // Shared edges and float rounding leave slivers; demand near-complete cover.
-  if (covered < Math.abs(area) * (1 - 1e-4)) {
-    if (!drapeAtVoid || !pieces.length) { whole(); return; }
-    // A tunnel lid spans the void. Keep its original height over the opening
-    // and raise just the pieces lying on drawn ground.
-    let uncovered: V[][] = [[a, b, c]];
-    for (const poly of pieces) {
-      const ring = poly.map(([x, , z]) => [x, z] as const);
-      const remaining: V[][] = [];
-      for (const [p, q, r] of uncovered) {
-        cutOut(p, q, r, ring, (u, v, w) => remaining.push([u, v, w]));
-      }
-      uncovered = remaining;
-    }
-    const vertex = (p: V): DrapedVertex => [p[0], p[1], p[2], ...weights(p[0], p[2])];
-    for (const [p, q, r] of uncovered) emit(vertex(p), vertex(q), vertex(r));
-  }
+  if (covered < Math.abs(area) * (1 - 1e-4)) { whole(); return; }
   for (const poly of pieces) for (let i = 1; i + 1 < poly.length; i++) emit(poly[0], poly[i], poly[i + 1]);
 }
 
