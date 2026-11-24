@@ -305,7 +305,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
 - American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
-- Still to pick: the magnolia (gloss round 2: A and speck densities A1–A3) and the dogwood (round 2 pending).
+- Magnolia: Sam picked A3 (23 Nov), with a tidier skirt and whiter gloss. Still to pick: the dogwood (round 2 pending).
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -601,6 +601,10 @@ Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, 
 
 Crown luminance / saturation (Front, 1 Jul, high): A 0.201 / 0.862, A1 0.205, A2 0.210, A3 0.218 / 0.845; low A 0.211. The specks add 2–8%, not round 1's 30%. The pick reads the atlas at full size (`textureLod`), so mipmaps cannot blend neighbouring leaves into new ids at range, and it hashes tree space, not world position, to keep `sin()` precise far from the origin. Other species measure as before (willow oak 0.256, tulip poplar 0.240, sweetgum 0.255, crape myrtle 0.246, elm 0.249). The cone is deliberately darker than the generic canopy (0.248), as the reference is. At eye level the specks are subtle; they show best in the day row and at 300 m as a faint sun-side sparkle.
 
+**A3 picked, 2026-11-23.** [Follow-up sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg). Sam chose A3. It is the lab default on a direct magnolia URL without `variant`, and the lineup Default pick. The comparison variants remain available. The lower mass band rises slightly and its card edges and matching near tips pull inward and stay near the crown base, rather than dangling to the ground. The cone remains. Leaf colours compensate for the brighter shaped surface to keep the dark base near the prior 0.201 luminance.
+
+The gloss target is a whiter warm white. Low-detail speck density is 60% of high because fewer, larger cards otherwise exceeded the +10% brightness ceiling. At matched Front on July 1: high A 0.203, A3 0.219 (+7.9%); low A 0.209, A3 0.222 (+6.2%). Eye-level A3 night luminance is 0.018 and the gloss is off. Cost remains 193 / 113 triangles plus the bounded near-tip pool. `Look.preferred` exposes the pick; tree-species should use A3 for the next City rollout alongside elm and oaks. This change does not itself add magnolia to City.
+
 ### Japanese maple
 
 `web/src/trees/japanese-maple.ts`, Sam's request (23 Nov). Red Japanese maples are "everywhere in front yards and on the traffic islands" of Ansley Park: low, wide, layered, umbrella-shaped, on several leaning trunks. They are "the colour accents". The sources describe a "low, dense, rounded top and spreading branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-palmatum/)) that is "typically multi-trunked", with "muscular-looking, picturesque, grey" trunks ([UF ST023](https://ask.ifas.ufl.edu/publication/ST023/pdf)).
@@ -698,7 +702,7 @@ Sam asked for the feel of Ansley's trees, not a survey (23 Nov). These notes com
 
 
 
-**Nothing here is built.** City still draws one generic tree everywhere except the High Museum ginkgo. Sam decides this proposal before any rollout. It has two tiers:
+**Rollout status (2026-11-23):** Draft PR #336 implements crape myrtle A, loblolly A, sweetgum A and Japanese maple A, using these mixes and the Ansley placement rules. Oaks remain generic; magnolia A3 joins elm and oaks in the next rollout. The High Museum ginkgo is unchanged. The wider proposal has two tiers:
 
 1. **Reported.** Inventory points are placed by species, at their measured sizes where given. The sources are the City 2011 census (Downtown only), Georgia Tech's campus inventory, Trees Atlanta plantings, and OSM species tags. Their licences are unclear (see [Where ginkgos are](#where-ginkgos-are)), so we would ask the owners before shipping derived positions.
 2. **Illustrative.** Every other canopy crown takes a species drawn deterministically from its crown id, weighted by context. Each crown's context (street, yard, park and woods, or campus) would come from the land use and road masks the parks staging already has.
@@ -815,3 +819,55 @@ Inside Ansley Park, triple ginkgo by taking the extra from other broadleaf. Stre
 - The City 2023 Tree Planting List was found by a subagent, and I have not verified its contents.
 - No figure here comes only from a search snippet. Every number above was computed from the datasets or read in the PDFs.
 - USFS16 has no land-use breakdown, so the yard weights are partly judgement and are marked as such.
+
+### City rollout validation — 2026-11-23 (PR #336)
+
+Crape myrtle A, loblolly A, sweetgum A and Japanese maple A are batched across City.
+Low quality uses one mature geometry per look, scaled to the requested crown size;
+high quality also uses specimen forms. Every instanced mesh has finite bounds and
+frustum culling. Leaf tips and the shared `landscape` carpet disappear at far detail.
+Bare/thin crowns retain limbs to preserve their winter silhouette; that exception
+still requires phone-perf approval.
+
+The 1180 terrace exports **eight** planting positions (the earlier handoff said seven).
+Each crape is 4.5 m tall, with a 4 m spread, at the roof's world elevation, 42.28 m
+above scene zero. The existing curved-edge placement loop is unchanged. These are
+illustrative plantings, not a surveyed inventory.
+
+Paired Studio counts against `origin/main` at `d1411a9e`, after merging that baseline:
+
+| Low-quality view | Before calls / triangles | After calls / triangles | Delta |
+|---|---:|---:|---:|
+| Default | 531 / 2,334,211 | 540 / 2,378,963 | +9 / +44,752 |
+| Skyline | 225 / 1,877,208 | 234 / 1,925,968 | +9 / +48,760 |
+| Pan | 530 / 2,334,195 | 539 / 2,380,939 | +9 / +46,744 |
+
+`pnpm test:perf` passes both tiers; high default is 1,169 calls / 13,789,017 triangles.
+Low is also below phone-perf's proposed 2.6M ceiling. These are geometry/draw counts,
+not phone frame rates. The original pre-main-update measurements in the handoff are
+superseded. Full tests pass with pipeline checks skipped because `.venv` is absent.
+
+Reproduction: `?view=city&q=low&t=2026-11-20T14:00:00-05:00&perf=run`;
+append `&cam=150,500,0,66,1900` for skyline or `&motion=pan` for pan.
+Release requires a web rebuild and coordinator deployment, not a data rebuild.
+
+Matched sheets: [1180 daylight](log/ui/tree-species/rollout/1180-day-sheet.jpg),
+[1180 night](log/ui/tree-species/rollout/1180-night-sheet.jpg),
+[The Prado daylight](log/ui/tree-species/rollout/prado-day-sheet.jpg),
+[The Prado night](log/ui/tree-species/rollout/prado-night-sheet.jpg),
+[The Prado low](log/ui/tree-species/rollout/prado-low-sheet.jpg), and
+[winter far-detail comparison](log/ui/tree-species/rollout/winter-sheet.jpg).
+The sheets use the classic UI to avoid capturing the white-model arrival transition.
+1180 uses `cam=650,-3690,0,0,350`, then `__setView(0,0,350,650,-3690,2)` for
+lens zoom. The Prado uses `cam=1194,-4352,20,50,420`.
+
+At the winter camera `1194,-4352,20,50,1100` (20 January, 14:00 ET, low),
+the rollout retains 13,974 limb triangles in three visible instanced limb meshes,
+with both `fartrees=0` and `fartrees=1`. This is the submitted instance count before
+frustum culling, not an incremental phone GPU timing. Limbs do not cast shadows.
+The matched sheet preserves the bare silhouettes; phone-perf must approve this exception.
+
+Additional terrace checks: [low daylight](log/ui/tree-species/rollout/1180-low-day-sheet.jpg)
+and [low night](log/ui/tree-species/rollout/1180-low-night-sheet.jpg).
+Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
+[pan counts](log/ui/tree-species/rollout/pan-results.json) preserve the measurement runs.

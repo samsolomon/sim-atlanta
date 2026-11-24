@@ -3,6 +3,11 @@ import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
+import { loadPlaces, placeAt, sceneToLonLat } from '../core/places';
+
+/** Five Points, the pipeline origin (main.ts CITY_ORIGIN). */
+const ORIGIN = { lon: -84.3916, lat: 33.7539 };
+const inAnsley = (x: number, z: number) => placeAt(...sceneToLonLat(ORIGIN, x, z)) === 'Ansley Park';
 import railRows from '../city/fixtures/midtown-rail.json';
 import { brookwoodCorridorRail } from '../city/brookwood-corridor';
 import { midtownLights } from '../city/midtown-night';
@@ -131,7 +136,11 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
-  const patches = await Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood)));
+  const [patches] = await Promise.all([
+    Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood))),
+    // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).
+    Promise.resolve().then(() => loadPlaces((options?.dataRoot ?? '/data') + '/ga/neighborhoods.json')).catch(() => undefined),
+  ]);
   signal.throwIfAborted();
   const added = new Map<Board, TrafficArea>();
   try {
@@ -149,6 +158,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
         lights: id in rowBounds ? midtownLights : undefined,
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
+        // The tree rollout on canopy-map rows: planned from the row's full crown list.
+        rollout: context.treeLowCount !== undefined ? { allCrowns: context.trees, inAnsley } : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {

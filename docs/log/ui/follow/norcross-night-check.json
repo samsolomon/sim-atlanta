@@ -1,0 +1,168 @@
+{
+  "label": "norcross-night",
+  "selectedAt": "2026-11-21T03:21:25.000Z",
+  "start": {
+    "status": "Following train · position Illustrative",
+    "camera": {
+      "x": -584.7261722084836,
+      "z": -4630.62514373918,
+      "bearing": -147.99999999999994,
+      "tilt": 25.99999999999998,
+      "metresPerPixel": 0.12958687275847897
+    }
+  },
+  "end": "Follow ended · train left the board",
+  "ended": true,
+  "samples": [
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -578.5065971771947,
+        "z": -4636.626910217928,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -481.99126682658675,
+        "z": -4729.59450458832,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -385.45055364877976,
+        "z": -4822.522400474954,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -288.63883580921885,
+        "z": -4915.161019664183,
+        "bearing": -147.99999999999997,
+        "tilt": 25.999999999999968,
+        "metresPerPixel": 0.12958687275847894
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -191.50295470531393,
+        "z": -5008.14707301035,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -94.97703598258,
+        "z": -5100.412167247636,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 2.5425269041743377,
+        "z": -5192.277136978782,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 105.64194474972652,
+        "z": -5277.595399938753,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 214.4514434717513,
+        "z": -5355.781740093258,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 322.1153053264464,
+        "z": -5435.471579615901,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 425.2922600672419,
+        "z": -5520.920848140428,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 527.6543696309062,
+        "z": -5608.117702123835,
+        "bearing": -147.99999999999997,
+        "tilt": 25.999999999999968,
+        "metresPerPixel": 0.12958687275847894
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 629.7383251260304,
+        "z": -5694.900111931802,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 710.9953636275983,
+        "z": -5764.151974934756,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Follow ended · train left the board",
+      "camera": {
+        "x": 753.7930165750033,
+        "z": -5800.8429960028425,
+        "bearing": -147.99999999999994,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    }
+  ]
+}

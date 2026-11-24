@@ -415,7 +415,7 @@ vSpeckPos = transformed;
     float sun = smoothstep(0.35, 1.2, dot(directionalLights[0].color, vec3(0.3333)));
     // Warm white over the dark green, like sun off wax.
     // Near-binary, so a speck is a sharp point of light, not a pale wash.
-    gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0, 0.96, 0.84), pick * smoothstep(0.3, 0.55, s * side) * 0.95 * sun);
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0, 0.985, 0.94), pick * smoothstep(0.3, 0.55, s * side) * 0.95 * sun);
   }
 #endif
 #include <tonemapping_fragment>`);

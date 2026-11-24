@@ -5,7 +5,7 @@ import { ARTERIAL_TRAFFIC_CAP } from './arterial-traffic';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 import bake from './fixtures/midtown-arterials.json';
 import signalPoints from './fixtures/midtown-signals.json';
-import { withSignals } from './traffic-signals';
+import { arterialTurns } from './arterial-turns';
 
 /** A mounted Midtown row: its drawn roads and the sampler that seats a car on them. */
 export interface MidtownTrafficBoard {
@@ -49,13 +49,13 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[])
 
 /** Illustrative car positions on Midtown's arterials. Volumes are HPMS AADT (inferred),
  * shaped by the hourly profile, exactly as downtown's ArterialTraffic; trips follow one
- * corridor and fade at forks, with no turns or signals. Buses are never drawn here. */
+ * corridor or a signalised turn and fade at unresolved endpoints. Buses are never drawn here. */
 export class MidtownArterialTraffic extends RoadTraffic {
   constructor(opts: Omit<RoadTrafficOptions, 'city' | 'roadHeight'>, boards: readonly MidtownTrafficBoard[]) {
     const { corridors, heights, bounds } = midtownArterialCorridors(boards);
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
     super({ ...opts, city, roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
-      bounds ? withSignals(arterialTrafficRoutes(corridors, bounds), signalPoints as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
+      bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signalPoints as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
       'Illustrative Midtown arterial traffic');
   }
 }

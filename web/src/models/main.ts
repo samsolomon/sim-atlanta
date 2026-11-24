@@ -72,7 +72,8 @@ const models = {
   cq400: 'Stadler CQ400',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
-  cm44ac: 'GE/Wabtec CM44AC',
+  cm44ac: 'GE/Wabtec CM44AC, CSX-like',
+  cm44acNs: 'GE AC44-type, NS-like',
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
@@ -171,7 +172,7 @@ const GINKGO_RENDERINGS: Renderings = {
 };
 const lookRenderings = (look: Look): Renderings => ({
   ids: look.options.map(o => o.id),
-  preferred: look.options[0].id,
+  preferred: look.preferred ?? look.options[0].id,
   label: id => look.options.find(o => o.id === id)?.label ?? id,
   compares: [
     { id: 'all', label: 'Compare all', set: look.options.filter(o => /^[A-Z]$/.test(o.id)).map(o => o.id) },
@@ -185,7 +186,7 @@ const lookRenderings = (look: Look): Renderings => ({
   }).join(' '),
 });
 const RENDERINGS: Record<string, Renderings> = { ginkgo: GINKGO_RENDERINGS, ...Object.fromEntries(LOOKS.map(l => [l.species.id, lookRenderings(l)])) };
-let rendering = new URLSearchParams(location.search).get('variant') ?? 'current';
+let rendering = new URLSearchParams(location.search).get('variant') ?? LOOKS.find(l => l.species.id === model)?.preferred ?? 'current';
 let treeCount = Number(new URLSearchParams(location.search).get('n')) || 1;
 let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 // Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
@@ -469,7 +470,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 's70' || passenger);
+  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 'cm44acNs' || model === 's70' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -527,11 +528,19 @@ function build() {
     blurb.append(link);
     return;
   }
-  if (model === 'cm44ac') {
-    document.getElementById('blurb')!.textContent = 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. This scale study pairs the six-axle locomotive with an illustrative boxcar.';
-    cars = (['locomotive', 'boxcar'] as const).map(unit => {
-      const mesh = new THREE.Mesh(freightGeometry(unit), new THREE.MeshLambertMaterial({ vertexColors: true }));
-      mesh.position.set(0, .125, (unit === 'locomotive' ? 1 : -1) * (FREIGHT_LENGTH[unit] / 2 + .15));
+  if (model === 'cm44ac' || model === 'cm44acNs') {
+    const ns = model === 'cm44acNs';
+    const blurb = document.getElementById('blurb')!;
+    blurb.textContent = ns
+      ? 'The same GE body in an NS-like scheme (black, white nose stripes, no marks), as NS AC44C6M rebuilds and ES44ACs appear around Atlanta. Leading an illustrative boxcar. '
+      : 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in a CSX-like blue-grey and yellow without marks, leading an illustrative boxcar. ';
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/freight-stock.md';
+    link.textContent = 'Locomotive notes and reference photos';
+    blurb.append(link);
+    cars = ([ns ? 'locomotiveNs' : 'locomotive', 'boxcar'] as const).map(unit => {
+      const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: unit !== 'boxcar' }), passengerMaterial(night));
+      mesh.position.set(0, .125, (unit !== 'boxcar' ? 1 : -1) * (FREIGHT_LENGTH[unit] / 2 + .15));
       mesh.castShadow = mesh.receiveShadow = true;
       scene.add(mesh);
       return mesh;
@@ -788,7 +797,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -802,7 +811,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', 'cm44acNs', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;

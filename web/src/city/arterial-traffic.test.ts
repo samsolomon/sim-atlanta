@@ -151,3 +151,30 @@ it('fades a single vehicle at an interior end and leaves a gap before its next t
   expect(restarts).toBeGreaterThan(0);
   fleet.dispose();
 });
+
+
+it('recomputes hourly demand when seeking within the same minute', () => {
+  const hourly={weekday:Array.from({length:24},(_,h)=>h===12?1:0),weekend:Array(24).fill(0)};
+  const fleet=new ArterialTraffic({...base,hourly});
+  const fresh=new ArterialTraffic({...base,hourly});
+  fleet.update(noon+59000,0);
+  fleet.update(noon+1000,0);
+  fresh.update(noon+1000,0);
+  expect(snapshot(fleet)).toEqual(snapshot(fresh));
+  fleet.dispose(); fresh.dispose();
+});
+
+it('draws a moving-obstacle queue and reproduces it after clock seeks',()=>{
+  const corridor={id:'queue',runs:[run(road([[0,0],[500,0]]),'a','b',{allow:'forward',aadt:{forward:80000,reverse:0}})]};
+  const opts={...base,arterials:[corridor],movingBlocks:()=>()=>[{rear:250,front:274}]};
+  const fleet=new ArterialTraffic(opts),fresh=new ArterialTraffic(opts);
+  fleet.update(noon,0);
+  expect(fleet.visibleCars).toBeGreaterThan(2);
+  for(const obj of fleet.group.children){
+    const mesh=obj as InstancedMesh;
+    for(let i=0;i<mesh.count;i++)expect(mesh.instanceMatrix.array[i*16+12]).toBeLessThan(248);
+  }
+  fleet.update(noon+120000,0);fleet.update(noon+125,0);fresh.update(noon+125,0);
+  expect(snapshot(fleet)).toEqual(snapshot(fresh));
+  fleet.dispose();fresh.dispose();
+});

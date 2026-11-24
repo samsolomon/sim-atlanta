@@ -15,6 +15,38 @@ Downtown's and Midtown's illustrative arterial cars now stop at mapped traffic s
 - **Opt-in.** A course with no mapped signal, every closed loop, and the whole Connector run exactly as before.
 - **Signal heads.** Each stop line gets an instanced mast and an unlit head coloured from the same controller every frame. At q=low, at the wide Midtown camera, the change adds 2 draw calls and about 4.3k triangles (+0.2%).
 
-Turns at intersections come next; HPMS has no turning counts, so turn shares will be illustrative. Requires a web rebuild only.
+HPMS has no turning counts, so turn shares are illustrative. Requires a web rebuild only.
 
 [10th Street queue (4:38 pm), before and after](log/ui/traffic-signals/compare-10th-queue.jpg) · [Night and low tier](log/ui/traffic-signals/compare-night-low.jpg)
+
+## Arterial turns (2026-11-23)
+
+Separate turn courses now connect permitted directed arms at shared mapped nodes
+within 20 m of a signal controller. Curves cover 60–120 degree turns, using the existing approach entrance and exit endpoint. U-turns, disconnected endpoints, unsignalised nodes,
+short arms and prohibited one-way directions are excluded. The Midtown fixture
+produces 20 courses. These are illustrative movements; the fixtures do not contain
+intersection turn restrictions or protected-left phases.
+
+Turning demand takes 15% of each eligible course's incoming flow, divided among
+its turns. The through course retains 85%. These shares are illustrative. Turns
+use the approach speed; exits differing by more than 0.1 m/s are excluded, since
+the engine has one speed per course. Existing endpoints and their fades are reused,
+with no new mid-block fade points. Existing low/high traffic budgets stay.
+
+Turns explicitly use the incoming approach's controller phase, stopping before
+the curve on red or amber and releasing on green. Approach heads are reused.
+The existing oriented footprint guard suppresses overlaps with other courses;
+turning and through traffic do not yet share a queue; cars can disappear where
+these independent queues overlap and when joining an occupied exit. Left turns have no protected
+phase and may disappear while their footprint conflicts with opposing traffic.
+This is a visual traffic model, not an intersection capacity simulation.
+
+A clock-seek check also removed the minute cache of interpolated hourly demand:
+the same clock now uses the same demand regardless of the previous frame visited.
+Requires a web rebuild only; no new data source, data rebake or server work.
+
+At the 17th Street signal cluster, the turn's original stop lay 11.95 m beyond
+the through stop. Turns now stop no later than the shared through stop and always
+before their curve. A junction whose twin-light merge removes that controller
+from the through approach is skipped. The Midtown fixture asserts shared
+controllers, stop ordering and no second stop within 30 m for all 20 turns.

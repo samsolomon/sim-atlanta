@@ -83,7 +83,7 @@ function updateFollowPanel() {
     underground: reduced ? 'Underground · mapped tunnel' : 'Underground · mapped tunnel · following its alignment above ground',
     covered: reduced ? `${Noun} under cover` : 'Under cover · following the route above ground',
     unseen: reduced ? `${Noun} out of view` : `${Noun} out of view · following its position above ground`,
-    lost: noun !== 'bus' ? 'Follow ended · trip unavailable'
+    lost: selectedFreight ? 'Follow ended · freight no longer drawn' : noun !== 'bus' ? 'Follow ended · trip unavailable'
       : clock.isRealTime() ? 'Follow ended · bus stopped reporting' : 'Follow ended · live buses show only at the present time',
     outside: `Follow ended · ${noun} left the board`,
   }[follow.phase];
@@ -109,6 +109,8 @@ followAction.addEventListener('click', () => {
   } else if (selectedBus) {
     const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
     if (bus) follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
+  } else if (selectedFreight) {
+    follow.start({ kind: 'freight', id: selectedFreight, tier: 'illustrative' });
   }
   updateFollowPanel();
 });
@@ -116,6 +118,7 @@ recenter.addEventListener('click', () => follow?.recenter());
 let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
+let selectedFreight: string | null = null;
 function showCard(html: string, canFollow = false) {
   followPanel.hidden = !canFollow;
   if (canFollow) updateFollowPanel();
@@ -123,7 +126,7 @@ function showCard(html: string, canFollow = false) {
   if (lastCardHTML !== html) cardContent.innerHTML = lastCardHTML = html;
   card.hidden = false;
   // A different selection (not a refresh of the same one) tells the A2c panel to bring it forward.
-  const key = selectedTrain ?? selectedBus ?? html;
+  const key = selectedTrain ?? selectedBus ?? selectedFreight ?? html;
   if (key !== shownKey) {
     shownKey = key;
     card.dispatchEvent(new Event('a2-select'));
@@ -170,6 +173,7 @@ function hideCard() {
   card.hidden = true;
   selectedBus = null;
   selectedTrain = null;
+  selectedFreight = null;
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 
@@ -210,7 +214,7 @@ function followFromLink() {
     if (bus) {
       followBus = null;
       selectedBus = bus.id;
-      selectedTrain = null;
+      selectedTrain = null; selectedFreight = null;
       follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
       renderBusCard();
     }
@@ -238,7 +242,7 @@ function followFromLink() {
   if (!train) return;
   followRoute = null;
   selectedTrain = train.id;
-  selectedBus = null;
+  selectedBus = null; selectedFreight = null;
   follow.start({ kind: 'train', id: train.id, pathId: train.pathId, tier: train.s.tier });
   renderTrainCard();
 }
@@ -387,7 +391,7 @@ function addMapLayers(map: maplibregl.Map) {
   map.on('click', (e) => {
     const directBus = map.queryRenderedFeatures(e.point, { layers: ['buses'] })[0];
     const train = directBus ? nearestTrain(e.point, 5) : nearestTrain(e.point);
-    selectedBus = null;
+    selectedBus = null; selectedFreight = null;
     if (train) {
       selectedTrain = train;
       return renderTrainCard();
@@ -398,7 +402,7 @@ function addMapLayers(map: maplibregl.Map) {
     ];
     const f = directBus ?? map.queryRenderedFeatures(box, { layers: ['buses', 'crossings', 'freight-hit'] })[0];
     if (!f) return hideCard();
-    selectedTrain = null;
+    selectedTrain = null; selectedFreight = null;
     if (f.layer.id === 'buses') {
       const bus = visibleBuses.get(f.properties.id);
       if (!bus || !clock.isRealTime()) return hideCard();
@@ -513,6 +517,7 @@ async function openCity() {
       mapGestures: uiNext(location.search),
       whiteModel: !uiNext(location.search) ? false : overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),
+      scheduledStreetcarsAt: ms => schedule.trainsAt(new Date(ms)).filter(t => t.routeId === 'marta:route:STREETCAR'),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
@@ -522,9 +527,10 @@ async function openCity() {
         follow?.stop();
         selectedTrain = hit?.kind === 'train' ? hit.id : null;
         selectedBus = hit?.kind === 'bus' ? hit.id : null;
+        selectedFreight = hit?.kind === 'freight' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, uiNext(location.search)));
+        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, uiNext(location.search)), !!follow);
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
@@ -960,7 +966,7 @@ const shell = uiNext(location.search)
 if (import.meta.env.DEV) Object.assign(window, {
   __shell: shell,
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
-  __selectTrain(id: string) { selectedTrain = id; selectedBus = null; renderTrainCard(); },
+  __selectTrain(id: string) { selectedTrain = id; selectedBus = null; selectedFreight = null; renderTrainCard(); },
   __trains: () => source.current,
 });
 
@@ -976,6 +982,7 @@ setInterval(() => {
   followFromLink();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
+  else if (selectedFreight && follow) updateFollowPanel();
 }, 500);
 
 // Hidden time controls (kept for later): ?controls=1 shows them.
