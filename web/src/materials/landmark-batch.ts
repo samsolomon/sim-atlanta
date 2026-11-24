@@ -254,31 +254,19 @@ function show(d: DayGroup) {
 interface Packing { cx: number; cy: number; cz: number; s: number }
 
 /**
- * Packs a class buffer in place: positions as normalised Int16 within the cube `centre ± s`
- * (s = half its largest extent; a 500 m cell gives ~7.6 mm steps), normals as normalised Int8.
- * The meshes drawing it carry the cube as their transform, a uniform scale, so normals need no
- * correction and no shader changes. 18 bytes less per vertex than floats.
+ * Packs a class buffer's normals in place as normalised Int8 (9 bytes less per vertex; same
+ * program). Positions stay float, so nothing moves and shadows are untouched: this returns no
+ * packing transform.
  */
 function pack(g: BufferGeometry): Packing | null {
   if (compactVerticesOff) return null;
-  const pos = g.getAttribute('position') as BufferAttribute, nor = g.getAttribute('normal') as BufferAttribute | undefined;
-  g.computeBoundingBox();
-  const b = g.boundingBox!, c = b.getCenter(new Vector3()), size = b.getSize(new Vector3());
-  const s = Math.max(size.x, size.y, size.z, 0.02) / 2;
-  const P = pos.array as Float32Array, q = new Int16Array(P.length);
-  for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) {
-    const v = (P[i + a] - (a === 0 ? c.x : a === 1 ? c.y : c.z)) / s;
-    q[i + a] = Math.round(Math.max(-1, Math.min(1, v)) * 32767);
-  }
-  g.setAttribute('position', new BufferAttribute(q, 3, true));
+  const nor = g.getAttribute('normal') as BufferAttribute | undefined;
   if (nor) {
     const N = nor.array as Float32Array, n8 = new Int8Array(N.length);
     for (let i = 0; i < N.length; i++) n8[i] = Math.round(Math.max(-1, Math.min(1, N[i])) * 127);
     g.setAttribute('normal', new BufferAttribute(n8, 3, true));
   }
-  g.boundingBox = null;
-  g.boundingSphere = null;
-  return { cx: c.x, cy: c.y, cz: c.z, s };
+  return null;
 }
 const place = (mesh: Mesh, k: Packing | null) => { if (k) { mesh.position.set(k.cx, k.cy, k.cz); mesh.scale.setScalar(k.s); mesh.updateMatrix(); } };
 
