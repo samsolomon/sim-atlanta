@@ -1477,6 +1477,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     tableDay: C('#d8d2c6'), tableNight: C('#2b3142'),
     sunHigh: C('#fff1da'), sunLow: C('#ffa45c'),
     greySky: C('#cfd4da'), greyBg: C('#c6c8c9'), greyBgNight: C('#1e2229'), greySun: C('#e8ecf0'),
+    overcastSky: C('#f4f5f2'), overcastGround: C('#c4bdb0'), overcastHaze: C('#e2e5e6'),
+    morningSky: C('#ffe0c6'), morningHaze: C('#efbcab'),
     snowBg: C('#eef0f2'),
   };
   const sm = (a: number, c: number, x: number) => {
@@ -1700,6 +1702,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hemi.color.lerp(pal.greySky, cl * 0.6 * day);
     hemi.intensity += 0.25 * cl * day;
     bg.lerp(day > 0.5 ? pal.greyBg : pal.greyBgNight, cl * 0.75);
+    // Dry cloud scatters daylight onto shaded walls and the ground. Keep the sun soft.
+    const dry = 1 - sm(0, 0.4, Math.max(wx.rain, wx.snow));
+    const diffuse = sm(0.55, 1, cl) * dry * (1 - sm(0.35, 0.85, wx.fog)) * day;
+    hemi.color.lerp(pal.overcastSky, diffuse);
+    hemi.groundColor.lerp(pal.overcastGround, diffuse);
+    hemi.intensity += 0.4 * diffuse;
+    bg.lerp(pal.overcastHaze, diffuse);
+    // The rising sun is east of the meridian. Ease from civil dawn into the morning sky.
+    const morning = sm(-6, 2, el) * (1 - sm(4, 24, el)) * sm(0, 0.65, Math.sin(az))
+      * dry * (1 - 0.75 * cl) * (1 - wx.fog);
+    hemi.color.lerp(pal.morningSky, 0.38 * morning);
+    bg.lerp(pal.morningHaze, 0.45 * morning);
     bg.lerp(pal.snowBg, wx.snow * day * 0.4);
     world.setWet(wx.rain);
     terrain?.setWet(wx.rain);
