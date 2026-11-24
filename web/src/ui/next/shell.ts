@@ -289,7 +289,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
         art.replaceChildren(img);
       }
     }
-    for (const b of [play, next, stationPrev, stationName, stationNext]) b.disabled = !radio.loaded;
+    play.disabled = radioFailed;
+    for (const b of [next, stationPrev, stationName, stationNext]) b.disabled = !radio.loaded;
     // While the first file is still arriving, the glyph is a spinning arc (brief: Radio, Loading).
     const glyph = radio.buffering ? 'busy' : radio.playing ? 'pause' : 'play';
     if (play.dataset.glyph !== glyph) {

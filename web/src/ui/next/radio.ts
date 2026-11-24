@@ -154,6 +154,7 @@ export function createRadio(o: RadioOptions): Radio {
     shown = upcoming = pick(station);
     loaded = true;
     prefetchUpcoming();
+    if (playing && ctx && !primary() && upcoming) crossfade(0, upcoming);
     changed();
   });
 
@@ -506,7 +507,9 @@ export function createRadio(o: RadioOptions): Radio {
       return d ? d.el.currentTime : 0;
     },
     toggle() {
-      if (!loaded) return;
+      // Play works before stations.json arrives: the tap still creates the AudioContext (it must
+      // happen inside the gesture), the button shows the spinner, and the first track starts
+      // as soon as the list loads.
       if (!ctx) {
         setup();
         const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : undefined;

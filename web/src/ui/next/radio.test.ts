@@ -319,4 +319,27 @@ describe('radio engine', () => {
     expect(held[1]).toBeCloseTo(1 / 3, 5);
     expect(master().last('linear')).toEqual(['linear', 0, 0.4]);
   });
+
+  it('takes a Play tap before the station list has loaded and starts once it arrives', async () => {
+    let loadList!: (f: StationsFile) => void;
+    const r = createRadio({
+      load: () => new Promise((res) => (loadList = res)),
+      sceneHour: () => 14,
+      resolve: (p) => `/${p}`,
+      audio,
+      random: () => 0.5,
+    });
+    r.toggle();
+    expect(r.playing).toBe(true);
+    expect(r.buffering).toBe(true);
+    expect(fetched).toHaveLength(0);
+    loadList(FILE);
+    await r.ready;
+    await flush();
+    expect(fetched).toHaveLength(1);
+    expect(mp3()).toHaveLength(1);
+    mp3()[0].emit('playing');
+    expect(r.buffering).toBe(false);
+    expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
+  });
 });
