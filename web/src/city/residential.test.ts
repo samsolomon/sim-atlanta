@@ -74,18 +74,18 @@ it('infers gables, hips and pyramids from the footprint, with eave-height walls 
   expect(residential(city([tall]), undefined, undefined, undefined, 'high', { tall: { style: 'colonial', storeys: 3 } }).city.buildings[0].h).toBeCloseTo(9.2, 5);
 });
 
-it('keeps reported roof shapes and leaves offices, big blocks and existing finishes alone', () => {
+it('keeps reported roof shapes and leaves offices, tall residences and existing finishes alone', () => {
   const [hippedId] = Object.entries(tags).find(([, v]) => v[0] === 'hipped')!;
   const tagged = house(hippedId, rect(16, 8));
   const office = { ...house('office', rect(14, 8)), cls: 'office' };
-  const block = house('block', rect(40, 30));
+  const block = house('block', rect(40, 30), { cls:'residential', floors:31, h:108 });
   const irwin = house('osm:way:270493826', [[0, 0], [10, 0], [10, 14], [0, 14]]);
   // Pin both to Tudor: always side-gabled unless OSM says otherwise, pitch 1.1 × half-depth.
   const colonial = { [hippedId]: { style: 'tudor' as const }, plain: { style: 'tudor' as const } };
   const plan = residential(city([tagged, office, block, irwin]), irwinHouseFinish, undefined, undefined, 'high', colonial);
   expect(plan.count).toBe(1);
   expect(plan.city.buildings.find(b => b.id === 'office')!.h).toBeNull();
-  expect(plan.city.buildings.find(b => b.id === 'block')!.h).toBeNull();
+  expect(plan.city.buildings.find(b => b.id === 'block')!.h).toBe(108);
   // A long plan would gable, but the OSM tag says hipped: its ridge stops short of the ends.
   const ridgeEnd = (b: VBuilding, p: ReturnType<typeof residential>) => {
     const out = new Builder(), drawn = p.city.buildings.find(x => x.id === b.id)!;
@@ -257,4 +257,15 @@ it('adds terraced yards only for detached Ansley houses on the high tier', () =>
     const yard=residential({...c,buildings:[{...b,cls}]},undefined,ground).yards();
     expect(yard?.terraceSites.length??0).toBe(0);yard?.dispose();
   }
+});
+
+
+it('uses specific house tags above 450 m² and requires low-rise evidence for broader residential tags', () => {
+  const site = (cls: string, id: string, extra: Partial<VBuilding> = {}) => house(id,rect(25,20),{cls,...extra});
+  const candidates = [site('house','large'), site('detached','detached'), site('residential','low',{floors:2}),
+    site('residential','unknown'),site('residential','tall',{floors:31}),site('residential','slab',{floors:3,name:'Building 10'}),
+    site('apartments','apartments',{floors:2}),site('office','office',{floors:2})];
+  const homes = residential(city(candidates));
+  expect(candidates.filter(b=>homes.isHouse(b.id)).map(b=>b.id)).toEqual(['large','detached','low']);
+  expect(homes.planOf('large')!.style).not.toBe('apartment');
 });

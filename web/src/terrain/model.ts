@@ -249,7 +249,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
   const originalFinish = options.finishFor;
-  const homes = residential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
+  const homes = residential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
