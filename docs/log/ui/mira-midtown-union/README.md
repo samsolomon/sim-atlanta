@@ -17,7 +17,7 @@
 
 The April 2019 lidar shows a surface lot here (roof p50 0.2 m), so no height is measured.
 
-- Midtown Alliance says 26 stories. OSM tags the tower `building:levels=18` with `building:min_level=9`, and maps the tower part at 64.8 m. These **conflict**. I read OSM's 18 as the residential floors (min_level 9 marks the garage), and the May 2025 photo shows about 8–9 garage levels behind the screen, then about 8–9 two-storey frame cells.
+- Midtown Alliance says 26 stories. OSM tags the tower `building:levels=18` with `building:min_level=9`, and maps the tower part at 64.8 m. These **conflict**. I read OSM's 18 as the residential floors (min_level 9 marks the garage), and the May 2025 photo shows about 8–9 garage levels behind the screen, then about 8–9 two-storey frame cells. With 17 residential floors, the top frame cell is one storey (estimated; the photos don't resolve the top floor).
 - Model: a 28.8 m garage (the mapped podium part), 17 residential floors at an estimated 3.05 m, and a 1.5 m parapet, for about **82.5 m, inferred**. That's about 17 m above the mapped 64.8 m.
 
 ## Estimated
@@ -30,6 +30,10 @@ The April 2019 lidar shows a surface lot here (roof p50 0.2 m), so no height is 
 ## Shade note
 
 At 11:30 on 2026-11-20 the tall tower south-east of Mira shades most of the slab's south face. There the recess renders navy at about V 17 (hue 217, S 93). A temporary bright-red recess confirmed the colour reaches the screen, shaded red rendering at (128, 0, 0). This is the global shade-tone issue the skyline lead has raised for Sam (Rambler north at V 14), so the skin carries no per-building lift.
+
+## Grade
+
+The lot climbs about 4.6 m from Spring Street's south-west corner to the north-east. The storefront band and the bottom of the screen start from each edge's higher end, so they stay above the street on the uphill side ([close-up](uphill-close.jpg), `279,-4030,225,62,110` with `&dev&mindist=20`).
 
 ## Left out
 

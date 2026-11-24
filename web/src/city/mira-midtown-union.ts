@@ -5,12 +5,12 @@ import { landmarkShell } from './landmark-shell';
 import { litHash, seedOf } from './skin-kit';
 
 /**
- * Mira at Midtown Union, 1301 Spring Street NW (completed 2022): a 26-storey apartment tower. An
- * eight-level garage podium is wrapped in a faceted screen of light and mid-grey panels laid in
+ * Mira at Midtown Union, 1301 Spring Street NW (completed 2022): a 26-storey apartment tower. A
+ * nine-level garage podium is wrapped in a faceted screen of light and mid-grey panels laid in
  * diagonal chevrons with yellow accent slots; above it, an L-plan slab along Spring Street wears a
  * white concrete frame of two-storey cells over dark recessed balconies, with a few yellow and
  * orange accent panels. The site postdates the 2019 lidar, so heights are inferred: 26 storeys
- * (Midtown Alliance), 17 of them residential over the podium. Evidence:
+ * (Midtown Alliance): nine garage levels (OSM min_level 9) and 17 residential floors. Evidence:
  * docs/log/ui/mira-midtown-union/README.md.
  */
 export const miraId = 'osm:way:1297223462';
@@ -56,6 +56,10 @@ export function createMira(buildings: VBuilding[], site: VBuilding, grid: Ground
   const floor = s.base + 0.35;
   const seed = seedOf(site.id);
   const local = (ring: [number, number][]): P2[] => ccw(ring.map(([x, z]): P2 => [x - origin[0], z - origin[1]]));
+  // The site climbs about 4.6 m to the north-east: storefront and screen start from each edge's
+  // higher end, so neither is buried on the uphill side.
+  const street = (a: P2, b: P2) =>
+    Math.max(floor, ...[a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? floor));
 
   // The podium: the whole fragment outline up to the garage roof, wrapped in the chevron screen.
   const podium = ccw(s.ring);
@@ -66,13 +70,14 @@ export function createMira(buildings: VBuilding[], site: VBuilding, grid: Ground
     // Skip short runs and the tile cut at z = -4100, where the two fragments meet.
     const cut = -4100 - origin[1];
     if (length < 8 || (Math.abs(a[1] - cut) < 0.2 && Math.abs(b[1] - cut) < 0.2)) return;
-    panel(s, false, a, b, 0.02, 0.98, floor + 0.3, floor + 4.5, 0.05, storefront);
+    const ground = street(a, b), screen = ground + 4.5, roofY = floor + podiumH;
+    panel(s, false, a, b, 0.02, 0.98, ground + 0.3, screen, 0.05, storefront);
     // Chevrons: light stripes rising one way on the lower half and the other way above it.
-    const n = Math.max(2, Math.round(length / 7)), w = 2.6 / length, mid = floor + 4.5 + (podiumH - 4.5) / 2;
-    for (let i = -1; i <= n; i++) {
+    const n = Math.max(2, Math.round(length / 7)), w = 2.6 / length, mid = screen + (roofY - screen) / 2;
+    for (let i = 0; i < n; i++) {
       const t = i / n;
-      stripe(s, a, b, t, t + 0.6 / n, floor + 4.5, mid, w, 0.06, screenLight);
-      stripe(s, a, b, t + 0.6 / n, t, mid, floor + podiumH - 0.5, w, 0.06, screenLight);
+      stripe(s, a, b, t, t + 0.6 / n, screen, mid, w, 0.06, screenLight);
+      stripe(s, a, b, t + 0.6 / n, t, mid, roofY - 0.5, w, 0.06, screenLight);
     }
     // Yellow accent slots, one per screen bay at mid height (photo).
     for (let i = 0; i < n; i++) panel(s, false, a, b, (i + 0.45) / n, (i + 0.55) / n, mid - 1.2, mid + 0.4, 0.08, accent);
@@ -89,15 +94,18 @@ export function createMira(buildings: VBuilding[], site: VBuilding, grid: Ground
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (length < 4) return;
     const cells = Math.max(1, Math.round(length / 6.5));
+    // The frame runs 0.3 m past each end so neighbouring faces meet at convex corners; at the
+    // inside corner of the L the overrun is buried in the other wing.
+    const e = 0.3 / length;
     for (let i = 0; i <= cells; i++) {
       const t = i / cells, w = 0.6 / length;
-      panel(s, false, a, b, Math.max(0, t - w), Math.min(1, t + w), floor + podiumH, top, 0.3, frame);
+      panel(s, false, a, b, Math.max(-e, t - w), Math.min(1 + e, t + w), floor + podiumH, top, 0.3, frame);
     }
     for (let f = 0; f <= floors; f += 2) {
       const yy = floor + podiumH + f * floorH;
-      panel(s, false, a, b, 0, 1, yy, yy + 1.0, 0.3, frame);
+      panel(s, false, a, b, -e, 1 + e, yy, yy + 1.0, 0.3, frame);
     }
-    panel(s, false, a, b, 0, 1, top - parapetH, top, 0.3, frame);
+    panel(s, false, a, b, -e, 1 + e, top - parapetH, top, 0.3, frame);
     // Lit flats (about three in ten) and a few photo-backed yellow accent panels.
     for (let f = 0; f < floors; f++) {
       const yy = floor + podiumH + f * floorH;

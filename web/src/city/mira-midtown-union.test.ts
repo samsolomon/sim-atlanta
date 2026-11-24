@@ -1,4 +1,4 @@
-import { Mesh, Raycaster, Vector3 } from 'three';
+import { Color, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
 import { GroundGrid } from '../terrain/grid';
@@ -46,4 +46,31 @@ it('stays inside the landmark budget on both tiles', () => {
   expect(b.group.children).toHaveLength(1); // the podium strip has no lit windows
   expect(top(b.group, 250, -4106)).toBeCloseTo(320.8, 1);
   expect(triangles(a.group) + triangles(b.group)).toBeLessThan(1400);
+});
+
+it('keeps the storefront above the street where the site climbs to the north', () => {
+  // Ground falling 4 m per 100 m southward, like the 4.6 m climb across the real lot.
+  const slope = new GroundGrid(
+    {
+      version: 1, rows: 3, cols: 2, stepM: 100,
+      bounds: { minX: 200, maxX: 300, minZ: -4200, maxZ: -4000 },
+      encoding: 'signed int16 little-endian',
+      vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 300 },
+      scaleM: 0.1, offsetM: 0, noData: -32768, sha256: '',
+    },
+    new Int16Array([2700, 2700, 2740, 2740, 2780, 2780]).buffer,
+  );
+  const result = createMira([upper], upper, slope)!;
+  result.group.updateMatrixWorld(true);
+  const body = result.group.children[0] as Mesh;
+  const position = body.geometry.attributes.position, color = body.geometry.attributes.color;
+  const shop = new Color('#33404a'), v = new Vector3();
+  let checked = 0;
+  for (let i = 0; i < position.count; i++) {
+    if (Math.abs(color.getX(i) - shop.r) + Math.abs(color.getY(i) - shop.g) + Math.abs(color.getZ(i) - shop.b) > 0.01) continue;
+    v.fromBufferAttribute(position, i).applyMatrix4(body.matrixWorld);
+    expect(v.y + 300).toBeGreaterThan(slope.sample(v.x, v.z)! + 0.05);
+    checked++;
+  }
+  expect(checked).toBeGreaterThan(8);
 });
