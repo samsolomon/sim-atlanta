@@ -31,7 +31,7 @@ import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
-import { World, type Alignment, type VData } from '../vignette/world';
+import { TREE_CELL_M, World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
@@ -304,7 +304,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     perf.phase(`stage:${name}`);
   };
   // The night light map is 2 m texels on low (7 MB instead of 28 MB for downtown's 2 km board).
-  const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
+  const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048, farForm: low && perfOverrides.farForm, treeCellM: low ? perfOverrides.treeCellM ?? TREE_CELL_M : 0 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
   let downtownBatches: ReturnType<typeof batchLandmarks> | undefined;

@@ -1,4 +1,5 @@
 import { crownKey } from '../trees/rollout';
+import { perfOverrides } from '../core/perf';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
@@ -33,7 +34,7 @@ import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
-import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
+import { TREE_CELL_M, World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
@@ -180,7 +181,7 @@ function houseLodForce() {
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
-  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
+  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048, farForm: quality === 'low' && perfOverrides.farForm, treeCellM: quality === 'low' ? perfOverrides.treeCellM ?? TREE_CELL_M : 0 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
