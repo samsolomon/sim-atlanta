@@ -3030,3 +3030,17 @@ building and eight suspended globes trace the approach to the lobby.
 ### 2026-11-23 — The second copy of the bridge
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
+### 2026-11-23 — North Avenue is more than one underpass
+
+The bridge inventory supplied the first firm dimension: Marietta Street crosses
+North Avenue on two concrete slab spans, 22.6 m in total, with a reported minimum
+underclearance of 4.69 m. The railway clearance is still unknown. We queried
+258,838 USGS lidar points rather than the terrain raster, including 7,279 deck
+returns, and checked a December 2018 winter aerial. Three trackless western deck
+strips survive beyond the mapped 86 m road tunnel; the complete visible sequence
+extends roughly 153 m along the survey axis. What surprised us was the limit of
+all that evidence: the active railway cover's internal joints still cannot be
+counted confidently. The proposal keeps one active cover envelope and the three
+separate disused strips, rather than drawing imaginary daylight gaps. No scene
+geometry changed. [Survey, inventory, uncertainty and photo request](north-ave-underpass.md)
+· [Public-domain lidar plan and section](log/north-ave/lidar-survey.png).

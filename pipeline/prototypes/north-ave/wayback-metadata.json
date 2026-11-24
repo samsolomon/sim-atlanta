@@ -1,0 +1,141 @@
+{
+  "release": {
+    "itemID": "0c361a688a5a453487021132c878e870",
+    "itemTitle": "World Imagery (Wayback 2022-12-14)",
+    "itemURL": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/45134/{level}/{row}/{col}",
+    "metadataLayerUrl": "https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2022_r15/MapServer",
+    "metadataLayerItemID": "3746af87a2bb46a78d4846a728d017df",
+    "layerIdentifier": "WB_2022_R15"
+  },
+  "metadata": {
+    "displayFieldName": "NICE_NAME",
+    "fieldAliases": {
+      "OBJECTID": "OBJECTID",
+      "Shape_Length": "Shape_Length",
+      "Shape_Area": "Shape_Area",
+      "SRC_DATE": "SRC_DATE",
+      "SRC_RES": "SRC_RES",
+      "SRC_ACC": "SRC_ACC",
+      "SAMP_RES": "SAMP_RES",
+      "SRC_DESC": "SRC_DESC",
+      "MinMapLevel": "MinMapLevel",
+      "MaxMapLevel": "MaxMapLevel",
+      "NICE_NAME": "NICE_NAME",
+      "DrawOrder": "DrawOrder",
+      "SRC_DATE2": "SRC_DATE2",
+      "NICE_DESC": "NICE_DESC",
+      "BlockName": "BlockName",
+      "ReleaseName": "ReleaseName"
+    },
+    "fields": [
+      {
+        "name": "OBJECTID",
+        "type": "esriFieldTypeOID",
+        "alias": "OBJECTID"
+      },
+      {
+        "name": "Shape_Length",
+        "type": "esriFieldTypeDouble",
+        "alias": "Shape_Length"
+      },
+      {
+        "name": "Shape_Area",
+        "type": "esriFieldTypeDouble",
+        "alias": "Shape_Area"
+      },
+      {
+        "name": "SRC_DATE",
+        "type": "esriFieldTypeInteger",
+        "alias": "SRC_DATE"
+      },
+      {
+        "name": "SRC_RES",
+        "type": "esriFieldTypeDouble",
+        "alias": "SRC_RES"
+      },
+      {
+        "name": "SRC_ACC",
+        "type": "esriFieldTypeDouble",
+        "alias": "SRC_ACC"
+      },
+      {
+        "name": "SAMP_RES",
+        "type": "esriFieldTypeDouble",
+        "alias": "SAMP_RES"
+      },
+      {
+        "name": "SRC_DESC",
+        "type": "esriFieldTypeString",
+        "alias": "SRC_DESC",
+        "length": 25
+      },
+      {
+        "name": "MinMapLevel",
+        "type": "esriFieldTypeSmallInteger",
+        "alias": "MinMapLevel"
+      },
+      {
+        "name": "MaxMapLevel",
+        "type": "esriFieldTypeSmallInteger",
+        "alias": "MaxMapLevel"
+      },
+      {
+        "name": "NICE_NAME",
+        "type": "esriFieldTypeString",
+        "alias": "NICE_NAME",
+        "length": 50
+      },
+      {
+        "name": "DrawOrder",
+        "type": "esriFieldTypeSmallInteger",
+        "alias": "DrawOrder"
+      },
+      {
+        "name": "SRC_DATE2",
+        "type": "esriFieldTypeDate",
+        "alias": "SRC_DATE2",
+        "length": 8
+      },
+      {
+        "name": "NICE_DESC",
+        "type": "esriFieldTypeString",
+        "alias": "NICE_DESC",
+        "length": 25
+      },
+      {
+        "name": "BlockName",
+        "type": "esriFieldTypeString",
+        "alias": "BlockName",
+        "length": 100
+      },
+      {
+        "name": "ReleaseName",
+        "type": "esriFieldTypeString",
+        "alias": "ReleaseName",
+        "length": 15
+      }
+    ],
+    "features": [
+      {
+        "attributes": {
+          "OBJECTID": 726363,
+          "Shape_Length": 66541.61650178049,
+          "Shape_Area": 188099252,
+          "SRC_DATE": 20181215,
+          "SRC_RES": 0.31,
+          "SRC_ACC": 4.06,
+          "SAMP_RES": 0.31,
+          "SRC_DESC": "WV04",
+          "MinMapLevel": 20,
+          "MaxMapLevel": 20,
+          "NICE_NAME": "Digital Globe",
+          "DrawOrder": 80,
+          "SRC_DATE2": 1544832000000,
+          "NICE_DESC": "Maxar",
+          "BlockName": null,
+          "ReleaseName": null
+        }
+      }
+    ]
+  }
+}
