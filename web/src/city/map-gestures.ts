@@ -24,6 +24,7 @@ export function mapGestures(
   /** Turn the view by degrees, as City's rotate() does (positive turns the bearing down). */
   rotate: (degrees: number) => void,
   onGesture: () => void,
+  o: { legacy?: boolean } = {},
 ) {
   // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
   // r180's middle-drag dolly reads the cursor's y from its x, which zoomToCursor would expose.
@@ -64,7 +65,9 @@ export function mapGestures(
     const orbit = controls as unknown as { _rotateUp(value: number): void };
     orbit._rotateUp(e.deltaY * 0.004);
     rotate(e.deltaX * 0.15);
-    controls.update();
+    // The frame loop applies it; updating here too ran extra damping steps per wheel event, so the
+    // smoothing depended on how often the trackpad reports. `?camera=legacy` keeps that.
+    if (o.legacy) controls.update();
   }, { capture: true, passive: false, signal: events.signal });
 
   // Through OrbitControls' wheel path, so the zoom keeps the point under the cursor. Deferred:
