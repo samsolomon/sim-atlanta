@@ -15,6 +15,8 @@ import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
 import { createProscenium, prosceniumId } from '../city/proscenium';
+import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
+import { createSora, soraId } from '../city/sora';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
 import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
 import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
@@ -26,6 +28,7 @@ import { createMetropolis, metropolisId } from '../city/metropolis';
 import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
 import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
+import { createLoews, loewsId } from '../city/loews-atlanta';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -266,6 +269,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
+      : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
+      : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
       : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
       : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
@@ -277,6 +282,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
       : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
       : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
+      : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {

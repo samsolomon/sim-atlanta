@@ -128,6 +128,7 @@ import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -892,7 +893,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
   }
+  // Set once the prewarm scheduler exists (below); an area mounting before then is covered by its first run.
+  let requestPrewarm = () => {};
+  let prewarmer: Prewarmer | undefined;
+  let colourShown = !options.whiteModel;
+  let prewarmDone = false;
+  let bloomWarmFrames = 0;
   function addArea(area: NonNullable<typeof east>) {
+    requestPrewarm();
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
@@ -1482,7 +1490,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     northStops?.setNight(night);
     if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
-    bloom.enabled = !low && night > 0.02 && !perfOverrides.nopass.has('bloom');
+    // A one-frame warm-up runs bloom at strength 0 by day (it adds nothing), so its blur shaders compile
+    // then and not on the first dusk frame.
+    bloom.enabled = !low && (night > 0.02 || bloomWarmFrames > 0) && !perfOverrides.nopass.has('bloom');
+    if (bloomWarmFrames > 0) bloomWarmFrames--;
 
     const ease = 1 - Math.exp(-dt * 2);
     wx.cloud += (atm.cloud - wx.cloud) * ease;
@@ -1680,6 +1691,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    // One never-drawn object per frame (a single shader compile at most), after the frame's own work.
+    if (prewarmer?.pending) {
+      const t = performance.now();
+      if (prewarmer.step(low ? 2 : 4, 1)) perf.prewarmStep(performance.now() - t);
+      if (!prewarmer.pending && !prewarmDone) { prewarmDone = true; bloomWarmFrames = 1; perf.phase('city:prewarmed'); }
+    }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
     if (ts - fpsT > 1000) {
@@ -1711,6 +1728,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setTimeout(release, 8000);
   }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  // Compile what City may show later (weather, dusk and night lights, culled areas) a little at a
+  // time once colour shows, so a clock or weather change never stalls on a first-use shader compile.
+  // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
+  if (!perfOverrides.prewarmOff) {
+    prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
+    requestPrewarm = () => setTimeout(rescan, 500);
+    // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
+    const rescanTimer = setInterval(rescan, 10000);
+    options.signal?.addEventListener('abort', () => clearInterval(rescanTimer), { once: true });
+    void (whiteModel?.revealed ?? Promise.resolve()).then(() => { colourShown = true; rescan(); });
+  }
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
@@ -1878,6 +1907,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      prewarmer?.dispose();
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
