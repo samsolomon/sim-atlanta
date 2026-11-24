@@ -58,7 +58,7 @@ function aboutNode(): HTMLElement {
       <p>The City view is a hand-built model of downtown, drawn like a tabletop diorama. The Map view zooms out to the region’s rail: subway, streetcar, Amtrak and the freight lines that cross the state. Both show the same moment, Atlanta time.</p>
       <p class="a2-quiet">Nothing here is for planning a trip. It’s a window, not a timetable.</p>
       <p class="a2-h">How true is it?</p>
-      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. City infers Route 49 bus positions from scheduled trips, stops and simulated signals. At the present clock City says Live. Select a bus to see its GPS age and drawing offset, or its timetable fallback.</p>
+      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. City infers Route 49 bus positions from scheduled trips, stops and simulated signals. At the present clock City says Live while rail or bus GPS is reporting. Select a bus to see its GPS age and drawing offset, or its timetable fallback.</p>
       <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
       <p class="a2-h">Credits</p>
       <dl class="a2-credits">
