@@ -2881,3 +2881,8 @@ caught clockwise source rings hiding the facade details inside the walls. Normal
 the rings fixed that without moving their geometry. The low tier stays within budget at
 546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
 [Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
+### 2026-11-23 — Freight gets three silhouettes
+
+The lab now has the Evolution-series GE road engine in NS-like and CSX-like paint, an NS-like SD70ACe, and a shorter CSX-like GP38-2. The SD has brow headlights, a broad clipped-corner nose and three radiator fans; the GP has a narrow short hood, four axles and two rear fans. The surprise was a published GP38-2 truck-spacing disagreement: a secondary sheet said 43 ft, while GATX says 34 ft between bolster centres. The model uses GATX. All four are merged vertex-coloured geometry, at 2,708–3,836 triangles each. The new NS inputs needed lifting through the grade so black panels still read; the approved CM44ACs stay unchanged. Lab-only selection for now; City consists are the next freight integration step after the car library. Web rebuild only. [Matched daylight](log/freight/variety/day.jpg) · [Night](log/freight/variety/night.jpg) · [Photo comparison](log/freight/variety/references.jpg) · [Sources and estimates](freight-variety.md).
+
+Cross-review found an unexpected coupling: City's terrain-opening cutoff used the shortest truck spacing in the whole library, so a lab-only switcher lowered it. Computing the cutoff from the actual City consist keeps the 12 m threshold. An 11 m test sliver catches the regression with that one-line fix reverted.

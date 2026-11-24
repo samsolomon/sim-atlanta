@@ -25,3 +25,14 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   freight.dispose();
   expect(freight.group.children).toHaveLength(0);
 });
+
+it('does not expose an 11 m sliver just because the lab adds a shorter switcher', () => {
+  const point = (s: number) => ({ s, position: new THREE.Vector3(s, 0, 0) });
+  const start = Date.parse('2026-11-20T19:12:02Z');
+  for (const length of [11, 12]) {
+    const freight = new CityFreight([[point(0), point(length)]], []);
+    freight.update(start + 10 / 4.5 * 1000);
+    expect(freight.visibleCars).toBe(length === 11 ? 0 : 1);
+    freight.dispose();
+  }
+});

@@ -66,3 +66,14 @@ and `__lab.render()` with that matched camera.
 Reference panels are cropped/resized with captions; author, date, source and
 licence are listed above. The combined reference sheet is distributed under
 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
+## Validation
+
+Full strict tests and build pass. New geometry checks cover each family's envelope,
+rail contact and front/rear lamp attributes. Cross-review caught a shared-table
+side effect: adding the GP38-2 lowered City's sliver cutoff from 12 m to 10.36 m.
+The cutoff now derives from City's actual consist, preserving the 12 m behavior.
+A concrete 11 m / 12 m track test fails when that fix is reverted. The four new
+unit keys still do not enter City consists in this PR.
+
+Final validation: 20 Rust, 11 pipeline, 940 web tests (one existing skip), and five worker tests passed; build and type check passed. Perf Low: 2,384,006 triangles / 543 calls; High: 13,781,355 / 1,177, both below ceilings. Claude's second and final review found no remaining findings. All four models were checked in the browser with matched day/night screenshots. Web rebuild only; no data rebuild or worker change.

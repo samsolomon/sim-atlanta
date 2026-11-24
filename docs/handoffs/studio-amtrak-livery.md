@@ -56,3 +56,14 @@ Claude agent `orca_session_id:e5348118-da22-4978-9d69-ad882db9e7a9` → Codex, 2
 - **Rust tests.** `cargo` isn't on PATH. Use `export PATH="$(dirname $(ls ~/.rustup/toolchains/*/bin/cargo | head -1)):$PATH"`.
 - **Cross-review.** `pnpm review` (Codex) wasn't available to me, so I self-reviewed with the `code-review` skill. As Codex you can run `pnpm review` and have Claude review your work.
 - **Merge notices.** Every one leads with GitHub blob links to the captioned photo/before/after composites, money shot first.
+
+## Codex continuation — 2026-11-23
+
+- #291 merged at `8fb88467`; Sam approved the updated freight train.
+- #342 merged at `a1bafa0e`: Brookwood regression now uses a recorded timetable
+  fixture. Fresh Amtrak data starts November 22, so pre-November-22 review cameras
+  no longer show the Crescent after the next `pnpm data`. Use covered dates for
+  future release checks; never extend feed validity to preserve old screenshots.
+- Freight PR 2 is on `samsolomon/freight-locomotive-variety`: ES44AC/ES44AH,
+  SD70ACe and GP38-2 lab studies. References/cameras: `docs/freight-variety.md`.
+  City still uses the approved CM44AC-family units pending PR 4.
