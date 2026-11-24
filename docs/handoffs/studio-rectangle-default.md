@@ -1,5 +1,19 @@
 # Handoff for studio-rectangle-default
 
+## Current release handoff · 2026-11-24
+
+**Accountable owner.** The Studio release packager owns the build, verification, archive and checksum. The merge lead owns integration and the exact cut. The deployment coordinator owns production deployment and smoke verification.
+
+**Production baseline.** Release 13 is deployed at `e1667baa27bd057fdbf8992aac66e719403390ac`. It contains #644 on top of R12. The coordinator verified all 423 public assets and the live MARTA rail response shape. Archive SHA-256 is `7fdd53e978208380683d81c270dce858e0a29f15556e16423cdb6105920ec8a1`.
+
+**Evidence.** The retained local package is `sim-atlanta-release-e1667baa/` under the Studio release archive directory. Its `RELEASE.md` records strict tests (20 Rust, 11 + 7 Python, 1,348 web passed with one skipped, 9 Worker), perf budgets (zero retries), and verification of 455 extracted manifest entries. In that package, `smoke/generic-compare.jpg` shows the ten R12/R13 facade comparisons, `smoke/frames-0.jpg` through `frames-5.jpg` cover the 42 standing views, and `smoke/orbits-sheet.jpg` covers Low shadow-follow.
+
+**Pending.** Wait for the verified post-toggle SHA and a packaging slot. The expected cut includes freight through #639, radio dock #670, then the camera-toggle styling approved at `73eb33b4`. Verify the actual range against R13, run the standing and cut-specific gates, then transfer the archive and checksum. Candidate tests, screenshots and production verification are pending. #670 owns the shared Studio timing/perf window.
+
+**Integration and cleanup.** At kickoff, agree on one integration owner for independently reviewed contributions. Report overlapping editors, shared services and pending branches before cleanup. The packager owns no pending feature branch or shared dev server. Retain the R13 baseline and queued work.
+
+## Historical handoffs
+
 ## Claude Opus → Codex handoff (2026-11-24)
 
 Claude Opus session **`orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d`** hands this worktree to Codex (gpt-6.2-astra or gpt-6.2-sol). Read its history with `orca agent read --id orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d`. The earlier sessions are listed below.
