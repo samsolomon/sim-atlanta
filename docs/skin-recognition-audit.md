@@ -75,3 +75,20 @@ These were judged the same way. Only some PRs have a 400–600 m shot: Wimbish, 
 | PASS, dark glass | #164 | Promenade Tower | Stepped crown reads, but body near-black (V 16–18); Sam-reviewed, so no change tonight; listed in glass-palette.md |
 
 Pass: Bank of America Plaza, One Atlantic Center (sunlit glass V 31), 1180 Peachtree, Georgian Terrace, Biltmore, Academy of Medicine, Wimbish House, Ponce de Leon Apartments, 1100 Peachtree, the Campanile, 1010 Midtown, 1105 West Peachtree (glass V 36 median, lifted by its braces).
+
+## Queued skins (train 8 candidates), checked before merge
+
+Twelve skins queued before the recognition rule were judged from each PR's own images; the lead checked the FAIL by eye. Distances outside 400–600 m are noted, because they can flatter or understate a skin.
+
+| Verdict | PR | Building | Note | Disposition |
+|---|---|---|---|---|
+| FAIL | #530 | Coca-Cola USA Building (large) | Red-brown granite reads as a beige punched grid at 620 m | Pulled from 8b; skins-7 reworks it |
+| BORDERLINE | #527 | Two Peachtree Pointe (large) | Curved plan reads; glass and banding generic; no base or crown | Rides 8a; later pass |
+| BORDERLINE | #539 | Renaissance Midtown (large) | Beige grid apart from the centre strip; frame is 300 m | Rides 8b; needs a 400–600 m frame; later pass |
+| BORDERLINE | #528 | The M by Radius | Piers faint, crown hidden from that side | Rides 8a; later pass |
+| BORDERLINE | #533 | Lilli Midtown | Grey glass near generic; base hidden; low-tier frame | Strengthen before 8c (lead approves) |
+| BORDERLINE | #544 | Piedmont House | Blue among blue boxes at 750 m; faint grid | Strengthen before 8c (lead approves) |
+| BORDERLINE | #529 | Vireo Piedmont Park | Balconies don't read at 700 m | Rides 8b; later pass |
+| BORDERLINE | #537 | Hanover House | Tan box with one slot; grid doesn't read | Rides 8b; later pass |
+| BORDERLINE | #546 | Azure on the Park | Tower glass matches neighbours | Rides 8b with #581's shade fix; later pass |
+| PASS | #532, #536, #558 | Luxe, Crowne Plaza, Windsor | | 8b |
