@@ -1,3 +1,4 @@
+import { runSync, type Build } from '../core/slice';
 /**
  * The ground surface's geometry as pure functions over typed arrays: no DOM, no three.js objects,
  * so it runs in a Worker (terrain/surface-worker.ts) and later at build time in the pipeline.
@@ -241,6 +242,11 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
  * so nothing drawn on the ground (roads, ballast, building bases, trees) is buried by the
  * coarser surface; rim nodes stay exact for the seams and side walls. */
 export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160, lower = false) {
+  return runSync(farSurfaceSteps(spec, heights, openings, errorM, maxCellM, lower));
+}
+
+/** farSurface as a build that yields every few dozen cells, leaves and triangles (core/slice.ts). */
+export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160, lower = false): Build<{ pos: number[]; uv: number[]; indices: number[] }> {
     const { rows, cols, stepM, bounds } = spec;
     const cellsX = cols - 1, cellsZ = rows - 1;
     const maxSize = 2 ** Math.floor(Math.log2(Math.max(1, maxCellM / stepM)));
@@ -274,18 +280,22 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       const id = ls.length; lx.push(cx); lz.push(cz); ls.push(s); le.push(s > 1 ? excess : 0);
       for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) leafAt[r * cellsX + c] = id;
     };
-    const split = (cx: number, cz: number, s: number): void => {
+    let work = 0;
+    function* split(cx: number, cz: number, s: number): Generator<string, void, void> {
       if (cx >= cellsX || cz >= cellsZ) return;
       if (s === 1) {
         const h = [node(cx, cz), node(cx + 1, cz), node(cx, cz + 1), node(cx + 1, cz + 1)].map(i => heights[i]);
         if (h.every(Number.isFinite)) place(cx, cz, 1);
         return;
       }
+      // accept() scans (s+1)² nodes: count that work and hand back control every few thousand.
+      work += (s + 1) * (s + 1);
+      if (work > 512) { work = 0; yield 'far cells'; }
       if (cx + s <= cellsX && cz + s <= cellsZ && accept(cx, cz, s)) { place(cx, cz, s); return; }
       const h = s / 2;
-      split(cx, cz, h); split(cx + h, cz, h); split(cx, cz + h, h); split(cx + h, cz + h, h);
-    };
-    for (let cz = 0; cz < cellsZ; cz += maxSize) for (let cx = 0; cx < cellsX; cx += maxSize) split(cx, cz, maxSize);
+      yield* split(cx, cz, h); yield* split(cx + h, cz, h); yield* split(cx, cz + h, h); yield* split(cx + h, cz + h, h);
+    }
+    for (let cz = 0; cz < cellsZ; cz += maxSize) for (let cx = 0; cx < cellsX; cx += maxSize) yield* split(cx, cz, maxSize);
     const pos: number[] = [], uv: number[] = [], indices: number[] = [];
     const remap = new Map<number, number>();
     const add = (x: number, y: number, z: number) => {
@@ -295,10 +305,13 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       return i;
     };
     const drop = new Float32Array(lower ? rows * cols : 0);
+    let dropWork = 0;
     if (lower) for (let id = 0; id < ls.length; id++) {
       const e = le[id];
       if (!(e > 0)) continue;
       const cx = lx[id], cz = lz[id], s = ls[id];
+      dropWork += (s + 1) * (s + 1);
+      if (dropWork > 1024) { dropWork = 0; yield 'far drop'; }
       for (let r = 0; r <= s; r++) for (let c = 0; c <= s; c++) {
         const C = cx + c, R = cz + r;
         if (C === 0 || R === 0 || C === cols - 1 || R === rows - 1) continue;
@@ -319,16 +332,26 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       if (id < 0) return true;
       return (c - lx[id]) % ls[id] === 0 && (r - lz[id]) % ls[id] === 0;
     });
-    let clip = false;
+    let clip = false, near: typeof slots = [];
     const emit = (a: number, b: number, c: number) => {
       const face = [vertex(a), vertex(b), vertex(c)];
       let faces = [face];
-      if (clip) for (const sl of slots) faces = faces.flatMap(f => subtractSlot(f, sl.planes, pos, add));
+      // Only the slots whose box meets this 5 m cell can cut it (downtown has dozens).
+      if (clip) for (const sl of near) faces = faces.flatMap(f => subtractSlot(f, sl.planes, pos, add));
       for (const f of faces) for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]);
     };
+    yield 'far emit';
+    let clipWork = 0;
     for (let id = 0; id < ls.length; id++) {
+      if (id % 64 === 63) yield 'far leaves';
       const cx = lx[id], cz = lz[id], s = ls[id];
       clip = s === 1 && slotCell[cz * cellsX + cx] === 1;
+      if (clip) {
+        const x0 = bounds.minX + cx * stepM, z0 = bounds.minZ + cz * stepM;
+        near = slots.filter(sl => sl.maxX >= x0 && sl.minX <= x0 + stepM && sl.maxZ >= z0 && sl.minZ <= z0 + stepM);
+        clipWork += 2 * near.length;
+        if (clipWork > 64) { clipWork = 0; yield 'far clips'; }
+      }
       const nw = node(cx, cz), ne = node(cx + s, cz), sw = node(cx, cz + s), se = node(cx + s, cz + s);
       const ring = [nw];
       for (let t = 1; t < s; t++) if (keep(cx, cz + t, [[cx - 1, cz + t - 1], [cx - 1, cz + t]])) ring.push(node(cx, cz + t));
@@ -342,7 +365,7 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       const centre = node(cx + s / 2, cz + s / 2);
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
-    if (lower) settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
+    if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
     return { pos, uv, indices };
 }
 
@@ -353,7 +376,7 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
  * drops more than `limit` (twice the error) below its own node, so a cell against the rim may
  * keep a residue (up to about 4 m within 165 m of a seam on the current boards).
  */
-function settleBelow(pos: number[], indices: number[], remap: Map<number, number>, heights: Float32Array, spec: SurfaceSpec, limit: number) {
+function* settleBelow(pos: number[], indices: number[], remap: Map<number, number>, heights: Float32Array, spec: SurfaceSpec, limit: number): Generator<string, void, void> {
   const { rows, cols, stepM, bounds } = spec;
   const nodeOf = new Int32Array(pos.length / 3).fill(-1);
   for (const [n, v] of remap) nodeOf[v] = n;
@@ -363,6 +386,7 @@ function settleBelow(pos: number[], indices: number[], remap: Map<number, number
     const c = n % cols, r = Math.floor(n / cols);
     return c > 0 && r > 0 && c < cols - 1 && r < rows - 1;
   };
+  let settleWork = 0;
   for (let pass = 0; pass < 4; pass++) {
     let moved = false;
     for (let t = 0; t < indices.length; t += 3) {
@@ -376,6 +400,9 @@ function settleBelow(pos: number[], indices: number[], remap: Map<number, number
       const c1 = Math.min(cols - 1, Math.floor((Math.max(ax, bx, cx) - bounds.minX) / stepM + 1e-9));
       const r0 = Math.max(0, Math.ceil((Math.min(az, bz, cz) - bounds.minZ) / stepM - 1e-9));
       const r1 = Math.min(rows - 1, Math.floor((Math.max(az, bz, cz) - bounds.minZ) / stepM + 1e-9));
+      // Count the node checks; a 160 m cell alone scans ~1,000.
+      settleWork += 8 + (r1 - r0 + 1) * (c1 - c0 + 1);
+      if (settleWork > 512) { settleWork = 0; yield 'far settle'; }
       const ma = movable(a), mb = movable(b), mc = movable(c);
       if (!ma && !mb && !mc) continue;
       // The drop at the movable corners that clears the worst node: its excess over the
@@ -427,6 +454,37 @@ export function vertexNormals(pos: ArrayLike<number>, indices: ArrayLike<number>
   return n;
 }
 
+/** A typed copy of a large number[] in chunks, yielding between them. */
+export function* typedSteps<T extends Float32Array | Uint16Array | Uint32Array>(out: T, from: ArrayLike<number>): Build<T> {
+  for (let i = 0; i < from.length; i += 8192) {
+    const end = Math.min(from.length, i + 8192);
+    for (let k = i; k < end; k++) out[k] = from[k];
+    yield 'far arrays';
+  }
+  return out;
+}
+
+/** vertexNormals as a build that yields every few thousand triangles (same result). */
+export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>): Build<Float32Array> {
+  const n = new Float32Array(pos.length);
+  for (let i = 0; i < indices.length; i += 3) {
+    if (i % 3072 === 3069) yield 'far normals';
+    const a = indices[i] * 3, b = indices[i + 1] * 3, c = indices[i + 2] * 3;
+    const ax = pos[a], ay = pos[a + 1], az = pos[a + 2];
+    const bx = pos[b], by = pos[b + 1], bz = pos[b + 2];
+    const cx = pos[c], cy = pos[c + 1], cz = pos[c + 2];
+    const ux = cx - bx, uy = cy - by, uz = cz - bz, vx = ax - bx, vy = ay - by, vz = az - bz;
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    for (const k of [a, b, c]) { n[k] += nx; n[k + 1] += ny; n[k + 2] += nz; }
+  }
+  yield 'far normals';
+  for (let k = 0; k < n.length; k += 3) {
+    const inv = 1 / (Math.sqrt(n[k] * n[k] + n[k + 1] * n[k + 1] + n[k + 2] * n[k + 2]) || 1);
+    n[k] *= inv; n[k + 1] *= inv; n[k + 2] *= inv;
+  }
+  return n;
+}
+
 /** 16- or 32-bit indices, as BufferGeometry.setIndex(number[]) picks them. */
 function indexOf(indices: number[], vertexCount: number) {
   return vertexCount > 65535 ? Uint32Array.from(indices) : Uint16Array.from(indices);
@@ -437,16 +495,16 @@ function indexOf(indices: number[], vertexCount: number) {
  * (GroundYield) still happens on the main thread: yields carry floor functions.
  */
 export function buildSurfaceArrays(input: { spec: SurfaceSpec; heights: Float32Array; minY: number; quality: TerrainQuality;
-  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number }) {
-  const { spec, heights, minY, quality, openings = [], join, farErrorM } = input;
+  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number; farLower?: boolean }) {
+  const { spec, heights, minY, quality, openings = [], join, farErrorM, farLower = false } = input;
   const t = tessellate(spec, heights, quality, openings, join);
   const pos = new Float32Array(t.pos);
   const near = { pos, uv: new Float32Array(t.uv), normal: vertexNormals(pos, t.indices), index: indexOf(t.indices, pos.length / 3) };
   let far;
   if (farErrorM !== undefined) {
-    const f = farSurface(spec, heights, openings, farErrorM);
+    const f = farSurface(spec, heights, openings, farErrorM, 160, farLower);
     const fp = new Float32Array(f.pos);
-    far = { errorM: farErrorM, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
+    far = { errorM: farErrorM, lower: farLower, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
   }
   return { heights, minY, ...near, starts: t.starts, blockCols: t.blockCols, far };
 }

@@ -1,7 +1,8 @@
+import { type Build } from '../core/slice';
 import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { type OpenSlot } from './openings';
-import { farSurface, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
+import { farSurface, farSurfaceSteps, typedSteps, vertexNormalsSteps, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
 
@@ -10,7 +11,7 @@ export interface BuiltSurface {
   heights: Float32Array; minY: number;
   pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array;
   starts: Uint32Array; blockCols: number;
-  far?: { errorM: number; pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array };
+  far?: { errorM: number; lower?: boolean; pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array };
 }
 
 export function surfaceSpec(grid: GroundGrid): SurfaceSpec {
@@ -100,10 +101,31 @@ export class GroundSurface {
    * either neighbour exactly; cells over an opening are 5 m and clipped like the near mesh.
    * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
    */
+  /** farGeometry as a build that yields while it works (core/slice.ts): a far level built in the
+   * background must never hold a frame for a whole board. */
+  *farGeometrySteps(errorM: number, maxCellM = 160, lower = false): Build<THREE.BufferGeometry> {
+    const { pos, uv, indices } = yield* farSurfaceSteps(surfaceSpec(this.grid), this.heights, this.openings, errorM, maxCellM, lower);
+    const position = yield* typedSteps(new Float32Array(pos.length), pos);
+    const index = yield* typedSteps(pos.length / 3 > 65535 ? new Uint32Array(indices.length) : new Uint16Array(indices.length), indices);
+    const normal = yield* vertexNormalsSteps(position, index);
+    const uvs = yield* typedSteps(new Float32Array(uv.length), uv);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
+    geometry.setIndex(new THREE.BufferAttribute(index, 1));
+    return geometry;
+  }
+
+  /** True when a Worker already built this far level (so taking it costs no main-thread time). */
+  hasPrebuiltFar(errorM: number, lower = false) {
+    return !!this.prebuiltFar && this.prebuiltFar.errorM === errorM && !!this.prebuiltFar.lower === lower;
+  }
+
   farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;
-    if (far && far.errorM === errorM && maxCellM === 160 && !lower) {
+    if (far && far.errorM === errorM && maxCellM === 160 && !!far.lower === lower) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(far.pos, 3));
       g.setAttribute('uv', new THREE.BufferAttribute(far.uv, 2));
