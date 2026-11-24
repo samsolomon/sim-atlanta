@@ -634,7 +634,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       hedge(b, [at(s0 + .5, 1.05), at(s1 - .5, 1.05)], ground, { clipped: false, height: 1.1, width: .8, lumps: 1, spacing: 1.4, seed: p.id + s0 });
     }
     // A small bed beside the walk on some houses.
-    if (walk > 3 && r() < .3) {
+    if (walk > 3 && r() < .3 && !terrace) {
       const s = p.doorS + 1.1, o0 = porchDepth + .6, o1 = Math.min(walk + porchDepth - .6, o0 + 2.4);
       if (o1 - o0 > 1) flowerBed(b, [at(s, o0), at(s + 1.4, o0), at(s + 1.4, o1), at(s, o1)], ground, { doy: 300, quality, density: .7, seed: p.id + 'bed' });
     }
