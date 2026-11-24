@@ -156,3 +156,25 @@ it('keeps each unverified footprint independently in the generic pass', () => {
   expect(result.group.children.map((g) => g.name)).toEqual(['Peachtree Center International Tower']);
   expect(createPeachtreeCenter([changed, hole, neighbor], grid)).toBeNull();
 });
+
+it('matches the Overture hotel, places its public sculpture on the approach and lights the lobby', () => {
+  const hotel: VBuilding = {
+    id: 'ef617421-bb1d-405b-848c-712d0267ff56', h: 115, floors: 31,
+    rings: [[[338.41,-680.19],[349.72,-679.82],[349.91,-691.31],[350.68,-691.3],[350.81,-700.42],
+      [348.73,-700.45],[348.89,-711.75],[295.88,-712.48],[295.75,-703.05],[296.73,-703.04],
+      [296.71,-701.55],[293.94,-701.6],[293.79,-691.67],[308.64,-691.44],[308.62,-690.59],
+      [307.59,-690.6],[307.48,-680.45]]],
+  };
+  const local = new GroundGrid({...grid.manifest, bounds: {minX:200, maxX:400, minZ:-800,maxZ:-600}},
+    new Int16Array(4).fill(326).buffer);
+  const site = createPeachtreeCenter([hotel], local)!;
+  expect(site.buildings).toEqual([]);
+  const tower = site.group.getObjectByName('230 Peachtree')!;
+  site.group.updateMatrixWorld(true);
+  const ray = new Raycaster(new Vector3(356.9, 200, -697.8), new Vector3(0,-1,0));
+  expect(ray.intersectObject(tower)[0].point.y).toBeGreaterThan(11 + 4);
+  const lobby = (tower.children[2] as Mesh).material as MeshLambertMaterial;
+  expect(lobby.emissiveIntensity).toBe(0);
+  site.setNight(1);
+  expect(lobby.emissiveIntensity).toBeGreaterThan(0);
+});

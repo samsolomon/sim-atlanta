@@ -150,7 +150,7 @@ function fits(tower: Tower, building: VBuilding) {
 }
 
 // u follows the long east-west facades. v points out from the courtyard for each mirror.
-function model(tower: Tower, base: number, zero: number, finish: THREE.Material, glazing: THREE.Material, lobbyLights?: THREE.Material) {
+function model(tower: Tower, base: number, zero: number, finish: THREE.Material, glazing: THREE.Material, lobbyLights?: THREE.Material, plaza = base, sill = base) {
   const shell = new Builder(),
     glass = new Builder(),
     uv: number[] = [];
@@ -337,7 +337,6 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
         box(59.7, 59.88, v, v + 0.18, base, 327.35, '#afada4');
 
       // Belle twists above a dark plinth on the Peachtree forecourt.
-      const plaza = 323.7;
       box(62.2, 63.8, 6.2, 7.8, plaza - 0.25, plaza + 0.45, '#56575a');
       const profile = [[0.45, 0.25, 0], [1.5, 0.68, 0.18], [2.9, 1.08, 0.4],
         [3.7, 0.47, 0.15], [4.05, 0.98, -0.27], [4.6, 0.54, -0.05], [5.35, 0.15, 0.32]];
@@ -362,21 +361,21 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
   group.position.set(tower.origin[0], -zero, tower.origin[1]);
   group.rotation.y = -Math.atan(tower.slope);
   group.scale.z = tower.outward;
+  const facade = glass.geometry();
+  facade.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  group.add(new THREE.Mesh(shell.geometry(), finish), new THREE.Mesh(facade, glazing));
   if (hotel && lobbyLights) {
     const entry = new Builder();
     for (const [x, z] of [[57, 4.6], [55.4, 15.1]]) {
       // Warm light through the two glazed vestibules under the continuous awning.
       for (const v of [-2.4, -1.15, 0.1, 1.35])
-        entry.quad([x, 323.65, z + v + 1.1], [x, 323.65, z + v],
+        entry.quad([x, sill, z + v + 1.1], [x, sill, z + v],
           [x, 326.7, z + v], [x, 326.7, z + v + 1.1], '#a99375');
       entry.box(2.8, 0.06, 0.15, x + 1.55, 327.30, z, '#fff2d7');
     }
     entry.box(0.08, 0.5, 2.6, 55.47, 328.2, 15.1, '#b6ccdd');
     group.add(new THREE.Mesh(entry.geometry(), lobbyLights));
   }
-  const facade = glass.geometry();
-  facade.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  group.add(new THREE.Mesh(shell.geometry(), finish), new THREE.Mesh(facade, glazing));
   for (const m of group.children) m.castShadow = m.receiveShadow = true;
   return group;
 }
@@ -392,11 +391,16 @@ export function createPeachtreeCenter(buildings: VBuilding[], grid: GroundGrid) 
     if (!source || !fits(tower, source)) continue;
     const grades = source.rings[0].map(([x, z]) => grid.sample(x, z));
     if (!grades.every((g): g is number => g !== null && Number.isFinite(g))) continue;
+    const hotel = tower.name === '230 Peachtree';
+    const plaza = hotel ? grid.sample(356.9, -697.8) : null;
+    const sill = hotel ? grid.sample(350.8, -695.5) : null;
+    if (hotel && (plaza == null || sill == null)) continue;
     glazing ??= windowMaterial();
     finish ??= new THREE.MeshLambertMaterial({ vertexColors: true });
-    if (tower.name === '230 Peachtree')
+    if (hotel)
       lobbyLights = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffe2ad', emissiveIntensity: 0, side: THREE.DoubleSide });
-    group.add(model(tower, Math.min(...grades) - 0.35, grid.manifest.vertical.sceneZeroNavd88M, finish, glazing, lobbyLights));
+    const zero = grid.manifest.vertical.sceneZeroNavd88M;
+    group.add(model(tower, Math.min(...grades) - 0.35, zero, finish, glazing, lobbyLights, plaza ?? undefined, sill ?? undefined));
     replaced.add(source);
   }
   if (!glazing) return null;
