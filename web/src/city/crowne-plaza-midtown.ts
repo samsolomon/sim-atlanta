@@ -87,10 +87,10 @@ export function createCrownePlaza(buildings: VBuilding[], site: VBuilding, grid:
     const b = plan[(edge + 1) % plan.length];
     const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
     if (length < 3) return;
-    panel(false, a, b, 0, 1, y(roofH - parapetH), y(roofH), 0.02, white);
+    panel(false, a, b, 0, 1, y(roofH - parapetH), y(roofH), 0.05, white);
     // East and west ends are blank white walls, as are the short sides of the north-face jog.
     if (Math.abs(dz) > Math.abs(dx)) {
-      panel(false, a, b, 0, 1, y(podiumH), y(roofH - parapetH), 0.02, white);
+      panel(false, a, b, 0, 1, y(podiumH), y(roofH - parapetH), 0.05, white);
       return;
     }
     const bays = Math.round(length / pierPitch);
@@ -106,8 +106,9 @@ export function createCrownePlaza(buildings: VBuilding[], site: VBuilding, grid:
     // Floor slabs: a face and a top, run past both ends so the corners close against the end walls.
     for (let f = 1; f <= floors; f++) {
       const h = y(podiumH + f * floorPitch);
-      panel(false, a, b, -ext, 1 + ext, h - 0.6, h, 0.45, whiteShade);
-      const [q0, q1, q2, q3] = [foot(-ext, 0), foot(1 + ext, 0), foot(1 + ext, 0.45), foot(-ext, 0.45)];
+      // 5 cm proud of the pier faces, so slab and pier never share a plane at the crossings.
+      panel(false, a, b, -ext, 1 + ext, h - 0.6, h, 0.5, whiteShade);
+      const [q0, q1, q2, q3] = [foot(-ext, 0), foot(1 + ext, 0), foot(1 + ext, 0.5), foot(-ext, 0.5)];
       s.body.quad([q0[0], h, q0[1]], [q1[0], h, q1[1]], [q2[0], h, q2[1]], [q3[0], h, q3[1]], white);
     }
     // A hotel at 23:30: about three rooms in ten lit.

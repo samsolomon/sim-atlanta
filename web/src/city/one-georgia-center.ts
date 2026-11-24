@@ -101,7 +101,8 @@ export function createOneGeorgiaCenter(buildings: VBuilding[], site: VBuilding, 
   s.prism(offset(plan, -2.5), s.base, y(lobbyH) - 0.9, lobbyGlass, marbleShade);
   for (let i = 0; i < plan.length; i++) {
     const a = plan[i], b = plan[(i + 1) % plan.length];
-    quad(wash, a, b, 0, 1, y(bandLo), y(roofH), 0, marble);
+    // The glowing band stops where the roof-edge prism starts, so the two never share a plane.
+    quad(wash, a, b, 0, 1, y(bandLo), y(roofH) - 0.2, 0, marble);
   }
   s.prism(plan, y(roofH) - 0.2, y(roofH), marble, roofDeck);
   s.prism([[-14, -8], [10, -8], [10, 8], [-14, 8]], y(roofH), y(penthouseH), marble, '#b9b7b0');
@@ -131,8 +132,9 @@ export function createOneGeorgiaCenter(buildings: VBuilding[], site: VBuilding, 
     // Floor slabs: a face and a top at every floor, run past both ends so corners close.
     for (let f = 0; f <= floors; f++) {
       const yy = y(lobbyH + f * pitch);
-      quad(wash, a, b, -ext, 1 + ext, yy - 0.9, yy, finOut, marbleShade);
-      ledge(wash, a, b, yy, finOut, marble);
+      // 5 cm proud of the fin faces, so slab and fin never share a plane at the crossings.
+      quad(wash, a, b, -ext, 1 + ext, yy - 0.9, yy, finOut + 0.05, marbleShade);
+      ledge(wash, a, b, yy, finOut + 0.05, marble);
     }
     // Offices at 23:30: few lit, per the 2020 night photograph.
     for (let f = 0; f < floors; f++) {
