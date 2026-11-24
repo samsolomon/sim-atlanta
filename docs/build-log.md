@@ -2696,11 +2696,68 @@ not the earlier 3.397M. Both performance tiers pass. Cross-review also found tha
 the separate square-board preview removed generic crowns without mounting their
 replacements; it now mounts and updates the species batch too.
 
-Winter's bare limbs remain an explicit performance review exception. Phone-perf,
-the coordinator's A16 check and Sam's review of the matched sheets still gate release.
+Phone-perf accepted the bounded winter-limb exception. Sam approved the Ansley
+canopy and 1180 garden, and the coordinator authorized merge after the A16 check.
+The A16 averaged 22.0 fps at default and 22.7 while panning, versus production's
+24.9 and 26.0. That roughly 12% reduction also includes intervening main changes,
+so it cannot be attributed solely to trees. Full run values are recorded in PR #336.
 
 [1180 before/after](log/ui/tree-species/rollout/1180-day-sheet.jpg) ·
 [The Prado before/after](log/ui/tree-species/rollout/prado-day-sheet.jpg) ·
 [Winter far-detail comparison](log/ui/tree-species/rollout/winter-sheet.jpg).
 The winter species limbs cost 13,974 submitted triangles across three instanced
 meshes, with shadows disabled. They preserve the otherwise missing bare silhouettes.
+
+### 2026-11-23 — Arterial cars turn on their incoming green
+
+The illustrative arterial fleet can now turn between permitted directed roads at
+mapped signal junctions. Midtown supplies 20 eligible turn courses. A cubic curve
+joins the lanes, and each turn keeps the incoming signal phase rather than choosing
+one from the curve's tangent. Spring stays southbound and West Peachtree northbound.
+The turning courses reuse approach signal heads and the original route endpoints.
+
+Cross-review caught a useful mistake: slowing an entire turn course to 6 m/s made
+through cars catch it well before the junction, where overlap suppression hid one
+of them. Turns now keep their approach speed and exclude exits differing by more
+than 0.1 m/s. They take an illustrative 15% of incoming flow, divided among available
+turns, rather than scaling demand by the parent route's length. Separate queues can
+still overlap; the existing footprint guard hides conflicting cars. Protected left
+phases and shared queues remain future work.
+
+The frozen Spring/10th comparison uses `cam=222,-3075,0,45,110`, high tier,
+`t=2026-11-20T19:02:49.250Z&speed=0&dev&mindist=20`. The downtown check is Washington
+at Trinity: `cam=122,670,0,45,110`, high tier, `t=2026-11-20T19:01:51Z&speed=0`.
+Screenshots are in [arterial-turns](log/ui/arterial-turns/). A clock-seek regression
+also removed an hourly-demand cache that retained the first visited time within a
+minute. This needs a web rebuild only, with no new data or server work.
+
+The second review also found a signal-location edge case: at 17th Street the turn
+stop was 11.95 m beyond the through stop. Turns now stop no later than their through
+course, and one ambiguous twin-controller junction is excluded. All 20 remaining
+Midtown courses have a shared controller, ordered stops and no second stop within
+30 m. [Spring/10th before and after](log/ui/arterial-turns/compare-spring-10th.jpg).
+### 2026-11-23 — Arts Center entrance slab clears the plaza
+
+The east wing floor now gives terrain a yield boundary at entry + 0.03 m,
+5 cm below its 0.08 m slab top. The earlier audit found 491 intruding samples,
+up to 25 cm above the floor; this uses the shared carve mechanism without
+raising the station. A separate surprise during verification: the Ansley tree
+rollout failure was stale generated Midtown data. Restaging the Midtown rows
+made all 10 rollout tests pass.
+
+Matched daylight camera: `445,-3930,250,50,150`, at `2026-11-20T14:00:00-05:00`.
+Web rebuild only; no pipeline change.
+
+![Arts Center entrance before and after](log/2026-11-23-arts-center-slab.jpg)
+
+Edge verification at the same camera with lens zoom 2.5: [day](log/2026-11-23-arts-center-edge-day.png)
+and [night](log/2026-11-23-arts-center-edge-night.png). The targeted audit at 0.25 m
+spacing finds zero penetrations among 11,342 samples on the two slab-top triangles.
+Station-wide hits include other paving and must not be mistaken for this slab.
+### 2026-11-23 — A GE freight engine, properly
+
+The old freight locomotive was a long box with a yellow nose and an EMD-like cab, which no GE has. The detail pass rebuilds it as the AC4400CW family from published dimensions (22.3 m, 16.15 m truck centres) and dated photos of CSX 69, 7216 and 7232. It now has the CM44AC's raked cab front, roof number boards, stacked headlights and corner ditch lights, a louvred cabinet behind the cab, and the radiator wings overhanging the walkways. The surprise was colour again. The grade turned CSX's blue-grey into navy and the trucks into pure black. Sampling the photos (hood near #415155, running gear a weathered brown-grey) and feeding lighter inputs fixed both. The same body in an NS-like black with white nose stripes now leads the Brookwood passage, and the card names the scheme, still illustrative. 2,608 triangles per locomotive; draws unchanged. Web rebuild only. [Front three-quarter](log/freight/cm44ac-front34.jpg) · [Night](log/freight/cm44ac-night.jpg) · [Notes](freight-stock.md)
+
+### 2026-11-23 — Freight takeover verification
+
+The freight locomotive branch now passes the full test command with Python checks enabled: 20 Rust, 11 Python, 918 web and 5 worker tests. The missing routes contract fixture was an incomplete local data copy. Both City performance ceilings pass (533 low-tier draw calls, 1,136 high). A fresh Claude cross-review found no in-scope issues. The inherited Brookwood camera hid the engines behind the station; moving the frozen clock back 20 seconds exposed them. [Day and night captures with cameras](freight-stock.md#codex-takeover-verification--2026-11-23). Coordinator approval remains pending because the Air pairing token is rejected.

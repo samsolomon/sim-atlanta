@@ -40,6 +40,8 @@ export interface TrafficCourse {
   closed?: boolean;
   /** Stop lines at mapped traffic signals (opt-in; courses without them run unchanged). */
   signals?: CourseSignal[];
+  /** Explicit incoming stop line for a turning course. */
+  turnSignal?: Omit<CourseSignal, 'axis'> & { dx: number; dz: number };
   /** Dissolve near unresolved interior endpoints; board edges use the City's clipping. */
   fadeStartM?: number;
   fadeEndM?: number;
@@ -105,7 +107,6 @@ export class RoadTraffic {
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
   private readonly peak: number;
-  private minute = NaN;
   private share = 0;
   private pose = new THREE.Object3D();
   private readonly visible: { x: number; z: number; y: number; half: number; ux: number; uz: number; lane?: TrafficCourse }[] = [];
@@ -154,7 +155,7 @@ export class RoadTraffic {
   }
 
   private buildHeads(courses: TrafficCourse[]): TrafficCourse[] {
-    const placed: { m: THREE.Matrix4; sig: CourseSignal }[] = [];
+    const placed: { m: THREE.Matrix4; sig: CourseSignal; x: number; z: number }[] = [];
     const kept = courses.map(course => {
       if (!course.signals?.length) return course;
       const signals = course.signals.filter(sig => {
@@ -164,7 +165,10 @@ export class RoadTraffic {
         if (y === null || !Number.isFinite(y)) return false;
         // On the approach's right, just beyond the lane, facing the oncoming driver.
         const x = p.x - p.dz * 5, z = p.z + p.dx * 5;
-        placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig });
+        // Turn courses reuse the existing approach head rather than adding a
+        // second mast a few metres before the same controller.
+        if (!course.turnSignal || !placed.some(h => h.sig.key === sig.key && h.sig.axis === sig.axis && Math.hypot(h.x-x,h.z-z)<12))
+          placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig, x, z });
         return true;
       });
       return { ...course, signals };
@@ -188,11 +192,7 @@ export class RoadTraffic {
     this.visibleCars = 0;
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return;
-    const minute = Math.floor(clockMs / 60000);
-    if (minute !== this.minute) {
-      this.minute = minute;
-      this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
-    }
+    this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads;

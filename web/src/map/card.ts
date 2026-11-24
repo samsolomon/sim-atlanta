@@ -136,6 +136,10 @@ export function busCard(bus: LiveBus, now: number, model?: string) {
 }
 
 export function cityFreightCard(line = 'Atlanta Terminal Subdivision', a2c = false) {
+  // Look-alike schemes only: CSX-like on the CSX line downtown, NS-like on Norfolk Southern track.
+  const consist = /\bNS\b|Norfolk/.test(line)
+    ? 'GE AC44-type locomotives in an NS-like scheme, with boxcars'
+    : 'GE/Wabtec CM44AC locomotives in a CSX-like scheme, with boxcars';
   if (a2c) {
     const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
     return `<p class="a2-kicker"><span class="a2-svc" style="background:${MODE_COLOR.freight}"></span>Freight · ${esc(line)}</p>
@@ -143,12 +147,12 @@ export function cityFreightCard(line = 'Atlanta Terminal Subdivision', a2c = fal
       <dl class="a2-facts">
         ${row('Position', `Simulated on the mapped track ${chip('illustrative')}`)}
         ${row('Timing', `A typical pattern, not a timetable ${chip('illustrative')}`)}
-        ${row('Consist', `GE/Wabtec CM44AC locomotives and boxcars ${chip('illustrative')}`)}
+        ${row('Consist', `${esc(consist)} ${chip('illustrative')}`)}
       </dl>`;
   }
   return `<h2><span class="dot" style="background:${MODE_COLOR.freight}"></span>Freight train</h2>
     <p class="sub">${esc(line)} ${chip('illustrative')}</p>
-    <dl><dt>City model</dt><dd>GE/Wabtec CM44AC locomotives and boxcars</dd></dl>
+    <dl><dt>City model</dt><dd>${esc(consist)}</dd></dl>
     <p class="tip">This train follows the mapped track in a simulated pattern. Its position, timing and consist are illustrative.</p>`;
 }
 
