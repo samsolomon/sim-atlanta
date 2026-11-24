@@ -33,7 +33,7 @@ export default {
         };
       ` }, { tag: 'aside', injectTo: 'body', attrs: {
         style: 'position:fixed;z-index:10000;top:0;left:50%;transform:translateX(-50%);background:#fff4be;color:#222;padding:4px 10px;font:14px system-ui;pointer-events:none'
-      }, children: 'Synthetic replay · Train 101 · 30 s display delay' }];
+      }, children: 'Synthetic replay · Train 101 · 40 s display delay' }];
     },
   }],
 };

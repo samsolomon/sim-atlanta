@@ -38,3 +38,18 @@ export function playback(history: readonly Knot[], now: number, delay = PLAYBACK
   return a.s + (b.s - a.s) * f * f * (3 - 2 * f)
     + duration * f * back * (back * a.velocity - f * b.velocity);
 }
+
+/** Reserve eight seconds at the end of an ordinary 30 s interval. Until the
+ * next report arrives, this tail brakes to rest at the known endpoint.
+ * A timely following report can still set the tangent before the tail starts. */
+export const RESERVE_DELAY_MS = 40_000;
+export function appendReservedFix(history: Knot[], s: number, received: number) {
+  if (history.length && history[history.length - 1].time >= received) return;
+  appendFix(history, s, received, RESERVE_DELAY_MS);
+  const end = history.at(-1), start = history.at(-2);
+  if (!end || !start || end.time !== received) return;
+  const span = end.time - start.time;
+  if (span <= 8_000) return;
+  const velocity = (end.s - start.s) / span;
+  history.splice(-1, 0, { time: received - 8_000, s: s - velocity * 8_000, velocity });
+}
