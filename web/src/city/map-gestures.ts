@@ -5,7 +5,7 @@
  *   touch: one finger pans, pinch zooms, two fingers dragged up or down tilt, twisting two
  *          fingers rotates, double-tap zooms in
  * OrbitControls does the panning, pinching and tilting; this adds the twist and the double
- * click/tap. Every gesture reports through `onGesture` (City's manualCamera), which ends Follow.
+ * click/tap. A trackpad orbit and a two-finger twist keep the current Follow target.
  */
 import { MOUSE, TOUCH } from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -23,7 +23,7 @@ export function mapGestures(
   el: HTMLElement,
   /** Turn the view by degrees, as City's rotate() does (positive turns the bearing down). */
   rotate: (degrees: number) => void,
-  onGesture: () => void,
+  onZoom: () => void,
 ) {
   // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
   // r180's middle-drag dolly reads the cursor's y from its x, which zoomToCursor would expose.
@@ -60,7 +60,6 @@ export function mapGestures(
     if (!trackpad || e.ctrlKey || !e.isTrusted) return;
     e.stopImmediatePropagation();
     e.preventDefault();
-    onGesture();
     const orbit = controls as unknown as { _rotateUp(value: number): void };
     orbit._rotateUp(e.deltaY * 0.004);
     rotate(e.deltaX * 0.15);
@@ -71,7 +70,7 @@ export function mapGestures(
   // OrbitControls ends its own touch state in a pointerup listener that runs after ours, and it
   // ignores the wheel until then.
   const zoomAt = (x: number, y: number) => {
-    onGesture();
+    onZoom();
     setTimeout(() => el.dispatchEvent(new WheelEvent('wheel', { deltaY: DOUBLE_ZOOM_DELTA, clientX: x, clientY: y, bubbles: true, cancelable: true })));
   };
   let lastTouch = -Infinity;

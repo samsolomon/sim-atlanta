@@ -47,6 +47,8 @@ export class VehicleFollow {
   endedLineage: string[] = [];
   private last?: Fix;
   private easing = false;
+  /** Start and explicit Recenter request the opening camera preset. */
+  get framingRequested() { return this.requested; }
   get active() { return !!this.followed; }
   get vehicle(): Followed | undefined { return this.followed; }
 
