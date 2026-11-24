@@ -14,9 +14,9 @@ const origin: P2 = [584, -2242];
 const slabId = 'osm:way:1343480983';
 const wingIds = ['osm:way:1343480981', 'osm:way:1343480982'];
 const slabCentre: P2[] = [[-33, -10.9], [7, -7.9], [5.6, 9.9], [-33.9, 7.3]];
-// Mural colours from the deck photograph: broad abstract bands of pink, orange, yellow,
-// green and blue on the walls that rise above the deck.
-const mural = ['#c37597', '#d1a47d', '#d2c17e', '#5f9e68', '#6b8cb2', '#8468ad'];
+// Mural look-alike from the deck photograph: big sweeping arcs of blue, magenta-pink and
+// coral on the white wall. Four related hues at a narrow value range; extent inferred.
+const mural = ['#5b7fb8', '#b9668f', '#cc7f6c', '#cfa064'];
 
 export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid, quality: TerrainQuality) {
   // Low tier groups windows in pairs, halves the mural bands and keeps the street glass coarse.
@@ -82,16 +82,26 @@ export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, 
       // An east-facing wall above the deck carries the mural behind its windows.
       const nx = (b[1] - a[1]) / length;
       if (nx > 0.7 && lo <= deck + 0.01) {
-        const bands = Math.max(2, Math.round(length / (high ? 6 : 12)));
+        // Sweeping arcs, each a curved strip across the wall with white wall showing between.
+        const segs = high ? 8 : 4;
         const out = (t: number, y: number): [number, number, number] =>
           [a[0] + t * (b[0] - a[0]) + 0.035 * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - 0.035 * (b[0] - a[0]) / length];
-        for (let k = 0; k < bands; k++) {
-          const l = k / bands, r = (k + 1) / bands;
-          // Two colours per band, split on a slant so the bands read as sweeping shapes.
-          const split = deck + 2 + (top - deck - 4) * (0.3 + 0.4 * ((k * 3 + face) % 5) / 4);
-          shell.body.quad(out(l, deck), out(l, split), out(r, split + 3), out(r, deck), mural[(k + face) % mural.length]);
-          shell.body.quad(out(l, split), out(l, top - 0.6), out(r, top - 0.6), out(r, split + 3), mural[(k + face + 3) % mural.length]);
-        }
+        const span = top - deck - 2;
+        const arcs = [
+          { base: 0.02, rise: 0.22, thick: 0.30, colour: 0 },
+          { base: 0.34, rise: -0.16, thick: 0.24, colour: 1 },
+          { base: 0.50, rise: 0.20, thick: 0.22, colour: 2 },
+          { base: 0.80, rise: -0.14, thick: 0.18, colour: 3 },
+        ];
+        arcs.forEach((arc, n) => {
+          const colour = mural[(arc.colour + face) % mural.length];
+          const y = (t: number) => deck + 1 + span * (arc.base + arc.rise * Math.sin(Math.PI * (t * 0.8 + 0.1 * n)));
+          for (let k = 0; k < segs; k++) {
+            const l = k / segs, r = (k + 1) / segs;
+            const h = span * arc.thick;
+            shell.body.quad(out(l, y(l)), out(l, Math.min(top - 0.6, y(l) + h)), out(r, Math.min(top - 0.6, y(r) + h)), out(r, y(r)), colour);
+          }
+        });
       }
       const from = lo <= datum + 0.01 ? datum + 4.6 : lo + 0.3;
       if (lo <= datum + 0.01) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 4.2, 1, high ? 3.4 : 12, 0.8, 0.84, storefront, 0.35);
