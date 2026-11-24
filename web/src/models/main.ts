@@ -53,7 +53,12 @@ sun.shadow.bias = -0.0005; // without these the models shade themselves in fine 
 sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 scene.add(hemi, sun);
-const floorMaterial = new THREE.MeshLambertMaterial({ color: '#d9d3c6' });
+const floorMaterial = new THREE.MeshLambertMaterial({ color: '#d9d3c6', transparent: true, depthWrite: false });
+// Leave depth clear behind the floor so the ink pass only outlines model geometry.
+floorMaterial.onBeforeCompile = shader => {
+  shader.vertexShader = 'varying vec2 floorPoint;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n floorPoint = position.xy;');
+  shader.fragmentShader = 'varying vec2 floorPoint;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', 'diffuseColor.a *= 1.0 - smoothstep(26.0, 59.0, length(floorPoint));\n#include <opaque_fragment>');
+};
 const figureShadow = new THREE.ShadowMaterial({ opacity: .22, depthWrite: false });
 const ground = new THREE.Mesh<THREE.CircleGeometry, THREE.Material>(new THREE.CircleGeometry(60, 48), floorMaterial);
 ground.rotation.x = -Math.PI / 2;
@@ -703,17 +708,32 @@ function fitModel(animate: boolean) {
   const horizontal = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
   const vertical = direction.clone().cross(horizontal);
   const centre = box.getCenter(new THREE.Vector3());
-  const tanY = Math.tan(THREE.MathUtils.degToRad(preset.fov / 2)) * .88;
-  const spanY = tanY * height / stage.height, spanX = tanY * width / stage.height;
-  let distance = 1;
+  // Perspective makes the near cab wider than the far end. Fit the projected
+  // rectangle and centre its silhouette, instead of centring the 3D box midpoint.
+  const pixels = stage.height / (2 * Math.tan(THREE.MathUtils.degToRad(preset.fov / 2)));
+  const corners: THREE.Vector3[] = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
     const corner = new THREE.Vector3(x, y, z).sub(centre);
-    distance = Math.max(distance, direction.dot(corner) + Math.max(Math.abs(horizontal.dot(corner)) / spanX, Math.abs(vertical.dot(corner)) / spanY));
+    corners.push(new THREE.Vector3(horizontal.dot(corner), vertical.dot(corner), direction.dot(corner)));
   }
-  const end = centre.clone().addScaledVector(direction, distance);
-  camera.far = Math.max(camera.far, distance + box.getSize(new THREE.Vector3()).length());
-  camera.setViewOffset(stage.width, stage.height, (stage.left + stage.right - left - right) / 2,
-    (stage.top + stage.bottom - top - bottom) / 2, stage.width, stage.height);
+  const projected = (distance: number) => {
+    const rect = new THREE.Box2();
+    for (const p of corners) rect.expandByPoint(new THREE.Vector2(p.x, p.y).multiplyScalar(pixels / (distance - p.z)));
+    return rect;
+  };
+  let near = Math.max(...corners.map(p => p.z)) + camera.near;
+  let far = near + pixels * 2 * box.getSize(new THREE.Vector3()).length() / (Math.min(width, height) * .88);
+  for (let i = 0; i < 20; i++) {
+    const mid = (near + far) / 2;
+    const size = projected(mid).getSize(new THREE.Vector2());
+    if (size.x > width * .88 || size.y > height * .88) near = mid;
+    else far = mid;
+  }
+  const end = centre.clone().addScaledVector(direction, far);
+  camera.far = Math.max(camera.far, far + box.getSize(new THREE.Vector3()).length());
+  const offset = projected(far).getCenter(new THREE.Vector2());
+  camera.setViewOffset(stage.width, stage.height, (stage.left + stage.right - left - right) / 2 + offset.x,
+    (stage.top + stage.bottom - top - bottom) / 2 - offset.y, stage.width, stage.height);
   const start = camera.position.clone(), target = controls.target.clone(), since = performance.now();
   cancelAnimationFrame(fitFrame);
   const step = (now: number) => {
@@ -1018,6 +1038,14 @@ nightBtn.addEventListener('click', () => {
   history.replaceState(history.state, '', url);
 });
 const inkBtn = document.getElementById('ink')!;
+if (embedded) {
+  for (const button of [nightBtn, inkBtn]) {
+    button.setAttribute('role', 'switch');
+    const sync = () => button.setAttribute('aria-checked', String(button.getAttribute('aria-pressed') === 'true'));
+    sync();
+    new MutationObserver(sync).observe(button, { attributes: true, attributeFilter: ['aria-pressed'] });
+  }
+}
 inkBtn.addEventListener('click', () => {
   inkOn = !inkOn;
   inkBtn.setAttribute('aria-pressed', String(inkOn));

@@ -1,3 +1,5 @@
+import { perf } from './perf';
+
 /** Development device probe. The cold leg uses a fresh document and WebGL context
  * with the same browser cache, clock, camera and quality as the warm leg. */
 export async function measureModelsReturn(cityReady: () => boolean, modelFramed: () => boolean) {
@@ -28,16 +30,20 @@ export async function measureModelsReturn(cityReady: () => boolean, modelFramed:
       document.querySelector<HTMLButtonElement>('.a2-appbar [data-view=models]')!.click();
     }
     await waitFor(modelFramed, 'Models framing');
+    const snapshot = perf.report();
+    const resident = { heapMB: snapshot.heap?.usedMB, cityAreas: snapshot.areas.length,
+      cityGeometryMB: snapshot.memory?.total.geometryMB, cityTextureMB: snapshot.memory?.total.textureMB };
     const start = performance.now();
     document.querySelector<HTMLButtonElement>('.a2-appbar [data-view=map]')!.click();
     await waitFor(cityReady, 'return City reveal');
     const elapsed = Math.round(performance.now() - start);
     if (cold) {
-      report({ summary: { warmReturnMs: Number(startUrl.searchParams.get('warmReturnMs')), coldReturnMs: elapsed } });
+      report({ summary: { warmReturnMs: Number(startUrl.searchParams.get('warmReturnMs')), coldReturnMs: elapsed }, resident: JSON.parse(startUrl.searchParams.get('resident') ?? '{}') });
     } else {
       startUrl.searchParams.set('view', 'models');
       startUrl.searchParams.set('model', 'cq400');
       startUrl.searchParams.set('warmReturnMs', String(elapsed));
+      startUrl.searchParams.set('resident', JSON.stringify(resident));
       location.replace(startUrl);
     }
   } catch (error) {
