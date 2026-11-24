@@ -47,11 +47,18 @@ export function mayfairTower(shell: Shell) {
       const y = j * pitch, band = j % 6 === 0;
       body.quad(p(0, y - (band ? .6 : .9), band ? .25 : .08), p(0, y + .5, band ? .25 : .08),
         p(len, y + .5, band ? .25 : .08), p(len, y - (band ? .6 : .9), band ? .25 : .08), band ? BAND : WALL);
-      // Black iron balconies, one per floor across the middle of each corner-bay face.
-      if (corner) body.quad(p(len * .2, y, .7), p(len * .2, y + 1, .7), p(len * .8, y + 1, .7), p(len * .8, y, .7), IRON);
+      // A cornice band projects: its top runs back to the wall so it never floats.
+      if (band) body.quad(p(0, y + .5, .02), p(0, y + .5, .25), p(len, y + .5, .25), p(len, y + .5, .02), BAND);
+      // Balconies across the middle of each corner-bay face: a floor slab from the wall out
+      // to 0.7 m, with the black iron rail standing on its front edge.
+      if (corner) {
+        body.quad(p(len * .2, y, .02), p(len * .2, y, .7), p(len * .8, y, .7), p(len * .8, y, .02), BAND);
+        body.quad(p(len * .2, y, .7), p(len * .2, y + 1, .7), p(len * .8, y + 1, .7), p(len * .8, y, .7), IRON);
+      }
     }
     // The top cornice.
     body.quad(p(0, ROOF - 1.2, .3), p(0, ROOF, .3), p(len, ROOF, .3), p(len, ROOF - 1.2, .3), BAND);
+    body.quad(p(0, ROOF, .02), p(0, ROOF, .3), p(len, ROOF, .3), p(len, ROOF, .02), BAND);
   });
 
   // The crown: a drum and cone over each corner bay, a lantern and finial on top,

@@ -30,6 +30,9 @@ The mapped outline is cut by the row seam at z = −1700. north-band holds the d
 
 ## Lighting
 
+**Update, 2026-11-24.** Each face used to light as one continuous plane, which made the deck the brightest object around at night, like a lightbox. Now each level lights only a 1 m ceiling-fixture strip under its slab, and the deck face between strips stays dark. Every level is still lit. The change is geometry on the existing lamps mesh, so there's no new material or draw.
+
+
 The dusk photograph shows every parking level evenly lit, a warm-white band behind the fins, and the glass stair tower glowing. Garages stay lit all night, so City lights each deck face as one even plane behind the screen and lights the stair tower and street glazing. The values are illustrative: there is no full-night (23:30) photograph, only dusk.
 
 ## Captures

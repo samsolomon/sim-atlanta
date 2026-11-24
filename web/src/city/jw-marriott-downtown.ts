@@ -29,9 +29,10 @@ const podiumRoofs: Record<string, number> = {
 const deckH = 98, parapetH = 102, southH = 106, balconyTop = 89, podiumBase = 22, pitch = 3.3;
 
 // Flat vertex colours: a painted library surface compiles its own shader program.
-// Glass base #a0b1b6: S 0.12, V 0.71 (sunlit rendered check in the PR). Low saturation because
-// both long faces sit in shade most of the day, where the grade pushes glass toward navy.
-const glass = '#a0b1b6', glassLit = '#a2b3b8', band = '#c9d1d2', rail = '#a9bec3';
+// The identifiers (coordinator review, 2026-11-24): a clearly bluer, more saturated glass than the
+// generic pale towers around it, crisp white balcony-slab bands at every floor, and a white cap on
+// the taller south block. Glass base #7a92b2 (S 0.31, V 0.70) (rendered sunlit check in the PR).
+const glass = '#7a92b2', glassLit = '#7c94b4', band = '#f2f1ec', rail = '#cfe0e8';
 const podiumWall = '#b9bcb8', podiumGlass = '#5e7177', roof = '#9a9d9a';
 
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
@@ -87,7 +88,13 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
   // The slab: glass to the roof deck, a glass parapet around it, the taller south block.
   s.prism(slab, s.base, y(deckH), glass, roof);
   slab.forEach((a, i) => panel(s.body, a, slab![(i + 1) % slab!.length], 0, 1, y(deckH), y(parapetH), 0, glass));
-  if (south) s.prism(south, y(deckH), y(southH), glass, roof);
+  if (south) {
+    s.prism(south, y(deckH), y(southH), glass, roof);
+    // The south block's white cap, which marks the stepped top from a distance.
+    south.forEach((a, i) => panel(s.body, a, south![(i + 1) % south!.length], 0, 1, y(southH) - 1.6, y(southH), 0.1, band));
+  }
+  // The slab's own top edge: a white band over the parapet glass.
+  slab.forEach((a, i) => panel(s.body, a, slab![(i + 1) % slab!.length], 0, 1, y(parapetH) - 0.8, y(parapetH), 0.1, band));
 
   // Floor bands and lit rooms. Hotel and condominium windows are noticeably lit at 23:30.
   // Rooms stop at the roof deck; the glass above it is parapet.
@@ -101,7 +108,10 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
     panel(s.body, a, b, 0, 1, s.base + 0.3, y(6), 0.06, podiumGlass);
     panel(s.body, a, b, 0, 1, y(6), y(6.5), 0.08, band);
     for (let h = 6.5 + pitch; h < podiumBase; h += pitch) panel(s.body, a, b, 0, 1, y(h) - 0.35, y(h), 0.05, band);
-    for (let f = 1; f <= floors; f++) panel(s.body, a, b, 0, 1, y(podiumBase + f * pitch) - 0.35, y(podiumBase + f * pitch), 0.05, band);
+    // Each floor's white slab edge stands proud of the glass and runs a little past both ends, so the
+    // bands wrap the corners.
+    const wrap = 0.3 / length;
+    for (let f = 1; f <= floors; f++) panel(s.body, a, b, -wrap, 1 + wrap, y(podiumBase + f * pitch) - 0.6, y(podiumBase + f * pitch), 0.3, band);
     const bays = Math.max(1, Math.round(length / 6.8));
     for (let f = 0; f < floors; f++) {
       const lo = y(podiumBase + f * pitch);
@@ -117,7 +127,7 @@ export function createJwMarriott(buildings: VBuilding[], grid: GroundGrid) {
     const a: P2 = [231.6 - origin[0], z0 - origin[1]], b: P2 = [231.6 - origin[0], z1 - origin[1]];
     // Each floor reads at City range as its slab edge over a glass rail, 1.7 m off the wall.
     for (let h = podiumBase + pitch; h <= balconyTop; h += pitch) {
-      panel(s.body, [a[0] + 1.7, b[1]], [a[0] + 1.7, a[1]], 0, 1, y(h) - 0.25, y(h), 0, band);
+      panel(s.body, [a[0] + 1.7, b[1]], [a[0] + 1.7, a[1]], 0, 1, y(h) - 0.5, y(h), 0, band);
       panel(s.body, [a[0] + 1.7, b[1]], [a[0] + 1.7, a[1]], 0, 1, y(h), y(h) + 1.05, 0, rail);
     }
     // The stack's two side walls, one quad each, so it reads as a box from an angle.
