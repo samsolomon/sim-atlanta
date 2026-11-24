@@ -362,3 +362,10 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 - **Gotchas:**
   - `origin/main` moves under you, because fetches are shared across worktrees. Pin the main SHA when you compare builds.
   - #424 must rebase onto `23cc47a0` or later (#467) and re-measure the ceilings.
+
+### Update — 2026-11-24, late morning (Opus session bceb5cfc)
+
+- **#545 merged** (`95565515`, in train #559): road-traffic `instanceColor` is allocated at build.
+- **Freight stack merged up to main `27b5e506`** by merge commits, as before. #424 now drops the freight late-compile allowlist entry; the allowlist on the stack is empty.
+- **PR #565** `samsolomon/downtown-freight-lift` (base `samsolomon/coal-hopper`): lifts the downtown autorack and intermodal exclusions. It adds `freight-clearance.ts` (curve swing ≤ 0.35 m; overhead clearance ≥ 0.5 m under the tallest car) with tests. `CONSIST_VERSION` 7. Held for Sam with the stack. test:perf: low 82/82, high 94/94, no late compiles.
+- **Open:** after phone-perf's #551 lands, merge it into the stack, switch `freightClipPlanes` padding to brookwood's `neverClip()`, and run `program-sweep --q low` (expect 81/82 + 0). Optional (b) for Sam: widen Brookwood's ballast from 3.6 to 4.2 m.

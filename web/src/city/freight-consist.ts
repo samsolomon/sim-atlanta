@@ -5,8 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers. */
-export const CONSIST_VERSION = 6;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers, v7 lifts the downtown autorack and intermodal exclusions. */
+export const CONSIST_VERSION = 7;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -24,7 +24,7 @@ export interface Passage {
 }
 export interface LineProfile {
   railroad: FreightRailroad;
-  /** Weights for manifest, intermodal and unit. Intermodal is 0 where double-stack clearance is unverified. */
+  /** Weights for manifest, intermodal and unit. Set intermodal to 0 where double-stack clearance is unverified. */
   recipes: Record<FreightRecipe, number>;
   /** Car kinds this line never draws (unverified clearance or curvature). */
   exclude?: FreightUnit[];
@@ -135,6 +135,15 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
     railroad: profile.railroad, slot, recipe, units, cars: cars.length, locomotives: count,
     lengthM: trainLength(units.map((u) => u.kind)),
   };
+}
+
+/** Every unit kind a profile can draw: both railroads' road power (a trailing unit may be borrowed),
+ * the GP38-2 local on CSX-like track, and the cars its recipes and exclusions allow. */
+export function profileKinds(profile: LineProfile): FreightUnit[] {
+  const cars = [...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? WELL_LOADS : [])]
+    .filter((k) => !profile.exclude?.includes(k));
+  const power: FreightUnit[] = [...Object.values(ROAD_POWER).flat(), ...(profile.railroad === 'csx' ? ['gp382' as const] : [])];
+  return [...new Set([...power, ...cars])];
 }
 
 /** The longest train a profile can produce, for sizing slots. */
