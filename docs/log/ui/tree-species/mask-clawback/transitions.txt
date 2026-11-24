@@ -1,0 +1,5 @@
+far {"enabled":false,"instances":962,"orbitDistance":1000.0000000000001}
+prado {"enabled":true,"instances":962,"orbitDistance":420}
+hold {"enabled":true,"instances":962,"orbitDistance":549.9999999999999}
+far-again {"enabled":false,"instances":962,"orbitDistance":700.0000000000001}
+1180 {"enabled":true,"instances":962,"orbitDistance":350.00000000000006}
