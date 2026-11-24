@@ -63,14 +63,15 @@ export function createCityHeights(buildings: VBuilding[], site: VBuilding, grid:
     // photographs the broad faces are white walls and the stepped faces carry the white balconies.
     const corner = f.length >= 3.5 && f.length < 6.5;
     const whiteWall = f.length >= 7.5;
-    if (whiteWall) panel(f, 0, 1, lobby, roofTop, 0.02, white);
+    // Layers stand 4 cm apart (white 4, glass 8, lit 12, piers 16, crown 20 cm): closer ones z-fight at 400-600 m.
+    if (whiteWall) panel(f, 0, 1, lobby, roofTop, 0.04, white);
     const bays = corner ? 1 : Math.max(1, Math.round(f.length / 3));
     // Punched windows, drawn cheaply: one window band per floor behind a pier per bay (brick or
     // white to match the wall); lit rooms sit between the two at night.
     const wall = whiteWall ? white : brick;
     if (!corner) for (let k = 0; k <= bays; k++) {
       const t = k / bays, w = 0.25 / bays;
-      panel(f, Math.max(0, t - w), Math.min(1, t + w), lobby, roofTop - 1.2, 0.08, wall);
+      panel(f, Math.max(0, t - w), Math.min(1, t + w), lobby, roofTop - 1.2, 0.16, wall);
     }
     for (let j = 0; j < floors; j++) {
       const y = lobby + j * pitch;
@@ -79,19 +80,19 @@ export function createCityHeights(buildings: VBuilding[], site: VBuilding, grid:
         s.body.quad(at(f, -0.15, y, 0), at(f, -0.15, y, 1.3), at(f, 1.15, y, 1.3), at(f, 1.15, y, 0), white);
         panel(f, -0.15, 1.15, y - 0.3, y + 1.0, 1.3, j % 2 ? white : whiteShade);
       } else {
-        panel(f, 0, 1, y + 0.7, y + pitch - 0.5, 0.04, glass);
+        panel(f, 0, 1, y + 0.7, y + pitch - 0.5, 0.08, glass);
       }
       for (let k = 0; k < bays; k++) {
         if (litHash(seed, face, j, k) > 0.36) continue;
         // Same extent as the unlit band and between the piers, so by day lit bays look the same.
         const [l, r] = corner ? [0.15, 0.85] : [(k + 0.25) / bays, (k + 0.75) / bays];
-        panel(f, l, r, y + 0.7, y + pitch - 0.5, 0.06, glass, true);
+        panel(f, l, r, y + 0.7, y + pitch - 0.5, 0.12, glass, true);
       }
     }
     // White crown band and parapet.
-    panel(f, -0.01, 1.01, roofTop - 1.2, roofTop, 0.08, white);
+    panel(f, -0.01, 1.01, roofTop - 1.2, roofTop, 0.2, white);
     // Lobby glazing at street level.
-    panel(f, 0.08, 0.92, datum + 0.3, lobby - 0.8, 0.05, glass, true);
+    panel(f, 0.08, 0.92, datum + 0.3, lobby - 0.8, 0.08, glass, true);
   });
 
   // Crown: a white parapet ring set in from the roof edge, and the central penthouse with a small
