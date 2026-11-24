@@ -97,8 +97,8 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
         for (let f = 1; f < floors; f++) {
           const y = from + f * pitch;
           // Slab from the wall to the rail (both windings), then the rail on its edge.
-          shell.body.quad(out(r, y, 0.02), out(r, y, 1.1), out(l, y, 1.1), out(l, y, 0.02), trim);
-          shell.body.quad(out(l, y, 0.02), out(l, y, 1.1), out(r, y, 1.1), out(r, y, 0.02), trim);
+          shell.body.quad(out(r, y, 0.04), out(r, y, 1.1), out(l, y, 1.1), out(l, y, 0.04), trim);
+          shell.body.quad(out(l, y, 0.04), out(l, y, 1.1), out(r, y, 1.1), out(r, y, 0.04), trim);
           shell.body.quad(out(l, y, 1.1), out(l, y + 1, 1.1), out(r, y + 1, 1.1), out(r, y, 1.1), rail);
         }
       }
