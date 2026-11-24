@@ -1427,7 +1427,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
     updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) renderer.shadowMap.needsUpdate = true;
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
@@ -1814,6 +1818,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
   if (!perfOverrides.prewarmOff) {
     prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
     const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
     requestPrewarm = () => setTimeout(rescan, 500);
     // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
@@ -1990,6 +1995,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     dispose() {
       prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();

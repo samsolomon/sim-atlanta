@@ -38,6 +38,9 @@ export interface PerfContext {
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
 const mode = params.get('perf');
+/** ?perf=silent: ?perf=run's automatic sample with no overlay DOM, repaint or timer on screen, so a
+ * device measures City alone (the overlay's repaint under CSS glass cost the A16 frames). */
+const silent = mode === 'silent';
 /** `?perf` or `?perf=run`; off otherwise. */
 export const perfEnabled = mode !== null && mode !== '0' && mode !== 'off';
 const TRAIL_KEY = 'perf-trail';
@@ -454,6 +457,7 @@ let invAt = 0;
 /** True while ?perf=run samples frames. */
 let sampling = false;
 function startOverlay() {
+  if (silent) return;
   if (overlay || typeof document === 'undefined') return;
   overlay = document.createElement('pre');
   overlay.id = 'perf-overlay';
@@ -493,15 +497,22 @@ function paintOverlay() {
 }
 
 // ---- ?perf=run ---------------------------------------------------------------------------
+/** City registers its shader prewarm's queue here, so a run settles only once it is empty. */
+let prewarmPending: (() => number) | null = null;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
-  // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
+  // Areas mount as the camera approaches, the shader prewarm runs after colour, and house and ground
+  // LOD swaps log a phase: wait for the prewarm to finish, then until no phase has landed for quietMs.
   const settleStart = performance.now();
+  // False when maxWaitMs ran out first: the sample then measures a scene still loading (invalid).
+  let settled = false;
   while (performance.now() - settleStart < maxWaitMs) {
     const last = phases[phases.length - 1]?.ms ?? 0;
-    if (performance.now() - last > quietMs) break;
+    // The first prewarm has finished and nothing is queued now: a later area mount starts another.
+    const prewarmed = perfOverrides.prewarmOff || (phases.some(p => p.name === 'city:prewarmed') && (prewarmPending?.() ?? 0) === 0);
+    if (prewarmed && performance.now() - last > quietMs) { settled = true; break; }
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
@@ -544,6 +555,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
+    settled,
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;
@@ -622,6 +634,7 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
   /**
@@ -739,4 +752,4 @@ export const perf = {
 
 Object.assign(globalThis, { __perf: perf });
 phase('boot');
-if (perfEnabled && mode === 'run') void run();
+if (perfEnabled && (mode === 'run' || silent)) void run();
