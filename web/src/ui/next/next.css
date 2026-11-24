@@ -418,6 +418,7 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 .a2-menu-rows { padding: 0 0 6px; }
 .a2-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
   background: transparent; font-size: 15px !important; font-weight: 500 !important; text-align: left; cursor: pointer; }
+a.a2-mi { text-decoration: none; }
 .a2-mi:hover { background: var(--a2-sep); }
 .a2-mi > svg { width: 19px; height: 19px; flex: none; }
 .a2-mi > span:not(.a2-chev) { flex: 1; }
@@ -777,3 +778,32 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
 .a2-player .a2-busy svg { animation: a2-spin 0.9s linear infinite; }
 @keyframes a2-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .a2-player .a2-busy svg { animation: none; } }
+
+.a2-dock-cover { display: block; width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
+.a2-player-meta { min-width: 0; flex: 1; display: grid; justify-items: start; gap: 2px; }
+.a2-player-meta strong,.a2-player-artist { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-player-meta strong { font-size: 1rem; }
+.a2-player-artist { color: var(--a2-ink2); font-size: .8125rem; }
+.a2-appbar .a2-dock-next svg { width: 20px; height: 20px; }
+.a2-player:not([hidden]) { display: grid; gap: 8px; }
+.a2-player-transport { display: flex; align-items: center; }
+.a2-player-cover { flex: none; width: 64px; height: 64px; margin-right: 10px; border-radius: 8px; object-fit: cover; }
+.a2-radio-presets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; border-top: 1px solid var(--a2-sep); padding-top: 7px; }
+.a2-radio-presets button { display: flex; align-items: center; justify-content: space-between; gap: 3px; min-height: 40px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.a2-radio-presets small { color: var(--a2-ink2); font-variant-numeric: tabular-nums; }
+.a2-radio-presets button:hover { background: var(--a2-sep); }
+.a2-radio-presets button[aria-pressed=true] { background: var(--a2-chip); border-color: var(--a2-sep); font-weight: 700; box-shadow: var(--a2-chip-sh); }
+@media (max-width: 440px) {
+  .a2-appbar { gap: 0; padding-inline: 2px; }
+  .a2-appbar .a2-vsep { display: none; }
+  .a2-appbar .a2-vs { padding-inline: 6px; }
+}
+@media (max-width: 350px) {
+  .a2-appbar .a2-dock-next { display: none; }
+  .a2-player-cover { width: 56px; height: 56px; }
+}
+@media (max-width: 600px) {
+  .a2-player-meta { grid-template-columns: minmax(0, 1fr); }
+  .a2-player-meta strong,.a2-player-artist { white-space: normal; overflow-wrap: anywhere; }
+  .a2-radio-presets button { min-height: 44px; flex-wrap: wrap; }
+}

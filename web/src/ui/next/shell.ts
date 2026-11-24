@@ -258,40 +258,44 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const radioPanel = el('section', { class: 'a2-dock-pop a2-g a2-player', id: 'a2-radio-player', hidden: '', 'aria-label': 'Radio' });
   const play = el('button', { type: 'button', class: 'a2-ib a2-play', 'aria-label': 'Play' });
   const next = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Next track' }, SVG('<path d="M18 5v14M5 5l10 7-10 7z"/>'));
-  // Station name small above "Artist · Title"; ‹ › (or tapping the name) switches station.
-  const art = el('span', { class: 'a2-art', 'aria-hidden': 'true' });
-  const stationPrev = el('button', { type: 'button', class: 'a2-st-step', 'aria-label': 'Previous station' }, SVG('<path d="M14 6l-6 6 6 6"/>'));
-  const stationName = el('button', { type: 'button', class: 'a2-st-name' });
-  const stationNext = el('button', { type: 'button', class: 'a2-st-step', 'aria-label': 'Next station' }, SVG('<path d="M10 6l6 6-6 6"/>'));
-  const stationRow = el('span', { class: 'a2-station' });
-  stationRow.append(stationPrev, stationName, stationNext);
+  const presets = el('div', { class: 'a2-radio-presets', role: 'group', 'aria-label': 'Station presets' });
   const radioTitle = el('strong');
-  const trackInfo = el('div', { class: 'a2-track-info' });
-  trackInfo.append(art, stationRow, radioTitle);
+  const artist = el('small', { class: 'a2-player-artist' });
+  const trackInfo = el('div', { class: 'a2-player-meta' });
+  trackInfo.append(radioTitle, artist);
+  const dockNext = next.cloneNode(true) as HTMLButtonElement;
+  dockNext.classList.add('a2-dock-next');
+  dockNext.title = 'Next track';
   const progress = el('progress', { 'aria-label': 'Track progress' });
-  radioPanel.append(trackInfo, play, next, progress);
+  const transport = el('div', { class: 'a2-player-transport' });
+  const playerCover = el('img', { class: 'a2-player-cover', alt: '', hidden: '' });
+  transport.append(playerCover, trackInfo, play, next);
+  radioPanel.append(transport, presets, progress);
   let radio: Radio | null = null;
   let radioFailed = false;
   const showRadio = () => {
     if (!radio) return;
     const t = radio.track;
     const st = radio.station;
-    stationName.textContent = st?.name ?? 'Radio';
-    stationName.setAttribute('aria-label', st ? `${st.name}. Next station` : 'Radio');
-    const line = t ? `${t.artist} · ${t.title}` : radioFailed ? 'Radio unavailable' : 'Tuning in…';
-    radioTitle.textContent = line;
-    radioTitle.title = line; // the full line when it ends in an ellipsis
+    for (const preset of presets.querySelectorAll('button')) {
+      preset.setAttribute('aria-pressed', String(preset.value === st?.id));
+    }
+    radioTitle.textContent = t?.title ?? (radioFailed ? 'Radio unavailable' : 'Tuning in…');
+    artist.textContent = t?.artist ?? '';
     if (t) {
+      const coverUrl = SITE + t.cover.large;
+      if (!radioPanel.hidden && playerCover.getAttribute('src') !== coverUrl) {
+        playerCover.src = coverUrl;
+        playerCover.hidden = false;
+      }
       const url = SITE + t.cover.small;
-      if (art.dataset.src !== url) {
-        art.dataset.src = url;
-        // High priority: on a slow link the cover shouldn't wait behind the prefetching MP3.
-        const img = el('img', { src: url, alt: '', width: '40', height: '40', decoding: 'async', fetchpriority: 'high' });
-        art.replaceChildren(img);
+      if (radioBtn.dataset.src !== url) {
+        radioBtn.dataset.src = url;
+        radioBtn.replaceChildren(el('img', { src: url, alt: '', class: 'a2-dock-cover' }));
       }
     }
     play.disabled = radioFailed;
-    for (const b of [next, stationPrev, stationName, stationNext]) b.disabled = !radio.loaded;
+    for (const control of [next, dockNext]) control.disabled = !radio.loaded;
     // While the first file is still arriving, the glyph is a spinning arc (brief: Radio, Loading).
     const glyph = radio.buffering ? 'busy' : radio.playing ? 'pause' : 'play';
     if (play.dataset.glyph !== glyph) {
@@ -302,18 +306,16 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     play.setAttribute('aria-label', radio.playing ? (t ? `Pause ${t.title} by ${t.artist}` : 'Pause') : t ? `Play ${t.title} by ${t.artist}` : 'Play');
     radioBtn.classList.toggle('a2-playing', radio.playing);
-    const radioLabel = radio.playing && t ? `Radio, playing ${t.title} by ${t.artist}` : 'Radio';
+    const radioLabel = t ? `Radio player: ${t.title} by ${t.artist}` : 'Radio player';
     radioBtn.setAttribute('aria-label', radioLabel);
-    radioBtn.title = radio.playing && t ? `${t.artist} · ${t.title}` : 'Radio';
+    radioBtn.title = radioLabel;
     progress.max = t?.durationS ?? 1;
     progress.value = radio.elapsedS;
   };
-  stationPrev.onclick = () => radio?.switchStation(-1);
-  stationNext.onclick = () => radio?.switchStation(1);
-  stationName.onclick = () => radio?.switchStation(1);
+  dockNext.onclick = () => radio?.next();
   play.onclick = () => radio?.toggle();
   next.onclick = () => radio?.next();
-  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn);
+  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn, dockNext);
   const searchBtn = el('button', { type: 'button', class: 'a2-ib a2-search-icon', 'aria-label': 'Search Atlanta' }, SVG('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>'));
   const searchWrap = el('div', { class: 'a2-dock-field' });
   const search = el('input', { type: 'search', placeholder: 'Search Atlanta', 'aria-label': 'Search Atlanta' });
@@ -628,25 +630,36 @@ export function createShellNext(o: ShellOptions): ShellApi {
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); startSearch(); }
   });
+  radio = createRadio({
+    load: async () => {
+      const response = await fetch(`${SITE}music/stations.json`);
+      if (!response.ok) throw new Error(`stations.json ${response.status}`);
+      const file = await response.json() as StationsFile;
+      for (const station of file.stations) {
+        const button = el('button', { type: 'button', value: station.id, 'aria-label': station.name });
+        const parts = /^(.*) (\d+\.\d+)$/.exec(station.name);
+        const name = el('span');
+        name.textContent = parts?.[1] ?? station.name;
+        const frequency = el('small');
+        frequency.textContent = parts?.[2] ?? '';
+        button.append(name, frequency);
+        button.onclick = () => radio?.selectStation(station.id);
+        presets.append(button);
+      }
+      return file;
+    },
+    sceneHour: () => atlantaHour(now),
+    resolve: (path) => SITE + path,
+    storage: (() => { try { return localStorage; } catch { return null; } })(),
+    deferInitialPrefetch: true,
+  });
+  radio.onChange(showRadio);
+  radio.ready.catch(() => {
+    radioFailed = true;
+    showRadio();
+  });
+  showRadio();
   radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => {
-    if (!radio) {
-      // Nothing under music/ is requested before this first open.
-      radio = createRadio({
-        load: async () => {
-          const r = await fetch(`${SITE}music/stations.json`);
-          if (!r.ok) throw new Error(`stations.json ${r.status}`);
-          return (await r.json()) as StationsFile;
-        },
-        sceneHour: () => atlantaHour(now),
-        resolve: (path) => SITE + path,
-        storage: (() => { try { return localStorage; } catch { return null; } })(),
-      });
-      radio.onChange(showRadio);
-      radio.ready.catch(() => {
-        radioFailed = true;
-        showRadio();
-      });
-    }
     showRadio();
     play.focus();
   });
