@@ -35,6 +35,7 @@ for (let i = 0; i < 120 && !up && !exited; i++) { try { up = (await fetch(`http:
 if (!up || exited) { server.kill(); rmSync(tmp, { recursive: true, force: true }); console.error(`vite preview did not answer on :${port}`); process.exit(1); }
 
 let failed = false;
+let retries = 0;
 try {
   for (const [tier, b] of Object.entries(budget).filter(([k]) => !k.startsWith('_'))) {
     const json = join(tmp, `${tier}.json`);
@@ -49,7 +50,9 @@ try {
       let res = null;
       try { res = JSON.parse(readFileSync(json, 'utf8'))[0]; } catch { /* no result file */ }
       const why = r.status !== 0 ? `perf-run exited ${r.status ?? r.signal}${res?.error ? ': ' + res.error : ''}` : !res?.summary ? 'no result' : null;
-      if (why) console.error(`${tier}: run ${attempt} failed (${why})${attempt === 1 ? '; retrying once' : ''}`);
+      // Only an invalid run retries (perf-run failed: nonce mismatch, nothing drawn, timeout, not
+      // settled; or no result). A valid run over a ceiling is judged below and fails at once.
+      if (why) { console.error(`${tier}: retry: ${why}${attempt === 2 ? ' (second failure: giving up)' : ''}`); if (attempt === 1) retries++; }
       else s = res.summary;
     }
     if (!s) { failed = true; continue; }
@@ -83,5 +86,6 @@ try {
   server.kill();
   rmSync(tmp, { recursive: true, force: true });
 }
+console.log(`\ntest:perf ${failed ? 'FAILED' : 'passed'}; ${retries} retr${retries === 1 ? 'y' : 'ies'}.`);
 if (failed) console.error('test:perf FAILED: see the reasons above (OVER CEILING, LATE COMPILE, or a run that failed twice).');
 process.exit(failed ? 1 : 0);
