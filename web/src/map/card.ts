@@ -104,7 +104,7 @@ export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
   // Look-alike schemes only: CSX-like on the CSX line downtown, NS-like on Norfolk Southern track.
   const ns = /\bNS\b|Norfolk/.test(line);
   const consist = ns
-    ? 'GE AC44-type locomotives in an NS-like scheme, with boxcars'
+    ? 'GE AC44-type locomotives in an NS-like scheme, with covered hoppers and boxcars'
     : 'GE/Wabtec CM44AC locomotives in a CSX-like scheme, with boxcars';
   const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   return `<p class="a2-kicker"><span class="a2-svc" style="background:${MODE_COLOR.freight}"></span>Freight · ${esc(line)}</p>

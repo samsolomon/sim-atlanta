@@ -3188,6 +3188,18 @@ Most of the shader headroom came from the first colour frame. City had precompil
 
 **2026-11-23 — Davison’s on Peachtree.** The store’s 44.5 m baked height hid a 10 m step behind the main trading floors. The lower addition follows Carnegie Way’s chamfer. On the other side, the brick arches continue around Ellis, with two illuminated marquees on Peachtree. The roof camera gained 1,120 triangles and two draws on low. [Matched street and roof photographs in City](log/ui/200-peachtree/README.md)
 
+### 2026-11-23 · Marquis One
+
+Marquis One's glass sits behind 26 rows of precast spandrels. Crossing continuous strips make the 1.55 m window rhythm legible with geometry that scales with the sum of the rows and columns. From Peachtree Center Avenue, the surprise was how much the deep shadow of the double-height lobby separates the tower from the street. The matched night view keeps the crown dark and lights a sparse set of interior panes. The 12-area City budget held at 90 programs on low and 105 on high. [Camera, photographs and captures](log/ui/marquis-one/README.md)
+
+### 2026-11-23 — One freight vehicle per lab entry
+
+Two of the six freight locomotive studies had a boxcar attached. The Model Lab now centers all six locomotives on the same camera presets and gives the existing 50-foot-class boxcar its own entry. [Before](log/freight/standalone/before.jpg) · [After](log/freight/standalone/after.jpg) · [Car library and consist plan](freight-consists.md).
+
+### 2026-11-23 — A grain hopper and the ninety-first shader
+
+The first car in the freight kit is a three-bay covered grain hopper, sized from Greenbrier's 5,400 ft³ data sheet: 17.88 m over couplers and 3.25 m wide. It shares the boxcar's trucks and costs 660 triangles on phones and 1,000 on desktop. Three of them now follow the NS-like locomotives through Brookwood. The first build passed on desktop but pushed phones to 91 shader programs against a ceiling of 90. The car's geometry wasn't the cause. The WIP had switched the Brookwood train to instancing on phones, and an instanced, clipped Lambert is a different program from a plain one. Separate meshes on low tier brought it back to 90 with 567 draws, and a test now pins that choice. A second test caught the hexagonal phone wheels floating 2.4 cm above the rail because they rested on a flat edge. Turning every freight wheel a quarter-step puts a vertex on the rail. [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
+
 ### 2026-11-23 — Lunch at the High
 
 Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on

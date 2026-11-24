@@ -8,13 +8,13 @@ export class FreightBatches {
   private shapes = new Map<FreightUnit, THREE.BufferGeometry>();
   private batches = new Map<THREE.Material, Map<FreightUnit, THREE.InstancedMesh>>();
 
-  constructor(private consist: readonly FreightUnit[], private instanced: boolean) {
+  constructor(private consist: readonly FreightUnit[], private instanced: boolean, private low = false) {
     this.group.name = 'Illustrative freight';
     this.group.add(this.poses);
   }
 
   createCar(kind: FreightUnit, material: THREE.Material) {
-    if (!this.shapes.has(kind)) this.shapes.set(kind, freightGeometry(kind));
+    if (!this.shapes.has(kind)) this.shapes.set(kind, freightGeometry(kind, { low: this.low }));
     const car = this.instanced ? Object.assign(new THREE.Object3D(), { material })
       : new THREE.Mesh(this.shapes.get(kind)!, material);
     car.receiveShadow = true;
