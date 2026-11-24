@@ -87,11 +87,11 @@ export function createCourtlandGrand(buildings: VBuilding[], grid: GroundGrid) {
 
   // The glass-roofed courtyard pool in the podium.
   s.prism([[3, -12], [43, -12], [43, 18], [3, 18]], PODIUM, PODIUM + 1.6, SKY, SKY);
-  lights.quad([4, PODIUM + 1.62, -11], [42, PODIUM + 1.62, -11], [42, PODIUM + 1.62, 17], [4, PODIUM + 1.62, 17], '#cfe0dc');
+  lights.quad([4, PODIUM + 1.66, -11], [42, PODIUM + 1.66, -11], [42, PODIUM + 1.66, 17], [4, PODIUM + 1.66, 17], '#cfe0dc');
 
   // The 2025 box canopy at the arrival court, on its column, with downlit soffit.
   s.prism([[-29, -23], [-24, -23], [-24, -17], [-29, -17]], g + 5, g + 6.4, '#2f3134', '#3a3c3f'); // inner end inside the curved wall
   s.prism([[-28.4, -21.3], [-27.8, -21.3], [-27.8, -20.7], [-28.4, -20.7]], g, g + 5, '#d9d9d4', '#d9d9d4');
-  lights.quad([-29, g + 4.98, -23], [-24, g + 4.98, -23], [-24, g + 4.98, -17], [-29, g + 4.98, -17], '#fff1d6');
+  lights.quad([-29, g + 4.94, -23], [-24, g + 4.94, -23], [-24, g + 4.94, -17], [-29, g + 4.94, -17], '#fff1d6');
   return s.finish('#ffe0b0', .7);
 }
