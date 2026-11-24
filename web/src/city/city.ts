@@ -1413,6 +1413,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1427,24 +1428,31 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
     updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    // Low: a swap marks the map dirty and redraws within the same 250 ms gap as a camera move, so
+    // a fly-over that swaps tiles every few frames redraws ~4 times a second, not every swap (route:north
+    // logged 206-216 redraws in 10 s, each about a million triangles). High redraws on each swap.
     if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
-      renderer.shadowMap.needsUpdate = true;
+      if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
       // A late swap changes what draws: ?perf=run must not sample before it settles.
       if (perfEnabled) perf.phase('lod:swap');
     }
-    const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
+    // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
+    // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t)) : SHADOW_STEP_M;
+    const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
     // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
     // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
     // cannot flip the shadow box back and forth.
-    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const off = (v: number, c: number) => Math.abs(v - c) > step * 0.6;
     const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
+      shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
