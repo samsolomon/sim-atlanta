@@ -13,7 +13,7 @@ The test: in the 400–600 m money shot, could someone who didn't know mistake t
 | #462 | 400 Colony Square | skins-7 (rework) | Horizontal bands only; no vertical rhythm, base or crown. Rework in progress. |
 | #507 | Norfolk Southern HQ | skins-5 | After is nearly identical to before: generic blue glass boxes, no rhythm, crown or colour shift. |
 | #522 | JW Marriott Downtown | skins-4 | Pale blue-grey like its neighbours; balcony stacks too faint at distance; no crown. |
-| #393 | Marquis One | skins-1 | Beige dense grid beside a generic beige-grid tower; only the crown step differs. |
+| #393 | Marquis One | to assign (with Marquis Two #406) | Beige dense grid beside a generic beige-grid tower; only the crown step differs. |
 
 ## BORDERLINE, by size on screen
 | PR | Building | Why |
