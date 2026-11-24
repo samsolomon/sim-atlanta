@@ -1,0 +1,101 @@
+import type { GroundGrid } from '../terrain/grid';
+import type { P2 } from '../vignette/geom';
+import type { VBuilding } from '../vignette/world';
+import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
+
+/**
+ * The Coca-Cola USA Building (Heery International, 1987) on the North Avenue
+ * campus. Per the Enclos aerial (the facade contractor's photo): a dark blue-grey
+ * glass curtain wall with dense silver mullions and recessed corners, a dark
+ * red-brown crown band and penthouse, on a pale plaza-level base. Heights are
+ * NAVD88 from the April 2019 lidar: roof deck 382.1, parapet 383.2, penthouse
+ * 388.8 m, on a plaza near 316 m (the site falls to 297 m on the west).
+ * The frieze is plain: no logos.
+ */
+export const cokeUsaId = 'osm:way:536718218';
+
+const glass = '#93a3b3',
+  mullion = '#cfd4d8',
+  floorLine = '#6f7d8a',
+  corner = '#56616c',
+  crown = '#6e4538',
+  crownShade = '#5b392f',
+  granite = '#d6d0c4',
+  graniteShade = '#bdb6a8',
+  storefront = '#6b7880',
+  roofDeck = '#a3a09a';
+
+export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
+  const s = landmarkShell(buildings, grid, site.id, 'Coca-Cola USA Building', [-582.5, -1816.9], [1, 0],
+    [[0, 0], [0, -40], [0, 40]]);
+  if (!s) return null;
+  const seed = seedOf(cokeUsaId);
+  const plaza = 316, firstFloor = plaza + 6.5, roof = 382.1, parapet = 383.2, frieze = roof - 4.2,
+    penthouse = 388.8;
+  const floors = Math.round((frieze - firstFloor) / 3.9), pitch = (frieze - firstFloor) / floors;
+
+  const area = s.ring.reduce((t, [x, z], i) => {
+    const [x2, z2] = s.ring[(i + 1) % s.ring.length];
+    return t + x * z2 - x2 * z;
+  }, 0);
+  const full = area > 0 ? s.ring : [...s.ring].reverse();
+  // The lidar reads ~307 m along the outline's west 4 m (x < −596): a low strip,
+  // not tower. The tower plan clamps there; the strip stays a granite wing.
+  const westEdge = -596 + 582.5;
+  const plan: P2[] = full.map(([u, v]): P2 => [Math.max(u, westEdge), v])
+    .filter((p, i, a) => { const q = a[(i + 1) % a.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.05; });
+  s.prism(full, s.base, 307.6, granite, roofDeck);
+  /** NAVD88 grade at a local point (the shell's frame is unrotated). */
+  const gradeAt = (u: number, v: number) => grid.sample(u - 582.5, v - 1816.9) ?? s.base + 0.35;
+
+  // Granite base from the low west grade up to the plaza, then the glass shaft.
+  s.prism(plan, s.base, firstFloor, granite, roofDeck);
+  s.prism(plan, firstFloor, frieze, glass, roofDeck);
+  s.prism(plan, frieze, parapet, crown, roofDeck);
+  // Long penthouse over the core (lidar: x −584…−570, z −1849…−1794).
+  const pen: P2[] = [[-1.5, -32], [12.5, -32], [12.5, 23], [-1.5, 23]];
+  s.prism(pen, roof, penthouse, crownShade, roofDeck);
+
+  plan.forEach((a, face) => {
+    const b = plan[(face + 1) % plan.length];
+    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+    if (len < 0.2) return;
+    const at = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / len, y, a[1] + t * dz - out * dx / len];
+    const quad = (l: number, r: number, y0: number, y1: number, out: number, c: string, lit = false) =>
+      (lit ? s.lights : s.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
+    // Curtain wall: dense silver mullions about every 1.5 m, a thin dark line at
+    // each floor, and a dark recessed strip at each end of a long face (the
+    // notched corners in the Enclos aerial).
+    const bays = Math.max(1, Math.round(len / 3));
+    const mullions = Math.max(1, Math.round(len / 1.5));
+    for (let k = 1; k < mullions; k++) quad(k / mullions - 0.13 / len, k / mullions + 0.13 / len, firstFloor, frieze, 0.06, mullion);
+    for (let f = 1; f < floors; f++) {
+      const y = firstFloor + f * pitch;
+      quad(0, 1, y - 0.25, y + 0.25, 0.05, floorLine);
+    }
+    if (len > 12) {
+      const c = 1.8 / len;
+      quad(0, c, firstFloor, frieze, 0.08, corner);
+      quad(1 - c, 1, firstFloor, frieze, 0.08, corner);
+    }
+    // Offices at 23:30: a sparse, well-mixed set of panes. The glass prism is
+    // the pane colour, so only the lit panes need their own quads.
+    if (len > 3) {
+      const lit = { body: { quad: () => {} } as unknown as typeof s.body, lights: s.lights };
+      litFacade(lit, seed, face, a, b, firstFloor, frieze, floors, len / bays, 0.86, 0.78, [glass], 0.06);
+    }
+    // Below the plaza the granite plinth faces the low west grade: storey bands
+    // and recessed openings above this face's own grade, so it reads as occupied
+    // podium, not a blank wall.
+    const walk = gradeAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    for (let y = plaza - 3.9; y > walk + 2; y -= 3.9) {
+      quad(0, 1, y - 0.3, y + 0.3, 0.06, graniteShade);
+      quad(0.04, 0.96, y + 0.9, y + 2.9, 0.03, storefront);
+    }
+    // Lit lobby glazing at plaza level, or this face's grade where that is higher.
+    const lobbyLo = Math.max(plaza, walk) + 0.4;
+    if (firstFloor - 0.8 - lobbyLo > 1.5) quad(0.03, 0.97, lobbyLo, firstFloor - 0.8, 0.05, storefront, true);
+  });
+  return s.finish('#f5d8a8', 0.5);
+}

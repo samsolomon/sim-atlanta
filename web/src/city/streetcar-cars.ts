@@ -4,6 +4,7 @@ import type { RoutesFile, TrainState } from '../model/types';
 import { Line, segDist, type P2 } from '../vignette/geom';
 import { S70_LAYOUT, S70_LENGTH, s70Material, s70Sections } from '../vignette/streetcar';
 import { STREETCAR_ROUTE } from './streetcar';
+import { streetcarShapes } from './streetcar-shape';
 
 type Origin = { lon: number; lat: number };
 type Height = (x: number, z: number) => number | null;
@@ -13,15 +14,13 @@ const IDS = ['B', 'C', 'A'] as const;
 const centreOf = (id: (typeof IDS)[number]) => (S70_LAYOUT.sections[id].from + S70_LAYOUT.sections[id].to) / 2;
 const lengthOf = (id: (typeof IDS)[number]) => S70_LAYOUT.sections[id].to - S70_LAYOUT.sections[id].from;
 
-/** Scene polylines of the GTFS streetcar paths, keyed by path id, with GTFS distances. */
+/**
+ * Scene polylines of the streetcar paths, keyed by path id, with GTFS distances: the same filleted
+ * shape the rails are drawn from (streetcar-shape.ts), with `cum` carried onto its points.
+ */
 export function streetcarPaths(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
   const out = new Map<string, Path>();
-  for (const p of rf.paths) {
-    if (p.routeId !== STREETCAR_ROUTE) continue;
-    const pts: P2[] = [];
-    for (let i = 0; i + 1 < p.coords.length; i += 2) pts.push(lonLatToScene(origin, p.coords[i], p.coords[i + 1]));
-    out.set(p.id, { line: new Line(pts), cum: [...p.cum] });
-  }
+  for (const shape of streetcarShapes(rf, origin, STREETCAR_ROUTE)) out.set(shape.id, { line: new Line(shape.pts), cum: [...shape.cum] });
   return out;
 }
 
