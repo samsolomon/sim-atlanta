@@ -130,6 +130,26 @@ function bodyProfile() {
   return s;
 }
 
+function roofExtrusion(shape: THREE.Shape, width: number, low: boolean) {
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: width, bevelEnabled: true, bevelThickness: .06, bevelSize: .04,
+    bevelSegments: low ? 1 : 2, curveSegments: low ? 3 : 8,
+  });
+  geometry.translate(0, 0, -width / 2);
+  return geometry.rotateY(-Math.PI / 2);
+}
+
+/** Xcelsior equipment shroud: a 36 cm crown, rounded shoulders and asymmetric end curves. */
+export function xcelsiorRoofFairing(rear: number, front: number, deck: number, low = false) {
+  const enclosure = new THREE.Shape();
+  enclosure.moveTo(rear, deck - .01);
+  enclosure.lineTo(front, deck - .01);
+  enclosure.quadraticCurveTo(front - .05, deck + .31, front - .60, deck + .32);
+  enclosure.lineTo(rear + .70, deck + .32);
+  enclosure.quadraticCurveTo(rear + .10, deck + .31, rear, deck - .01);
+  return roofExtrusion(enclosure, W - .5, low);
+}
+
 export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   const k = new Kit();
   // ---- body shell: profile extruded across the width with rounded edges ------------------
@@ -342,26 +362,15 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   }
 
   // ---- roof: CNG enclosure (front two-thirds) and the sculpted rear engine cap ---------------
-  const roofPiece = (shape: THREE.Shape, width: number) => {
-    const g = new THREE.ExtrudeGeometry(shape, { depth: width, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.04, bevelSegments: 2, curveSegments: 8 });
-    g.translate(0, 0, -width / 2);
-    g.rotateY(-Math.PI / 2);
-    k.geo(g, liv.rapid ? liv.body : C.roofCap);
-  };
-  const enclosure = new THREE.Shape();
-  enclosure.moveTo(AXLE_R + 0.9, H - 0.01);
-  enclosure.lineTo(ZF - 1.0, H - 0.01);
-  enclosure.quadraticCurveTo(ZF - 1.05, H_CNG - 0.05, ZF - 1.6, H_CNG - 0.04);
-  enclosure.lineTo(AXLE_R + 1.6, H_CNG - 0.04);
-  enclosure.quadraticCurveTo(AXLE_R + 1.0, H_CNG - 0.05, AXLE_R + 0.9, H - 0.01);
-  roofPiece(enclosure, W - 0.5);
+  const roofColor = liv.rapid ? liv.body : C.roofCap;
+  k.geo(xcelsiorRoofFairing(AXLE_R + .9, ZF - 1, H), roofColor);
   const cap = new THREE.Shape();
   cap.moveTo(ZR + 0.25, H - 0.01);
   cap.lineTo(AXLE_R + 0.2, H - 0.01);
   cap.quadraticCurveTo(AXLE_R - 0.2, H + 0.26, AXLE_R - 0.8, H + 0.26);
   cap.lineTo(ZR + 0.5, H + 0.26);
   cap.quadraticCurveTo(ZR + 0.25, H + 0.24, ZR + 0.25, H - 0.01);
-  roofPiece(cap, W - 0.4);
+  k.geo(roofExtrusion(cap, W - .4, false), roofColor);
 
   // ---- rear: engine door, tail lights, route sign, bumper ------------------------------------
   k.box(W - 0.6, 0.9, 0.02, 0, 1.05, ZR - 0.006, C.grille);
