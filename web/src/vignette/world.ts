@@ -1554,28 +1554,28 @@ function appendGenericWalls(b: Builder, rings: P2[][], look: GenericLook, foot: 
   };
   const tall = top - floor;
   // Base and cap only where the shaft keeps at least two storeys between them.
-  const baseTop = look.baseH > 0 && tall - look.baseH - look.capH > 2 ? floor + look.baseH : 0;
+  const baseTop = look.baseH > 0 && tall - look.baseH - look.capH > 2 ? floor + look.baseH : null;
   const capY = look.capH > 0 && tall - look.capH > 2.5 ? top - look.capH : top;
   // A shop too low for a separate upper wall is all shopfront.
-  const shaftStyle = !baseTop && look.arch === 6 ? look.baseStyle : look.style;
+  const shaftStyle = baseTop === null && look.arch === 6 ? look.baseStyle : look.style;
   for (const [ri, ring] of rings.entries()) {
     const n = ring.length;
     if (ri > 0) {
       for (let i = 0; i < n; i++) quad(ring[i], ring[(i + 1) % n], foot, top, look.wall, shaftStyle, grade);
       continue;
     }
-    const inner = baseTop && look.inset > 0 ? offsetRing(ring, look.inset) : null;
+    const inner = baseTop !== null && look.inset > 0 ? offsetRing(ring, look.inset) : null;
     const lip = capY < top && look.overhang > 0 ? offsetRing(ring, -look.overhang) : null;
-    const shaftOrigin = baseTop || grade;
+    const shaftOrigin = baseTop ?? grade;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const a = ring[i], c = ring[j];
-      if (baseTop) {
+      if (baseTop !== null) {
         quad(inner ? inner[i] : a, inner ? inner[j] : c, foot, baseTop, look.base, look.baseStyle, grade);
         // Soffit over the recess, facing down.
         if (inner) quad(inner[i], inner[j], baseTop, baseTop, '#3c3e40', -1, 0, a, c);
       }
-      quad(a, c, baseTop || foot, capY, look.wall, shaftStyle, shaftOrigin);
+      quad(a, c, baseTop ?? foot, capY, look.wall, shaftStyle, shaftOrigin);
       if (capY < top) {
         if (lip) {
           quad(a, c, capY, capY, '#55524d', -1, 0, lip[i], lip[j]);
