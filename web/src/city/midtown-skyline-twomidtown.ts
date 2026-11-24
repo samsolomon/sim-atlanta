@@ -1,6 +1,6 @@
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, wound } from './skin-kit';
+import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 import plan from './fixtures/midtown-skyline/two-midtown-plaza.json';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -23,7 +23,8 @@ const GRANITE = '#8a4844', PINK = '#a8706a', GLASS = '#5d82ad', BAND = '#6b3a3c'
 
 export function twoMidtownPlaza(shell: Shell) {
   const { body, lights } = shell;
-  const random = rng(1349);
+  const seed = seedOf('osm:way:269636880');
+  let wall = 0;
   const local = (ring: number[][]): P2[] => wound(ring.map(([x, z]) => [x - plan.origin[0], z - plan.origin[1]] as P2), 1);
   const slab = local(plan.slab), round = local(plan.round);
 
@@ -33,6 +34,7 @@ export function twoMidtownPlaza(shell: Shell) {
     shell.prism(ring, shell.base, BASE, GRANITE, GRANITE);
     shell.prism(ring, BASE, roof, GLASS, '#8f8f8c');
     faces(ring, (a, b, len) => {
+      const face = wall++;
       const p = (t: number, y: number, off: number) => { const [x, z] = along(a, b, len, t, out * off); return [x, y, z]; };
       // Pink granite string course and the lobby glass or punched base windows.
       body.quad(p(0, BASE - .9, .08), p(0, BASE - .3, .08), p(len, BASE - .3, .08), p(len, BASE - .9, .08), PINK);
@@ -44,7 +46,7 @@ export function twoMidtownPlaza(shell: Shell) {
       const bays = Math.max(1, Math.round(len / 4.5));
       for (let j = 0; j < BANDS; j++)
         for (let i = 0; i < bays; i++)
-          if (random() < occupancy) {
+          if (litHash(seed, face, j, i) < occupancy) {
             const l = (i + .06) * len / bays, r = (i + .94) * len / bays, y = BASE + j * pitch;
             lights.quad(p(l, y + .4, .1), p(l, y + pitch - .5, .1), p(r, y + pitch - .5, .1), p(r, y + .4, .1), GLASS);
           }
