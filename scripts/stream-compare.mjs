@@ -24,6 +24,12 @@ const extra = opt('--extra', '');
 const leak = !args.includes('--no-leak');
 const modes = opt('--modes', 'today,stream').split(',');
 mkdirSync(out, { recursive: true });
+// --table a.json,b.json re-renders one table from earlier results.json files and exits.
+if (opt('--table', null)) {
+  const all = opt('--table').split(',').flatMap(f => JSON.parse(readFileSync(f, 'utf8')).runs);
+  console.log(table(all.sort((a, b) => (a.q + a.motion).localeCompare(b.q + b.motion) || a.mode.localeCompare(b.mode) * -1)));
+  process.exit(0);
+}
 if (!existsSync(join(dist, 'index.html'))) { console.error(`no build at ${dist}; run pnpm build`); process.exit(2); }
 
 const web = join(root, 'web');
@@ -70,11 +76,11 @@ function table(rs) {
   const sec = ms => (ms == null ? '—' : (ms / 1000).toFixed(1));
   const rows = rs.map(r => {
     const m = s(r), f = r.result?.fetched ?? {}, loader = r.result?.stream?.loader;
-    if (r.result?.error) return `| ${r.q} | ${r.motion} | ${r.mode} | ${r.result.error} |||||||||||`;
+    if (r.result?.error) return `| ${r.q} | ${r.motion} | ${r.mode} | ${r.result.error} ||||||||||||`;
     const complete = r.mode === 'stream' ? m.settledMs : (m.lastAreaMs ?? m.readyMs);
-    return `| ${r.q} | ${r.motion} | ${r.mode} | ${sec(m.firstFrameMs)} | ${sec(m.readyMs)} | ${sec(complete)} | ${m.peakHeapMB} | ${m.heapAfterGcMB} | ${m.calls} | ${m.programs} | ${((m.triangles ?? 0) / 1e6).toFixed(2)}M | ${m.geometryMB} | ${m.fps} | ${m.p95} | ${f.dataFiles} / ${f.dataMB} MB | ${m.areas}${r.mode === 'stream' ? ` · rings ${m.ringTransitions} (thrash ${m.ringThrash})${loader ? ` · loader max ${Math.round(loader.maxFrameMs)} ms, ${loader.overBudgetFrames} over` : ''}` : ''} |`;
+    return `| ${r.q} | ${r.motion} | ${r.mode} | ${sec(m.firstFrameMs)} | ${sec(m.readyMs)} | ${sec(complete)} | ${m.peakHeapMB} | ${m.heapAfterGcMB} | ${m.calls} | ${m.programs} | ${((m.triangles ?? 0) / 1e6).toFixed(2)}M | ${m.geometryMB} | ${m.fps} | ${m.p95} | ${m.max} | ${f.dataFiles} / ${f.dataMB} MB | ${m.areas}${r.mode === 'stream' ? ` · rings ${m.ringTransitions} (thrash ${m.ringThrash})${loader ? ` · loader max ${Math.round(loader.maxFrameMs)} ms, ${loader.overBudgetFrames} over` : ''}` : ''} |`;
   });
-  return ['| Tier | Camera | Mode | First paint s | Ready s | Complete s | Peak heap MB | Heap after GC MB | Draws | Programs | Triangles | Geometry MB | fps | p95 ms | Data files / bytes | Full areas · stream |',
+  return ['| Tier | Camera | Mode | First paint s | Ready s | Complete s | Peak heap MB | Heap after GC MB | Draws | Programs | Triangles | Geometry MB | fps | p95 ms | Worst frame ms | Data files / bytes | Full areas · stream |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |', ...rows].join('\n');
 }
 
