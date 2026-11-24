@@ -3030,3 +3030,8 @@ building and eight suspended globes trace the approach to the lobby.
 ### 2026-11-23 — The second copy of the bridge
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
+### 2026-11-23 — Six more species in Midtown and Ansley
+
+The first 300 replacements include 89 willow oaks, 83 water oaks, 51 southern magnolias, 41 white oaks, 19 flowering dogwoods and 17 American elms. The Beverly Road island has a specimen elm. On November 20 its bare crown makes the leaf carpet especially visible. At low detail the integrated all-12-area default view adds 8 draw calls and 1,117 submitted triangles. The pan adds 9 calls and 1,701 triangles. Both comparisons use the same 384 × 692 drawing buffer.
+
+[The Prado by day](log/ui/tree-species/round-two/prado-day.jpg) and [at night](log/ui/tree-species/round-two/prado-night.jpg) use camera 1194,-4352,20,50,420. [Beverly by day](log/ui/tree-species/round-two/beverly-day.jpg) and [at night](log/ui/tree-species/round-two/beverly-night.jpg) use 1306,-4827,20,50,160. These are illustrative replacements at the existing canopy positions.
