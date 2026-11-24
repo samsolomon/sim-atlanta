@@ -28,7 +28,7 @@ from the screen edges. On phones, the top elements also sit below the status bar
 
 | Place | Job | Map tab | Models tab |
 |---|---|---|---|
-| **Top-left: subject card** | What you're looking at | The neighbourhood under the camera centre, then time and weather, then a confidence line ("● Live · Friday, Nov 20" or "Timetable · illustrative sky · Now"). Tap: Time & weather. | The model name with ⌄, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 14"). ⌄ grows the card down into the browser. |
+| **Top-left: subject card** | What you're looking at | The neighbourhood under the camera centre, then time and weather, then a confidence line that names what each tier covers: "● Live trains · weather reported" at the present, or "● Timetable · illustrative sky · Fri, Nov 20" (neutral dot) on a shifted clock. Tap: Time & weather. | The model name with ⌄, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 14"). ⌄ grows the card down into the browser. |
 | **Top-right: camera group** | The camera | Round compass · zoom + and − · **3D** with a short tilt slider. Phones: compass and 3D only. | Reset view · zoom. |
 | **Right: detail panel** | Detail | The selected train or building, the Key, or About & credits. | The model's Details. |
 | **Bottom centre: the dock** | The app | Menu · **[Map \| Models]** · Search · radio · share. | Same dock; search looks for models. |
@@ -86,8 +86,10 @@ Not yet: Street view, layers and tours (see Follow-ups).
   - line accent and service colour
   - destination
   - Follow and Share
-  - next stop, with a truth tier on each attribute
+  - **Next arrival** "Peachtree Center in 2 min" (Live: one prediction from the feed)
+  - **Position** "Leaving Five Points" (Inferred: placed between feed updates)
   - car count, marked illustrative
+  - a "See the model ›" row when a model exists
   - an "All stops ›" row
 - **Two things want the panel:** the newer one replaces the older one. A back row (for
   example "‹ Northbound to North Springs") returns to the previous content.
@@ -199,6 +201,31 @@ Not yet: Street view, layers and tours (see Follow-ups).
 - **Outside City's area** (Final 13): 3D and the slider dim. Hover or tap shows "3D covers
   downtown and Midtown." with **Take me there**, which flies to City and plays the switch.
 - **URLs:** `?view=city` and `?view=map` keep working; 3D on/off is the same state.
+
+## Critique fixes (2026-11-24)
+
+From the impeccable critique of the Final section (26/40):
+
+- **Truth:** the subject card names its tiers separately ("Live trains · weather
+  reported"); a shifted clock reads "Timetable · illustrative sky" with a **neutral grey
+  dot** (`#8a8478`), never blue, because blue means city rail. Night boards are a shifted
+  clock, never "Live". Weather is "reported" when observed. The train panel splits Next
+  arrival (Live) from Position (Inferred).
+- **One search field:** results rise from the dock field, which shows the query and a
+  focus ring; popovers never repeat the field. In Models, the dock field filters the left
+  browser, so the browser has no field of its own on desktop. Phones open a full-screen
+  search with Cancel (P12).
+- **Targets:** every control has a 44×44 hit area, padded invisibly where the visual is
+  smaller (sheet ✕, chips, segments, the tilt thumb). Dock buttons are 44 px.
+- **Outside City's area:** tapping or focusing the dimmed 3D opens a small popover,
+  "3D covers downtown and Midtown." with a **Take me there** button (keyboard and touch
+  reachable), not a hover tooltip. Dimmed 3D uses an outlined chip in secondary ink, not
+  40% opacity. The card reads "Metro Atlanta" there.
+- **Radio** shows no "Music later" tag to visitors.
+- **Phone boards added:** Time & weather sheet (P9), dragging state (P10), Share (P11),
+  Search (P12), Radio (P13), Models Details (P14), arriving (P15), off-area (P16).
+- **Models exception:** the camera group (reset, zoom) stays beside Models Details,
+  because Details is the lab's main tool rather than a passing selection.
 
 ## Phones: the selection card
 
@@ -503,7 +530,8 @@ System UI sans throughout.
   - phone: right-aligned, just above the dock
   - night City: use the night secondary ink with a dark halo, `text-shadow: 0 0 2px #0b1020, 0 0 6px #0b1020`
   - the boards show the line on load; on Map it stays exactly as drawn
-- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Every other button
+- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Copy link, Play and
+  the selected chip are not dark: they use the separator tint or the raised white chip. Every other button
   uses the separator-tint background.
 
 ### Share sheet (not redrawn in A2c, behaviour unchanged)
