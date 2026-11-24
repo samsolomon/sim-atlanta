@@ -14,7 +14,7 @@ import { Builder, rng } from '../vignette/geom';
 import type { Unit } from './broadleaf';
 import type { Dims, Seg, V3 } from './species';
 
-export type LeafShape = 'cordate' | 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
+export type LeafShape = 'holly' | 'cordate' | 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
 /** Vertex shade for a spray from its depth (0 core, 1 rim) and how far it points up. */
 export type SprayShade = (depth: number, up: number) => THREE.Color;
 
@@ -133,6 +133,15 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
       g.bezierCurveTo(-s * 0.55, -s * 0.2, -s * 0.6, s * 0.48, 0, s);
       g.bezierCurveTo(s * 0.6, s * 0.48, s * 0.55, -s * 0.2, 0, s * 0.16);
       g.closePath(); break;
+    case 'holly':
+      g.moveTo(0, 0);
+      for (const sign of [-1, 1]) {
+        // Alternating spines and concave edges on a narrow leathery leaf.
+        const pts = [[0.16, 0.14], [0.27, 0.14], [0.20, 0.30], [0.34, 0.46], [0.24, 0.49],
+          [0.31, 0.69], [0.18, 0.65], [0.18, 0.83], [0.085, 0.80], [0, 1]];
+        for (const [x, y] of sign < 0 ? pts : pts.reverse()) g.lineTo(sign * s * x, s * y);
+      }
+      g.closePath(); break;
     case 'oval': g.ellipse(0, s * 0.5, s * 0.3, s * 0.5, 0, 0, Math.PI * 2); break;
     case 'lobed':
       for (let k = 0; k < 4; k++) { const y = s * (0.25 + k * 0.2); g.ellipse(0, y, s * (0.32 - k * 0.04), s * 0.13, 0, 0, Math.PI * 2); }
@@ -155,7 +164,7 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
 }
 /** Leaf sizes in atlas pixels (a 128 px cell spans a card about 2–3 m across). */
 const LEAF_PX: Record<LeafShape, [number, number]> = {
-  cordate: [13, 17], needles: [9, 12],
+  holly: [12, 17], cordate: [13, 17], needles: [9, 12],
   narrow: [9, 13], spatulate: [11, 15], oval: [12, 17], lobed: [13, 17], palmate: [12, 16], star: [13, 17], tulip: [13, 17],
 };
 /**
@@ -178,9 +187,10 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
     if (cell === SOLID) {
       const branchFans = shape === 'cordate' || shape === 'oval';
       g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
-      g.fillRect(ox + 2, oy + 2, CELL - 4, (branchFans ? CELL * 0.54 : CELL) - 4);
+      g.fillRect(ox + 2, oy + 2, CELL - 4, (branchFans || shape === 'holly' ? CELL * 0.54 : CELL) - 4);
       if (branchFans) paintBranchFans(g, ox, oy, shape === 'cordate');
       if (shape === 'oval') paintFlowerMass(g, ox + BLOOM_X, oy + FAN_TOP);
+      if (shape === 'holly') paintHollyFruit(g, ox + BLOOM_X, oy + FAN_TOP);
       continue;
     }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
@@ -314,9 +324,9 @@ export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays
 }
 
 /** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
-export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1, leafM = 0.45) {
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1, leafM = 0.45, fruit?: { count: number; size: number }) {
   const r = rng(seed);
-  for (const u of units) {
+  for (const [i, u] of units.entries()) {
     const c = new THREE.Vector3(...u.c);
     const n = new THREE.Vector3(...u.n);
     const t1 = new THREE.Vector3(0, 1, 0).cross(n);
@@ -333,6 +343,23 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
       const col = shade(u.depth, n.y).lerp(WHITE, 0.55);
       b.tri([p[0], p[1], p[2]], col, u, [uv[0], uv[1], uv[2]]);
       b.tri([p[0], p[2], p[3]], col, u, [uv[0], uv[2], uv[3]]);
+    }
+    // Fruit uses the same plane and height as one of the leaf cards. A small offset
+    // prevents z-fighting and keeps the cluster away from the empty card edges.
+    if (fruit && Math.floor(i * fruit.count / units.length) !== Math.floor((i + 1) * fruit.count / units.length)) {
+      const ay = i % 2 ? n : t2;
+      const c2 = c.clone().addScaledVector(t1, 0.19 * w).addScaledVector(ay, -0.18 * w);
+      const lift = t1.clone().cross(ay).normalize().multiplyScalar(0.008);
+      const radius = Math.min(fruit.size / 2, w * 0.54);
+      const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => {
+        const v = c2.clone().addScaledVector(t1, radius * x).addScaledVector(ay, radius * y);
+        v.y = c.y + (v.y - c.y) * height;
+        return v.add(lift);
+      });
+      const uv = fanUV(BLOOM_X);
+      const order = 0.08 + 0.89 * u.drop;
+      b.tri([p[0], p[1], p[2]], WHITE, u, [uv[0], uv[1], uv[2]], order);
+      b.tri([p[0], p[2], p[3]], WHITE, u, [uv[0], uv[2], uv[3]], order);
     }
   }
 }
@@ -536,6 +563,21 @@ function paintFlowerMass(g: CanvasRenderingContext2D, ox: number, oy: number) {
   }
 }
 
+/** Round drupes sit in small, irregular clusters on a card. Seasonal tint supplies red. */
+function paintHollyFruit(g: CanvasRenderingContext2D, ox: number, oy: number) {
+  for (const [x, y, radius] of [[35, 57, 9], [47, 47, 8], [57, 62, 9], [68, 39, 7], [73, 57, 7], [46, 71, 7]]) {
+    const cx = ox + x, cy = oy + y;
+    const grad = g.createRadialGradient(cx - radius * 0.26, cy - radius * 0.31, 1, cx, cy, radius);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(0.53, '#ebebeb');
+    grad.addColorStop(1, '#a0a0a0');
+    g.fillStyle = grad;
+    g.beginPath();
+    g.arc(cx, cy, radius, 0, Math.PI * 2);
+    g.fill();
+  }
+}
+
 const fanUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
   cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
 
@@ -617,6 +659,7 @@ export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: nu
   const r = rng(seed);
   const outer = units.filter(u => u.depth >= 0.45);
   const pool = outer.length ? outer : units;
+  const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(0, x, y));
   for (let k = 0; k < total; k++) {
     const u = pool[k % pool.length];
     const n = new THREE.Vector3(...u.n);
@@ -634,8 +677,6 @@ export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: nu
       const s = size * (0.8 + r() * 0.4) / 2;
       const p = [c.clone().addScaledVector(t1, s), c.clone().addScaledVector(t2, s), c.clone().addScaledVector(t1, -s), c.clone().addScaledVector(t2, -s)];
       const order = 0.05 + 0.95 * r();
-      // Painted with the atlas's coarse leaf cell, so a truss reads as florets, not a square.
-      const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(0, x, y));
       b.tri([p[0], p[1], p[2]], WHITE, u, [uv[0], uv[1], uv[2]], order);
       b.tri([p[0], p[2], p[3]], WHITE, u, [uv[0], uv[2], uv[3]], order);
     }
@@ -656,7 +697,7 @@ export function foliageDepth(src: THREE.MeshLambertMaterial) {
 
 /** Leaf length and width in metres for near leaf tips, by leaf shape. */
 const TIP_LEAF: Record<LeafShape, [number, number]> = {
-  cordate: [0.4, 0.34], needles: [0.5, 0.05],
+  holly: [0.4, 0.24], cordate: [0.4, 0.34], needles: [0.5, 0.05],
   narrow: [0.42, 0.09], spatulate: [0.36, 0.16], oval: [0.4, 0.2], lobed: [0.42, 0.24], palmate: [0.38, 0.3], star: [0.38, 0.3], tulip: [0.4, 0.3],
 };
 /**
