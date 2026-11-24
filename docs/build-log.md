@@ -3246,3 +3246,7 @@ Markings were the second seam. The board paints one yellow line down each mapped
 ### 2026-11-23 · 171 Seventeenth at the bridge
 
 From the Connector, the 71 × 36 m office tower reads as three shapes. The stone-framed west wing steps down 9 m from the ribbon-glazed shaft, and the crown rises 8 m above it. In the night photograph the brightest surface was the broad glass crown itself. The City model gives that surface a warm glow and shares its window lighting with the scattered panes below. The skin uses 3,848 triangles across two meshes and keeps the low tier at 90 shader programs. [Matched day and night views](log/ui/171-seventeenth/README.md)
+
+### 2026-11-23 · The garage screen at 903 Peachtree
+
+The 24.4 m base under 903 Peachtree’s glazed shaft contains six parking levels above streetfront retail. In the close-up, the panels read as one large opening framed in aluminum, with staggered bronze and charcoal strips inside it. The screen and eighth-floor terrace give the broad podium a different scale from the apartment floors above. City draws the skin in 4,523 triangles using its two existing landmark materials. [Day, night and close views](log/ui/903-peachtree/README.md)
