@@ -307,7 +307,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
 - Magnolia: A3, with a tidier skirt and whiter gloss.
 - Dogwood: A, fuller layered crown and white bloom, approved with final twig tidy-ups.
-- Still to pick: white oak (A cards or C faceted clusters).
+- White oak A: rounded-lobed leaf cards, selected by Sam on 2026-11-23.
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -878,7 +878,7 @@ Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 
 ### White oak
 
-`web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). A new lab candidate, not yet selected by Sam or wired into City. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
+`web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
 
 The [research handoff](handoffs/studio-tree-lab-white-oak.md) records the Georgia Tech inventory, Atlanta champions and Georgia USA-NPN calculations. Source units and the conversion method remain inferred as described there. Nominal sizes below are illustrative combinations within the measured ranges, not one surveyed tree, except the specimen's height/spread pair from the 2016 Atlanta champion at Vaughn Street.
 
@@ -891,7 +891,7 @@ The [research handoff](handoffs/studio-tree-lab-white-oak.md) records the Georgi
 
 **References viewed:** [Dcrjsr's open-grown Duke Forest white oak](https://commons.wikimedia.org/wiki/File:Large_white_oak_at_old_house_site.jpg), 11 Nov 2011, CC BY 3.0, shows thick spreading limbs and russet leaves; [Huron H. Smith's Athens winter white oak](https://commons.wikimedia.org/wiki/File:The_tree_that_owns_itself_(4987035786).jpg), 1910, Field Museum, no known restrictions, shows the bare crown's broad outline. [NC State](https://plants.ces.ncsu.edu/plants/quercus-alba/) and [UF/IFAS ST541](https://ask.ifas.ufl.edu/publication/ST541/pdf) describe the broad crown, pale scaly bark and rounded leaf lobes. No nighttime reference is used; the night panel checks the lab's illustrative lighting.
 
-**Calendar:** Georgia NPN puts median budbreak near April 1 and expansion near April 13; the lab reaches full leaf by May. Blue-green summer lasts through September. Wine-red/russet develops in October, brown leaves drop through November, and a small residual of brown leaves persists into early winter. The retention strength and interpolation are illustrative. Published descriptions and photographs concentrate marcescence on lower limbs and young trees; the current renderer distributes retained leaves through the crown instead. Acorns and bark plates are not individually modelled.
+**Calendar:** Georgia NPN puts median budbreak near April 1 and expansion near April 13; the lab reaches full leaf by May. Blue-green summer lasts through September. Wine-red/russet develops in October, brown leaves drop through November, and a small residual of brown leaves persists into early winter. The retention strength and interpolation are illustrative. Published descriptions and photographs concentrate marcescence on lower limbs and young trees; the current renderer distributes retained leaves through the crown instead. This remains a known limit: restricting retention spatially would require coordinated changes to the shared foliage visibility, ink mask, shadows and near tips, beyond a cheap species-only adjustment. Acorns and bark plates are not individually modelled.
 
 | Option | High / low triangles | High / low draws for one size | Near-tip cost |
 |---|---|---|---|

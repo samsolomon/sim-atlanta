@@ -52,4 +52,4 @@ export const whiteOak = broadleafSpecies({
   },
   clumps: { high: 13, low: 7 }, offsetDays: 8, habit, palette,
 });
-export const whiteOakLook: Look = { species: whiteOak, habit, leaf: 'lobed', palette, options };
+export const whiteOakLook: Look = { species: whiteOak, habit, leaf: 'lobed', palette, options, preferred: 'A' };
