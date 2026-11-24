@@ -101,3 +101,22 @@ Nothing within the ginkgo's 9 m crown stands more than 1.5 m above the lawn. The
 | Matched camera in Five Points metres | High | Low |
 |---|---|---|
 | Lawn, cam=612,-4002,-70,50,150 | [Day](log/ui/arts-campus/lawn-high-day.jpg) · [Night](log/ui/arts-campus/lawn-high-night.jpg) | [Day](log/ui/arts-campus/lawn-low-day.jpg) · [Night](log/ui/arts-campus/lawn-low-night.jpg) |
+
+## People at Sifly Piazza
+
+The six existing bistro tables each have three chairs. At lunch the high tier
+fills one chair at each table. Eight walkers share the piazza paving, entry ramp
+and mapped Peachtree lawn path. The low tier shows the walkers. The figures use
+the existing City clothing palette and material. Visitor positions and attendance
+carry the illustrative tier in the visitor data.
+
+The scene uses Atlanta local time. Tuesday through Sunday, the 12:00–14:00
+lunch peak falls within the busier 10:00–17:00 museum period. A few walkers
+linger into the evening. Monday daytime has one walker, and after 21:00 the
+museum crowd is empty. These are artistic estimates of activity. A fixed scene
+clock reproduces the same visitor positions, looks and gait.
+
+November 20, 2026, high tier. [Lunch](log/ui/high-visitors/lunch.jpg) and
+[full night](log/ui/high-visitors/night.jpg) use camera `565,-3965,-101,55,260`
+at 13:00 and 23:00 Eastern. [Café seating at 13:00](log/ui/high-visitors/tables.jpg)
+uses `557,-3963,145,55,48` with `&dev&mindist=20`.

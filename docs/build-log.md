@@ -3187,3 +3187,12 @@ Most of the shader headroom came from the first colour frame. City had precompil
 **2026-11-23 — 230 Peachtree.** Across Peachtree Street from the four promenade offices, the original Portman tower has three staggered slabs. The lidar puts the lower roofs at 419 m NAVD88 and the central equipment near 430 m. At the sidewalk the white awning joins two illuminated entrances behind a faceted silver figure. Reusing the promenade's window material kept the replacement to 2,081 extra triangles and three draws in the low-tier comparison. [Day and night from the street and above](log/ui/230-peachtree/README.md)
 
 **2026-11-23 — Davison’s on Peachtree.** The store’s 44.5 m baked height hid a 10 m step behind the main trading floors. The lower addition follows Carnegie Way’s chamfer. On the other side, the brick arches continue around Ellis, with two illuminated marquees on Peachtree. The roof camera gained 1,120 triangles and two draws on low. [Matched street and roof photographs in City](log/ui/200-peachtree/README.md)
+
+### 2026-11-23 — Lunch at the High
+
+Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on
+Friday, six visitors sit facing their tables while eight walkers cross the
+paving, climb the entry ramp and follow the lawn path. The ramp needed its own
+height calculation because the deck rises away from the ground beneath it.
+At 23:00 the tables and paths are quiet. [Café seats](log/ui/high-visitors/tables.jpg)
+· [lunchtime overview](log/ui/high-visitors/lunch.jpg) · [matched night](log/ui/high-visitors/night.jpg).

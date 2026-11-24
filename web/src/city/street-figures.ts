@@ -2,6 +2,7 @@
 // Parts are shared across the whole board. Only the instance transforms move.
 import * as THREE from 'three';
 import { FigureBuilder, figureLooks, figureMaterial } from './figure-looks';
+import { highSeats, highWalkers, highWalkerPose, museumCrowd } from './high-visitors';
 import { strideAngle, travelSpeed, travellerAt, type Traveller } from './walkways';
 
 type XYZ = [number, number, number];
@@ -163,6 +164,22 @@ function distantFigure(rider: boolean) {
   return b.geometry();
 }
 
+// Local origin is the chair seat, facing the table.
+function seatedFigure() {
+  const b = new FigureBuilder();
+  oval(b,[0,.30,0],[.22,.34,.15],'top');
+  oval(b,[0,.76,.015],[.15,.18,.14],'skin');
+  oval(b,[0,.86,0],[.15,.09,.14],'#594537');
+  for (const x of [-.105,.105]) {
+    tube(b,[x,.05,0],[x,.03,.31],.08,'trousers');
+    tube(b,[x,.03,.31],[x,-.37,.32],.07,'trousers');
+    oval(b,[x,-.39,.38],[.08,.055,.13],rubber);
+    tube(b,[2*x,.49,0],[2*x,.22,.08],.07,'top');
+    tube(b,[2*x,.22,.08],[2*x,.27,.30],.055,'skin');
+  }
+  return b.geometry();
+}
+
 export class StreetFigures {
   readonly group = new THREE.Group();
   private readonly material = figureMaterial(true);
@@ -181,12 +198,16 @@ export class StreetFigures {
   private readonly previousProjection = new THREE.Matrix4();
   private readonly frustum = new THREE.Frustum();
   private readonly bounds = new THREE.Sphere(new THREE.Vector3(), 1.5);
+  private readonly seated?: THREE.InstancedMesh;
+  private minute = NaN;
+  private crowd = 0;
+  private museumLoaded = false;
   private tick = NaN;
   private viewportHeight = 0;
 
   constructor(private readonly people: Traveller[], private readonly ground: (x: number, z: number) => number | null,
-    private readonly low: boolean) {
-    const riders = people.filter(p => p.rider).length, walkers = people.length - riders;
+    private readonly low: boolean, private readonly museumGround?: (x:number,z:number)=>number|null) {
+    const riders = people.filter(p => p.rider).length, walkers = people.length - riders + (museumGround ? highWalkers.length : 0);
     const batch = (geometry: THREE.BufferGeometry, capacity: number) => {
       const mesh = new THREE.InstancedMesh(geometry, this.material, capacity);
       geometry.setAttribute('lookOffset', new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1).setUsage(THREE.DynamicDrawUsage));
@@ -195,6 +216,7 @@ export class StreetFigures {
       this.group.add(mesh);
       return mesh;
     };
+    if (museumGround && !low) this.seated = batch(seatedFigure(), highSeats.length);
     this.coat = batch(jacket(), walkers);
     this.face = batch(head(), walkers);
     this.arms = batch(sleeve(), walkers * 2);
@@ -220,7 +242,10 @@ export class StreetFigures {
     const tick = Math.floor(ms / step);
     camera.updateMatrixWorld();
     this.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    if (this.tick === tick && viewportHeight === this.viewportHeight && this.projection.equals(this.previousProjection)) return;
+    const museumLoaded = !!this.museumGround && Math.hypot(camera.position.x - 550, camera.position.z + 3990) < 1800
+      && this.museumGround(515, -3967) !== null;
+    if (this.museumLoaded === museumLoaded && this.tick === tick && viewportHeight === this.viewportHeight && this.projection.equals(this.previousProjection)) return;
+    this.museumLoaded = museumLoaded;
     this.viewportHeight = viewportHeight;
     this.previousProjection.copy(this.projection);
     this.frustum.setFromProjectionMatrix(this.projection);
@@ -228,12 +253,9 @@ export class StreetFigures {
     const detailRangeSq = (1.7 * focalPixels / (this.low ? 6 : 4)) ** 2;
     this.tick = tick;
     let walker = 0, rider = 0, farWalker = 0, farRider = 0;
-    for (const person of this.people) {
-      const p = travellerAt(person, tick * step / 1000);
-      const y = this.ground(p.x, p.z);
-      if (y === null) continue;
+    const draw = (person: Traveller, p: ReturnType<typeof travellerAt>, y: number) => {
       this.bounds.center.set(p.x, y + .85, p.z);
-      if (!this.frustum.intersectsSphere(this.bounds)) continue;
+      if (!this.frustum.intersectsSphere(this.bounds)) return;
       this.root.position.set(p.x, y, p.z);
       this.root.rotation.y = p.angle;
       this.root.scale.setScalar(person.size);
@@ -258,6 +280,32 @@ export class StreetFigures {
           this.joint(this.arms, walker * 2 + i, 'walkingArm', side, p.stride, person.look);
         }
         walker++;
+      }
+    }
+    for (const person of this.people) {
+      const p = travellerAt(person,tick*step/1000), y = this.ground(p.x,p.z);
+      if (y !== null) draw(person,p,y);
+    }
+    if (this.seated) this.seated.count = 0;
+    if (museumLoaded && this.museumGround) {
+      const minute = Math.floor(ms/60000);
+      if (minute !== this.minute) { this.minute = minute; this.crowd = museumCrowd(ms); }
+      for (let i = 0; i < this.crowd; i++) {
+        const visitor = highWalkers[i];
+        const p = highWalkerPose(visitor,tick*step/1000,this.museumGround);
+        if (p) draw(visitor.person,p,p.y);
+      }
+      if (this.seated) for (let i = 0; i < this.crowd - 2; i++) {
+        const seat = highSeats[i];
+        const g = this.museumGround(...seat.table);
+        if (g === null) continue;
+        this.bounds.center.set(seat.x,g+1,seat.z);
+        if (!this.frustum.intersectsSphere(this.bounds)) continue;
+        this.root.position.set(seat.x,g+.575,seat.z);
+        this.root.rotation.y = seat.angle;
+        this.root.scale.setScalar(1);
+        this.root.updateMatrix();
+        this.place(this.seated,this.seated.count++,this.root.matrix,seat.look);
       }
     }
     this.legs.count = this.arms.count = walker * 2;

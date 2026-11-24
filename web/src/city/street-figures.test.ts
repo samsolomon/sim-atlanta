@@ -99,3 +99,18 @@ it('detaches a preview and releases each shared part, material and palette textu
   expect(parent.children).toHaveLength(0);
   for (const dispose of disposed) expect(dispose).toHaveBeenCalledTimes(1);
 });
+
+it.each([true, false])('reuses City batches for museum visitors and empties them at night (low=%s)', low => {
+  const figures = new StreetFigures([], () => null, low, () => 0);
+  const camera = new PerspectiveCamera(60, 2, .1, 1500);
+  camera.position.set(560, 170, -3830);
+  camera.lookAt(560, 0, -3990);
+  const meshes = figures.group.children as InstancedMesh[];
+  expect(new Set(meshes.map(m => m.material)).size).toBe(1);
+  figures.update(Date.parse('2026-11-20T13:00:00-05:00'), camera, 100);
+  const count = () => meshes.reduce((sum, mesh) => sum + mesh.count, 0);
+  expect(count()).toBe(low ? 8 : 14);
+  figures.update(Date.parse('2026-11-20T23:00:00-05:00'), camera, 100);
+  expect(count()).toBe(0);
+  figures.dispose();
+});

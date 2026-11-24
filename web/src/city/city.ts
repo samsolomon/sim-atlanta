@@ -783,7 +783,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     : undefined;
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);
-  const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low) : undefined;
+  const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low,
+    midtown ? (x,z) => mosaic?.areas.get('midtown-upper')?.groundAt(x,z) ?? null : undefined) : undefined;
   if (figures) scene.add(figures.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
