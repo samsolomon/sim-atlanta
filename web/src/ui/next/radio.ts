@@ -123,6 +123,7 @@ export function createRadio(o: RadioOptions): Radio {
   let fading: { inc: Deck; out: Deck; dur: number; midDone: boolean; scheduled: boolean } | null = null;
   let pauseTimer: ReturnType<typeof setTimeout> | undefined;
   let masterLevel = 0;
+  let masterRamp = { from: 0, t0: 0, dur: 0 };
 
   const changed = () => {
     listeners.forEach((fn) => fn());
@@ -171,12 +172,16 @@ export function createRadio(o: RadioOptions): Radio {
     d.fade = { from, to, t0: now + AFTER, dur };
   }
 
+  /** Pause and resume ramp the master linearly; a reversal starts from where the last ramp is now. */
   function rampMaster(to: number, dur: number) {
     const now = ctx!.currentTime;
+    const p = masterRamp.dur > 0 ? Math.min(1, Math.max(0, (now - masterRamp.t0) / masterRamp.dur)) : 1;
+    const from = masterRamp.from + (masterLevel - masterRamp.from) * p;
     const g = master!.gain;
     g.cancelScheduledValues(now);
-    g.setValueAtTime(masterLevel, now);
+    g.setValueAtTime(from, now);
     g.linearRampToValueAtTime(to, now + dur);
+    masterRamp = { from, t0: now, dur };
     masterLevel = to;
   }
 
@@ -190,6 +195,14 @@ export function createRadio(o: RadioOptions): Radio {
   function assign(d: Deck, t: StationTrack, role: Role) {
     if (d.track !== t || d.role === 'idle') {
       unload(d);
+      // A reused deck may still be sounding its old file: silence it before the new one arrives.
+      d.el.pause();
+      d.el.removeAttribute('src');
+      d.el.load();
+      d.gain.gain.cancelScheduledValues(0);
+      d.gain.gain.value = 0;
+      d.rest = 0;
+      d.fade = null;
       d.track = t;
       const ac = (d.abort = new AbortController());
       d.ready = audio.source(o.resolve(t.src), ac.signal).then(

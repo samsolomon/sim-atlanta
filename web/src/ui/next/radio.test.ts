@@ -248,4 +248,16 @@ describe('radio engine', () => {
     expect(deckGain(els.indexOf(a)).last('set')?.[1]).toBe(1); // back at (or held at) full level
     expect(els.find((e) => e !== a)!.src).toBe(''); // the failed deck lets its file go
   });
+
+  it('reverses a pause or resume ramp from the level it has reached, without a jump', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle(); // resume ramp 0 → 1 over 0.3 s, starting at t = 0
+    await flush();
+    ctx.currentTime = 0.1;
+    r.toggle(); // pause a third of the way up
+    const held = [...master().calls].reverse().find((c) => c[0] === 'set')!;
+    expect(held[1]).toBeCloseTo(1 / 3, 5);
+    expect(master().last('linear')).toEqual(['linear', 0, 0.4]);
+  });
 });
