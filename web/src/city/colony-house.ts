@@ -22,7 +22,9 @@ const wingRoofs: Record<string, number> = { 'osm:way:1414724126': 305.3, 'osm:wa
 const entryNavd = 296, lobbyH = 3.6, floors = 13;
 
 // Flat vertex colours: a painted library surface compiles its own shader program.
-const concrete = '#b4b1a9', concreteShade = '#a29f97', recess = '#8c9194', recessLit = '#8e9396';
+// Slab edges and balcony fronts are lighter board-formed concrete than the walls, so the grid holds
+// against the recesses even on shaded faces at 400 m.
+const concrete = '#b4b1a9', front = '#dcd8ce', recess = '#6e7376', recessLit = '#707578';
 const roofColor = '#8f8f8a';
 
 function ccw(ring: P2[]): P2[] {
@@ -72,15 +74,17 @@ export function createColonyHouse(buildings: VBuilding[], site: VBuilding, grid:
     for (let f = 0; f < floors; f++) {
       const lo = entryNavd + lobbyH + f * pitch;
       if (lo + pitch <= covered) continue;
-      panel(false, a, b, 0.01, 0.99, lo + 0.45, lo + pitch, 0.02, recess);
+      panel(false, a, b, 0.01, 0.99, lo + 0.75, lo + pitch, 0.02, recess);
+      // The slab edge and balcony front: a pale band standing proud of the wall.
+      panel(false, a, b, 0, 1, lo, lo + 0.75, 0.12, front);
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= 0.3) continue;
         panel(true, a, b, (i + 0.15) / bays, (i + 0.85) / bays, lo + 0.6, lo + pitch - 0.2, 0.04, recessLit);
       }
     }
     for (let i = 1; i < bays; i++) {
-      const t = i / bays, w = 0.18 / length;
-      if (covered < slabRoof - 1.2) panel(false, a, b, t - w, t + w, Math.max(entryNavd + lobbyH, covered), slabRoof - 1.2, 0.06, concreteShade);
+      const t = i / bays, w = 0.25 / length;
+      if (covered < slabRoof - 1.2) panel(false, a, b, t - w, t + w, Math.max(entryNavd + lobbyH, covered), slabRoof - 1.2, 0.08, front);
     }
   });
 

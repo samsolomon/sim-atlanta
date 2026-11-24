@@ -29,7 +29,7 @@ City drew the building 14 m too tall before this change.
 ## Estimates
 
 - **Floors:** 13 residential floors of about 3.0 m over a 3.6 m lobby, measured from the 15th Street entrance (296 m).
-- **Long faces:** at each floor, a recessed balcony band (`#8c9194`) under the concrete slab edge, divided by cross walls about 3.6 m apart.
+- **Long faces:** at each floor, a pale board-formed slab edge and balcony front (`#dcd8ce`, 0.75 m, standing 0.12 m proud) over a dark recess band (`#6e7376`), divided by pale cross walls about 3.6 m apart. On review (coordinator, 2026-11-24) the grid was nearly invisible on the shaded sides at 400 m, so the fronts were made lighter and thicker than the walls.
 - **Ends and short jogs:** blank concrete (`#b4b1a9`), as the 15th Street end shows.
 - **Materials:** flat vertex colours. The library's `concrete` surface is a hooked material, which the landmark batcher never merges, so it would cost its own low-tier draw (skin spec, batching rule 1).
 - **Hidden faces:** the slab faces that bound the lift-core slot and the wing on 15th Street draw no balconies below those parts' roofs.
