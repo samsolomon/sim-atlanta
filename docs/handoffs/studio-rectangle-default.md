@@ -10,6 +10,8 @@
 
 **Visual evidence and next action.** In the R14 package's `smoke/` directory, `city-freight.jpg` covers both tiers and `camera-toggle.jpg` covers both toggle states by day and night. The direct embedded Models view opens beneath the 20-well intermodal train. `desktop-freightIntermodal.jpg` preserves the original and `desktop-intermodal-standalone-side.jpg` shows the standalone comparison. The freight owner is investigating a separate framing correction.
 
+**Next release.** The merge lead reports that main includes #673 and #674. Retain the #674 merge `7a9d069a2869fe60bad86ec16d71500e81c39bc4` and its [final 12-view sheet](https://share.onorca.dev/a/R_wHXCEOqP7m). Await the release instruction before packaging.
+
 **Integration and cleanup.** At kickoff, agree on one integration owner for independently reviewed contributions. Report overlapping editors, shared services and pending branches before cleanup. The packager owns no pending feature branch or shared dev server. Use the retained R14 archive and screenshot set as the comparison baseline for the next authorized cut.
 
 ## Historical handoffs
