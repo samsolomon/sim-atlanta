@@ -179,7 +179,7 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
     : style === 'tudor' ? (pick < .7 ? 'brick' : 'stucco')
     : style === 'colonial' ? (pick < .45 ? 'brick' : pick < .9 ? 'clapboard' : 'shingle')
     : ansley ? (pick < .55 ? 'clapboard' : pick < .85 ? 'shingle' : 'brick') : (pick < .75 ? 'clapboard' : pick < .9 ? 'shingle' : 'brick'));
-  const palette = FAMILIES[kind];
+  const palette = kind === 'shingle' && !ansley ? FAMILIES.shingle.slice(0, 4) : FAMILIES[kind];
   const roofs = kind === 'stucco' && r() < .6 ? TERRACOTTA : (kind === 'brick' || style === 'tudor') && ansley && r() < .25 ? SLATE : ASPHALT;
   // Door by style: centred on a Colonial, off-centre under a Craftsman porch, beside a Tudor gable.
   const doorS = style === 'colonial' ? 0 : style === 'craftsman' ? -.2 * frontLen : style === 'apartment' ? -.25 * frontLen : .22 * frontLen;
@@ -237,7 +237,7 @@ function ansleyForms(p: Plan, b: VBuilding, size: number, frontLen: number, roof
     return { ...p, foursquare: true, shape, rise, storeys, eave, siding: 'clapboard', brick: false, doorS: 0, doors: [0],
       wall: FOURSQUARE[Math.floor(colour * FOURSQUARE.length)], trim: '#f6f3ea', frame: '#f6f3ea', porch: p.front, chimney: true,
       // One hipped centre dormer on the front slope (high tier).
-      dormerEdge: shape === 'hipped' ? p.front : p.dormerEdge, dormers: p.quality === 'high' ? 1 : 0, crossGable: false, overhang: .5 };
+      dormerEdge: shape === 'hipped' ? p.front : p.dormerEdge, dormers: p.quality === 'high' && rise >= 2.7 ? 1 : 0, crossGable: false, overhang: .5 };
   }
   if ((p.style === 'tudor' || form) && fresh < .3) {
     const limestone = colour < .55;

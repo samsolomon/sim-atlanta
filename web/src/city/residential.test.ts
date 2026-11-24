@@ -13,6 +13,25 @@ const house = (id: string, ring: P2[], extra: Partial<VBuilding> = {}) => ({ id,
 const city = (buildings: VBuilding[]) => ({ bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, buildings,
   roads: [{ cls: 'residential', name: 'Test St', bridge: false, tunnel: false, pts: [[-50, -6], [50, -6]] }], rail: [] }) as unknown as TerrainCity;
 
+it('keeps a shallow Foursquare roof below its ridge, including dormer geometry', () => {
+  const b = house('shallow-foursquare', rect(12, 8));
+  const homes = residential(city([b]), undefined, undefined, undefined, 'high', {
+    [b.id]: { style: 'colonial', form: 'foursquare', storeys: 2 },
+  });
+  const finish = homes.finishFor(b)!;
+  const eave = homes.city.buildings[0].h!;
+  const drawn = new Builder();
+  finish.dressRoof!(drawn, b.rings[0], eave, new Builder());
+  const color = new Color(finish.roof!);
+  const roofHeights: number[] = [];
+  for (let i = 0; i < drawn.pos.length; i += 3) {
+    if (Math.abs(drawn.col[i] - color.r) < 1e-6 && Math.abs(drawn.col[i + 1] - color.g) < 1e-6
+      && Math.abs(drawn.col[i + 2] - color.b) < 1e-6) roofHeights.push(drawn.pos[i + 1]);
+  }
+  expect(roofHeights.length).toBeGreaterThan(0);
+  expect(Math.max(...roofHeights)).toBeLessThanOrEqual(eave + 2.4 + 1e-6);
+});
+
 function roof(b: VBuilding, plan: ReturnType<typeof residential>) {
   const out = new Builder();
   const finish = plan.finishFor(b)!;
