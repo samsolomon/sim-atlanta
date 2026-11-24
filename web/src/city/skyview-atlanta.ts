@@ -2,8 +2,8 @@ import type { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 
-// SkyView Atlanta, the Bussink R60 observation wheel by Centennial Olympic Park
-// (opened 2013). A white wheel about 50 m across.
+// The observation wheel by Centennial Olympic Park, a 60 m-class wheel that
+// opened in 2013: white, about 50 m across. Labels stay generic; docs/skyview-atlanta.md names it.
 // - Structure: a two-ring rim, 21 spokes and two white tubular A-frames, one on
 //   each side, carrying the axle.
 // - Hub: a dark oval hub.
@@ -21,10 +21,10 @@ import { landmarkShell } from './landmark-shell';
 
 export const skyViewId = 'a7661a6c-82d6-4347-98fe-f0acff8b918e';
 const R = 25, AXLE = 29, SPOKES = 21, CARS = 42, HALF = 1.6;
-const WHITE = '#eef0ef', STEEL = '#d9dcdc', GLASS = '#2c3237', HUB = '#22262a', CANOPY = '#5b6168';
+const WHITE = '#f6f7f6', STEEL = '#e4e6e6', GLASS = '#2c3237', HUB = '#22262a', CANOPY = '#5b6168';
 
 export function createSkyView(buildings: VBuilding[], grid: GroundGrid) {
-  const s = landmarkShell(buildings, grid, skyViewId, 'SkyView Atlanta', [-23.3, -548.35], [-33.4, 37.7],
+  const s = landmarkShell(buildings, grid, skyViewId, 'Centennial Park observation wheel', [-23.3, -548.35], [-33.4, 37.7],
     [[0, 0], [20, 0], [-20, 0], [10, 0]]);
   if (!s) return null;
   const { body, lights } = s;
@@ -37,7 +37,7 @@ export function createSkyView(buildings: VBuilding[], grid: GroundGrid) {
   for (const v of [-HALF, HALF])
     for (let k = 0; k < CARS; k++) {
       const a0 = (k * 2 * Math.PI) / CARS, a1 = ((k + 1) * 2 * Math.PI) / CARS;
-      body.quad(at(a0, R - .5, v), at(a0, R, v), at(a1, R, v), at(a1, R - .5, v), WHITE);
+      body.quad(at(a0, R - 1, v), at(a0, R, v), at(a1, R, v), at(a1, R - 1, v), WHITE);
       body.quad(at(a0, R, v - .25), at(a0, R, v + .25), at(a1, R, v + .25), at(a1, R, v - .25), STEEL);
       lights.quad(at(a0, R - .4, v * 1.01), at(a0, R - .1, v * 1.01), at(a1, R - .1, v * 1.01), at(a1, R - .4, v * 1.01), WHITE);
     }
@@ -47,7 +47,7 @@ export function createSkyView(buildings: VBuilding[], grid: GroundGrid) {
     for (const v of [-HALF, HALF]) {
       const hub = (w: number, o = 0) => [n[0] * w, cy + n[1] * w, v * .35 + o];
       const rim = (w: number, o = 0) => { const p = at(a, R - .5, v + o); return [p[0] + n[0] * w, p[1] + n[1] * w, p[2]]; };
-      body.quad(hub(-.7), rim(-.25), rim(.25), hub(.7), WHITE);
+      body.quad(hub(-1), rim(-.45), rim(.45), hub(1), WHITE);
       // The LED strip stands 5 cm proud of the spoke's outer face, so the two never z-fight.
       const o = Math.sign(v) * .05;
       lights.quad(hub(-.35, o), rim(-.12, o), rim(.12, o), hub(.35, o), WHITE);

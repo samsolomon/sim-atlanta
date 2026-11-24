@@ -20,7 +20,7 @@
 ## What City draws
 
 - **Wheel:** a 25 m-radius wheel with its axle at 29 m, in the mapped plane.
-- **Rim:** a two-ring rim 3.2 m deep, as two ribbons with an outer band, in 42 segments.
+- **Rim:** a two-ring rim 3.2 m deep, as two 1 m ribbons with an outer band, in 42 segments. The members are drawn wider than the real tubes so their white reads through the outline ink at City distances.
 - **Spokes:** 21 tapered spokes on each face, converging on a dark hub.
 - **Gondolas:** 42 white capsules with dark glass bands, hung between the two rim rings from pivots 1 m outside the rim. At the top a capsule rides just above the rim to 54.7 m, matching the lidar's 54.5 m top return. At the bottom its floor clears the boarding deck by 0.7 m.
 - **Supports:** two white tubular A-frames, one on each side of the wheel, from the ground to the axle.
@@ -30,7 +30,17 @@
 
 ## Night
 
-The LED show runs nightly, but its colours vary: purple-blue with a white rim before 2018, magenta in 2018, blue and violet in 2020, plus event colours such as pink or blue for gender reveals. `finish()` gives the lamp mesh a single emissive colour, so City lights rim and spokes in the blue-violet (`#8f86ff`) seen most often. The gondolas stay dark, as they appear in the night photographs; that is inferred. The wheel doesn't turn. Animating it would mean moving or re-uploading geometry, which the batching rules forbid for static landmarks.
+**Night colour (reported, varies).** The LED show runs each evening from one console ([PLSN, 2013-07-30](https://plsn.com/?p=247571)), but its colours change. The photographs show:
+- purple-blue spokes with a white rim before 2018;
+- magenta on 2018-09-29;
+- blue and violet with a white rim on 2020-05-30/31;
+- pink or blue for gender reveals, and blue for essential workers in 2020.
+
+`finish()` gives the lamp mesh a single emissive colour, so City lights the rim and spokes in the blue-violet (`#8f86ff`) seen most often. The gondolas stay dark, as they appear in the night photographs (inferred).
+
+**No rotation.** The wheel is static because animating it would mean moving batched geometry. An illustrative slow turn is a possible later touch for Sam to decide on.
+
+**Labels.** On-screen labels stay generic ("Centennial Park observation wheel"). This README names the attraction and its sources.
 
 ## Captures
 
@@ -39,4 +49,5 @@ The LED show runs nightly, but its colours vary: purple-blue with a white rim be
 | Broadside, before and after, 11:30 | `cam=-23,-548,312,62,260` with `&dev&mindist=20` | [compare-day.jpg](log/ui/skyview-atlanta/compare-day.jpg) |
 | Same, 23:30 | same | [compare-night.jpg](log/ui/skyview-atlanta/compare-night.jpg) |
 | From over the park, day and night | `cam=-23,-548,140,58,420` | [park-day-night.jpg](log/ui/skyview-atlanta/park-day-night.jpg) |
+| From the park, production camera (no dev flags), day and night | `cam=-60,-500,135,58,500` | [production-day-night.jpg](log/ui/skyview-atlanta/production-day-night.jpg) |
 | Four sides by day, about 400 m (checked for floating, missing or z-fighting parts: none) | N `-23,-593,0,60,400` · E `22,-548,90,60,400` · S `-23,-503,180,60,400` · W `-68,-548,270,60,400` | [four-side.jpg](log/ui/skyview-atlanta/four-side.jpg) |
