@@ -47,3 +47,8 @@ The current City board is 2 km square. Five of Sam's six landmarks already have 
 For every new downtown landmark or reskin, save a City frame before modeling. In Orca, consult daytime and nighttime exterior photographs, compare at least two angles, and check the facade base against the footprint. Link the references, record the source of the height and label estimated dimensions. Describe where the photos show light coming from, which surfaces it reaches and what stays dark. Identify estimated colors, fixture placement and patterns. If a reliable night photograph is unavailable, record which sources you checked and what remains uncertain. Return to the same City camera in daylight and full night and save both renders for the build log. Add a dusk comparison when it helps judge the silhouette.
 
 The three baseline frames use high tier and a paused Atlanta clock of 14:12:45 on November 20, 2026. The stadium camera targets (−850, −174) at bearing 275°, scale 0.49 m/px, tilt 53°. The Congress Center uses (−705, −725), 290°, 0.69 m/px, 46°. Grady uses (880, 240), 270°, 0.34 m/px, 53°.
+
+- Georgia Tech’s Holland central utility plant stack is a separate landmark candidate.
+  Verify the stack's coordinates against the City board before modelling it.
+  [Georgia Tech Facilities' plant history](https://facilities.gatech.edu/index.php/2016-04/hidden-georgia-tech-holland-plant).
+- When the board grows east past x = 1905, build the CSX rail-over at Boulevard SE (FRA 717928R), including its separated pedestrian passage. [Crossing evidence, lidar and Street View](king-freight-crossings.md).

@@ -1,7 +1,7 @@
 # UI controls and chrome: design brief
 
-Status: approved direction **A2c**, confirmed by Sam on 2026-11-23. **Built and the default
-interface** (steps 1–9 merged; `?ui=classic` keeps the old shell for one release).
+Status: approved direction **A2c**, confirmed by Sam on 2026-11-23. **Built and the only
+interface** (steps 1–9 merged; the pre-A2c shell and `?ui=classic` were removed the release after).
 Design canvas: https://claude.ai/artifact/CCsbqwgHy8fTJ2ujri2iSx (private to Sam).
 Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds are history.
 

@@ -1,16 +1,16 @@
 import { bridgeApproaches } from '../terrain/bridge-approaches';
 import survey from './fixtures/seventeenth-street.json';
-import { Line } from '../vignette/geom';
+import { Builder, Line } from '../vignette/geom';
 import { seventeenthAccess, seventeenthPortals } from './seventeenth-street';
-import { Raycaster, Vector3 } from 'three';
+import { Mesh, MeshLambertMaterial, Raycaster, Vector3, type WebGLRenderer } from 'three';
 import { readFileSync } from 'node:fs';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import { createSurfaceTransport } from '../terrain/transport';
 import { auburnTransport } from './sweet-auburn-transport';
 import { cityRoadHeight } from './road-height';
 
-it('carries 17th Street and its walks on the lidar crest above the through motorway', () => {
+function bridgeFixture() {
   const file = (name: string) =>
     readFileSync(
       new URL('../../../pipeline/prototypes/square-board/brookwood-south/' + name, import.meta.url),
@@ -22,6 +22,44 @@ it('carries 17th Street and its walks on the lidar crest above the through motor
   );
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const ground = (x: number, z: number) => grid.sample(x, z)! - zero;
+  return { city, grid, ground, zero };
+}
+
+it('releases the transport builders after copying their attributes and keeps bridge night lighting live', () => {
+  const { city, grid, ground } = bridgeFixture();
+  city.terrainTransport!.rail.push({ cls: 'standard_gauge', kind: 'ground', pts: [[0, -4200], [20, -4200]] });
+  const geometry = vi.spyOn(Builder.prototype, 'geometry');
+  try {
+    const model = createSurfaceTransport(city, grid, ground);
+    try {
+      for (const name of ['Decks and embedded rails', '17th Street Bridge', 'Freight track']) {
+        const mesh = model.group.getObjectByName(name) as Mesh;
+        expect(mesh, name).toBeDefined();
+        expect(mesh.geometry.attributes.position.count).toBeGreaterThan(0);
+        const index = geometry.mock.results.findIndex(result => result.value === mesh.geometry);
+        expect(index).toBeGreaterThanOrEqual(0);
+        const builder = geometry.mock.contexts[index] as Builder;
+        expect(builder.pos).toHaveLength(0);
+        expect(builder.col).toHaveLength(0);
+      }
+      const bridge = model.group.getObjectByName('17th Street Bridge') as Mesh;
+      const material = bridge.material as MeshLambertMaterial;
+      const shader = { uniforms: {}, vertexShader: '', fragmentShader: '' } as Parameters<typeof material.onBeforeCompile>[0];
+      material.onBeforeCompile(shader, {} as WebGLRenderer);
+      for (const factor of [1, 0.25, 0]) {
+        model.setNight!(factor);
+        expect(shader.uniforms.bridgeNight.value).toBe(factor);
+      }
+    } finally {
+      model.dispose();
+    }
+  } finally {
+    geometry.mockRestore();
+  }
+});
+
+it('carries 17th Street and its walks on the lidar crest above the through motorway', () => {
+  const { city, grid, ground, zero } = bridgeFixture();
   const model = createSurfaceTransport(city, grid, ground);
   try {
     const height = cityRoadHeight(city, ground, model.deckAt);

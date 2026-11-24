@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Mesh } from 'three';
+import { Raycaster, Vector3, type Mesh } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { lonLatToScene } from '../core/places';
 import { GroundGrid } from '../terrain/grid';
@@ -69,9 +69,22 @@ it('draws ballast along every King Memorial freight run', () => {
   } finally { dispose(); }
 }, 60_000);
 
-it('mounts the King Memorial board with its freight track', async () => {
+it.each(['low','high'] as const)('carries the eight CSX tracks over a clear Grant Street on %s', async quality => {
   // Through City's own loader, so dropping the freight from the mount is caught too.
-  const ctx = new Proxy({}, { get: () => () => {} });
+  let path: number[][] = [];
+  const grantStrokes: string[] = [];
+  const drawing = {
+    strokeStyle: '',
+    beginPath() { path = []; },
+    moveTo(x: number, z: number) { path = [[x, z]]; },
+    lineTo(x: number, z: number) { path.push([x, z]); },
+    stroke() {
+      if (path[0]?.[1] === 414.2 && path.at(-1)?.[1] === 640 &&
+          path.some(p => p[1] === 488.14) && path.some(p => p[1] === 527.43))
+        grantStrokes.push(this.strokeStyle);
+    },
+  };
+  const ctx = new Proxy(drawing, { get: (o, k) => Reflect.get(o, k) ?? (() => {}) });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   vi.stubGlobal('fetch', async (url: string) => {
     const name = url.split('/scene/king-memorial/')[1];
@@ -80,10 +93,34 @@ it('mounts the King Memorial board with its freight track', async () => {
   });
   const down = new URL('../../../pipeline/prototypes/downtown-ground/', import.meta.url);
   const west = new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', down), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', down))).buffer);
-  const area = await loadEast('/data', west, 'low', -48, new AbortController().signal);
+  const area = await loadEast('/data', west, quality, -48, new AbortController().signal);
   try {
+    expect(grantStrokes).toEqual(expect.arrayContaining(['#d9d3c7', '#5d5f66', '#d8bd79']));
     const mesh = area.group.getObjectByName('Freight track') as Mesh | undefined;
     expect(mesh?.geometry.getAttribute('position').count ?? 0).toBeGreaterThan(1000);
+    const ray = new Raycaster();
+    const down = new Vector3(0,-1,0);
+    area.group.updateMatrixWorld(true);
+    const x = 1382;
+    const tracks = kingRail.flatMap(run => run.pts.slice(1).flatMap(([bx,bz],i) => {
+      const [ax,az] = run.pts[i];
+      return (ax-x)*(bx-x)<0 ? [az+(bz-az)*(x-ax)/(bx-ax)] : [];
+    }));
+    expect(tracks).toHaveLength(8);
+    for (const z of tracks) {
+      ray.set(new Vector3(x,0,z),down);
+      expect(ray.intersectObject(mesh!,false)[0]?.point.y).toBeCloseTo(313.66+.13-west.manifest.vertical.sceneZeroNavd88M,1);
+    }
+    const road = area.connectorBoard.city.roads.find(r => r.tunnel && r.name === 'Grant Street Southeast')!;
+    for(let z=489;z<=526;z+=.5) {
+      for(const dx of [-3.5,0,3.5]){
+        const y=area.connectorBoard.roadHeight(x+dx,z,road)!;
+        expect(y + west.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(307.66 + (z-488.14)*.0046,1);
+        expect(area.terrainAt(x+dx,z)).toEqual(y);
+        ray.set(new Vector3(x+dx,y+4.10,z),down);
+        expect(ray.intersectObject(area.board,true)[0]?.point.y).toBeCloseTo(y,1);
+      }
+    }
   } finally { area.dispose(); }
 }, 60_000);
 

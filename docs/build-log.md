@@ -2681,6 +2681,29 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
 
+## 2026-11-23 — Classic removal checked for the next release
+
+The retired interface cleanup (#310) is rebased onto `64bc952c`, but stays
+unmerged for the release after shipped `bc32b09`. The hidden City button host
+stays because the menu and board audit still use it. Cross-model review caught
+a subtle leftover: calling `hidePopover()` on that now-plain div throws even
+with optional chaining, because the browser still supplies the method. Removing
+the call keeps full-board framing free of that exception.
+
+Fresh tests pass: 912 web tests, 5 worker tests and 20 Rust tests (one web test
+skipped; pipeline checks skipped without `.venv`). The production build passes.
+Performance stays within enforced ceilings: Low 2.324M triangles / 530 calls,
+High 13.266M / 1,130 calls; several aspirational targets remain unmet.
+
+Browser checks cover Map, City, Models, full-board framing, and day/night cards.
+The 390×640 night card keeps its truth chips and Follow/Share buttons visible.
+The day capture has camera `1799.793,-5699.709,-101,55,421`, at
+`2026-11-20T14:00:00-05:00`, Low quality; selection reframed the original Five
+Points URL toward the train. The night captures use 22:00 on the same date.
+
+![Day card](log/ui/remove-classic/day-card.png)
+![Night card](log/ui/remove-classic/night-card.png)
+![Phone night card](log/ui/remove-classic/phone-night-card.png)
 ### 2026-11-23 — Dogwood round 2, review draft
 
 The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The early draft removed those tips, pulled the chips inward, and spent saved geometry on horizontal twigs above a 1.25 m fork; the final pass below removes separate chips entirely. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
@@ -2996,3 +3019,29 @@ The first pear looked like white twigs above a long pole. The larger trees now f
 ### 2026-11-23 — Callery pear bloom gets texture and shade
 
 The full white silhouette worked at 300 m, but close up the bloom looked like sheets of cotton. Twenty small crown cards at high detail and thirteen at low now carry clusters of opaque petals, with small openings for the wood. The surprise was how much light contributed to the fluffy look. Restoring the atlas greys and the darker underside brought out detail without sacrificing the distant bloom. Spring and July use the same crown centers, with the lowest foliage around the 2 m fork in the mature tree. The cost is 195 / 135 triangles. [Matched eye-level and distance sheet](log/ui/tree-species/options-callery-pear.jpg).
+### 2026-11-23 — A common roof profile for the Rapid buses
+
+The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
+
+### 2026-11-23 — Three footprints at Tech Square
+
+Coda's 118.9 m tower shares its block with a five-floor computing center and
+the retained Crum & Forster building. The archive supplies three separate
+footprints. Putting a solid base under the tower would close the 19.2 m arcade,
+so the west podium stops short and the soffit spans the opening. A ray from
+pedestrian height crosses the passage and a second ray hits the soffit overhead.
+[High daylight comparison](log/ui/coda/high-day.jpg) · [High night comparison](log/ui/coda/high-night.jpg).
+
+At the 840 m review camera, the first glass treatment hid the floor grid. The
+revision gives the two wings separate upper setbacks and silver mullions around
+blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
+building and eight suspended globes trace the approach to the lobby.
+[Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).
+
+### 2026-11-23 — The second copy of the bridge
+
+With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
+
+### 2026-11-23 — Grant Street runs beneath the CSX yard
+
+The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
