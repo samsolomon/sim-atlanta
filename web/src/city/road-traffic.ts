@@ -492,7 +492,7 @@ export class RoadTraffic {
         const mesh = this.meshes.get(slot.kind)!;
         const index = mesh.count++;
         const brake = mesh.geometry.getAttribute('braking') as THREE.InstancedBufferAttribute;
-        const braking = timed != null ? !!lane.brakes[i] : course.rush && free < course.rush.center &&
+        const braking = timed != null ? (lane.queue?.brakes ?? lane.brakes)[i] : course.rush && free < course.rush.center &&
           rushDistance(free + 1, course, rushHour) - s < .65;
         const lamp = braking ? 1 : 0;
         if (brake.getX(index) !== lamp) { brake.setX(index, lamp); brake.needsUpdate = true; }

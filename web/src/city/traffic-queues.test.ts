@@ -95,3 +95,18 @@ it('keeps surviving poses through a rollover when the caller reuses its trip obj
   reused[0].start = 1200.1; // slot 0 begins its next trip; the others survive
   expect(queue.at(reused, 1200.25)).toEqual([null, previous[1], previous[2]]);
 });
+
+it('applies the moving-course brake at a red signal and clears it on green', () => {
+  const signal = {key:'junction', axis:0 as const, s:90};
+  const queue = new MovingQueue([signal], 300, 10, () => []);
+  let green = 84;
+  while (signalPhase(signal.key, signal.axis, green) !== 'green' ||
+         signalPhase(signal.key, signal.axis, green - 1) !== 'red') green++;
+  const trip = [{start:green - 25, length:4}];
+  expect(queue.at(trip, green - .25)).toEqual([88]);
+  expect(queue.brakes).toEqual([true]);
+  expect(queue.at(trip, green + .25)[0]).toBeCloseTo(90.5);
+  expect(queue.brakes).toEqual([false]);
+  expect(queue.at(trip, green - 1)).toEqual([88]);
+  expect(queue.brakes).toEqual([true]);
+});
