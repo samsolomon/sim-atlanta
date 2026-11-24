@@ -36,6 +36,8 @@ The test: in the 400–600 m money shot, could someone who didn't know mistake t
 
 **Not covered yet.** The skyline-registry landmarks (1100 Peachtree, the Campanile, 1075, 1105 West Peachtree, 1010 Midtown, 1072 West Peachtree) and the early landmark models (#37–#366). Some PRs have only close-ups (#508, #515) or no composite, so those verdicts are weaker.
 
+**Caution (coordinator, 2026-11-24):** recognition must come from the real building's features (rhythm, base, crown, material, massing), never from colour or contrast the photos do not support. Where the real building is a plain pale glass box, an accurate plain box at the right height is a PASS, and the audit says so explicitly. Strengthening passes start with #546 Azure and #527 Two Peachtree Pointe.
+
 ## FAIL (rework before new rows), by size on screen
 | PR | Building | Owner | Why |
 |---|---|---|---|
