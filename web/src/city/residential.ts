@@ -620,7 +620,9 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     const mainDoor=at(p.doorS,porchDepth);
     const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
     const cls=classes.get(p.id);
-    const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
+    // The neighbouring front walk crosses this inferred shelf and its upper tread.
+    const sharedWalk = p.id === 'osm:way:269540532';
+    const terrace=high && !sharedWalk && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
       ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkStart:porchDepth,walkEnd:porchDepth+walk,
         newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
     if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
