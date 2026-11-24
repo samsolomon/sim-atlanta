@@ -25,7 +25,7 @@
     "viewport": "phone",
     "ceiling": {
       "triangles": 2600000,
-      "calls": 460,
+      "calls": 435,
       "programs": 87,
       "textureMB": 125,
       "geometryMB": 190,
@@ -47,7 +47,7 @@
     "viewport": "desktop",
     "ceiling": {
       "triangles": 7500000,
-      "calls": 510,
+      "calls": 475,
       "programs": 103,
       "textureMB": 890,
       "geometryMB": 300,

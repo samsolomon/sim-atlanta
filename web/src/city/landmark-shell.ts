@@ -5,6 +5,13 @@ import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import { applySurfaces, FLAT, surfaceDefaults, SurfacePainter, type Surface } from '../materials';
 
+/** `?perf&lampshadow=off` restores unshadowed lit panes, for A/B runs from one build. */
+const lampShadowsOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('lampshadow') === 'off';
+})();
+
 /** A footprint in its street frame, with roof heights in NAVD88 metres. */
 export function landmarkShell(
   buildings: VBuilding[],
@@ -126,6 +133,10 @@ export function localLandmarkShell(
       lamps.geometry.setAttribute('aSurface', lightPainter.attribute());
       applySurfaces(lamps.material);
     }
+    // Lit panes shade like the panes and walls around them (a neighbour's shadow by day), and
+    // share the body's batch class, so by day they draw with it.
+    lamps.castShadow = shell.castShadow && !lampShadowsOff;
+    lamps.receiveShadow = shell.receiveShadow && !lampShadowsOff;
     group.add(lamps);
     return {
       group,
