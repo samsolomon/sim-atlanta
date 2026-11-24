@@ -33,6 +33,8 @@ Everyday office night: about 6% of windows lit warm, a stable pattern, plus the 
 |---|---|---|---|
 | Starting camera, looking north-northeast | `819,-3670,32,60,288` | 11:30 AM EST | [Day](day.jpg) |
 | Starting camera | `819,-3670,32,60,288` | 11:30 PM EST | [Night](night.jpg) |
+| Whole tower, looking north-northeast | `819,-3670,32,60,560` | 11:30 AM EST | [Wide](wide.jpg) |
+| Whole tower, looking north-northeast | `819,-3670,32,60,560` | 11:30 PM EST | [Wide at night](wide-night.jpg) |
 | Crown and two faces, looking south-southwest | `819,-3670,200,62,480` | 11:30 AM EST | [Crown](crown.jpg) |
 | Crown and two faces, looking south-southwest | `819,-3670,200,62,480` | 11:30 PM EST | [Crown at night](crown-night.jpg) |
 | South corner and grid (close) | `815,-3700,0,68,130` | 11:30 AM EST | [Corner](corner.jpg) |
