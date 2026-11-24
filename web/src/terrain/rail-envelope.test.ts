@@ -79,8 +79,8 @@ export interface EnvelopeSite { x: number; z: number; low: number; high: number 
 
 /** Every 5 m cell over a surface track where a drawn structure enters the running envelope,
  * and the least clearance over a track at each cell a structure spans. */
-export function railEnvelope(city: TerrainCity, grid: GroundGrid) {
-  const surface = new GroundSurface(grid, 'high');
+export function railEnvelope(city: TerrainCity, grid: GroundGrid, tier: 'high' | 'low' = 'high') {
+  const surface = new GroundSurface(grid, tier);
   const transport = createSurfaceTransport(city, grid, surface.sampleScene.bind(surface));
   const tread = transport.group.getObjectByName('Freight track') as THREE.Mesh | undefined;
   const decks = ['Decks and embedded rails', '17th Street Bridge']
@@ -135,20 +135,20 @@ export function railEnvelope(city: TerrainCity, grid: GroundGrid) {
 
 /** Sites per board on this branch (2026-11-24). Lower these as fixes land; never raise them. */
 // Downtown, before the deck levels (main at c01ca94d): 47 cells in the envelope, 166 under 7 m.
-// Left: the Mitchell St service ramp mapped along freight rail 10 (-272,-345 to -265,-327) and
-// the short Gulch service deck over the Circle Connection (-234,-162 to -227,-158).
+// Includes the Mitchell St ramp and the short service deck over the Circle Connection.
 const KNOWN: Record<string, { inEnvelope: number; underClearance: number; atGrade: number }> = {
-  downtown: { inEnvelope: 8, underClearance: 45, atGrade: AT_GRADE_DOWNTOWN },
+  downtown: { inEnvelope: 0, underClearance: 0, atGrade: AT_GRADE_DOWNTOWN },
   'north-band': { inEnvelope: 0, underClearance: 0, atGrade: 0 },
   'south-band': { inEnvelope: 0, underClearance: 0, atGrade: 0 },
 };
 
 for (const name of ['downtown', 'north-band', 'south-band'] as const)
-  it.skipIf(name === 'downtown' && !existsSync(vignette))(`keeps drawn structures out of the rail running envelope on ${name}`, () => {
+  for (const tier of ['low', 'high'] as const) it.skipIf(name === 'downtown' && !existsSync(vignette))(`keeps drawn structures out of the rail running envelope on ${name} at ${tier}`, () => {
     const { city, grid } = board(name);
     if (!city.terrainTransport) return;
-    const { sites, clearance, atGrade } = railEnvelope(city, grid);
+    const { sites, clearance, atGrade } = railEnvelope(city, grid, tier);
     const low = clearance.filter(c => c.low < DECK_CLEARANCE_M);
+    if (clearance.length) console.info('Minimum sampled clearance (m)', Math.min(...clearance.map(c => c.low)));
     console.info(`rail envelope ${name}: ${sites.length} cells in the envelope, ${low.length} cells under ${DECK_CLEARANCE_M} m`,
       JSON.stringify(sites.sort((a, b) => a.x - b.x || a.z - b.z).map(s => [s.x, s.z, +s.low.toFixed(2), +s.high.toFixed(2)])));
     expect(sites.length).toBeLessThanOrEqual(KNOWN[name].inEnvelope);

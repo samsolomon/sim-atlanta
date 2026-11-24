@@ -26,6 +26,9 @@ const WALKS = new Set(['footway', 'pedestrian', 'steps', 'path', 'cycleway']);
 export const RAIL_ENVELOPE_M = 1.8;
 /** Height an inferred deck keeps above a surface track (about 23 ft); the deck adds 1 m. */
 const RAIL_CLEARANCE_M = 7;
+// From ground to soffit: ballast rises .13 m and can drape another .25 m;
+// the roadway underside is .83 m below its reference level. Allow rounding at the edges.
+const FREIGHT_DECK_LEVEL_M = RAIL_CLEARANCE_M + 1.35;
 /** A sidewalk this far beyond its road deck's edge, within 30° of parallel, rides the deck. */
 const WELD_REACH_M = 6;
 const WELD_PARALLEL = Math.cos(Math.PI / 6);
@@ -377,8 +380,9 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     const walkway = use === 'road' && WALKS.has(run.cls);
     const inferred = new Map<number, number>();
-    // New needs (rail envelope, sidewalk weld) apply only where the deck can reach them at the
-    // deck grade from an end that stays on the ground; others are left to the envelope check.
+    const freightEndLevel = new Map<number, number>();
+    // A standalone walk may descend to a ground landing. The freight envelope also
+    // applies at an abutment when the mapped end itself lies over the track.
     const banks = [[0, startCut || startLevel !== null ? null : h0], [line.length, endCut || endLevel !== null ? null : h1]] as const;
     const feasible = (s: number, y: number) => banks.every(([at, bank]) =>
       bank === null || y - (bank - sceneZero) <= DECK_REACH * Math.abs(s - at));
@@ -410,8 +414,10 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           const [x,z] = lateral(s, width * (i / divisions - .5));
           const h = groundAt(x,z);
           if (h !== null) minimum = Math.max(minimum,h);
-          if (clustered && h !== null && railBeds.at(x, z).some(([a, b]) => segDist(x, z, a, b) <= reach) && feasible(s, h + RAIL_CLEARANCE_M + 1))
-            minimum = Math.max(minimum, h + RAIL_CLEARANCE_M + 1);
+          if (clustered && h !== null && railBeds.at(x, z).some(([a, b]) => segDist(x, z, a, b) <= reach)) {
+            minimum = Math.max(minimum, h + FREIGHT_DECK_LEVEL_M);
+            if (s === 0 || s === line.length) freightEndLevel.set(s, Math.max(freightEndLevel.get(s) ?? -Infinity, h + FREIGHT_DECK_LEVEL_M));
+          }
         }
         if (walkway && clustered) { const deck = viaductHeight(p); if (feasible(s, deck)) minimum = Math.max(minimum, deck); }
         for (const [{radius, clearance}, at] of below) {
@@ -509,6 +515,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
+          if (freightEndLevel.has(s)) y = Math.max(y, freightEndLevel.get(s)!);
           if (textured) y = freightGrade(x, z, y);
           section.push([x, y + lift, z]);
         }
@@ -713,7 +720,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       for (let i = 0; i <= divisions; i++) {
         const off = width * (i / divisions - .5), x = p.x + off * p.nx, z = p.z + off * p.nz;
         const h = grid.sample(x, z);
-        if (h !== null && railBeds.at(x, z).some(([a, b]) => segDist(x, z, a, b) <= reach)) y = Math.max(y, h - sceneZero + RAIL_CLEARANCE_M + 1);
+        if (h !== null && railBeds.at(x, z).some(([a, b]) => segDist(x, z, a, b) <= reach)) y = Math.max(y, h - sceneZero + FREIGHT_DECK_LEVEL_M);
       }
       if (walk) y = Math.max(y, viaductHeight(p));
       if (y > -Infinity && (!checkReach || reachable(run, s, line.length, y, walk))) needs.push({ s, y });
@@ -762,7 +769,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const joinKeys = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra !== rb) clusterOf.set(ra, rb); };
   const candidates = bridgeRoads.filter(inferredRun);
   candidates.forEach((run, i) => { for (const p of run.pts) if (!fixedNode(nodeKey(p))) joinKeys('run:' + i, nodeKey(p)); });
-  const railRoots = new Set(candidates.flatMap((run, i) => needsOf(run, false).needs.length ? [find('run:' + i)] : []));
+  const railRoots = new Set(candidates.flatMap((run, i) => needsOf(run, false, false).needs.length ? [find('run:' + i)] : []));
   railCluster = new Set(candidates.filter((_, i) => railRoots.has(find('run:' + i))));
   const roadDecks = bridgeRoads.filter(road => !WALKS.has(road.cls));
   solve(roadDecks.filter(road => railCluster.has(road)), false, fixedNode, demAt);
