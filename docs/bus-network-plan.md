@@ -58,6 +58,36 @@ numbers, tonight's queue benchmark (`docs/build-log.md`, 2026-11-23) and the #36
 - **Network:** zero. `/api/marta/bus` already carries every MARTA vehicle with its trip
   descriptor. More routes change only which fixes City steers.
 
+### Draw-call rule (A16, 2026-11-23)
+
+On the A16, main-thread render CPU is about 17 ms for 549 draw calls. Buildings account for
+325 of those calls. On the phone, draw calls cost more than triangles, so every route proposal
+must state its cost in **draw calls, update ms and triangles**, and must keep to these rules:
+
+- **One instanced draw per vehicle type.** Every bus of a type (XN40, later XE60 or an Xpress
+  coach) shares one mesh, one material and one `InstancedMesh`. That's one draw in the colour
+  pass, whatever the number of routes or buses. The shadow map isn't redrawn every frame (City
+  sets `autoUpdate = false`), so buses add to the shadow pass only when it refreshes.
+- **A route adds zero draws.** Route, livery and state (live, timetable or fading) are
+  per-instance data, never separate meshes or materials. The fade in #368 is one instance
+  attribute on the existing batch.
+- **A new vehicle type adds exactly one draw**, plus its programs. An XE60 would be +1 draw and
+  about +2 programs (its bend material and depth material). An Xpress coach would be +1 draw
+  and +1 program if it can reuse the bus shader.
+
+Per-route costs at peak, from section 1's estimates:
+
+| Route set | Extra draw calls | Bus update ms (Studio, then about 6× for the A16) | Extra low triangles |
+| --- | ---: | --- | ---: |
+| One more 2-bus route | 0 | about 0.02 ms, about 0.1 ms | about 1.2k |
+| Route 2 (4 buses) | 0 | about 0.04 ms, about 0.25 ms | about 2.5k |
+| All 17 routes (about 24 buses) | 0 | about 0.25 ms, about 1.5 ms | about 15k |
+| Adding XE60 for the A Line | +1 | (included) | about 1.5k per bus |
+
+The update ms covers steering or placing the bus plus its car-queue interaction. It comes from
+tonight's 64-bus benchmark, divided per bus. The A16 factor is an estimate: confirm it with a
+coordinator A16 run before the first multi-route PR.
+
 **Suggested order:**
 - **2** (busiest, Ponce through Midtown, 4 on board at peak).
 - **23** (the Peachtree spine through Midtown and Downtown).
