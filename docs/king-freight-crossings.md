@@ -35,6 +35,8 @@ Reproduce with `ept_points` in `pipeline/scripts/king_memorial_corridor.py`. Rea
 
 Only Grant is inside this board. Its continuous rails and sleeper texture use the freight batch from #334. The formation rises back to the lidar top over the hole left by the removed structure. The pavement follows the interpolated road elevation through the portal. A bounded terrain cut keeps the sidewalks and road clear, and the traffic height resolver uses the same road grade. Girder depth, span width, painted pattern, lamp placement and warm night intensity are illustrative. As at North Avenue, the road has a drawn soffit, daylight at the far portal and continuous material across the deck. The structure shares an existing board draw on both tiers.
 
+The model provides about 4.1 m from pavement to the lowest girder. A ray test checks a clear 4.10 m envelope across both lanes. On low, the mounted King group has 13 meshes before and after. Counting geometry including instances gives 51,378 triangles before and 50,735 after: the raised ballast also removes terrain cuts that followed the old depression.
+
 Matched City views use camera `1382,525,0,82,60`, high tier, dev minimum distance 5 m, November 20 at 14:00 and 23:00 Eastern.
 
 | | Before | After |
