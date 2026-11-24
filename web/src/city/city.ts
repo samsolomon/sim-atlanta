@@ -1403,6 +1403,27 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  // Low, far orbits: shadows fade out where a typical building's shadow is under 2 pixels, then the
+  // shadow camera looks at an empty layer, so the map is cleared once and every re-centre after it
+  // is free (a redraw at the default view submits ~1.4M triangles, more than half a second scene).
+  // The threshold is screen-space: a TYPICAL_H building's shadow (h / tan(sun elevation)) against
+  // the pixel size at the orbit distance, so long dusk shadows stay further out. Strength fades
+  // across 0.85-1x the threshold with the orbit, so a zoom never pops; casters switch at zero
+  // strength. Shadow programs stay compiled: toggling shadowMap.enabled or castShadow would change
+  // every lit material's program key. ?perf&farshadow=<m> fixes the threshold (0: never).
+  const TYPICAL_H = 12, SHADOW_PX = 2;
+  const NO_CASTERS = 30;
+  let shadowsFar = false;
+  let shadowDebug: object = {};
+  if (perfEnabled) Object.assign(window, { __shadowFar: () => shadowDebug });
+  const farShadowAt = (elevDeg: number) => {
+    if (!low) return Infinity;
+    if (perfOverrides.farShadowM !== null) return perfOverrides.farShadowM;
+    const shadowLen = TYPICAL_H / Math.tan(Math.max(elevDeg, 2) * (Math.PI / 180));
+    const pxPerM = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    // shadowLen / (orbit / pxPerM) < SHADOW_PX  =>  orbit > shadowLen * pxPerM / SHADOW_PX
+    return (shadowLen * pxPerM) / SHADOW_PX;
+  };
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1413,6 +1434,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const elDir = Math.max(el, 4) * (Math.PI / 180);
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
+    const orbit = camera.position.distanceTo(t);
+    const farAt = farShadowAt(el);
+    // Full strength inside 0.85x, none beyond 1x; casters off once beyond (strength is 0 there).
+    sun.shadow.intensity = Number.isFinite(farAt) ? THREE.MathUtils.clamp((farAt - orbit) / (0.15 * farAt), 0, 1) : 1;
+    if (perfEnabled) shadowDebug = { orbit: Math.round(orbit), farAt: Math.round(farAt), intensity: sun.shadow.intensity, far: shadowsFar, elev: Math.round(el * 10) / 10 };
+    const nextFar = shadowsFar ? orbit > 0.97 * farAt : orbit > farAt;
+    if (nextFar !== shadowsFar) {
+      shadowsFar = nextFar;
+      if (nextFar) sun.shadow.camera.layers.set(NO_CASTERS); else sun.shadow.camera.layers.set(0);
+      renderer.shadowMap.needsUpdate = true;
+      shadowTarget.set(Infinity, 0, Infinity);
+    }
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
@@ -1427,7 +1460,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+    if (!shadowsFar && (moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
