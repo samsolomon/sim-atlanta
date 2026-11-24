@@ -19,7 +19,7 @@
 | BORDERLINE | Loews Atlanta (#455) | large | skins-5 | Later pass |
 | BORDERLINE | Winship (#487) | large | skins-7 | Later pass |
 | BORDERLINE | The Landmark (#515) | large | skins-7 | Needs a 400–600 m shot |
-| BORDERLINE | Tower Square (#188) | medium–large | lead | Later pass |
+| FIXED (pending 8c) | Tower Square (#188) | medium–large | skins-1 | #620: splayed piloti base, blank crown band, corner piers (photo-backed) |
 | FIXED (pending 8b) | Federal Reserve (#274) | medium | skins-6 | Rework #594 approved: paired windows between marble piers, photo-correct loggia; the slab is genuinely plain |
 | BORDERLINE | Modera Parkside (#473) | medium | skins-2 | Later pass |
 | BORDERLINE | SkyHouse South (#504) | medium | skins-3 | Later pass |
