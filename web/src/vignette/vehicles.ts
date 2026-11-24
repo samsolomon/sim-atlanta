@@ -7,10 +7,16 @@
  * 3 glass, 4 fixed colour (tyres, trim, livery: ignores the instance colour).
  */
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' | 'tractor' | 'trailer';
+export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' | 'tractor' | 'trailer' | 'semi';
 
-export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6 };
+/** Tractor-trailer as one rigid body: the trailer's kingpin (1 m behind its front) sits on the tractor's
+ * fifth wheel (z ≈ −2.0). Overall 19.16 m, from the tractor's grille (z 3.70) to the trailer's tail
+ * lamps (7.255 m behind the trailer's centre). */
+const SEMI_TRAILER_DZ = -2.0 - 6.2, SEMI_FRONT = 3.7, SEMI_REAR = SEMI_TRAILER_DZ - 7.255;
+const SEMI_LENGTH = SEMI_FRONT - SEMI_REAR;
+export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, semi: SEMI_LENGTH };
 
 // Shared by the moving road sedan and the lower-detail sedan baked into parking decks.
 export const SEDAN = { length: LENGTH.sedan, width: 1.8, sill: 0.32, roof: 1.42, tireRadius: 0.33 };
@@ -150,6 +156,18 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
       k.wheels([2.4, -1.6, -2.85], 2.1, 0.52, 0.34);
       k.lights(3.21, -3.2, 1.2, 1.9, 0.9);
       return k.geometry();
+    }
+    case 'semi': {
+      // Recentre the pair on the footprint so it queues and clips like any one-body vehicle.
+      const centre = (SEMI_FRONT + SEMI_REAR) / 2;
+      const tractor = vehicleGeometry('tractor').translate(0, 0, -centre);
+      const trailer = vehicleGeometry('trailer').translate(0, 0, SEMI_TRAILER_DZ - centre);
+      // The cab takes the instance colour; the trailer box stays white as fixed trim.
+      const kinds = trailer.getAttribute('aKind');
+      for (let i = 0; i < kinds.count; i++) if (kinds.getX(i) === 0) kinds.setX(i, 4);
+      const merged = mergeGeometries([tractor, trailer])!;
+      tractor.dispose(); trailer.dispose();
+      return merged;
     }
     case 'trailer': {
       const k = new Kit();
