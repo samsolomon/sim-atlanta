@@ -7,12 +7,13 @@ import type { TrafficData } from '../vignette/traffic';
 import { LENGTH, PAINT, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import type { TerrainCity } from '../terrain/transport-data';
 import { perf, perfOverrides } from '../core/perf';
+import { legacySignalPositions } from './traffic-signals-legacy';
 import { signalPhase, signalPositions, SIGNAL_MAX_WAIT_S, type CourseSignal } from './traffic-signals';
 
 const LAMP = { red: new THREE.Color('#ff3b30'), amber: new THREE.Color('#ffb020'), green: new THREE.Color('#34d058') };
 const PHASES = ['red', 'amber', 'green'] as const;
 /** Spacing (m) of each lane's cached road-height profile. */
-const HEIGHT_STEP = 1;
+const HEIGHT_STEP = 2;
 /** A profile sample whose road surface is missing (a hole, a tunnel or off the board). */
 const NO_ROAD = -Infinity;
 /** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
@@ -43,7 +44,7 @@ interface LaneState {
   trips: { start: number; length: number }[];
   bounds: THREE.Box3;
   /** Road height every HEIGHT_STEP metres (NaN until first sampled), and the source road index there. */
-  heights: Float32Array;
+  heights: Float64Array;
   runs: Int32Array;
 }
 
@@ -265,7 +266,7 @@ export class RoadTraffic {
         timed: !course.closed && (!!course.signals?.length || !!queue),
         period: course.line.length + offstage(course),
         active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
-        heights: new Float32Array(n).fill(NaN), runs: new Int32Array(n),
+        heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n),
       }];
     });
   }
@@ -280,10 +281,12 @@ export class RoadTraffic {
     const i = Math.floor(s / HEIGHT_STEP), f = s / HEIGHT_STEP - i;
     const a = this.profile(lane, i);
     const b = f > 0 ? this.profile(lane, i + 1) : a;
-    if (a === NO_ROAD || b === NO_ROAD) return null;
-    if (f > 0 && lane.runs[i] !== lane.runs[i + 1]) {
-      // The source road changes inside this step (onto a deck, into a hole): sample exactly.
-      const { line, roads } = lane.course;
+    if (a === NO_ROAD && b === NO_ROAD) return null;
+    const roads = lane.course.roads;
+    if (a === NO_ROAD || b === NO_ROAD || (f > 0 && roads[lane.runs[i]] !== roads[lane.runs[i + 1]])) {
+      // The drawn road starts, ends or changes owner inside this step (a board edge, a hole,
+      // onto a deck): sample exactly, as cars did before the profile.
+      const line = lane.course.line;
       const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
       return y === null || !Number.isFinite(y) ? null : y;
     }
@@ -488,7 +491,7 @@ export class RoadTraffic {
       const trips = slots.map(sl => ({
         start: (Math.floor((seconds * v + sl.phase) / period) * period - sl.phase) / v, length: LENGTH[sl.kind] }));
       const pos = this.movingQueues.get(lane)?.at(trips, seconds)
-        ?? signalPositions(lane.signals!, lane.line.length, v, trips, seconds);
+        ?? legacySignalPositions(lane.signals!, lane.line.length, v, trips, seconds);
       slots.forEach((sl, i) => signalled.set(sl, pos[i]));
     }
     for (const slot of this.slots) {
