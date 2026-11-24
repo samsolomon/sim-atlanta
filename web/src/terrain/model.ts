@@ -415,7 +415,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let veryFarGeometry: THREE.BufferGeometry | null = null;
   let veryFarQueued = false;
   const bb = grid.manifest.bounds;
-  let far = false, veryFar = false, disposed = false;
+  let far = false, veryFar = false, farHouses = false, disposed = false;
   yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
@@ -474,6 +474,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
     foundation: bd => foundation(bd.rings, groundAt, grid.manifest.stepM / 2), near: homes.finishFor, far: homes.farFinishFor,
     roofUnits: options.quality === 'low' ? 3 : 8, force: houseLodForce(),
+    // Low tier: the far-far boxes past the very-far orbit.
+    box: options.quality === 'low' ? b => homes.boxOf(b.id) : undefined,
   });
   scenery.group.add(houses.group);
   yield 'houses';
@@ -576,6 +578,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         veryFarQueue.push(() => { if (!disposed) veryFarGeometry = mesh.farGeometry(VERY_FAR_ERROR_M, 160, true); });
         pumpVeryFar();
       }
+      // The houses' far-far form switches on the very-far ground's distances, not its build.
+      const nextHouses = farHouses ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M;
+      if (nextHouses !== farHouses) { farHouses = nextHouses; houses.setDetail({ farHouses }); groundLodChanged = true; }
       const nextVery = veryFarGeometry !== null && (veryFar ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M);
       if (next !== far || nextVery !== veryFar) {
         far = next;

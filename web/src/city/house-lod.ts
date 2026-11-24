@@ -27,7 +27,10 @@ export type HouseLodOptions = {
   foundation: (b: VBuilding) => number | null; near: Finish; far: Finish; roofUnits: number;
   /** A dev switch: 'near' or 'far' pins every tile. */
   force?: 'near' | 'far';
+  /** A house as one box, for the far-far form past the very-far orbit (residential boxOf). */
+  box?: (b: VBuilding) => HouseBox | null;
 };
+export type HouseBox = { centre: [number, number]; u: [number, number]; long: number; half: number; height: number; wall: string; roof: string };
 
 // One near build per frame at most, so a camera jump into Midtown never stalls a frame on every tile.
 let lastBuildFrame = -1, frame = 0;
@@ -252,6 +255,12 @@ export function* buildHouseLod(o: HouseLodOptions) {
     const bk = `${Math.floor(cx / SUPER)},${Math.floor(cz / SUPER)}`;
     (blocks.get(bk) ?? blocks.set(bk, []).get(bk)!).push(tile);
   }
+  // The far-far form: every house as one 10-triangle box (four walls and a roof-coloured top),
+  // merged into one mesh on the far houses' own material and attribute layout, so it costs no
+  // program. Past the very-far orbit a house is about 2 px: the boxes keep the ink outline and
+  // side shading that give the wide view its texture (flat ground paint read flatter).
+  const farFar = o.box && !houseFarOff ? yield* buildFarFar(o, tiles) : null;
+  if (farFar) { farFar.visible = false; group.add(farFar); }
   const merged: THREE.Mesh[] = [];
   for (const members of blocks.values()) {
     const b = members.length > 1 && !o.force && !blocksOff ? block(members) : null;
@@ -261,12 +270,69 @@ export function* buildHouseLod(o: HouseLodOptions) {
   return {
     group, tiles,
     /** Phone detail (city.ts): `houseShadows: false` past a long orbit, where a house shadow is under 2 px. */
-    setDetail(d: { houseShadows?: boolean }) {
-      if (d.houseShadows === undefined || houseFarOff) return;
+    setDetail(d: { houseShadows?: boolean; farHouses?: boolean }) {
+      if (houseFarOff) return;
+      // Past the very-far ground orbit every house is about 2 px: one box each (buildFarFar)
+      // instead of the far blocks and tiles.
+      if (d.farHouses !== undefined && farFar) for (const c of group.children) c.visible = c === farFar ? d.farHouses : !d.farHouses;
+      if (d.houseShadows === undefined) return;
       group.traverse(m => { if ((m as THREE.Mesh).isMesh) m.castShadow = d.houseShadows!; });
     },
     setNight(n: number) { state.night = n; for (const t of tiles) { t.farWorld.setNight(n); t.nearWorld?.setNight(n); } },
     setWet(w: number) { state.wet = w; for (const t of tiles) { t.farWorld.setWet(w); t.nearWorld?.setWet(w); } },
-    dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); group.removeFromParent(); },
+    dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); farFar?.geometry.dispose(); group.removeFromParent(); },
   };
+}
+
+/** buildFarFar: one box per house, yielding every 200 houses (core/slice.ts). */
+function* buildFarFar(o: HouseLodOptions, tiles: HouseTile[]) {
+  const material = tiles.flatMap(t => t.farWorld.group.children).find((m): m is THREE.Mesh => (m as THREE.Mesh).isMesh && !(m as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
+  if (!material) return null;
+  const pos: number[] = [], nor: number[] = [], col: number[] = [];
+  const c = new THREE.Color();
+  const byte = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 255);
+  const tri = (a: number[], b: number[], d: number[], hex: string) => {
+    const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+    const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], l = Math.hypot(n[0], n[1], n[2]) || 1;
+    c.set(hex);
+    for (const v of [a, b, d]) { pos.push(v[0], v[1], v[2]); nor.push(Math.round(n[0] / l * 127), Math.round(n[1] / l * 127), Math.round(n[2] / l * 127)); col.push(byte(c.r), byte(c.g), byte(c.b)); }
+  };
+  let n = 0;
+  for (const t of tiles) for (const h of t.houses) {
+    if (++n % 200 === 0) yield 'house far-far';
+    const b = o.box!(h);
+    if (!b) continue;
+    const y0 = o.foundation(h) ?? o.ground(b.centre[0], b.centre[1]);
+    if (y0 === null) continue;
+    const y1 = y0 + b.height, [ux, uz] = b.u, vx = -uz, vz = ux;
+    const at = (s: number, t2: number) => [b.centre[0] + ux * s * b.long + vx * t2 * b.half, b.centre[1] + uz * s * b.long + vz * t2 * b.half];
+    const ring = [at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)];
+    // Wind each wall to face away from the centre, and the top to face up.
+    for (let i = 0; i < 4; i++) {
+      const p = ring[i], q = ring[(i + 1) % 4];
+      const A = [p[0], y0, p[1]], B = [q[0], y0, q[1]], C = [q[0], y1, q[1]], D = [p[0], y1, p[1]];
+      const out = ((q[1] - p[1]) * ((p[0] + q[0]) / 2 - b.centre[0]) - (q[0] - p[0]) * ((p[1] + q[1]) / 2 - b.centre[1])) > 0;
+      // Triangle A,B,C faces along (B − A) × up; keep that pointing away from the centre.
+      if (out) { tri(A, C, B, b.wall); tri(A, D, C, b.wall); } else { tri(A, B, C, b.wall); tri(A, C, D, b.wall); }
+    }
+    const [p0, p1, p2, p3] = ring.map(p => [p[0], y1, p[1]]);
+    const up = (p1[0] - p0[0]) * (p3[2] - p0[2]) - (p1[2] - p0[2]) * (p3[0] - p0[0]) < 0;
+    if (up) { tri(p0, p1, p2, b.roof); tri(p0, p2, p3, b.roof); } else { tri(p0, p2, p1, b.roof); tri(p0, p3, p2, b.roof); }
+  }
+  if (!pos.length) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(Int8Array.from(nor), 3, true));
+  g.setAttribute('color', new THREE.BufferAttribute(Uint8Array.from(col), 3, true));
+  const count = pos.length / 3;
+  g.setAttribute('aStyle', new THREE.BufferAttribute(new Int8Array(count).fill(-1), 1));
+  g.setAttribute('aBase', new THREE.Float32BufferAttribute(new Float32Array(count), 1));
+  g.computeBoundingSphere();
+  const mesh = new THREE.Mesh(g, material);
+  mesh.name = 'houses (far-far)';
+  // Past the very-far orbit house shadows are long gone (houses stop casting at 9 km).
+  mesh.castShadow = false;
+  mesh.receiveShadow = true;
+  mesh.userData.building = true;
+  return mesh;
 }
