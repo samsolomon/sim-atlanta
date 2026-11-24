@@ -21,6 +21,7 @@ The model is vertex colours on `landmarkShell` (batchable), 1,479 triangles on b
 |---|---|---|---|
 | From the north-east, looking south-west | `477,-3600,200,52,330` | 11:30 (before and after), 23:30 | [Before/after](compare.jpg), [day and night](daynight.jpg) |
 | Start | `480,-3594,32,60,190` | 11:30 and 23:30 | [Day and night](daynight.jpg) |
-| Entry | `477,-3622,180,35,90` with `&dev&mindist=20` | 11:30 | [Close](close.jpg) |
+| 14th Street entry | `476,-3615,180,45,110` with `&dev&mindist=20` | 11:30 | [Close](close.jpg) |
+| Four sides | `477,-3600,{180,270,0},55,400` and `90,30,400` | 11:30 | [Four sides](four-sides.jpg) |
 
 Use `/?view=city&cam=<camera>&t=<ISO timestamp>`.
