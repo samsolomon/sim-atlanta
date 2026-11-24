@@ -74,6 +74,7 @@ import { createDavisons } from './davisons';
 import { createRitzCarlton } from './ritz-carlton-atlanta';
 import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
+import { createEmpireBuilding } from './empire-building';
 import { createCommerceBuilding } from './commerce-building';
 import { createHundredEdgewood } from './100-edgewood';
 import { createMetropolitan } from './metropolitan';
@@ -371,6 +372,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
   let southernBell: ReturnType<typeof createSouthernBell> = null;
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
+  let empireBuilding: ReturnType<typeof createEmpireBuilding> = null;
   let commerceBuilding: ReturnType<typeof createCommerceBuilding> = null;
   let hundredEdgewood: ReturnType<typeof createHundredEdgewood> = null;
   let metropolitan: ReturnType<typeof createMetropolitan> = null;
@@ -471,8 +473,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterSouthernBell = southernBell?.buildings ?? afterRitzCarlton;
         rhodesHaverty = createRhodesHaverty(afterSouthernBell, ground);
         const afterRhodesHaverty = rhodesHaverty?.buildings ?? afterSouthernBell;
-        commerceBuilding = createCommerceBuilding(afterRhodesHaverty, ground);
-        const afterCommerceBuilding = commerceBuilding?.buildings ?? afterRhodesHaverty;
+        empireBuilding = createEmpireBuilding(afterRhodesHaverty, ground);
+        commerceBuilding = createCommerceBuilding(empireBuilding?.buildings ?? afterRhodesHaverty, ground);
+        const afterCommerceBuilding = commerceBuilding?.buildings ?? empireBuilding?.buildings ?? afterRhodesHaverty;
         hundredEdgewood = createHundredEdgewood(afterCommerceBuilding, ground);
         const afterHundredEdgewood = hundredEdgewood?.buildings ?? afterCommerceBuilding;
         metropolitan = createMetropolitan(afterHundredEdgewood, ground);
@@ -572,6 +575,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (ritzCarlton) world.group.add(ritzCarlton.group);
         if (southernBell) world.group.add(southernBell.group);
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
+        if (empireBuilding) world.group.add(empireBuilding.group);
         if (commerceBuilding) world.group.add(commerceBuilding.group);
         if (hundredEdgewood) world.group.add(hundredEdgewood.group);
         if (metropolitan) world.group.add(metropolitan.group);
@@ -607,7 +611,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
-        if (!low) world.group.add(batchLandmarkBodies(landmarks));
+        world.group.add(batchLandmarkBodies(landmarks));
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -771,7 +775,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
       .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
-    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: [] }, boards);
+    // Share the four-plane shader variants with downtown. The perimeter moves as rows mount.
+    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: perimeter }, boards);
     midtownArterials?.dispose();
     midtownArterials = next;
     scene.add(next.group);
@@ -956,6 +961,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         streetcarSurface.push(entry);
         area.group.add(track.group);
         const stops = buildStreetcarStops(sites, area.bounds, surface);
+        // Match the downtown track and shelter shaders while keeping the interior seam open.
+        if (perimeter) {
+          clipScenery(track.group, perimeter);
+          clipScenery(stops.group, perimeter);
+        }
         area.group.add(stops.group);
         northStops = stops;
         const disposeArea = area.dispose.bind(area);
@@ -1381,6 +1391,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ritzCarlton?.setNight(night);
     southernBell?.setNight(night);
     rhodesHaverty?.setNight(night);
+    empireBuilding?.setNight(night);
     commerceBuilding?.setNight(night);
     hundredEdgewood?.setNight(night);
     metropolitan?.setNight(night);

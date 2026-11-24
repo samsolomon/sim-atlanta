@@ -3200,6 +3200,12 @@ Two of the six freight locomotive studies had a boxcar attached. The Model Lab n
 
 The first car in the freight kit is a three-bay covered grain hopper, sized from Greenbrier's 5,400 ft³ data sheet: 17.88 m over couplers and 3.25 m wide. It shares the boxcar's trucks and costs 660 triangles on phones and 1,000 on desktop. Three of them now follow the NS-like locomotives through Brookwood. The first build passed on desktop but pushed phones to 91 shader programs against a ceiling of 90. The car's geometry wasn't the cause. The WIP had switched the Brookwood train to instancing on phones, and an instanced, clipped Lambert is a different program from a plain one. Separate meshes on low tier brought it back to 90 with 567 draws, and a test now pins that choice. A second test caught the hexagonal phone wheels floating 2.4 cm above the rail because they rested on a flat edge. Turning every freight wheel a quarter-step puts a vertex on the rail. [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
 
+**2026-11-23 — The Empire Building on Broad.** A 14-floor count had supplied the old extrusion. Roof returns put the buff masonry shaft near 375 m NAVD88, with two courts opening down to 345 and 335 m behind it. The public door sits in the southern arch of the central three. The roof camera gained 2,258 triangles and two draws on low. [Broad Street and the surrounding block by day and night](log/ui/empire-building/README.md)
+
+### 2026-11-23 — Five shader programs back on the phone board
+
+Low held 90 programs after all twelve areas loaded. The same streetcar shelters and arterial vehicles had compiled with four clipping planes downtown and zero on adjoining boards. Using the moving outer perimeter lets both use the same programs and keeps the interior seam open. City also releases the white reveal material once the still owns its pixels. With the 200 and 230 Peachtree buildings included, Low measured 85 programs and 538 draws. The plain downtown landmark bodies now share the same 500 m batches on both tiers. [Sweet Auburn streetcar and shelter, camera 1536,-182,190,48,180](log/perf/low-streetcar-shelter.jpg).
+
 ### 2026-11-23 — Lunch at the High
 
 Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on

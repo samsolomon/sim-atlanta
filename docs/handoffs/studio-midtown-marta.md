@@ -1,50 +1,41 @@
-# Handoff: studio-midtown-marta (Claude, 2026-11-23)
+# Studio Midtown MARTA handoff to Claude Opus
 
-Worktree `studio-midtown-marta`. Coordinator: `orca_session_id:84ff6fd9-a68e-4888-aa2a-4477f88e5ff0` (Claude on the Air). Earlier messages came from terminal `term_0813aeff…`, later ones from `term_05a952fa…`.
+**Hold #384 until the Air coordinator relays Sam’s OK.** This is the only open PR from this queue. It is ready for review on `samsolomon/robinson-empire-building`. Its last code commit is `6d5097a58f8a2c2bd6cb9e79656a961df519b9e2`, tested on main at `59b8cbc9` with both Peachtree landmarks. The subsequent handoff commit changes this document only. All implementation work is pushed.
 
-## State
-- Merged this session:
-  - #299, the Atlanta Streetcar's 12 stops;
-  - #313, graded freight cuttings (`terrain/cutting.ts`, carve rules in `terrain/surface.ts`);
-  - the King Memorial CSX freight PR, `samsolomon/king-csx`, which carries this file. It is merged unless its PR says otherwise.
-- Earlier, also merged: the North Line bridge, portals and vents; streetcar track (#271) and vehicles (#278).
-- No open PRs from this worktree once king-csx merges. There is no WIP.
-- `trees/rollout.test.ts` ("sizes up and pairs generic crowns only inside Ansley Park") fails on main (bc32b09) as well as on these branches. It most likely needs fresh `pnpm data`. It isn't mine, but tell whoever owns trees.
+## Sam’s request and review feedback
 
-## Sam's and the coordinator's decisions (2026-11-23)
-- Tiers go on cards, not on ambient area notes (#231). Freight stays `illustrative`.
-- Cuttings run on both tiers. The coordinator accepted +22k triangles (+2%) on low.
-- Screenshots: captioned BEFORE/AFTER composites, money shot first, matched camera string, GitHub blob links in merge notices.
-- Street View: view it and cite it, never copy the imagery into the repo.
-- Supports never stand in a lane, shoulder or ramp.
+Sam’s request, quoted by the coordinator, was **“skin the remaining large/important buildings”**. The skyline lead assigned 230 Peachtree, 200 Peachtree and the J. Mack Robinson College building, one PR each. Sam said **“200 Peachtree looks okay to me.”** The coordinator requested a normal City orbit of about 300–500 m at 45–55° tilt, day and night, after Sam found the first 230 Peachtree angles hard to read. All three PRs include that pair. The coordinator flagged the 230 plaza sculpture and the dark 200 entrance canopy and roof as polish for later. Sam’s visual decision on Robinson is outstanding.
 
-## Next steps, in order
-1. **Arts Center east wing slab** (coordinator msg_558b5522dbad; low priority). On main, the plaza sits 25 cm above part of the east-entrance wing floor slab in `midtown-marta.ts` `artsCenter`. The slab is a prism top at entry + 0.08, with ring [430.8,-3920.8]–[428.5,-3934.5]. The audit found 491 samples, worst at (450,-3935). Fix: return `yields: [{ ring: wing, floor: () => entry + 0.03 }]` from `artsCenter`, which `createDowntownTerrain` carves (as for the High steps). Camera: `/?view=city&cam=445,-3930,250,50,150`.
-2. **Midtown-south North Ave underpass** (assigned; the plan was sent and has NOT been approved, so wait for "go"). This is the last `GRADED_CUTS` exception in `ground-contact.test.ts`, at (-783,-1860). North Avenue NW runs in an 86 m OSM tunnel (ways 218105244 and 218105246, layer -1) under the CSX and NS mains, at 33.7706, -84.4001. Street View shows a row of separate concrete deck bridges with daylight gaps between them:
-   - east portal: a balustrade parapet, and haunched square columns splitting the opening into 2 road bays and a sidewalk bay ([pano, Mar 2025](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.77085,-84.39935&heading=243&pitch=3&fov=30));
-   - west side: median piers, pipe railings on top and lamps on the trench walls ([pano, May 2022](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.77035,-84.40125&heading=60&pitch=3&fov=45));
-   - no night imagery exists.
+The current Air coordinator is `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Its exact instruction was **“Merge holds stay in force; nothing merges until I relay Sam's OK.”** Skyline confirmed this supersedes its earlier performance clearance. The outgoing Codex session is `orca_session_id:7abc46f1-296e-4e71-94c0-65df6427a6fa`. Read it for prior reviews, including the underpass handoff from predecessor `dd2c7465-6831-4447-b009-9e8aa68d6cf0`. Reply to coordinator message `msg_168b50a46fb9` using `orca orchestration reply --id msg_168b50a46fb9 --from <your session id> --body '...'`; direct Studio-to-Air sends previously hit a rejected pairing token. Use `orca orchestration check` for replies. Only the coordinator deploys.
 
-   Plan:
-   1. Rail profile at a straight grade across the footprint.
-   2. OpenSlot trench walls for North Ave.
-   3. Deck spans, parapets and median piers clear of the lanes.
-   4. Draw North Ave at its low level.
-   5. Tests: grade at or under 1.5%, at least 4.5 m clearance, and the exception removed.
-3. Optional: a test holding the King Memorial MARTA piers (`east-rail.ts`, every 26 m) clear of freight, using the King transport's `clearOfFreight`. I checked this only in a browser.
+## Verified PR state
 
-## Promises to other agents
-- Connector agent (86c22ca9): the streetcar exposes `occupied()` and `streetcarLanes()` for traffic to yield. They own the skip-draw.
-- rectangle-default (f4705eb0): the Follow interface for streetcars (`cars()`, `drawnAt`) is in place. Nothing is outstanding.
+| PR | State | Result |
+|---|---|---|
+| [#384](https://github.com/samsolomon/sim-atlanta/pull/384) | OPEN, ready for review | Robinson. Full suite and both performance tiers passed on the combined main base. Claude cross-review found no findings. |
+| [#381](https://github.com/samsolomon/sim-atlanta/pull/381) | MERGED `59b8cbc9` | 200 Peachtree. On top of #377, high 1,189 draws / 105 programs and low 567 / 90. |
+| [#377](https://github.com/samsolomon/sim-atlanta/pull/377) | MERGED `ad79062c` | 230 Peachtree. After batching #386, high 1,185 draws / 105 programs and low 565 / 90. |
+| [#380](https://github.com/samsolomon/sim-atlanta/pull/380) | MERGED `bca71fa4` | Ground-contact’s shared underpass carries the five North Avenue spans, survey, clearance distinctions and cameras. The earlier draft [#361](https://github.com/samsolomon/sim-atlanta/pull/361) was closed as superseded. |
+| [#372](https://github.com/samsolomon/sim-atlanta/pull/372) | MERGED `b6697d57` | King Memorial pier clearance regression. |
 
-## Servers and ports
-- Vite: this worktree on :5297, and a scratch `origin/main` worktree on :5298 at `$TMPDIR…/scratchpad/main-wt`, used for BEFORE shots. Both were stopped at handoff, and main-wt was removed.
-- There is no `.venv` here. Python with PIL and numpy is available from `../studio-midtown-skyline/.venv/bin/python` (run it; don't edit that worktree). Cargo: `export PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH`.
+The three MARTA station entrances were already on main (#165, #169 and #174), and #339 fixed the Arts Center slab. The coordinator confirmed the entrance assignment was stale. We skipped the optional North Avenue escalator detail because the descending flight would require cutting the paving and terrain beneath the existing canopy.
 
-## Rules and traps that bit me
-- `git checkout <file>` to undo a temporary edit also drops your uncommitted work in that file. Commit first, or back up to a scratch path.
-- When code builds geometry in deferred closures, capture loop variables, or every quad shares the last station (this broke the ballast texture once). `ground-contact.test.ts` now guards against it.
-- The King board mounts after City, so screenshot capture needs about 20 s or the AFTER frame comes out blank.
-- zsh: `"$R:web"` is parsed as a modifier; write `"${R}:web"`.
-- Doc conflicts on rebase: both sides append to `docs/build-log.md`, so keep both.
-- AGENTS.md review rule 4: say "web rebuild only" or "needs pnpm data" in every PR.
+## Robinson checks and cameras
+
+The roof-camera comparison added 2,258 triangles and two draws on low. On the combined production board, high measured 1,193/1,250 draws, 105/140 programs and 500 MB after GC. Low measured 569/600 draws, **90/90 programs** and 393 MB after GC. Robinson and Davison’s share their compiled procedural material. Maintain the low program ceiling on any revision. The 1972 night street photograph documents nearby lighting, but the upper façade could not be verified at night. Lit office panes are illustrative. Web rebuild only.
+
+Use November 20, 2026 at 11:30 and 23:30 Eastern, clear weather, speed zero and low quality. Append `&dev&mindist=20` for the close frontage. The camera fields are x, z, bearing, tilt and orbit distance.
+
+| Building | Normal City view | Frontage | Roof |
+|---|---|---|---|
+| [Robinson captures and sources](../log/ui/empire-building/README.md) | `174,-134,75,48,440` | `144,-131,140,62,35` | `151,-133,60,31,255` |
+| [200 Peachtree captures](../log/ui/200-peachtree/README.md) | `301,-568,312,49,420` | `346,-547,225,59,52` | `319,-557,310,35,345` |
+| [230 Peachtree captures](../log/ui/230-peachtree/README.md) | `267,-677,292,48,455` | `351,-698,244,75,52` | `290,-687,290,25,470` |
+
+## Next steps in order
+
+1. Read `AGENTS.md`, fetch origin and check coordinator replies. Keep #384 open until the current Air coordinator relays Sam’s decision.
+2. For a requested revision, update #384 on its branch and reshoot the matched views. Recheck the two light courts, the southern door in the three central Broad Street arches, and the neighboring Commerce Building. Run `pnpm test`, `pnpm --filter web exec tsc --noEmit`, the browser checks, `pnpm test:perf` and `pnpm review` for changed code. The full suite used the stable Rust toolchain on PATH and a temporary local `.venv` symlink to `../studio-midtown-skyline/.venv`, removed after testing.
+3. On coordinator approval, check the PR head and the current base. If main has moved, rebase, retain both sides of appended build-log entries, and remeasure both tiers. After merging via the PR, run `gh pr view 384 --json state,mergeCommit`. Quote its exact state and SHA in the coordinator notice with screenshot links and the camera strings. Leave deployment to the coordinator.
+
+At handoff the worktree had zero Orca browser tabs and no dev server listening on its review ports 5297 or 5298. The temporary merge worktree was removed.
