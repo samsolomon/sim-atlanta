@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
+import { addSection, bounds, connect, joins, midtownRows, type Area, type Board, type TrafficArea } from '../square-board/sections';
 import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
-import { northAveLocal } from './north-ave';
+import { northAveLocal, northAvePoint } from './north-ave';
 import { GroundGrid } from './grid';
 import { createDowntownTerrain } from './model';
 
@@ -57,6 +57,13 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     expect(underBridge).not.toBeNull();
     expect(underBridge!).toBeLessThan(-18.268 - .03);
     const south = mounted.get('midtown-south')!;
+    const { city, roadHeight } = (south as TrafficArea).connectorBoard;
+    const lower = city.roads.find(r => r.name === 'North Avenue Northwest' && r.tunnel)!;
+    const upper = city.roads.find(r => r.name === 'Marietta Street Northwest')!;
+    const position = northAvePoint(9, 4);
+    const zero = grid('midtown-south').manifest.vertical.sceneZeroNavd88M;
+    expect(roadHeight(...position, lower)).toBeCloseTo(296.64 - zero);
+    expect(roadHeight(...position, upper)).toBeCloseTo(302.32 - zero);
     const decks = south.group.getObjectByName('Decks and embedded rails')!;
     const crossing = groundAudit(decks, [{ id: 'midtown-south', bounds: south.bounds, terrainAt: south.terrainAt, terrain: [south.board] }], {
       colors: CITY_COLORS, layer: () => 'structures',

@@ -3049,7 +3049,7 @@ geometry changed. [Survey, inventory, uncertainty and photo request](north-ave-u
 Five cover groups now follow the survey along North Avenue. Lowering the road alone
 left a dip in the freight tracks. Carrying the tracks between approach elevations
 removed the dip, and lowering the active slab beneath the ballast kept all tracks
-visible. At the same low-tier daylight camera the change took City from 1,596,751
+visible. At the same low-tier daylight camera the change took City from 1,595,963
 to 1,600,830 triangles and held at 83 draws. The western carriageways bend away
 from the straight lidar transect, so the trench bends with them.
 

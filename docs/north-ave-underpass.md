@@ -1,10 +1,9 @@
 # North Avenue NW underpass — survey and proposed representation
 
-Survey: 2026-11-23. No City geometry changed. The evidence supports **five visible
+Survey dated 2026-11-23. City implements option C. The evidence supports **five visible
 cover groups**, not a proven inventory of five independent bridges: Marietta
 Street, one broad active-rail cover, and three disused western deck strips.
-The active cover's internal bridge joints remain unresolved. This proposal goes
-back to the coordinator for Sam before implementation.
+The active cover's internal bridge joints remain unresolved. Sam approved this representation on November 23.
 
 ## Marietta Street: reported inventory
 
