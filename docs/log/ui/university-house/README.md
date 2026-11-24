@@ -12,7 +12,7 @@
 
 The Midtown Alliance photograph, taken from the west across a cleared lot, shows the tower clad in vertical blocks of light grey, mid grey and charcoal panels with punched windows. Yellow-framed balcony strips run up two faces. A charcoal block with a glass-topped lounge stands at the corner, beside an open concrete garage with the amenity deck. The street base is charcoal with a yellow frame. [Midtown Alliance building page](https://midtownatl.com/view/university-house-midtown) · [Curbed Atlanta via Vineyard, on the 19-storey, 268-unit tower](https://vineyardestates.blogspot.com/2015/09/these-aint-your-daddys-dorms-via-curbed.html)
 
-- **Glass:** the punched-window base is `#4f5c69` (S 25%, V 41%), varied with `#56636f` (23/44) and `#4a5866` (27/40). This meets the provisional glass rules: V of at least 40% and S of at most 36%.
+- **Glass:** the punched-window base is `#5f666e` (S 14%, V 43%), varied with `#646b72` (12/45) and `#5a6169` (14/41), following the base-value table for V 40–50 (S ≤ 15). Rendered at 11:30 on the high tier, from a close camera (`205,-2935,330,30,190`, with `&dev&mindist=20`): sunlit-face windows median **S 12, V 42**, which passes the sunlit rule (S ≤ 36, V ≥ 40); shaded-face windows S 29, V 24. The generic reference, a neighbouring glass facade in the close view, is S 26, V 41. [Glass check frame](uh-glass.jpg)
 - **Floors:** a 5 m lobby, then 18 floors at 3.3 m.
 - **Panel blocks:** each long face gets four vertical blocks in one of two light/yellow/mid/charcoal orders. Block widths are estimated from the photograph.
 - **High tier:** 3.2 m punched windows (0.42 × 0.55 of the bay), garage openings, the yellow trim over the base, and the corner glass lounge.

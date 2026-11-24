@@ -54,7 +54,7 @@ export function createUniversityHouse(buildings: VBuilding[], grid: GroundGrid, 
   if (!found) return null;
   const shell = found;
   const high = quality === 'high';
-  const windows = ['#4f5c69', '#56636f', '#4a5866'];
+  const windows = ['#5f666e', '#646b72', '#5a6169'];
   const t = local(tower);
   // Lit panes come from the shared hash. Face ids: tower edges 0–9, garage 20+, base 40+, base trim 60+.
   const seed = seedOf(universityHouseId);
