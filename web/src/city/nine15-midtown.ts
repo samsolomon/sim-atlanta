@@ -10,7 +10,7 @@ const origin: P2 = [451, -2875];
 
 // NAVD88 from the 22 April 2019 3DEP returns (docs/log/ui/nine15-midtown/README.md).
 const grade = 293.1;
-const baseTop = grade + 6;
+const baseTop = grade + 8.5;
 const roof = grade + 71.3;
 const parapet = grade + 73.6;
 
@@ -46,7 +46,9 @@ export function createNine15Midtown(buildings: VBuilding[], grid: GroundGrid, qu
 
   shell.prism(t, shell.base, baseTop, brick, '#8f8f8c');
   shell.prism(t, baseTop, roof, white, '#a3a4a2');
-  shell.prism(t, roof, parapet, grey, '#a3a4a2');
+  // The thin roof canopy overhangs both ends; the top floor under it is recessed glass.
+  const canopy: P2[] = [[-38.2, -12.6], [39.1, -13.6], [38.9, 13.5], [-37.4, 12.6]];
+  shell.prism(canopy, parapet - 0.45, parapet, '#eeeeea', '#b9bab7');
 
   const floors = Math.round((roof - baseTop) / 3.15);
   const pitch = (roof - 0.3 - baseTop - 0.2) / floors;
@@ -60,21 +62,34 @@ export function createNine15Midtown(buildings: VBuilding[], grid: GroundGrid, qu
     } else if (length > 8) {
       litFacade(shell, seed, i, a, b, baseTop + 0.2, roof - 0.3, Math.round(floors / 3), broad ? 12 : 8, 0.62, 0.82, glass, 0.45);
     }
+    // Recessed glazed top floor under the canopy.
+    const top = (u: number, y: number) => [a[0] + ux * u + nx * 0.04, y, a[1] + uz * u + nz * 0.04];
+    shell.body.quad(top(0, roof - 3.1), top(0, parapet - 0.45), top(length, parapet - 0.45), top(length, roof - 3.1), '#8193a0');
+    // The tall glazed corner at West Peachtree and 8th Street (the outline's south-west corner).
+    const sw = (p: P2) => Math.hypot(p[0] + 36, p[1] - 11) < 4;
+    if (sw(a) || sw(b)) {
+      const from = sw(a) ? 0 : length - 7, to = sw(a) ? 7 : length;
+      const g = (u: number, y: number) => [a[0] + ux * u + nx * 0.09, y, a[1] + uz * u + nz * 0.09];
+      shell.body.quad(g(from, shell.base + 0.4), g(from, roof - 3.1), g(to, roof - 3.1), g(to, shell.base + 0.4), '#8ea3b3');
+    }
     if (!broad) return;
     // Grey panel pilasters split the long faces into the bays seen from 8th Street.
     const at = (u: number, y: number) => [a[0] + ux * u + nx * 0.12, y, a[1] + uz * u + nz * 0.12];
     for (const u of [length * 0.3, length * 0.62]) {
       shell.body.quad(at(u - 2, baseTop), at(u - 2, parapet), at(u + 2, parapet), at(u + 2, baseTop), grey);
     }
-    if (!high) return;
-    // Dark balcony stacks at both corners of the long faces.
-    for (const c of [3.2, length - 3.2]) for (let j = 1; j < floors; j++) {
+    // Deep balcony stacks with dark rails at both corners of the long faces, its clearest marker.
+    // The low tier keeps a rail band on every second floor.
+    for (const c of [3.4, length - 3.4]) for (let j = 1; j < floors - 1; j += high ? 1 : 2) {
       const y = baseTop + 0.2 + j * pitch;
       const p = (u: number, out: number, h: number) => [a[0] + ux * (c + u) + nx * out, h, a[1] + uz * (c + u) + nz * out];
-      const w = 2.8, d = 1.8;
-      shell.body.quad(p(-w, 0.02, y + 0.2), p(w, 0.02, y + 0.2), p(w, d, y + 0.2), p(-w, d, y + 0.2), '#d8d8d4');
-      shell.body.quad(p(-w, 0.02, y), p(-w, d, y), p(w, d, y), p(w, 0.02, y), '#9a9b9a');
-      shell.body.quad(p(-w, d, y), p(-w, d, y + 1.1), p(w, d, y + 1.1), p(w, d, y), '#3b3d40');
+      const w = 3, d = high ? 2.2 : 0.2;
+      shell.body.quad(p(-w, d, y - 0.1), p(-w, d, y + 1.15), p(w, d, y + 1.15), p(w, d, y - 0.1), '#34363a');
+      if (!high) continue;
+      shell.body.quad(p(-w, 0.02, y + 0.22), p(w, 0.02, y + 0.22), p(w, d, y + 0.22), p(-w, d, y + 0.22), '#ecece8');
+      shell.body.quad(p(-w, 0.02, y), p(-w, d, y), p(w, d, y), p(w, 0.02, y), '#a2a3a2');
+      shell.body.quad(p(-w, 0.02, y), p(-w, 0.02, y + 1.15), p(-w, d, y + 1.15), p(-w, d, y), '#3b3d40');
+      shell.body.quad(p(w, d, y), p(w, d, y + 1.15), p(w, 0.02, y + 1.15), p(w, 0.02, y), '#3b3d40');
     }
   });
 

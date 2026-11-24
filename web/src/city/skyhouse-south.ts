@@ -42,14 +42,25 @@ export function createSkyhouseSouth(buildings: VBuilding[], grid: GroundGrid, qu
   // Lit panes come from the shared hash. Face ids: tower edges 0–3, lobby 10+.
   const seed = seedOf(skyhouseSouthId);
   const white = '#e8e6df';
-  // Teal-green glass from the property photograph: base #98bdbe (S 20%, V 75%) renders sunlit at V ≥ 40.
-  const glass = ['#98bdbe', '#9ec2c2', '#92b7b9'];
+  // Teal-green glass from the property photograph: base #7fb3ad (S 29%, V 70%), deeper than the generic beige grid.
+  const glass = ['#7fb3ad', '#86b8b2', '#79ada8'];
+  const blue = '#7b98c2';
   const t = local(tower);
 
   shell.prism(t, shell.base, roof, white, '#a9a8a2');
-  // The rooftop sky deck: a set-back white box ringed by the blue glass band.
+  // The rooftop sky deck: a set-back white box whose top storey is a row of blue square panels.
   const deck = t.map(([x, z]): P2 => [x * 0.86, z * 0.7]);
-  shell.prism(deck, roof, crownTop, white, '#b5b3ac');
+  shell.prism(deck, roof, crownTop - 2.2, white, '#b5b3ac');
+  shell.prism(deck, crownTop - 2.2, crownTop, high ? white : blue, '#b5b3ac');
+  if (high) edges(deck, (a, b, length) => {
+    const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length, nx = uz * 0.06, nz = -ux * 0.06;
+    const n = Math.max(2, Math.round(length / 3));
+    for (let k = 0; k < n; k++) {
+      const u0 = (k + 0.08) * length / n, u1 = (k + 0.92) * length / n;
+      shell.body.quad([a[0] + ux * u0 + nx, crownTop - 2.05, a[1] + uz * u0 + nz], [a[0] + ux * u0 + nx, crownTop - 0.2, a[1] + uz * u0 + nz],
+        [a[0] + ux * u1 + nx, crownTop - 0.2, a[1] + uz * u1 + nz], [a[0] + ux * u1 + nx, crownTop - 2.05, a[1] + uz * u1 + nz], blue);
+    }
+  });
 
   const floors = Math.round((roof - lobbyTop) / 3.2);
   const pitch = (roof - 0.3 - lobbyTop - 0.2) / floors;
@@ -63,6 +74,21 @@ export function createSkyhouseSouth(buildings: VBuilding[], grid: GroundGrid, qu
     // Blue glass band around the parapet.
     const at = (u: number, y: number) => [a[0] + ux * u + nx * 0.1, y, a[1] + uz * u + nz * 0.1];
     shell.body.quad(at(0, roof - 1.6), at(0, roof + 0.4), at(length, roof + 0.4), at(length, roof - 1.6), '#86a2c4');
+    // White piers proud of the glass, rising past the parapet as the SkyHouse crown frame.
+    // Their top 3 m glow at night, as on the SkyHouse program's dusk photograph.
+    const piers = broad ? Math.round(length / 7.4) : 2;
+    for (let k = 0; k <= piers; k++) {
+      const c = Math.min(length - 0.5, Math.max(0.5, k * length / piers));
+      const top = crownTop + (k % 2 ? 1.2 : 2.6);
+      const q = (u: number, out: number, y: number) => [a[0] + ux * (c + u) + nx * out, y, a[1] + uz * (c + u) + nz * out];
+      shell.body.quad(q(-0.5, 0.45, lobbyTop), q(-0.5, 0.45, top - 3), q(0.5, 0.45, top - 3), q(0.5, 0.45, lobbyTop), white);
+      shell.lights.quad(q(-0.5, 0.45, top - 3), q(-0.5, 0.45, top), q(0.5, 0.45, top), q(0.5, 0.45, top - 3), white);
+      if (high) {
+        shell.body.quad(q(-0.5, 0, lobbyTop), q(-0.5, 0, top), q(-0.5, 0.45, top), q(-0.5, 0.45, lobbyTop), '#d9d7d0');
+        shell.body.quad(q(0.5, 0.45, lobbyTop), q(0.5, 0.45, top), q(0.5, 0, top), q(0.5, 0, lobbyTop), '#d9d7d0');
+        shell.body.quad(q(-0.5, 0, top), q(-0.5, 0.45, top), q(0.5, 0.45, top), q(0.5, 0, top), white);
+      }
+    }
     if (!high || !broad) return;
     // Balcony stacks at both ends of the long faces and one in the middle.
     for (const c of [3, length / 2, length - 3]) for (let j = 1; j < floors; j++) {
