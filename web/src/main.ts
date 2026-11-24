@@ -217,6 +217,8 @@ function renderTrainCard() {
 function renderBusCard() {
   const bus = clock.isRealTime() && (view3d.hidden || !buses.unavailable) && buses.current().find(b => b.id === selectedBus);
   const trip = selectedBus && !view3d.hidden && diorama?.timetableBus(selectedBus);
+  // A selected vehicle that is now drawn as a matched trip stays selected as that trip.
+  if (trip && trip.id !== selectedBus) selectedBus = trip.id;
   if (trip && trip.fix) {
     showCard(busCard(trip.fix, buses.observationNow(), 'New Flyer Xcelsior XN40', trip.offset), !!follow);
   } else if (trip) {

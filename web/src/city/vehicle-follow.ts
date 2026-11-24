@@ -99,6 +99,9 @@ export class VehicleFollow {
   frame(fix: Fix | null, bounds: Bounds | ((p: Point) => boolean), now: number, reducedMotion: boolean, current?: Point): Point | undefined {
     const v = this.followed;
     if (!v) return;
+    // A Route 49 vehicle matched to a trip becomes that trip, which keeps its id as its
+    // source moves between GPS (live) and the timetable (inferred).
+    if (v.kind === 'bus' && v.id.startsWith('marta:bus:') && fix?.id.startsWith('marta:bus-trip:')) v.id = fix.id;
     if (v.kind === 'bus' && v.id.startsWith('marta:bus-trip:') && fix?.id === v.id) {
       v.tier = this.tier = fix.tier;
     }

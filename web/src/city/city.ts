@@ -1533,7 +1533,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (v.kind === 'bus') {
       const trip = drawnTrip(v.id);
       const shown = buses.positions.find(p => p.id === (trip?.id ?? v.id));
-      if (trip && shown) return {id:v.id, tier:trip.fix ? 'live' : 'inferred', x:shown.x, z:shown.z, cars:[shown], hidden:null};
+      // A followed vehicle that now drives a matched trip is reported under the trip's id,
+      // so the follow keeps the trip when its GPS lapses to the timetable.
+      if (trip && shown) return {id:trip.id, tier:trip.fix ? 'live' : 'inferred', x:shown.x, z:shown.z, cars:[shown], hidden:null};
       const bus = options.buses?.()?.find(b => b.id === v.id);
       if (!bus) return null;
       const [x, z] = shown ? [shown.x, shown.z] : project(bus.position.value.lon, bus.position.value.lat);

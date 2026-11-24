@@ -111,6 +111,19 @@ describe('vehicle follow', () => {
     expect(f.frame({...bus,tier:'scheduled'},bounds,16,false)).toBeUndefined();
     expect(f.phase).toBe('lost');
   });
+  it('adopts the Route 49 trip a followed vehicle is matched to, through its timetable fallback', () => {
+    const f = new VehicleFollow(); f.start({kind:'bus',id:'marta:bus:5106',tier:'live'});
+    const trip = 'marta:bus-trip:49-20261123-140';
+    const at = (id: string, tier: 'live' | 'inferred', x: number) => ({id,tier,x,z:50,cars:[{x,z:50}],hidden:null});
+    expect(f.frame(at('marta:bus:5106','live',30),bounds,0,false)).toBeDefined();
+    // The vehicle's next report matches trip 140: City reports it under the trip id.
+    expect(f.frame(at(trip,'live',35),bounds,16,false)).toBeDefined();
+    expect(f.vehicle?.id).toBe(trip);
+    // GPS lapses: the trip's timetable bus keeps the follow, now inferred.
+    expect(f.frame(at(trip,'inferred',38),bounds,32,false)).toBeDefined();
+    expect(f.vehicle).toMatchObject({id:trip,tier:'inferred'});
+    expect(f.phase).toBe('drawn');
+  });
 });
 
 it('keeps accelerated playback and rewinds within eight metres of the selected consist', () => {
