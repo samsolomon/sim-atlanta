@@ -872,7 +872,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(next);
   }
   function mosaicBase() {
-    const rects = Array.from(mosaic!.areas.values(), a => a.bounds);
+    // Streaming keeps the whole board's footprint: sections swap inside it.
+    const rects = stream && streamModule ? streamModule.allBoardRects() : Array.from(mosaic!.areas.values(), a => a.bounds);
     // Follow the mounted footprint, so a row that is missing or failed leaves no crowns over the table.
     if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
