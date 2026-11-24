@@ -11,6 +11,7 @@ import { landmarkShell } from './landmark-shell';
  * The low parts stay as the plaza's concrete-and-glass bases.
  */
 export const colony100Id = 'osm:way:536737548';
+export const colony400Id = 'osm:way:536737549';
 
 const precast = '#e6e3db',
   shade = '#cbc8c0',
@@ -71,34 +72,60 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
   return top;
 }
 
+type Tower = {
+  id: string; name: string; origin: P2; probes: P2[];
+  half: [number, number]; lobby: number; floors: number; pitch: number; roof: number;
+  parapet?: number; podium?: number; cores: { at: P2; size: [number, number]; top: number }[]; seed: number;
+};
+
+// Heights above the 2018 lidar ground (296.1 m NAVD88). Frames are centred on
+// each tower's lidar roof, with x along Peachtree's 45° grid.
+const TOWERS: Record<string, Tower> = {
+  [colony100Id]: {
+    id: colony100Id, name: '100 Colony Square', origin: [822.15, -3673.5], probes: [[0, 0], [-15, -15], [15, 15]],
+    half: [19.7, 19.7], lobby: 8.7, floors: 21, pitch: 3.62, roof: 89.3,
+    cores: [{ at: [0, 0], size: [16, 11.6], top: 96.3 }], seed: 7,
+  },
+  [colony400Id]: {
+    id: colony400Id, name: '400 Colony Square', origin: [796.77, -3752.77], probes: [[0, 0], [-12, -20], [12, 20]],
+    half: [19, 27.75], lobby: 7.8, floors: 20, pitch: 3.6, roof: 83.3, parapet: 86, podium: 7.8,
+    cores: [{ at: [-0.5, -10], size: [11, 12], top: 91.2 }, { at: [-0.5, 0], size: [11, 8], top: 89.9 }], seed: 400,
+  },
+};
+
 export function createColony100(buildings: VBuilding[], grid: GroundGrid) {
-  // Frame: origin at the lidar diamond's centre, x along Peachtree's 45° grid.
-  const s = landmarkShell(buildings, grid, colony100Id, '100 Colony Square', [822.15, -3673.5], [1, -1],
-    [[0, 0], [-15, -15], [15, 15]]);
+  return createColonyTower(buildings, grid, TOWERS[colony100Id]);
+}
+
+export function createColony400(buildings: VBuilding[], grid: GroundGrid) {
+  return createColonyTower(buildings, grid, TOWERS[colony400Id]);
+}
+
+function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Tower) {
+  const s = landmarkShell(buildings, grid, tower.id, tower.name, tower.origin, [1, -1], tower.probes);
   if (!s) return null;
-  const site = buildings.find(b => b.id === colony100Id)!;
-  // Shell heights are NAVD88. Lidar (2018): ground 296.1 m, main roof +89.3 m, core +96.3 m.
+  const site = buildings.find(b => b.id === tower.id)!;
+  // Shell heights are NAVD88.
   const grade = 296.1;
-  const half: [number, number] = [19.7, 19.7];
-  const shaftLo = grade + 8.7,
-    floors = 21,
-    pitch = 3.62,
-    roof = grade + 89.3,
-    core = grade + 96.3;
+  const half = tower.half;
+  const shaftLo = grade + tower.lobby, roof = grade + tower.roof;
 
   // Low plaza bases: the mapped low parts, as pale concrete over street glazing.
   const toLocal = ([x, z]: P2): P2 => {
-    const c = Math.SQRT1_2, dx = x - 822.15, dz = z + 3673.5;
+    const c = Math.SQRT1_2, dx = x - tower.origin[0], dz = z - tower.origin[1];
     return [dx * c - dz * c, dx * c + dz * c];
   };
-  const lows = (site.parts ?? []).filter(p => p.h && p.h <= 20 && p.rings.length === 1);
+  // A generated residual 'podium' part carries the tower's height in the data;
+  // where the lidar shows it low, the tower config gives its base height.
+  const lows = (site.parts ?? []).filter(p => p.rings.length === 1 && (p.id === 'podium' ? tower.podium : p.h && p.h <= 20))
+    .map(p => p.id === 'podium' ? { ...p, h: tower.podium } : p);
   const others = lows.map(p => p.rings[0].map(toLocal));
   for (const [n, part] of lows.entries()) {
     const plan = others[n];
     // Each base stands on its own ground; the site falls about 2 m to the northeast.
     const ground = part.rings[0].map(([x, z]) => grid.sample(x, z)).filter((y): y is number => y !== null && Number.isFinite(y));
     const floor = ground.length ? Math.max(...ground) : grade;
-    const top = floor + part.h;
+    const top = floor + part.h!;
     s.prism(plan, s.base, top, base, roofDeck);
     // Outward by winding; skip edges against the tower or another base.
     const area = plan.reduce((t, [x, z], i) => { const [x2, z2] = plan[(i + 1) % plan.length]; return t + x * z2 - x2 * z; }, 0);
@@ -108,7 +135,8 @@ export function createColony100(buildings: VBuilding[], grid: GroundGrid) {
       if (len < 4) return;
       const sign = area > 0 ? -1 : 1, nx = sign * (b[1] - a[1]) / len, nz = -sign * (b[0] - a[0]) / len;
       const probe: P2 = [(a[0] + b[0]) / 2 + nx * 0.6, (a[1] + b[1]) / 2 + nz * 0.6];
-      if (Math.abs(probe[0]) < half[0] && Math.abs(probe[1]) < half[1]) return;
+      // A small tolerance also skips walls across the sub-metre slot to the tower.
+      if (Math.abs(probe[0]) < half[0] + 0.8 && Math.abs(probe[1]) < half[1] + 0.8) return;
       if (others.some(r => r !== plan && pointInRing(probe[0], probe[1], r))) return;
       const at = (t: number, y: number) => [a[0] + t * (b[0] - a[0]) + nx * 0.04, y, a[1] + t * (b[1] - a[1]) + nz * 0.04];
       const hi = Math.min(top - 1.2, floor + 4.6);
@@ -117,14 +145,28 @@ export function createColony100(buildings: VBuilding[], grid: GroundGrid) {
   }
 
   // Tower: a recessed glazed lobby, the punched shaft, a blank band and the core.
-  const box = (x: number, z: number): P2[] => [[-x, -z], [x, -z], [x, z], [-x, z]];
+  const box = (x: number, z: number, cx = 0, cz = 0): P2[] => [[cx - x, cz - z], [cx + x, cz - z], [cx + x, cz + z], [cx - x, cz + z]];
   s.prism(box(half[0] - 1.8, half[1] - 1.8), s.base, shaftLo, storefront, roofDeck);
   for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
     s.body.box(1.4, shaftLo - s.base, 1.4, x * (half[0] - 0.7), (shaftLo + s.base) / 2, z * (half[1] - 0.7), precast);
   }
-  const gridTop = punchedShaft(s, half, shaftLo, floors, pitch, 2.5, 2.3, 1.2, 7, 1 / 16);
+  const gridTop = punchedShaft(s, half, shaftLo, tower.floors, tower.pitch, 2.5, 2.3, 1.2, tower.seed, 1 / 16);
   s.prism(box(half[0], half[1]), gridTop, roof, precast, roofDeck);
-  s.prism(box(8, 5.8), roof, core, shade, roofDeck);
+  if (tower.parapet) {
+    // Parapet ring above the roof deck.
+    const top = grade + tower.parapet, t = 0.6;
+    const ring = box(half[0], half[1]);
+    ring.forEach((a, i) => {
+      const f = side(s, a, ring[(i + 1) % 4], [0, 0]);
+      f.quad(0, 1, roof, top, 0, precast);
+      f.quad(0, 1, roof, top, -t, shade);
+    });
+    s.body.quad([-half[0], top, -half[1]], [half[0], top, -half[1]], [half[0], top, -half[1] + t], [-half[0], top, -half[1] + t], precast);
+    s.body.quad([-half[0], top, half[1] - t], [half[0], top, half[1] - t], [half[0], top, half[1]], [-half[0], top, half[1]], precast);
+    s.body.quad([-half[0], top, -half[1]], [-half[0] + t, top, -half[1]], [-half[0] + t, top, half[1]], [-half[0], top, half[1]], precast);
+    s.body.quad([half[0] - t, top, -half[1]], [half[0], top, -half[1]], [half[0], top, half[1]], [half[0] - t, top, half[1]], precast);
+  }
+  for (const c of tower.cores) s.prism(box(c.size[0] / 2, c.size[1] / 2, c.at[0], c.at[1]), roof, grade + c.top, shade, roofDeck);
   // Warm lobby behind the recessed glazing.
   box(half[0] - 1.8, half[1] - 1.8).forEach((a, i, plan) => {
     side(s, a, plan[(i + 1) % 4], [0, 0]).quad(0.08, 0.92, grade + 0.3, shaftLo - 1.4, 0.04, storefront, true);

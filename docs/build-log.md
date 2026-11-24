@@ -3419,3 +3419,6 @@ night photograph, so the lit share of rooms is an estimate.
 ### 2026-11-24 · Twelve Midtown gets its spires
 
 Twelve Midtown at Atlantic Station had been a plain 85 m block that also covered its low service wing. The lidar finds the slab along 17th Street with its roof at 87 m. Its maximum, 96.5 m, comes from the two pointed spires over each end, which every SKYDB photograph shows. The skin draws the slab in pale precast and teal glass, adds balcony rows on the high tier and the spires on both tiers, and drops the wing to its measured 8.5 m. On the phone tier it costs 542 triangles and two draws. [Before/after, day and night](log/ui/twelve-midtown/README.md)
+
+
+**2026-11-24 — 400 Colony Square, read from a height map.** For the second tower I sampled the lidar on a 2 m grid in the street frame and printed the median height of each cell. The roof became readable: an 83.3 m rectangle, 38 by 55.5 m, with an 86–89 m parapet that the lidar catches best on two edges (drawn all round), with a two-step core at 89.9 and 91.2 m in the middle. The "podium" heights that worried the survey were the parapet and the tower's own edge. Both Colony Square towers now come from one module that takes a frame, a plan, floors and a list of cores. 400 adds 685 triangles. [Captures and evidence](log/ui/400-colony-square/README.md)
