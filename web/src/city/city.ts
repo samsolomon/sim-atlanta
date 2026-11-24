@@ -145,6 +145,7 @@ import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
+import { glassFloorStrength, installGlassFloor } from '../vignette/glass-floor';
 
 export type Quality = 'low' | 'high';
 
@@ -223,6 +224,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
+  // Shaded glass keeps a floor (vignette/glass-floor.ts): a Lambert source patch, so no new programs.
+  installGlassFloor(glassFloorStrength(location.search, import.meta.env.DEV));
   // Library materials follow the quality tier; ?surfaces=off draws every landmark flat (A/B).
   surfaceDefaults.tier = quality;
   surfaceDefaults.enabled = new URLSearchParams(globalThis.location?.search ?? '').get('surfaces') !== 'off';
