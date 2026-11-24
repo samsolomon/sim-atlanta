@@ -10,9 +10,9 @@ work is added.
 
 | Model | Length / truck centres (m) | Distinguishing shape | Triangles |
 | --- | --- | --- | --- |
-| NS-like ES44AC | 22.30 / 16.15 | Extended GEVO radiator wings and recessed intakes, white cab face | 2,888 |
-| CSX-like ES44AH | 22.30 / 16.15 | Same Evolution body, blue-grey hood and yellow nose | 2,708 |
-| NS-like SD70ACe | 22.63 / 15.90 | Broad clipped-corner nose, cab brow lamps, flared radiator with three roof fans | 3,836 |
+| NS-like ES44AC | 22.30 / 16.15 | Extended GEVO radiator wings and recessed intakes, white cab face | 2,864 |
+| CSX-like ES44AH | 22.30 / 16.15 | Same Evolution body, navy hood and yellow nose | 2,684 |
+| NS-like SD70ACe | 22.63 / 15.90 | Broad clipped-corner nose, cab brow lamps, flat-sided radiator with three roof fans | 3,828 |
 | CSX-like GP38-2 | 18.03 / 10.3632 | Narrow short hood, bevelled cab roof, two-axle trucks, two radiator fans | 3,036 |
 
 [Progress Rail's SD70ACe specification](https://www.progressrail.com/en/segments/locomotive/locomotives/freight-locomotives/sd70-a-ce)
@@ -35,7 +35,7 @@ roadside light pools are implied by emissive lenses.
 
 - [NS SD70ACe 1132, Valley Forge, 21 April 2017](https://commons.wikimedia.org/wiki/File:NS_SD70ACe_1132_EB_Valley_Forge_PA.jpg), Dough4872, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/): front three-quarter, paired brow headlights, ditch lights, roof bevel, safety nose and end rails.
 - [NS SD70ACe at Oostanaula GA, 2 June 2026](https://commons.wikimedia.org/wiki/File:Passing_train,_Oostanaula_GA.jpg), John Phelan, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): opposite cab side, sliding side windows, dirty lower body and HTCR running gear.
-- [CSX GP38-2 2772, 17 June 2005](https://commons.wikimedia.org/wiki/File:CSX_GP38-2.jpg), Phil Gengler, [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/): front three-quarter, narrow short hood, cab and two-axle trucks. The model uses a later blue-grey body treatment, not this photo's grey long hood.
+- [CSX GP38-2 2772, 17 June 2005](https://commons.wikimedia.org/wiki/File:CSX_GP38-2.jpg), Phil Gengler, [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/): front three-quarter, narrow short hood, cab and two-axle trucks. The model follows its YN2 blue cab and grey long hood, with a yellow nose.
 - [CSX GP38-2 2641, Valdosta GA, 1 January 2014](https://commons.wikimedia.org/wiki/File:CSX_2641_in_Valdosta_010114.JPG), Michael Rivera, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/): opposite side elevation, rear pair of cooling fans, dynamic-brake blister, fuel tank and light roof.
 - [CSX ES44AH 3122, Langhorne, 13 July 2019](https://commons.wikimedia.org/wiki/File:CSX_ES44AH_3122_NB_Langhorne_PA.jpeg), Dough4872, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/): cab rake, stacked nose lamps, extended rear radiator and side intakes.
 - [NS ES44AC 8176, Mechanicsville GA, 8 February 2026](https://commons.wikimedia.org/wiki/File:Passing_train,_Mechanicsville_GA.jpg), John Phelan, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): wider side view of the GEVO hood, pale cab face, white sill and nose stripes, yellow end rails.
@@ -77,3 +77,5 @@ A concrete 11 m / 12 m track test fails when that fix is reverted. The four new
 unit keys still do not enter City consists in this PR.
 
 Final validation: 20 Rust, 11 pipeline, 940 web tests (one existing skip), and five worker tests passed; build and type check passed. Perf Low: 2,384,006 triangles / 543 calls; High: 13,781,355 / 1,177, both below ceilings. Claude's second and final review found no remaining findings. All four models were checked in the browser with matched day/night screenshots. Web rebuild only; no data rebuild or worker change.
+
+Sam’s colour revision: ES44AH uses navy `#343f50` with yellow nose and sill; GP38-2 uses stronger blue `#344f70` on its cab against grey `#969b9e` on its long hood. GE cooling faces now slope outward to the roof; the SD uses a flat-sided radiator and a taller 3.62 m nose with smaller corner bevels. These silhouette dimensions are estimated from the linked references. Day, night and reference sheets were reshot with the same camera.

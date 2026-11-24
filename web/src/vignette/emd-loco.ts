@@ -30,7 +30,8 @@ function cylinder(b: Builder, radius: number, height: number, x: number, y: numb
 
 export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, frontLit: boolean, rearLit: boolean) {
   const small = model === 'gp382', d = EMD_DIMENSIONS[model], end = d.length / 2 - .35;
-  const body = small ? '#76889a' : '#4d4e50', shade = small ? '#647688' : '#3f4143';
+  const body = small ? '#969b9e' : '#4d4e50', shade = small ? '#7c858b' : '#3f4143';
+  const cabPaint = small ? '#344f70' : body;
   const accent = small ? '#ddb15e' : '#e4e1d6';
   const cabFront = small ? 5.9 : 8.0, cabBack = small ? 3.5 : 5.0;
   const nose = end - .6, hoodEnd = -end + .55, roof = small ? 4.46 : 4.65;
@@ -68,20 +69,20 @@ export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, front
 
   // The SD's broad clipped-corner safety nose versus the GP's narrow low short hood.
   const nw = small ? .91 : 1.43;
-  section(b, [[-nw,1.52],[nw,1.52],[nw,3.0],[nw-.24,3.28],[-nw+.24,3.28],[-nw,3.0]], cabFront, nose, small ? accent : body);
+  section(b, [[-nw,1.52],[nw,1.52],[nw,small?3.0:3.48],[nw-(small?.24:.12),small?3.28:3.62],[-nw+(small?.24:.12),small?3.28:3.62],[-nw,small?3.0:3.48]], cabFront, nose, small ? accent : body);
   b.box(small ? .65 : .8, 1.35, .025, 0, 2.28, nose + .018, small ? '#c19a52' : shade);
   if (!small) for (const y of [1.9,2.14,2.38,2.62,2.86]) {
     b.box(2.82,.1,.025,0,y,nose+.035,accent);
     for (const s of [-1,1]) b.box(.025,.1,nose-cabFront,s*1.445,y,(nose+cabFront)/2,accent);
   }
   // Full-width cab, with bevelled roof and brow. GP's front is flat, SD's roof has a strong visor.
-  section(b, [[-1.52,1.52],[1.52,1.52],[1.52,roof-.38],[1.13,roof],[-1.13,roof],[-1.52,roof-.38]], cabBack, cabFront, body);
+  section(b, [[-1.52,1.52],[1.52,1.52],[1.52,roof-.38],[1.13,roof],[-1.13,roof],[-1.52,roof-.38]], cabBack, cabFront, cabPaint);
   section(b, [[-1.61,roof-.38],[1.61,roof-.38],[1.17,roof+.08],[-1.17,roof+.08]], cabBack-.08,cabFront+.13,small ? '#aaa99c' : shade);
   if (!small) section(b, [[-1.55,roof-.3],[1.55,roof-.3],[1.17,roof+.04],[-1.17,roof+.04]], cabFront+.13,cabFront+.16,accent);
   for (const s of [-1,1]) {
     b.box(1.12,.67,.035,s*.69,3.75,cabFront+.025,GLASS);
     b.box(.03,.7,1.65,s*1.54,3.78,(cabFront+cabBack)/2,GLASS);
-    for (const z of [cabBack+.3,cabBack+.85,cabFront-.25]) b.box(.05,.72,.045,s*1.56,3.78,z,body);
+    for (const z of [cabBack+.3,cabBack+.85,cabFront-.25]) b.box(.05,.72,.045,s*1.56,3.78,z,cabPaint);
     b.box(.15,.055,1.9,s*1.59,4.2,(cabFront+cabBack)/2,shade);
     b.box(.035,1.45,.6,s*1.54,2.3,cabBack+.34,shade);
     b.box(.035,.3,.38,s*1.56,2.77,cabBack+.34,GLASS);
@@ -98,7 +99,7 @@ export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, front
     lamp(s*(small?.92:.87),roof-.07,cabFront+.15,frontLit,.52,.17);
     lamp(s*1.13,1.72,end-.23,frontLit);
   }
-  // Long hood and separate cooling equipment: the SD has a flared rear radiator,
+  // Long hood and separate cooling equipment: the SD has a flat-sided rear radiator,
   // the GP has a narrow hood with two circular roof fans and a dynamic-brake blister.
   const hw=small?.91:1.04, hoodTop=small?4.12:4.2;
   b.box(hw*2,hoodTop-1.52,cabBack-hoodEnd,0,(hoodTop+1.52)/2,(cabBack+hoodEnd)/2,body);
@@ -109,7 +110,7 @@ export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, front
     for (const z of [hoodEnd+1.0,hoodEnd+2.5]) cylinder(b,.62,.18,0,4.3,z,GRILLE);
     for (const z of [-.5,-2.0]) b.box(.3,.24,.33,0,4.3,z,'#393a37');
   } else {
-    section(b,[[-1.04,3.3],[1.04,3.3],[1.56,4.08],[1.56,4.53],[-1.56,4.53],[-1.56,4.08]],hoodEnd,hoodEnd+4.2,shade);
+    b.box(3.12,1.23,4.2,0,3.915,hoodEnd+2.1,shade);
     for (const z of [hoodEnd+.8,hoodEnd+2.1,hoodEnd+3.4]) cylinder(b,.65,.12,0,4.6,z,GRILLE);
     // Dynamic-brake box and fan immediately aft of the isolated cab.
     b.box(2.72,.65,2.6,0,4.15,cabBack-1.4,shade);
@@ -127,7 +128,7 @@ export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, front
     // Weathering below the doors is a muted band, with separate access panels.
     b.box(.025,.28,cabBack-hoodEnd,s*(hw+.02),1.72,(cabBack+hoodEnd)/2,'#625f55');
     b.box(.045,.045,cabBack-hoodEnd,s*1.46,2.55,(cabBack+hoodEnd)/2,body);
-    for(let z=hoodEnd;z<cabBack;z+=1.35) b.box(.045,1.03,.045,s*1.46,2.04,z,body);
+    for(let z=hoodEnd;z<cabBack;z+=1.35) b.box(.045,1.03,.045,s*1.46,2.04,z,cabPaint);
   }
   for(const y of [3.5,3.73]) lamp(0,y,hoodEnd-.06,rearLit);
   for(const s of [-1,1]) lamp(s*.65,4.0,hoodEnd-.06,rearLit,.45,.14);
