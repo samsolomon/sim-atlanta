@@ -228,25 +228,14 @@ export class LandmarkCell extends LOD {
   }
 }
 
-/**
- * The layer a cell's full-detail meshes move to while it draws its far version: City's sun
- * shadow camera renders it and the view camera does not, so shadows keep their full detail and
- * the far meshes never cast (which would compile extra shadow programs).
- */
-export const SHADOW_ONLY_LAYER = 2;
-
 /** Which of a group's draws show, from its night state (`alike`) and its cell's distance. */
 function show(d: DayGroup) {
   const far = !!d.far && d.alike && d.cell.isFar;
   if (d.far) d.far.visible = far;
   if (d.mesh) {
-    d.mesh.visible = d.alike;
+    d.mesh.visible = d.alike && !far;
     for (const r of d.runs) r.mesh.visible = !d.alike;
-  }
-  if (!d.far) return;
-  const near = d.mesh ?? d.runs[0].mesh;
-  if (far) near.layers.set(SHADOW_ONLY_LAYER);
-  else near.layers.mask = d.far.layers.mask;
+  } else d.runs[0].mesh.visible = !far;
 }
 
 interface FarJob { group: DayGroup; geometry: BufferGeometry; meshes: Mesh[]; start: number; count: number; material: Mat; rep: Mesh }
@@ -337,8 +326,9 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       fg.boundingSphere = b.getBoundingSphere(new Sphere());
       const far = new Mesh(fg, job.material);
       far.name = 'landmark batch (far)';
-      // The full version keeps casting, from the shadow-only layer (see SHADOW_ONLY_LAYER).
-      far.castShadow = false;
+      // Casts for the hidden full version (three tests shadow casters against the view camera's
+      // layers, so a shadow-only layer cannot keep the full version casting).
+      far.castShadow = job.rep.castShadow;
       far.receiveShadow = job.rep.receiveShadow;
       far.renderOrder = job.rep.renderOrder;
       far.layers.mask = job.rep.layers.mask;

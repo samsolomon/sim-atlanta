@@ -1,6 +1,6 @@
 import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { batchLandmarks, buildLandmarkBatches, SHADOW_ONLY_LAYER, StaticLandmarkMaterial } from './landmark-batch';
+import { batchLandmarks, buildLandmarkBatches, StaticLandmarkMaterial } from './landmark-batch';
 
 /** A landmarkShell-like site: a shadowed body and an unshadowed lit-window mesh with its own night factor. */
 function landmark(x: number, glow = '#f2d5a5', factor = 0.64, z = 20) {
@@ -174,18 +174,19 @@ describe('batchLandmarks', () => {
     // Two walls (four triangles) stand in for ~500 pane triangles; the lamp cubes sit on no wall and stay.
     expect(farTris).toBeLessThan(30);
     expect(farTris).toBeGreaterThanOrEqual(4);
-    expect(far.castShadow).toBe(false);
+    // The far version casts for the hidden full one.
+    expect(far.castShadow).toBe(true);
     // One buffer: the far index reads the class's (grown) buffer, as the full draws do.
     expect(far.geometry.attributes.position).toBe(near.geometry.attributes.position);
     const camera = new PerspectiveCamera();
     const at = (d: number) => { camera.position.set(30, 10, 20 + d); camera.updateMatrixWorld(); cell.update(camera); };
     at(2000);
-    expect([far.visible, near.layers.mask]).toEqual([true, 1 << SHADOW_ONLY_LAYER]);
+    expect([far.visible, near.visible]).toEqual([true, false]);
     // Hysteresis: 650 m is still far, 550 m is near.
     at(650);
     expect(far.visible).toBe(true);
     at(550);
-    expect([far.visible, near.layers.mask]).toEqual([false, 1]);
+    expect([far.visible, near.visible]).toEqual([false, true]);
     // A streaming ring can pin a level.
     b.setCellDetail(`${cell.cell}`, 'lod');
     at(550);
@@ -194,7 +195,6 @@ describe('batchLandmarks', () => {
     for (const s of sites) s.setNight(1);
     b.sync();
     expect(far.visible).toBe(false);
-    expect(near.layers.mask).toBe(1);
     const lit = meshes(b.group).filter(m => m.visible && (m.material as MeshLambertMaterial).emissiveIntensity > 0);
     expect(lit.length).toBeGreaterThan(0);
   });
