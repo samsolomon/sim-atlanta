@@ -15,37 +15,37 @@ The table orders candidate footprints by mapped or estimated height (40 points),
 | 7 | ViewPoint | osm:way:536670474 | 150 (mapped) | 87 × 64 | 710, -2668 |
 | 8 | The Atlantic | osm:way:269542078 | 176 (mapped) | 94 × 43 | -561, -4078 |
 | 9 | 1010 Midtown | osm:way:1427534504 | 124 (mapped) | 110 × 76 | 708, -3341 |
-| 10 | CODA | osm:way:714119667 | 119 (mapped) | 108 × 67 | 339, -2390 |
-| 11 | Loews Atlanta Hotel | osm:way:234935283 | 118 (mapped) | 64 × 39 | 764, -3269 |
-| 12 | Marquis Two Tower | 2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c | 115 (mapped) | 57 × 31 | 553, -902 |
-| 13 | Marquis One Tower | d36a5d7e-165d-4008-a4be-6d32c4c55f0b | 115 (mapped) | 57 × 32 | 552, -810 |
-| 14 | 230 Peachtree Building | ef617421-bb1d-405b-848c-712d0267ff56 | 115 (mapped) | 57 × 32 | 324, -697 |
-| 15 | 999 Peachtree | osm:way:886036475 | 120 (mapped) | 67 × 41 | 728, -3026 |
-| 16 | 903 Peachtree | osm:way:1284487937 | 108 (mapped) | 90 × 44 | 732, -2823 |
-| 17 | Midtown Union Office Building | osm:way:1297223465 | 86 (estimated) | 111 × 44 | 285, -4163 |
-| 18 | Atlantic House | osm:way:505414294 | 125 (mapped) | 80 × 63 | 387, -3583 |
-| 19 | 712 West Peachtree | osm:way:996610147 | 88 (mapped) | 60 × 49 | 357, -2258 |
-| 20 | Two Peachtree Pointe | osm:way:269391972 | 77 (mapped) | 66 × 60 | 320, -4929 |
-| 21 | Metropolis Condominium | osm:way:234733557 | 76 (mapped) | 125 × 65 | 731, -2916 |
-| 22 | NCR Global Headquarters | osm:way:26795281 | 63 (estimated) | 143 × 113 | 181, -2793 |
-| 23 | Southern Company Gas | osm:way:164876035 | 96 (mapped) | 59 × 54 | 416, -3017 |
-| 24 | 10 10th | osm:way:235006974 | 85 (mapped) | 101 × 45 | 414, -3104 |
-| 25 | Nomia | osm:way:1300593936 | 102 (estimated) | 72 × 25 | 441, -4246 |
-| 26 | 171 Seventeenth | osm:way:269542125 | 89 (mapped) | 71 × 36 | -203, -4185 |
-| 27 | 1355 Peachtree | osm:way:885332250 | 66 (estimated) | 86 × 56 | 599, -4210 |
-| 28 | The Proscenium | osm:way:269843396 | 98 (mapped) | 73 × 37 | 729, -3606 |
-| 29 | 400 Colony Square | osm:way:536737549 | 94 (mapped) | 60 × 47 | 794, -3754 |
-| 30 | Hanover Midtown | osm:way:505421514 | 102 (estimated) | 75 × 62 | 308, -3796 |
-| 31 | 100 Colony Square | osm:way:536737548 | 96 (mapped) | 53 × 50 | 819, -3670 |
-| 32 | Sora at Spring Quarter | osm:way:1300604915 | 96 (estimated) | 66 × 58 | 175, -3115 |
-| 33 | 77 12th Street | osm:way:536895716 | 90 (mapped) | 91 × 59 | 608, -3369 |
-| 34 | Emmi Midown | osm:way:269542143 | 102 (estimated) | 45 × 39 | 259, -4355 |
-| 35 | Twelve Downtown, Autograph Collection | b3827be6-be37-4ae8-8605-e99d8b07ec53 | 60 (mapped) | 60 × 38 | 336, -1287 |
-| 36 | One Coca-Cola Plaza | osm:way:536717630 | 123 (mapped) | 48 × 48 | -465, -1887 |
-| 37 | 200 Peachtree St. | 3b44d236-c74c-40cc-bf2b-7a42547418fe | 44 (mapped) | 93 × 80 | 312, -555 |
-| 38 | 25 Pine Street NE Parking Garage | osm:way:270470130 | 33 (estimated) | 64 × 54 | 424, -1460 |
-| 39 | J. Mack Robinson College of Business | 06942e29-e032-4d6b-a30f-7e1f4bc9f2a4 | 46 (estimated) | 63 × 24 | 151, -130 |
-| 40 | Ascent Midtown | osm:way:884939412 | 82 (estimated) | 103 × 43 | 292, -4319 |
+| 10 | Loews Atlanta Hotel | osm:way:234935283 | 118 (mapped) | 64 × 39 | 764, -3269 |
+| 11 | Marquis Two Tower | 2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c | 115 (mapped) | 57 × 31 | 553, -902 |
+| 12 | Marquis One Tower | d36a5d7e-165d-4008-a4be-6d32c4c55f0b | 115 (mapped) | 57 × 32 | 552, -810 |
+| 13 | 230 Peachtree Building | ef617421-bb1d-405b-848c-712d0267ff56 | 115 (mapped) | 57 × 32 | 324, -697 |
+| 14 | 999 Peachtree | osm:way:886036475 | 120 (mapped) | 67 × 41 | 728, -3026 |
+| 15 | 903 Peachtree | osm:way:1284487937 | 108 (mapped) | 90 × 44 | 732, -2823 |
+| 16 | Midtown Union Office Building | osm:way:1297223465 | 86 (estimated) | 111 × 44 | 285, -4163 |
+| 17 | Atlantic House | osm:way:505414294 | 125 (mapped) | 80 × 63 | 387, -3583 |
+| 18 | 712 West Peachtree | osm:way:996610147 | 88 (mapped) | 60 × 49 | 357, -2258 |
+| 19 | Two Peachtree Pointe | osm:way:269391972 | 77 (mapped) | 66 × 60 | 320, -4929 |
+| 20 | Metropolis Condominium | osm:way:234733557 | 76 (mapped) | 125 × 65 | 731, -2916 |
+| 21 | NCR Global Headquarters | osm:way:26795281 | 63 (estimated) | 143 × 113 | 181, -2793 |
+| 22 | Southern Company Gas | osm:way:164876035 | 96 (mapped) | 59 × 54 | 416, -3017 |
+| 23 | 10 10th | osm:way:235006974 | 85 (mapped) | 101 × 45 | 414, -3104 |
+| 24 | Nomia | osm:way:1300593936 | 102 (estimated) | 72 × 25 | 441, -4246 |
+| 25 | 171 Seventeenth | osm:way:269542125 | 89 (mapped) | 71 × 36 | -203, -4185 |
+| 26 | 1355 Peachtree | osm:way:885332250 | 66 (estimated) | 86 × 56 | 599, -4210 |
+| 27 | The Proscenium | osm:way:269843396 | 98 (mapped) | 73 × 37 | 729, -3606 |
+| 28 | 400 Colony Square | osm:way:536737549 | 94 (mapped) | 60 × 47 | 794, -3754 |
+| 29 | Hanover Midtown | osm:way:505421514 | 102 (estimated) | 75 × 62 | 308, -3796 |
+| 30 | 100 Colony Square | osm:way:536737548 | 96 (mapped) | 53 × 50 | 819, -3670 |
+| 31 | Sora at Spring Quarter | osm:way:1300604915 | 96 (estimated) | 66 × 58 | 175, -3115 |
+| 32 | 77 12th Street | osm:way:536895716 | 90 (mapped) | 91 × 59 | 608, -3369 |
+| 33 | Emmi Midown | osm:way:269542143 | 102 (estimated) | 45 × 39 | 259, -4355 |
+| 34 | Twelve Downtown, Autograph Collection | b3827be6-be37-4ae8-8605-e99d8b07ec53 | 60 (mapped) | 60 × 38 | 336, -1287 |
+| 35 | One Coca-Cola Plaza | osm:way:536717630 | 123 (mapped) | 48 × 48 | -465, -1887 |
+| 36 | 200 Peachtree St. | 3b44d236-c74c-40cc-bf2b-7a42547418fe | 44 (mapped) | 93 × 80 | 312, -555 |
+| 37 | 25 Pine Street NE Parking Garage | osm:way:270470130 | 33 (estimated) | 64 × 54 | 424, -1460 |
+| 38 | J. Mack Robinson College of Business | 06942e29-e032-4d6b-a30f-7e1f4bc9f2a4 | 46 (estimated) | 63 × 24 | 151, -130 |
+| 39 | Ascent Midtown | osm:way:884939412 | 82 (estimated) | 103 × 43 | 292, -4319 |
+| 40 | Emory University Hospital Midtown Staff Parking | osm:way:1021839184 | 50 (estimated) | 103 × 42 | 310, -1681 |
 
 ## Shared modeling specification
 
