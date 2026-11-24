@@ -20,7 +20,7 @@ Identifying features, from the Midtown Alliance rendering, confirmed by the Dece
 2. Deep corner balcony stacks with dark rails.
 3. A two-storey charcoal base with the tall glazed corner at West Peachtree and 8th.
 
-- **Changes:** a 0.45 m roof canopy with a 2 m overhang at each end, and a recessed blue-grey glazed band on the top floor. The corner balcony stacks are 2.2 m deep with dark rails and side rails; the low tier keeps a dark rail band on every second floor. The charcoal base is now 8.5 m, two storeys. A full-height glazed bay runs 7 m along both faces at the south-west corner.
+- **Changes:** a 0.45 m roof canopy with a 1.2 m overhang at each end (trimmed to stay within the footprint allowance), and a recessed blue-grey glazed band on the top floor. The corner balcony stacks are 2.2 m deep with dark rails and side rails; the low tier keeps a dark rail band on every second floor. The charcoal base is now 8.5 m, two storeys. A full-height glazed bay runs 7 m along both faces at the south-west corner.
 
 ## Views
 

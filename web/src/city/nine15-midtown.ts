@@ -15,7 +15,7 @@ const roof = grade + 71.3;
 const parapet = grade + 73.6;
 
 // The 21-storey slab on 8th Street at West Peachtree, squared from the mapped outline.
-const tower: P2[] = [[414.8, -2863.6], [488.1, -2862.6], [487.9, -2887.5], [415.6, -2886.4]];
+const tower: P2[] = [[416.1, -2865.5], [488.1, -2862.6], [487.9, -2887.5], [415.6, -2886.4]];
 
 const local = (ring: P2[]): P2[] => ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
 
@@ -47,7 +47,7 @@ export function createNine15Midtown(buildings: VBuilding[], grid: GroundGrid, qu
   shell.prism(t, shell.base, baseTop, brick, '#8f8f8c');
   shell.prism(t, baseTop, roof, white, '#a3a4a2');
   // The thin roof canopy overhangs both ends; the top floor under it is recessed glass.
-  const canopy: P2[] = [[-38.2, -12.6], [39.1, -13.6], [38.9, 13.5], [-37.4, 12.6]];
+  const canopy: P2[] = [[-36.6, -11.4], [38.1, -12.5], [38.3, 12.4], [-36.1, 9.5]];
   shell.prism(canopy, parapet - 0.45, parapet, '#eeeeea', '#b9bab7');
 
   const floors = Math.round((roof - baseTop) / 3.15);
