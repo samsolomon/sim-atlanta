@@ -38,7 +38,8 @@ let failed = false;
 try {
   for (const [tier, b] of Object.entries(budget).filter(([k]) => !k.startsWith('_'))) {
     const json = join(tmp, `${tier}.json`);
-    const url = `http://127.0.0.1:${port}/?view=city&q=${tier}&t=2026-11-20T14:00:00-05:00&perf=run`;
+    // An entry may name its tier and clock (high-night is the high tier at 22:00).
+    const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run`;
     const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
       { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
     if (r.status !== 0) { failed = true; continue; }

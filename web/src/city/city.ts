@@ -127,7 +127,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { perf, perfOverrides, type PerfCategory } from '../core/perf';
+import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -1154,8 +1154,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // board the pass does nothing and the ink is unchanged.
   composer.addPass(new FoliageMaskPass(scene, camera, ink));
   composer.addPass(ink);
+  const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
   if (gtao) {
+    // Read the scene pass's own depth instead of re-rendering the whole scene with a normal
+    // override (which doubled draw calls and triangles). The scene is flat-shaded, so normals
+    // rebuilt from depth match face normals. The depth texture is set per frame, below.
+    // `?perf&gtao=old` keeps the previous normal-override pass, for A/B runs from one build.
+    if (!gtaoOld) {
+      gtao.setGBuffer(sceneTarget.depthTexture);
+      // AO only on the boards (aoClip, per frame, since joined boards arrive later). Normals
+      // rebuilt from depth band on the far, grazing paper table (hyperbolic depth has no
+      // precision left there), and the table needs no contact shading.
+      gtao.setSceneClipBox(new THREE.Box3());
+    }
     gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
@@ -1320,13 +1332,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const wx = { cloud: 0, rain: 0, snow: 0, fog: 0 }; // eased toward the atmosphere's weather
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const shadowTarget = new THREE.Vector3(Infinity, 0, Infinity);
-  // Low: the shadow camera moves in 80 m grid steps, so a pan redraws the map a few times
-  // instead of every frame (each redraw re-renders every caster in the ±520 m box). Snapping
-  // also keeps shadow edges still while panning. The light sits over the snapped point so the
-  // stored map and the light matrix always agree. High keeps following the target.
-  const SHADOW_STEP_M = perfOverrides.shadowStepM ?? (low ? 80 : 0);
+  // The shadow camera moves in grid steps (80 m on low, 60 m on high), so a pan redraws the
+  // map a few times instead of every frame (each redraw re-renders every caster in the box).
+  // The light sits over the stepped point, snapped to whole shadow-map texels in light space,
+  // so a re-centre lands the same shadow edges in the same places and nothing shimmers.
+  const SHADOW_STEP_M = perfOverrides.shadowStepM ?? (low ? 80 : 60);
   // ...and at most one move-driven redraw per 250 ms; the last step lands once the pan settles.
+  // On high, a target more than half the box from the centre (a fast pan when zoomed out)
+  // redraws at once, so the shadowed patch never trails the view. Low keeps the gap.
   const SHADOW_GAP_MS = SHADOW_STEP_M ? 250 : 0;
+  const shadowTexel = (2 * SH) / shadowSize;
+  const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
+  const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
@@ -1349,9 +1366,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // cannot flip the shadow box back and forth.
     const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
     const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
+    const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
-    // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame on low.
-    if ((moved || turned) && now - shadowDrawnAt >= SHADOW_GAP_MS) {
+    // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
+    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
@@ -1359,8 +1377,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       shadowAz = atm.sunAz;
     }
     const lx = SHADOW_STEP_M ? shadowTarget.x : t.x, lz = SHADOW_STEP_M ? shadowTarget.z : t.z;
-    sun.position.set(lx + Math.sin(az) * Math.cos(elDir) * 2000, Math.sin(elDir) * 2000, lz - Math.cos(az) * Math.cos(elDir) * 2000);
-    sun.target.position.set(lx, 0, lz);
+    // Light-space axes as the shadow camera's lookAt builds them (z toward the sun, up = +y).
+    lightZ.set(Math.sin(az) * Math.cos(elDir), Math.sin(elDir), -Math.cos(az) * Math.cos(elDir));
+    lightX.crossVectors(sun.shadow.camera.up, lightZ).normalize();
+    lightY.crossVectors(lightZ, lightX);
+    shadowCentre.set(lx, 0, lz);
+    const q = (v: number) => Math.round(v / shadowTexel) * shadowTexel - v;
+    shadowCentre.addScaledVector(lightX, q(shadowCentre.dot(lightX))).addScaledVector(lightY, q(shadowCentre.dot(lightY)));
+    sun.target.position.copy(shadowCentre);
+    sun.position.copy(shadowCentre).addScaledVector(lightZ, 2000);
     sun.intensity = 2.9 * sm(-1, 7, el);
     sun.color.copy(pal.sunHigh).lerp(pal.sunLow, gold);
     hemi.color.copy(pal.skyNight).lerp(pal.skyDay, day);
@@ -1600,6 +1625,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    if (gtao && !gtaoOld) {
+      // The scene pass draws into the composer's current read buffer, which alternates between
+      // its two targets, so point AO at whichever depth texture it fills this frame.
+      gtao.depthTexture = composer.readBuffer.depthTexture!;
+      gtao.gtaoMaterial.uniforms.tDepth.value = gtao.depthTexture;
+      gtao.pdMaterial.uniforms.tDepth.value = gtao.depthTexture;
+      const lo = gtao.gtaoMaterial.uniforms.sceneBoxMin.value as THREE.Vector3;
+      const hi = gtao.gtaoMaterial.uniforms.sceneBoxMax.value as THREE.Vector3;
+      lo.set(b.minX, -500, b.minZ);
+      hi.set(b.maxX, 3000, b.maxZ);
+      for (const r of [mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        lo.x = Math.min(lo.x, r.minX); lo.z = Math.min(lo.z, r.minZ);
+        hi.x = Math.max(hi.x, r.maxX); hi.z = Math.max(hi.z, r.maxZ);
+      }
+    }
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
     ink.uniforms.uStrength.value = 0.9;
