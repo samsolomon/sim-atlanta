@@ -100,20 +100,22 @@ export function createPiedmontHouse(buildings: VBuilding[], site: VBuilding, gri
       panel(f, (k + 0.22) / bays, (k + 0.78) / bays, grade + 0.4, grade + 5.6, 0.04, glass, true);
       panel(f, (k + 0.22) / bays, (k + 0.78) / bays, grade + 5.6, baseTop - 2, 0.04, glass);
     }
-    for (let y = grade + 6.5; y < baseTop - 2.5; y += 4) panel(f, 0, 1, y - 0.45, y + 0.45, 0.07, cream);
+    for (let y = grade + 6.5; y < baseTop - 2.5; y += 4) panel(f, 0, 1, y - 0.45, y + 0.45, 0.08, cream);
     }
-    panel(f, -0.002, 1.002, baseTop - 1.2, baseTop, 0.1, creamShade);
-    // Shaft: a white mullion per bay and a white slab edge per floor.
+    panel(f, -0.002, 1.002, baseTop - 1.2, baseTop, 0.12, creamShade);
+    // Shaft: a white mullion per bay and a white slab edge per floor. Layers stand at least 4 cm
+    // apart (closer ones z-fight at 400-600 m), 5 cm on the shaft, whose two long faces are mapped a
+    // centimetre out of line: lit panes 5, slab edges 10, mullions 15, crown 20 cm.
     for (let k = 0; k <= bays; k++) {
       // Street View (March 2025): bold white corner columns and white mullions frame the glass.
       const w = (k === 0 || k === bays ? 0.9 : 0.22) / f.length;
-      panel(f, k / bays - w, k / bays + w, baseTop, roofTop - 0.8, 0.08, white);
+      panel(f, k / bays - w, k / bays + w, baseTop, roofTop - 0.8, 0.15, white);
     }
     for (let j = 1; j < floors; j++) {
       const y = baseTop + j * pitch;
-      panel(f, 0, 1, y - 0.4, y + 0.4, 0.06, white); // the white slab edge at every floor reads strongly in the photos
+      panel(f, 0, 1, y - 0.4, y + 0.4, 0.1, white); // the white slab edge at every floor reads strongly in the photos
     }
-    panel(f, -0.004, 1.004, roofTop - 0.8, roofTop, 0.1, white);
+    panel(f, -0.004, 1.004, roofTop - 0.8, roofTop, 0.2, white);
     // Balcony stacks at both ends of each face and at the middle of long faces.
     const stacks = f.length > 30 ? [0.1, 0.5, 0.9] : f.length > 12 ? [0.15, 0.85] : [];
     for (const c of stacks) {
