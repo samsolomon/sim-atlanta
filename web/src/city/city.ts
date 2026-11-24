@@ -1410,17 +1410,47 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         glideTo.y = targetY(glideTo.x, glideTo.z);
       }
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
+    if (glideTo) manualCamera();
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
-  const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
-  controls.addEventListener('start', manualCamera);
+  const cancelPendingTarget = () => {
+    mosaic?.cancelTarget();
+    pendingNorthTarget = undefined;
+    pendingEastTarget = undefined;
+  };
+  const manualCamera = () => {
+    cancelPendingTarget();
+    if (options.follow?.active) options.follow.stop();
+  };
+  // Observe pan input before damping. A touch starts in PAN even when a second
+  // finger is about to turn it into an orbit. Use the same 6 px slop as picking.
+  const orbitInput = controls as unknown as { state: number; _pan(dx: number, dy: number): void };
+  const applyPan = orbitInput._pan.bind(controls);
+  let panX = 0, panY = 0;
+  orbitInput._pan = (dx, dy) => {
+    if (options.follow?.active) {
+      panX += dx;
+      panY += dy;
+      if (Math.hypot(panX, panY) <= 6) return;
+      dx = panX;
+      dy = panY;
+      manualCamera();
+    }
+    applyPan(dx, dy);
+  };
+  const startGesture = () => {
+    panX = panY = 0;
+    // In three r180 wheel zoom starts in NONE (-1), mouse dolly in DOLLY (1).
+    if (orbitInput.state === -1 || orbitInput.state === 1) manualCamera();
+    else cancelPendingTarget();
+  };
+  controls.addEventListener('start', startGesture);
   // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
   controls.addEventListener('start', () => { sliceInput.dragging = true; });
   controls.addEventListener('end', () => { sliceInput.dragging = false; });
-  // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
-    manualCamera();
+    cancelPendingTarget();
     glideTo = null;
     const off = new THREE.Vector3().subVectors(camera.position, controls.target);
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
@@ -1856,12 +1886,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       approachEast(fix.x, fix.z);
       if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
     }
+    const frameFromPreset = options.follow?.framingRequested;
     const focus = options.follow?.frame(fix, followBounds, ts, !!motionPreference?.matches, controls.target);
     if (focus) {
       glideTo = null;
       // An area that finishes loading must not pull the camera back to a remembered point.
-      mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
-      setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
+      cancelPendingTarget();
+      if (frameFromPreset) {
+        setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
+      } else {
+        // Translate the orbit with the vehicle, including changes in ground height.
+        const t = controls.target;
+        const y = targetY(focus.x, focus.z);
+        camera.position.x += focus.x - t.x;
+        camera.position.y += y - t.y;
+        camera.position.z += focus.z - t.z;
+        t.set(focus.x, y, focus.z);
+        clampTarget();
+      }
     }
     treeDetail();
     figures?.update(sceneTime, camera, container.clientHeight);
@@ -2187,7 +2229,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       cancelAnimationFrame(raf);
       ro.disconnect();
       stopPicking();
-      controls.removeEventListener('start', manualCamera);
+      controls.removeEventListener('start', startGesture);
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
