@@ -2,6 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 /**
  * 271 17th Street (TVS, 2009), Atlantic Station's tallest office tower: dark glass in two offset
@@ -34,13 +35,6 @@ function ccw(ring: P2[]): P2[] {
   return area > 0 ? ring : [...ring].reverse();
 }
 
-function hash(a: number, b: number, c: number) {
-  let h = Math.imul(a, 0x27d4eb2d) ^ Math.imul(b, 0x165667b1) ^ Math.imul(c, 0x9e3779b1);
-  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
-
 function panel(s: Shell, lit: boolean, a: P2, b: P2, t0: number, t1: number, lo: number, hi: number, out: number, color: string) {
   if (hi - lo < 0.05 || t1 <= t0) return;
   const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
@@ -55,6 +49,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
   // Shell coordinates are NAVD88 metres (landmarkShell offsets the group by the scene zero).
   const y = (h: number) => groundNavd + h;
   const plan = ccw(s.ring);
+  const seed = seedOf(site.id);
 
   s.prism(plan, s.base, y(roofH), glass, roofDeck);
 
@@ -95,7 +90,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
       const lo = y(lobbyTop + f * officePitch);
       if (lo + officePitch > top + 0.01) break;
       for (let i = 0; i < bays; i++) {
-        if (hash(f, i, edge * 13 + 7) >= (f > 16 ? 0.03 : 0.05)) continue;
+        if (litHash(seed, edge, f, i) >= (f > 16 ? 0.03 : 0.05)) continue;
         panel(s, true, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, lo + 0.1, lo + officePitch - 0.6, 0.08, glassLit);
       }
     }
