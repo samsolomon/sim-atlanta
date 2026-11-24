@@ -122,8 +122,9 @@ describe('radio engine', () => {
     expect(r.buffering).toBe(true);
     release();
     await flush();
-    expect(r.buffering).toBe(false);
+    expect(r.buffering).toBe(true); // the src is set, but nothing has sounded yet
     mp3()[0].emit('playing');
+    expect(r.buffering).toBe(false);
     expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
   });
 

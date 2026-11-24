@@ -12,13 +12,15 @@
  * Nothing under music/ is requested until the radio is first opened, and only the current and
  * next file are ever fetched. They stay static assets that never run the worker script. Cloudflare's
  * static assets answer a Range request with the whole file (200, checked on production), and iOS
- * Safari won't play <audio> from a server without byte ranges, so each deck fetches its file once
- * and plays it from a blob URL, which every browser can play and seek.
+ * Safari won't play <audio> from a server without byte ranges. So each deck fetches its file with
+ * one plain request and either streams it through MediaSource (Chrome, Android, Firefox) or, on
+ * Safari, plays it from a blob URL once it has arrived (radio-source.ts).
  */
 import {
   FADE_S, PAUSE_RAMP_S, SKIP_FADE_S, Shuffle, equalPowerCurve, gainAt, startStation, trackTimeline,
   type Station, type StationTrack, type StationsFile,
 } from './radio-plan';
+import { trackSource } from './radio-source';
 
 export type { Station, StationTrack } from './radio-plan';
 
@@ -73,6 +75,8 @@ interface Deck {
   role: Role;
   /** Settles once the track's file is fetched and set as the element's src. */
   ready: Promise<boolean>;
+  /** Has sounded since its file was assigned (a streamed src exists before any audio does). */
+  heard: boolean;
   abort: AbortController | null;
   blob: string | null;
   /** Our own record of the gain automation, so an interrupted fade can turn round smoothly. */
@@ -99,11 +103,12 @@ function silentWav(): string {
 const browserAudio: RadioAudio = {
   context: () => new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)(),
   element: () => new Audio(),
-  async source(url, signal) {
-    const r = await fetch(url, { signal });
-    if (!r.ok) throw new Error(`${url} ${r.status}`);
-    return URL.createObjectURL(await r.blob());
-  },
+  source: (url, signal) => trackSource(url, signal, {
+    fetch: (...a) => fetch(...a),
+    MediaSource: typeof MediaSource === 'undefined' ? undefined : MediaSource,
+    createObjectURL: (o) => URL.createObjectURL(o),
+    userAgent: navigator.userAgent,
+  }),
   release: (src) => URL.revokeObjectURL(src),
 };
 
@@ -230,6 +235,7 @@ export function createRadio(o: RadioOptions): Radio {
       d.rest = 0;
       d.fade = null;
       d.track = t;
+      d.heard = false;
       let ac: AbortController;
       let src: Promise<string>;
       if (prefetch && prefetch.track === t) {
@@ -342,6 +348,10 @@ export function createRadio(o: RadioOptions): Radio {
 
   function onPlaying(d: Deck) {
     if (!sounding(d)) return;
+    if (!d.heard) {
+      d.heard = true;
+      changed();
+    }
     if (rampOnSound && playing && (d.role === 'primary' || d.role === 'incoming')) {
       rampOnSound = false;
       rampMaster(1, PAUSE_RAMP_S);
@@ -434,7 +444,7 @@ export function createRadio(o: RadioOptions): Radio {
       gain.gain.value = 0;
       ctx!.createMediaElementSource(el).connect(gain);
       gain.connect(master!);
-      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null, ready: Promise.resolve(false), abort: null, blob: null };
+      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null, ready: Promise.resolve(false), abort: null, blob: null, heard: false };
       el.addEventListener('timeupdate', () => onTime(d));
       el.addEventListener('playing', () => onPlaying(d));
       el.addEventListener('ended', () => onEnded(d));
@@ -459,7 +469,7 @@ export function createRadio(o: RadioOptions): Radio {
     }
     // The ramp starts when sound does: right away if the file is here, else once it arrives.
     const cur = primary();
-    if (cur && sounding(cur)) rampMaster(1, PAUSE_RAMP_S);
+    if (cur && cur.heard) rampMaster(1, PAUSE_RAMP_S);
     else rampOnSound = true;
     changed();
   }
@@ -500,7 +510,7 @@ export function createRadio(o: RadioOptions): Radio {
     get buffering() {
       if (!playing) return false;
       const p = primary();
-      return !p || !sounding(p);
+      return !p || !p.heard;
     },
     get elapsedS() {
       const d = decks.find((x) => x.track && x.track === shown && x.role !== 'idle');
