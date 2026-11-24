@@ -12,6 +12,7 @@ import { GroundGrid } from './grid';
 import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
+import { createScadAtlanta, scadAtlantaId } from '../city/midtown-culture-scad';
 import { createRhodesHall, rhodesHallId } from '../city/midtown-culture-rhodes';
 import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchell';
 import { createVarsity, varsityId } from '../city/midtown-culture-varsity';
@@ -202,6 +203,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
     const create = skylineIds.has(site.id) ? createSkylineLandmark
+      : site.id === scadAtlantaId ? createScadAtlanta
       : site.id === rhodesHallId ? createRhodesHall
       : site.id === mitchellId ? createMitchellHouse
       : site.id === varsityId ? createVarsity
