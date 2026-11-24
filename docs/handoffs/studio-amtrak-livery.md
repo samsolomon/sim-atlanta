@@ -216,3 +216,20 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 - Next: boxcar variants on `samsolomon/boxcar-variants`, stacked on #394 (retarget to main before merging #394's base).
 - Capture: `orca tab create --json --url ...`, `orca eval --page <id>`, `orca screenshot --page <id>`;
   Lab canvas via `__lab.setNight/view/render` + `toDataURL`.
+
+### Update — 2026-11-23 late (Opus session bceb5cfc)
+
+- **Merged:**
+  - #394, covered hopper: `82d49b85`.
+  - #396, boxcar paints oxide/faded/blue: `64a207c2`. Navy was greyed to `#3b4859` on review.
+- **#404 Xpress coach pass 1** (`samsolomon/xpress-coach`), Lab only, **held for Sam**. It is an MCI D45 CRT LE look-alike at 4,124 high / 814 low triangles on the shared `busMaterial`.
+  - Pass 2 follows Sam's notes: refine proportions, then check the low tier.
+  - Plausible: far-night Lab speckle. The XN40 shows the same; recheck in City.
+  - Sources: `docs/xpress-coach.md`.
+- **#391 freed 5 low programs (85/90).** Low-tier freight instancing for the City consists PR may use one. Each instanced and clipped material costs one program.
+- **Next:** intermodal well car (plan order 3) on `samsolomon/intermodal-well`.
+- **Cameras:**
+  - Downtown freight: `/?view=city&q=high&cam=-445,-790,290,45,150&dev&mindist=20&t=2026-11-23T14:05:00-05:00&speed=0`. Night is `T22:08:18`; the downtown cycle differs from Brookwood's.
+  - Brookwood: `cam=-140,-5010,115,58,110` at `14:03` and `22:03`.
+- **Captures:** Lab captures use `__lab.camera` / `__lab.controls` set directly. The view presets glide, so they render mid-transition. City captures use `orca screenshot` after the scene draws.
+- **Perf:** park your City tab on `about:blank` before `pnpm test:perf`. One low run timed out while a City tab was rendering.
