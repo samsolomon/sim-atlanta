@@ -1,37 +1,15 @@
-# Studio skins 1 handoff
+# Downtown building skins handoff
 
-The owner is the Claude Opus session in the `studio-skins-1` worktree. Report to the Air coordinator (`914b0cfd`, thread `msg_52f10bb4946a`) and the skyline lead (`47b1a596`). The lead owns `docs/building-skins.md` on `samsolomon/studio-building-skins` and runs the merge trains. Never merge or push to a PR in a train until the lead reports the train has landed.
+The skins-1 author owns the three contributions and their verification. The skyline lead owns their combined integration into main. All three feature heads are local. Each branch contains its own screenshots under `docs/log/ui/`.
 
-## Merged
-
-| Building | PR | Merge commit |
+| Contribution and feature commit | Completed evidence | Pending evidence and next action |
 |---|---|---|
-| Marquis One | #393 | `6f6a96ab` |
-| Marquis Two, plus the lidar crown step for both | #406 | `a50b3ff5` |
-| ViewPoint | #429 | `83d36d64` |
-| 712 West Peachtree | #454 | |
-| Marquis litHash | #494 | |
-| Atlantic House | #510 | |
+| 30 Allen Plaza · `samsolomon/30-allen-plaza-skin` · `7293e089282eb08e88087bafbf4c6f79dc2aced3` | Build passed. Downtown audit found zero vertices beyond the footprint allowance and zero detached parts. The sunlit south glass measured S 12%, V 58%. Day, night, close and four-side captures are in `thirty-allen/`. Second cross-review found no issues. | Run the queued full suite, build and performance check when the window opens. The previous run had test timeouts and exceeded the low-zoomout timing ceiling. |
+| H5 Data Centers · `samsolomon/h5-courtland` · `0039bd38423e83182f0f3243d33e2a1d9cadeea1` | First build and footprint/detachment audit passed. Day, night, close, four-side and sunlit captures in `h5-courtland/` show the earlier plinth. Review found the portal head overlapped the first glazing row. | The head includes the grade correction and a staged footprint test. Refresh the captures, inspect the portal, remeasure sunlit glass, run the new test and full gates, then complete second review. |
+| Baker Street garage roof · `samsolomon/260-peachtree-roof-bays` · `531749043b8b7d37f6e0db6f8485a35f24ba64be` | Build and footprint/detachment checks passed. Day, night, close and four-side captures in `peachtree-260-roof/` show seven cars in twelve stalls. Cross-review found no code issues. | Complete full test and performance checks. The change stacks on #657 at `e8101917`. Confirm its integration base with the skyline lead. |
 
-## Open and held
+## Integration and cleanup
 
-- **#527 Two Peachtree Pointe.** Approved, queued for train 8. The four-side sheet is posted as a PR comment.
-- **#568 Southern Company Gas** (Ten Peachtree Place). Approved, queued for train 8.
-- **#590 Marquis pier rework**, from the lead's audit. Held for the lead's approval and a normal train.
+30 Allen and H5 both edit the downtown landmark chain, group mount, batching list and night update in `web/src/city/city.ts`. Preserve both entries when combining the branches. All three append to the build log. The garage follow-up depends on the #657 skin. Retain the feature checkouts and the measured baseline until the lead accepts the contributions. The existing serialized verification queue waits for the shared Studio performance window. Only #670 currently holds that window.
 
-## Standing rules
-
-These rules are in force tonight and are binding:
-
-- **Images:** day 11:30 and night 23:30 images inline in the PR body, with the cam under each, plus one close view and a four-side day sheet at about 400 m. Look at each side for floating, missing or z-fighting parts.
-- **Bearings:** `cam` bearing is the view heading. Bearing 0 looks north and shows the south face. Scene z is −north.
-- **Checks:** run `pnpm build`, `pnpm test` and `pnpm test:perf` (low, high, high-night) with main measured in the same session. Report calls, triangles and geometry MB deltas.
-- **Batching:** vertex colour only, so the skin batches. Lit panes use skin-kit `litHash`, never a linear modulus. Change the night look only in `setNight`.
-- **Glass:** rendered sunlit S 36 or less (teal 40) and V 40 or more, using the base table in docs/glass-palette.md. Record the shaded value as advisory.
-- **Recognition:** passes come from the real building's features. Cite the photo behind every colour or contrast change.
-- **Shared Studio:** no pattern kills, so kill only your own PIDs. Scripts attach only to a Chrome they launched (port 0, DevToolsActivePort; see `scripts/chrome-cdp.mjs`).
-
-## Tools
-
-- **Lidar:** `.venv` with `laspy[lazrs]`. Call `pipeline/scripts/king_memorial_corridor.ept_points((w,s,e,n))`. The downtown origin is 33.7539, −84.3916.
-- **Captures:** the session's `shots.mjs` (CDP, own Chrome) and `foursides.sh` (sheet helper) live in the scratchpad. Recreate them from `scripts/chrome-cdp.mjs` if they are lost.
+After each branch passes, publish its reviewed contribution with screenshots and low/high draw, triangle and geometry-memory deltas. Send it to the skyline lead for a single combined integration. Final verification of the combined head is pending.
