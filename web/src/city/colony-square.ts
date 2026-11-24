@@ -49,6 +49,10 @@ type Style = {
   bandEvery: number; band: string;
   /** Solid precast at each end of a face, in metres (the photographed blank corners). */
   cornerSolid: number;
+  /** Spandrel colour inside the window slots (default: the pier colour). */
+  spandrelColor?: string;
+  /** Colour of the blank corners (default: the pier colour). */
+  cornerColor?: string;
   /** A continuous dark mechanical band at this floor index; -1 for none. */
   mechFloor: number;
 };
@@ -88,8 +92,8 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
     }
     if (st.cornerSolid > 0) {
       const c = st.cornerSolid / f.len;
-      f.quad(0, c, lo, top, d + 0.02, st.pier);
-      f.quad(1 - c, 1, lo, top, d + 0.02, st.pier);
+      f.quad(0, c, lo, top, d + 0.02, st.cornerColor ?? st.pier);
+      f.quad(1 - c, 1, lo, top, d + 0.02, st.cornerColor ?? st.pier);
     }
     for (let j = 0; j < floors; j++) {
       const y = lo + j * pitch;
@@ -99,7 +103,7 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
         f.quad(c, 1 - c, y + 0.3, y + pitch - 0.3, d + 0.01, st.band === shade ? st.glass : '#5c5751');
         continue;
       }
-      f.quad(0, 1, y, y + st.spandrel, 0, st.pier);
+      f.quad(0, 1, y, y + st.spandrel, 0, st.spandrelColor ?? st.pier);
       if (st.bandEvery && j % st.bandEvery === 0) f.quad(0, 1, y + st.spandrel - 0.45, y + st.spandrel, 0.02, st.band);
       const w = st.pierWidth / 2 / f.len;
       for (let k = 0; k < n; k++) {
@@ -133,7 +137,10 @@ const TOWERS: Record<string, Tower> = {
     // bright precast, proud piers with a major pier every fourth bay, a floor
     // shadow band every second floor, a pale crown and a dark two-storey lobby.
     style: {
-      glass: '#6b655e', pier: '#ece8de', crown: '#d6d1c6', lobby: '#3f4448', band: '#b9b3a7',
+      glass: '#6b655e', pier: '#ece8de', crown: '#f3f0e9', lobby: '#3f4448', band: '#b9b3a7',
+      // Spandrels inside the slots go near the glass, so each slot reads as a
+      // continuous dark vertical between the light piers; corners frame the shaft.
+      spandrelColor: '#625d57', cornerColor: '#f5f2eb',
       // Tall narrow slit windows (2007 photo): wide piers, short spandrels.
       bay: 2.5, spandrel: 1.2, pierWidth: 1.55, pierDepth: 0.35, majorEvery: 0, bandEvery: 0,
       cornerSolid: 3.2, mechFloor: 13,
