@@ -16,7 +16,7 @@ const brick = '#9c6650',
   band = '#7f8f97',
   bay = '#8d9ca4',
   podium = '#6b7a80',
-  trellis = '#e3e5e2',
+  trellis = '#f1f2ef',
   roofDeck = '#a6a39c';
 
 export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
@@ -50,12 +50,12 @@ export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid:
     // Glass corners and the central glazed bay, full height.
     quad(0, c, lobby, parapet, 0.05, bay);
     quad(1 - c, 1, lobby, parapet, 0.05, bay);
-    quad(0.42, 0.58, lobby, parapet, 0.05, bay);
+    quad(0.38, 0.62, lobby, parapet, 0.05, bay);
     // Ribbon windows in the brick between them, one per floor.
     for (let f = 0; f < floors; f++) {
       const y = lobby + f * pitch + 1.2;
-      quad(c + 0.02, 0.4, y, y + 1.9, 0.04, band);
-      quad(0.6, 1 - c - 0.02, y, y + 1.9, 0.04, band);
+      quad(c + 0.02, 0.36, y, y + 1.9, 0.04, band);
+      quad(0.64, 1 - c - 0.02, y, y + 1.9, 0.04, band);
     }
     // Offices at 23:30: a few lit panes across the whole face.
     // Only the lit panes are drawn; the ribbons already carry the day colour.
@@ -63,14 +63,15 @@ export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid:
     litFacade(litOnly, seed, face, pt(0), pt(1), lobby, roof, floors, len / Math.round(len / 3), 0.9, 0.5, [band], 0.07);
     // Lobby glazing.
     quad(0.03, 0.97, g0 + 0.3, lobby - 0.6, 0.05, podium, true);
-    // Sunshade trellis: a deck ring on posts, cantilevered 1.5 m past the wall.
-    quad(-0.05, 1.05, trellisLo, trellisHi, 1.5, trellis);
-    for (const t of [0.05, 0.5, 0.95]) quad(t - 0.15 / len, t + 0.15 / len, parapet, trellisLo, 0.3, trellis);
+    // Sunshade trellis: a deck ring on posts, cantilevered 0.9 m past the wall (inside the 2.5 m footprint allowance).
+    quad(-0.03, 1.03, trellisLo, trellisHi, 0.9, trellis);
+    // Posts rise from the parapet to the slats, so the trellis is carried, not floating.
+    for (const t of [0.05, 0.5, 0.95]) quad(t - 0.15 / len, t + 0.15 / len, parapet, trellisHi, 0.2, trellis);
   });
   // Trellis top: open slats over the roof.
   for (let k = 0; k <= 6; k++) {
-    const v = v0 - 1.5 + (k / 6) * (v1 - v0 + 3);
-    s.body.box(u1 - u0 + 3, 0.25, 0.5, (u0 + u1) / 2, trellisHi, v, trellis);
+    const v = v0 - 0.9 + (k / 6) * (v1 - v0 + 1.8);
+    s.body.box(u1 - u0 + 1.8, 0.25, 0.5, (u0 + u1) / 2, trellisHi, v, trellis);
   }
   return s.finish('#f5d8a8', 0.5);
 }
