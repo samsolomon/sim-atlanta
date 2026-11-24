@@ -754,7 +754,7 @@ function closeCity(keepMapView = false, writeUrl = true) {
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
 // while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
 let labRoot: HTMLElement | null = null;
-let labView: { openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
+let labView: { enter(): void; openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
 let sceneTitle = document.title;
 let pendingModel: string | null = null;
@@ -789,6 +789,7 @@ async function openModels() {
     return;
   }
   if (!inModels()) return;
+  labView?.enter();
   const target = new URL(location.href).searchParams.get('model');
   if (target && labView?.model() !== target) {
     labRoot.querySelector<HTMLButtonElement>(`.library [data-model="${CSS.escape(target)}"]`)?.click();

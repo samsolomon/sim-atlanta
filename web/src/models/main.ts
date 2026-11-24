@@ -682,7 +682,7 @@ function fitModel(animate: boolean) {
   if (width < 44 || height < 44) return;
 
   const box = new THREE.Box3();
-  if (cars.length && width < height) {
+  if (cars.length && width < height && stage.width < stage.height) {
     // The leading cab points along +Z in the lab.
     const lead = cars.map(car => new THREE.Box3().setFromObject(car)).sort((a,b) => b.max.z - a.max.z)[0];
     box.copy(lead);

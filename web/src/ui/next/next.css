@@ -633,3 +633,6 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera .a2-needle { display: block; width: 32px; height: 32px; }
 :root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
 @media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }
+.a2-in-models .a2-hint { display: none; }
+.a2-model-details .settings button,.a2-model-row,.a2-chip,.a2-model-name { min-height: 44px; }
+.a2-model-details .settings button { min-width: 44px; }

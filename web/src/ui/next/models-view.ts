@@ -185,6 +185,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
       }
       return false;
     },
+    enter() { if (innerWidth >= 1280) openBrowser(false); else closeBrowser(); setDetails(false); },
     openBrowser,
     model: () => current()?.dataset.model ?? null,
     /** Reset view: choose the current model again, which returns to its opening view. */
