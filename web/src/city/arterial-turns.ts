@@ -70,7 +70,8 @@ export function arterialTurns(courses: TrafficCourse[], corridors: readonly Arte
       append(b.course.line.pts[i],b.course.roads[i-1]);
     sample(b.course,end);
     const turn: TrafficCourse = { line:new Line(pts),roads,speedMps:a.course.speedMps,dailyFlow:0,truckShare:a.course.truckShare,
-      offstageM:3*a.course.speedMps,fadeStartM:a.course.fadeStartM,fadeEndM:b.course.fadeEndM,
+      // A rigid tractor-trailer swings outside the approach and exit lanes on these tight turns.
+      semiShare:0, offstageM:3*a.course.speedMps,fadeStartM:a.course.fadeStartM,fadeEndM:b.course.fadeEndM,
       turnSignal:{key:controller.key,s:stopS,dx:entry.dx,dz:entry.dz} };
     const list=turns.get(a.course) ?? []; list.push(turn); turns.set(a.course,list);
   }
