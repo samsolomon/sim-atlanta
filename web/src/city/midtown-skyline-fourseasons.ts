@@ -1,4 +1,4 @@
-import type { P2 } from '../vignette/geom';
+import { rng, type P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -43,6 +43,34 @@ export function fourSeasons(shell: Shell) {
       draw(a, b, Math.hypot(b[0] - a[0], b[1] - a[1]));
     });
 
+  const random = rng(1992);
+  /**
+   * Punched windows on a wall from `a` to `b` (building on the left), within the
+   * 2,400-triangle landmark budget: one dark glass strip per bay column, a stone
+   * spandrel across the face at each floor, and a separate lamp quad only for the
+   * windows lit at night, so occupancy stays per room.
+   */
+  function glaze(a: P2, b: P2, lo: number, hi: number, bay: number, fill: number, occupancy: number,
+    glass: readonly string[] = GLASS, band = GRANITE, pitch = 3.5) {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const dx = (b[0] - a[0]) / len, dz = (b[1] - a[1]) / len;
+    const at = (t: number, y: number, off: number) => [a[0] + dx * t + dz * off, y, a[1] + dz * t - dx * off];
+    const count = Math.max(1, Math.round(len / bay)), rows = Math.max(1, Math.round((hi - lo) / pitch));
+    const step = (hi - lo) / rows, sill = step * .19;
+    for (let i = 0; i < count; i++) {
+      const l = (i + (1 - fill) / 2) * len / count, r = (i + (1 + fill) / 2) * len / count;
+      body.quad(at(l, lo + sill, .07), at(l, hi - sill, .07), at(r, hi - sill, .07), at(r, lo + sill, .07), glass[i % glass.length]);
+      for (let j = 0; j < rows; j++)
+        if (random() < occupancy)
+          lights.quad(at(l, lo + j * step + sill, .11), at(l, lo + (j + 1) * step - sill, .11),
+            at(r, lo + (j + 1) * step - sill, .11), at(r, lo + j * step + sill, .11), glass[0]);
+    }
+    for (let j = 1; j < rows; j++) {
+      const y = lo + j * step;
+      body.quad(at(0, y - sill, .09), at(0, y + sill, .09), at(len, y + sill, .09), at(len, y - sill, .09), band);
+    }
+  }
+
   // The south podium (ballroom and service block), 16.8 m, mapped as its own part.
   const podium: P2[] = [
     [-10.26, 23.89], [-10.27, 25.44], [-10.36, 52.02], [-5.56, 52.03], [-5.56, 53.85], [22.44, 53.95],
@@ -52,7 +80,7 @@ export function fourSeasons(shell: Shell) {
   shell.prism(podium, shell.base, 16.8, RUSTIC, ROOF);
   edges([...podium].reverse(), (a, b, len) => {
     if (len > 4 && Math.min(a[1], b[1]) > 16.5)
-      shell.facade(a, b, 3, 15.5, 3, 3.4, .5, .6, GLASS, .12);
+      glaze(a, b, 3, 15.5, 3.4, .5, .12, GLASS, RUSTIC, 4.2);
   });
 
   // Shaft tiers: [half-width east-west, half-depth north-south, corner notch, bottom, top].
@@ -66,19 +94,18 @@ export function fourSeasons(shell: Shell) {
   ];
   for (const [hu, hv, n, lo, hi] of tiers) shell.prism(notched(hu, hv, n), lo, hi, GRANITE, ROOF);
 
-  // Paired punched windows, one quad per bay per floor. Night occupancy follows
+  // Paired punched windows at a 3.3 m bay and 3.5 m floors. Night occupancy follows
   // the stack: hotel rooms to the 19th floor, offices to about the 33rd, then
   // residences; the crown floors stay dark.
   const windows = (hu: number, hv: number, n: number, lo: number, hi: number, occupancy: number, arch = false) =>
     edges(notched(hu, hv, n), (a, b, len) => {
       if (len < 3) return;
-      const rows = Math.round((hi - lo) / 3.5);
       // The north face's centre belongs to the 14th Street arch.
       const runs: [P2, P2][] = arch && a[1] < 0 && b[1] < 0 && Math.abs(a[1] - b[1]) < .1
         ? [[a, [-8, a[1]]], [[8, a[1]], b]] : [[a, b]];
-      for (const [p, q] of runs) shell.facade(p, q, lo, hi, rows, 3.3, .58, .62, GLASS, occupancy);
+      for (const [p, q] of runs) glaze(p, q, lo, hi, 3.3, .58, occupancy);
     });
-  windows(23, 16, 2, 4, s1 - 1, .4, true);
+  windows(23, 16, 2, 3.5, s1 - 1, .4, true);
   windows(21, 14.2, 2, s1 + .5, s2 - 1, .12);
   windows(19, 12.5, 2, s2 + .5, s3 - 1, .3);
   // Crown floors keep their windows but stay dark at night.
@@ -87,6 +114,7 @@ export function fourSeasons(shell: Shell) {
 
   // Rustication joints on the base, every 1.7 m.
   edges(notched(23, 16, 2), (a, b, len) => {
+    if (len < 3) return;
     const dx = (b[0] - a[0]) / len, dz = (b[1] - a[1]) / len;
     for (let y = 1.7; y < 17; y += 1.7)
       body.quad([a[0] + dz * .05, y, a[1] - dx * .05], [a[0] + dz * .05, y + .12, a[1] - dx * .05],
@@ -104,7 +132,7 @@ export function fourSeasons(shell: Shell) {
   // lit from the atrium at night; the arched hotel entrance and navy canopy below.
   const north = -16.07;
   body.quad([-7.6, 17, north], [-7.6, s1 - 2, north], [7.6, s1 - 2, north], [7.6, 17, north], RUSTIC);
-  shell.facade([-6, north], [6, north], 18, 56, 11, 2, .92, .9, ARCH_GLASS, .55);
+  glaze([-6, north + .07], [6, north + .07], 18, 56, 2, .92, .55, ARCH_GLASS, '#8d97a3');
   const fan = (cy: number, r: number, z: number, color: string, into = body) => {
     for (let k = 0; k < 8; k++) {
       const p = (k * Math.PI) / 8, q = ((k + 1) * Math.PI) / 8;
@@ -116,19 +144,20 @@ export function fourSeasons(shell: Shell) {
   body.quad([-4, 0, north - .1], [-4, 5, north - .1], [4, 5, north - .1], [4, 0, north - .1], ARCH_GLASS[1]);
   shell.prism([[-6.5, -22], [6.5, -22], [6.5, north], [-6.5, north]], 5.2, 6.1, '#26324a', '#2c3850');
 
-  // Stacked round balconies down the centre of the east and west faces.
-  for (const side of [-1, 1]) {
-    for (let y = s1 + 2; y < s3 - 2; y += 3.5)
-      for (const v of [-2.2, 2.2]) {
-        const face = y < s2 ? 21 : 19;
+  // Stacked round balconies down the centre of the east and west faces: a
+  // rounded bay per column, with each floor's dark balcony recess.
+  for (const side of [-1, 1])
+    for (const v of [-2.2, 2.2])
+      for (const [face, lo, hi] of [[21, s1 + 2, s2], [19, s2 + 1, s3 - 2]]) {
         const ring: P2[] = Array.from({ length: 5 }, (_, k) => {
           const a = -Math.PI / 2 + (k * Math.PI) / 4;
           return [side * (face + 1.1 * Math.cos(a)), v + 1.3 * Math.sin(a)];
         });
-        shell.prism(ring, y, y + .25, GRANITE, GRANITE);
-        shell.prism(ring, y + .25, y + 1.05, '#c8a692', '#c8a692');
+        shell.prism(ring, lo, hi, GRANITE, GRANITE);
+        const x = side * (face + 1.13);
+        for (let y = lo + 1.2; y < hi - .5; y += 3.5)
+          body.quad([x, y, v - .65], [x, y + 1.6, v - .65], [x, y + 1.6, v + .65], [x, y, v + .65], GLASS[1]);
       }
-  }
 
   // An arched top window on the broad faces.
   for (const sv of [-1, 1]) {

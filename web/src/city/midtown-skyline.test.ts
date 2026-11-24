@@ -270,6 +270,8 @@ it('replaces 1100 Peachtree with its notched shaft, lit loggia and stepped pyram
     o.geometry.computeVertexNormals();
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
+});
+
 it('steps the Four Seasons back to a pyramid and keeps its crown floors dark', () => {
   const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:269843469');
   const model = createSkylineLandmark([building], building, 0, () => 0)!;
@@ -285,6 +287,9 @@ it('steps the Four Seasons back to a pyramid and keeps its crown floors dark', (
   const lamps = (model.group.children[1] as Mesh).geometry;
   const y = lamps.getAttribute('position'), colour = lamps.getAttribute('color');
   for (let i = 0; i < y.count; i++) if (y.getY(i) > 150) expect(colour.getX(i)).toBeGreaterThan(.5);
+  const body = (model.group.children[0] as Mesh).geometry;
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
 
 it('draws the Campanile as its present-day stripped frame at the lidar roof, unlit at night', () => {
