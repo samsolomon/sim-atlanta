@@ -28,7 +28,7 @@ The pool podium, gates, pediments and roof terrace are too small or too low to r
 
 ## Night
 
-Condominium windows light at 32%, chosen per window by a cell hash of (face, floor, bay). The stand-in `skin-lit.ts` matches skin-kit's `litHash` signature and will switch to it when #470 lands. The lanterns glow and the cones stay dark, as in the park photographs. City adds no beacons.
+Condominium windows light at 32%, chosen per window by skin-kit's `litHash(seedOf(id), face, floor, bay)`. The lanterns glow and the cones stay dark, as in the park photographs. City adds no beacons.
 
 ## Captures
 

@@ -1,7 +1,6 @@
 import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, wound } from './skin-kit';
-import { cellHash, cellSeed } from './skin-lit';
+import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
@@ -27,7 +26,7 @@ export const mayfairId = 'osm:way:536728181';
 export function mayfairTower(shell: Shell) {
   const { body, lights } = shell;
   const ring = wound(shell.ring, 1);
-  const out = outwardSign(ring), pitch = ROOF / FLOORS, seed = cellSeed(mayfairId);
+  const out = outwardSign(ring), pitch = ROOF / FLOORS, seed = seedOf(mayfairId);
   shell.prism(ring, shell.base, ROOF, WALL, '#b9b8b2');
   faces(ring, (a, b, len, face) => {
     const p = (t: number, y: number, off: number) => { const [x, z] = along(a, b, len, t, out * off); return [x, y, z]; };
@@ -39,7 +38,7 @@ export function mayfairTower(shell: Shell) {
       const l = (i + .3) * w, r = (i + .7) * w;
       body.quad(p(l, 4, .06), p(l, ROOF - 2, .06), p(r, ROOF - 2, .06), p(r, 4, .06), WINDOW);
       for (let j = 1; j < FLOORS - 1; j++)
-        if (cellHash(seed, face, j, i) < .32) {
+        if (litHash(seed, face, j, i) < .32) {
           const y = j * pitch;
           lights.quad(p(l, y + .55, .1), p(l, y + pitch - .95, .1), p(r, y + pitch - .95, .1), p(r, y + .55, .1), WINDOW);
         }
