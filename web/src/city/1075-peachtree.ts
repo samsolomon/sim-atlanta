@@ -42,8 +42,10 @@ const pitch = 4.1;
 
 // Flat vertex colours, not library surfaces: a painted mesh compiles its own program, and the low
 // tier has no program to spare (90 of 90 when this was built).
-const glass = '#46606e', glassLit = '#486271', mullion = '#667b84', band = '#526b78';
-const louvre = '#c6c9c4', soffit = '#d9dbd6', brimTopColor = '#a9aca8';
+// Rework (coordinator audit, 2026-11-24): the identifiers are the white brim line, the deep reveal
+// between the two masses and thin pale floor lines. The glass base stays until Sam's palette pick.
+const glass = '#46606e', glassLit = '#486271', mullion = '#93a5ad', band = '#c6d0d4', reveal = '#1f2b33';
+const louvre = '#e2e3de', soffit = '#f4f3ee', brimTopColor = '#ecebe5';
 const precast = '#cbbd9f', precastDark = '#b5a78c', screen = '#a8a497', deck = '#8f8d86';
 const storefront = '#33434a', lobby = '#3e4f63';
 
@@ -146,7 +148,7 @@ function curtain(s: Shell, solids: Solid[], self: Solid, grade: Grade, hi: numbe
     const bays = Math.max(1, Math.round(length / 4.6)), ribs = Math.max(1, Math.round(length / 9.2));
     // Short chords of the curves go without floor lines; at City range they read as one face.
     // They stand 0.15 m out, clear of the true curve between a chord's ends.
-    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.3, y, 0.15, band);
+    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.8, y, 0.15, band);
     // Paired-module mullions; the 1.5 m mullions themselves would shimmer at City range.
     for (let i = 1; i < ribs; i++) {
       const w = 0.15 / length;
@@ -245,6 +247,22 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     base(north);
     s.prism(offset(north.plan, -0.6), north.top, north.top + 1.4, '#6f7a7c', '#868b88');
     s.prism(local([[812, -3362], [838, -3362], [838, -3352], [812, -3352]]), north.top, north.top + 3.6, '#b3b6b1', '#9a9d99');
+  }
+
+  // The deep reveal where the two masses meet: a dark slot down each side of their shared corners.
+  if (north && crown) {
+    const shared = crown.plan.filter(([x, z]) => north!.plan.some(([u, v]) => Math.hypot(x - u, z - v) < 0.6));
+    for (const solid of [crown, north]) {
+      solid.plan.forEach((a, i) => {
+        const b = solid.plan[(i + 1) % solid.plan.length];
+        const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (length < 3) return;
+        const w = Math.min(0.3, 1.6 / length);
+        const near = (p: P2) => shared.some(([x, z]) => Math.hypot(x - p[0], z - p[1]) < 0.6);
+        if (near(a)) panel(s, a, b, 0, w, floor + 8.6, north!.top, 0.2, reveal);
+        if (near(b)) panel(s, a, b, 1 - w, 1, floor + 8.6, north!.top, 0.2, reveal);
+      });
+    }
   }
 
   if (crown) {

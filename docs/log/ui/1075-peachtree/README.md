@@ -69,3 +69,24 @@ Clock 2026-11-20, high tier unless noted. Prefix each camera with `/?view=city&c
 | Entrance corner (close) | `806,-3360,115,45,220` with `&dev&mindist=20` | 11:30 / 23:30 |
 
 At the start cam, the Loews Atlanta Hotel stands in front of the tower, so the crown view is the money shot.
+
+## Rework (2026-11-24)
+
+The registry audit failed #416: from a distance it read as a flat navy slab (sunlit glass about V 20), and the brim, louvre crown and mullions did not register. The lead confirmed three identifiers, from the [2025 aerial](https://commons.wikimedia.org/wiki/File:A1075PchTrMT2511-0662.jpg) and [the view from the north](https://commons.wikimedia.org/wiki/File:One_Midtown_ATL.jpg): the white brim line at the top, the deep reveal between the two masses, and thin pale floor lines.
+
+What changed:
+- Brim top and soffit: white (`#ecebe5`, `#f4f3ee`). Louvre band: pale (`#e2e3de`).
+- Floor lines: pale (`#c6d0d4`), 0.8 m deep. Mullions are lighter.
+- A dark reveal (`#1f2b33`) runs down the shared corners of the two masses.
+- No new material and no new geometry apart from the reveal strips.
+
+Glass, for Sam's palette pick (rendered sunlit, 11:30 high tier, `820,-3335,0,78,320` with `&dev&mindist=20`):
+
+| Version | Base | Hue | S | V |
+|---|---|---|---|---|
+| Current glass (kept in code) | `#46606e` | 201 | 74 | 35 |
+| Photo-matched glass (shown only) | `#8ca8bc` | 192 | 20 | 64 |
+
+The photo-matched value follows the photos' light, reflective sky-blue and is inside the rule (V ≥ 62 → S ≤ 30).
+
+[Before / current / photo-matched](rework-compare.jpg) · [Four sides at 400 m](rework-four-sides.jpg)
