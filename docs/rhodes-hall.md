@@ -80,3 +80,18 @@ Matched camera `301,-4675,340,60,160`, November 20 at 21:00 Eastern start time, 
 The original spatial tower mask overlaps the western porch beam. The reduction now
 stops before porch geometry is emitted, preserving that edge's original wash too.
 A regression pins both the reduced tower peak and the unchanged overlapping beam.
+
+## Tower uplight choice
+
+The two 21:00 studies use the same camera and the same linear falloff on the tower
+masonry. At the 0.5 m base, the wash weights are 0.50 and 0.35. At the 20 m
+corbels and above, the added wash is zero. The full-night exterior photograph
+shows more light on the lower front face and warm light under the porch arches.
+The exact strength and cutoff height are artistic estimates. Tower vertex ranges
+keep both studies clear of the porch, rounded bay and plinth.
+
+[Matched high- and low-tier choice sheet](log/ui/rhodes-uplight/choice.jpg)
+
+Sam selected the 50% reduction. The comparison with the previous 25% reduction
+uses the same 21:00 camera at [high](log/ui/rhodes-uplight/compare-high-night.jpg)
+and [low](log/ui/rhodes-uplight/compare-low-night.jpg) quality.

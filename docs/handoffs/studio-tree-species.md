@@ -1,85 +1,112 @@
-## Codex continuation — 2026-11-23
+# studio-tree-species — gpt-6.2 handoff, 2026-11-23
 
-Current main d1411a9e is merged. Terrace placement verified in City; the actual loop
-exports eight trees, correcting the earlier seven. Captioned day/night Prado and
-1180 sheets, plus low Prado and winter far-detail comparisons, are under
-`docs/log/ui/tree-species/rollout/`. Current measurements and cameras are in
-`docs/tree-species.md`; they supersede the original numbers below.
+## Takeover update
 
-Cross-review round 1 found the preview omitted the batch; fixed in preview.ts.
-Round 2 has no blocking findings. It retains a plausible plantings-only lifecycle
-case; document it in the PR. The preview page itself stalls at loading with the
-available staged data, so its rendered check remains an explicit visual risk.
+The coordinator accepted the final A16 results and approved merging on November 23. See [the final measurements](../tree-mask-clawback.md). The migration notes below describe the earlier stopping point.
 
-Phone-perf successor dd052a89 accepts the paired current-main count gate; full
-sign-off awaits the winter evidence and final PR. Coordinator reply route is
-`orca orchestration reply --id msg_243e0a655e24 --from orca_session_id:752c9656-15cc-4501-99e1-e59257d6fdcb`.
-Direct `--on air` send rejects the pairing token. No merge until phone-perf's
-PR-thread sign-off, coordinator A16 check and Sam seeing the sheets. No deployment.
+## Original stopping point
 
----
+Branch `samsolomon/tree-low-clawback`. PR #348 is OPEN and draft, not merged.
+Rendering/tested SHA `fb699bbb1fd9d4db74931cb4c182375f61aca3a1` is frozen by
+phone-perf at :4619. Commit `86750083` only records Sam approval and a follow-up
+in docs/tree-mask-clawback.md. This handoff is another documentation-only commit.
+Do not rebuild or change the frozen source during the coordinator's A16 runs.
 
-# Handoff: studio-tree-species (Claude, orca session 6b76e039) — 2026-11-23
+Original four-species City rollout #336 merged at
+`831662eff79d5ea8eb2e0926e7c3735107a7fadf`. It includes crape myrtle A,
+loblolly A, sweetgum A and Japanese maple A. Actual 1180 terrace count is eight.
+Original evidence: docs/tree-species.md and docs/log/ui/tree-species/rollout/.
 
-## State
-- **Open: City tree rollout, draft PR on `samsolomon/studio-rollout-city`. Do not merge yet.** It needs phone-perf's sign-off in the PR thread and the coordinator's A16 default and pan check (condition 3).
-- **Merged today** (all tree-species): #193 framework + ginkgo lab · #203/#210/#217 High Museum ginkgo (trunk at the lawn path's end) · #221 ginkgo A–D · #225 species mixes · #236/#251 foliage ink mask (`inkFoliageMesh`, `FoliageMaskPass`) · #258/#275/#280 ginkgo plumes, brightness, core · #304/#306 generic branch gate + compaction · #322 species `setDetail` · #324 rollout engine (`trees/rollout.ts`, no City change).
-- **Dev server:** vite on 5471 (stopped at handoff). Port 5461 is studio-materials' vite, so don't use it. The compositor for captioned sheets is `python3 -m http.server` in the scratchpad `compose/` dir (stopped).
+## #348 implementation and evidence
 
-## Rollout branch: what it does
-- **`trees/rollout-city.ts`:**
-  - `rolloutRow` plans a canopy row once from its full crown list, then cuts it to the tier.
-  - `RolloutBatch` (`rolloutBatch` singleton) draws every row's species as ONE set of looks for the whole City. This is the fix for draw calls: the per-row version was +76 at low and +498 at high, and the batch adds +9 and +35.
-  - The batch replays season, detail, night and wet state, uses a shared carpet, and hides leaf tips unless a tree is tipped.
-  - Limbs don't cast shadows.
-  - Low detail uses one size class per look, so a specimen draws as the mature form, scaled to its size.
-  - Each mesh gets a real bounding sphere.
-- **Wiring:**
-  - `terrain/model.ts`: `options.rollout`, `crownSize` and the `replacedTree` merge.
-  - `square-board/sections.ts`: `loadPlaces` for the Ansley Park test.
-  - `city/city.ts`: `scene.add(rolloutBatch.group)` and `rolloutBatch.update`.
-- **1180 Peachtree:**
-  - `midtown-skyline-symphony.ts` (the skyline agent's file) now exports its terrace crape spots as `terraceTrees`; the stand-in function is removed.
-  - `createSkylineLandmark` hands them on as world `plantings`, and `rolloutPlantings` draws them at terrace height.
-  - **Not verified visually.** My 1180 camera (`cam=650,-3672,250,55,160&dev&mindist=60`) didn't frame the terrace. Check it, and tell the skyline agent.
+A16 isolated #336 cost: default -8%, pan -11%. Probe builds showed foliage-mask
+redraw/full-screen sampling dominates; mask-off recovered about 5 fps.
+Low-tier RolloutBatch now unregisters species masks above 600 m camera-to-orbit-
+target distance and restores below 500 m, with hysteresis. This is a whole-view
+orbit metric, not distance to each tree. High and near rendering are unchanged.
+Same-SHA control: active `perf=run&q=low&treeprobe=mask-on`; normal omits treeprobe.
+Other perf-only probes are mask-off/shadow-off/foliage-off/carpet-off.
 
-## Measured
-`test:perf` default view, 2026-11-20 14:00. Before is main at 983fac44 plus #325.
+Source: web/src/trees/rollout-city.ts, web/src/city/city.ts;
+tests: web/src/trees/rollout-probe.test.ts. Tests cover far-area mounts,
+hysteresis, removal/reopen, and resetting uFoliage/EMPTY_MASK. Avoid registration
+or allocation every frame. Preserve Winn carpet filtering when integrating main.
 
-| | Before | After |
-|---|---|---|
-| Low calls / triangles | 529 / 3.352M | 538 / 3.397M (+45k) |
-| Low skyline (`cam=150,500,0,66,1900`) | 225 / 2.568M | 234 / 2.615M |
-| High calls / triangles | 1130 / 13.27M | 1165 / 13.68M |
+Full evidence and sheet index: docs/tree-mask-clawback.md.
+Screenshots/metrics: docs/log/ui/tree-species/mask-clawback/.
+Exact 384x692 all-12-area default and pan: orbit 21,084.375m; 962/962 registered
+species instances suppressed. Prado 420m / 1180 350m: none suppressed.
+Browser sequence 1000→420→550→700→350: off/on/on/off/on.
+These are registered-instance counts, not visible crown counts.
 
-`__perf.report()` trees category: 58 meshes, 897k triangles, 5.5 MB geometry, 0 textures → 66 meshes, 885k triangles, 5.1 MB geometry, 5.3 MB textures (the leaf atlases).
+Validation: 20 Rust, 939 web, 5 worker tests pass; one web skipped, pipeline
+skipped without .venv. Build passes. test:perf low 536 calls / 2,336,759 tris;
+high 1169 / 13,783,617, ceilings pass. High non-enforced startup target missed.
+Cargo PATH needed /Users/samsolomon/.rustup/toolchains/stable-aarch64-apple-darwin/bin.
+Claude cross-review: one visual risk at far distance, addressed with 700m day/night
+sheets; no code/lifecycle findings. Sam accepted darker far interiors via
+coordinator msg_92a329d9b040. Requested follow-up (already logged): single-clump far
+species at low if darker interiors become distracting. Do not implement now.
 
-## Sam's decisions (2026-11-23)
-- **Picks:** crape myrtle A, loblolly A, sweetgum A, Japanese maple A. Oaks are A too, but their rollout is a later PR. Magnolia stays out until its gloss is picked.
-- **Coordinator's conditions:**
-  - mature plus specimen sizes
-  - the Ansley skew (about 40% of generic crowns at specimen size)
-  - facing street-oak pairs, applied to the generic crowns
-  - the island rule
-  - loblolly never curbside, sweetgum not in street strips, Japanese maple never a street tree
-  - crape myrtle replaces the seven 1180 stand-ins
-  - matched day and night shots at 1180 Peachtree and The Prado
-- **Ginkgo:** Sam picked C4 with plumes. The High Museum tree in City still draws the old `createTrees` ginkgo. Putting C4 there waits on Sam's OK. The prepared code was never committed: it swapped `createTrees` for `createGinkgoVariant(..., 'C4')` in `terrain/model.ts`.
+Near cameras: Prado cam=1194,-4352,20,50,420;
+1180 cam=650,-3690,0,0,350 (dev __setView(0,0,350,650,-3690,2), lens2).
+Far Prado cam=1194,-4352,20,50,700. Matched Nov20 14:00 /23:00 ET.
+Always-off looked worse near 1180, hence gate. Preserve near masks.
+
+Pan probe failure was a Node/CDP Details line, not scene UI. Original full log lost;
+local/frozen pan reproduced successfully all12. Phone-perf owns harness diagnosis;
+no speculative scene patch. Final A16 runs retain full errors/screenshots.
 
 ## Next steps, in order
-1. Verify the 1180 terrace crape myrtles in a browser, at high and low.
-2. Make the captioned before/after sheets: The Prado (day, night, low) and 1180 (day, night). Raw captures are in `scratchpad/compose/img/ro-*`; regenerate them if the scratchpad is gone.
-3. Run the `code-review` skill on the branch and fix what it finds.
-4. Update `docs/tree-species.md` (the rollout is built and its numbers measured) and add a build-log entry.
-5. Ping phone-perf with the numbers above, then ask the coordinator for the A16 check. Merge only after both sign off.
 
-## Promises owed
-- **Phone-perf** (orca session 3126b1a7): the PR reports default, skyline and pan calls and triangles, plus trees memory before and after, and passes `test:perf`. The carpet drops under farTrees. Pan figure not done yet.
-- **Tree-lab** (studio-tree-lab, uds socket 31243): tell them when the rollout merges, and ask them to review the looks in City. I told them I'd do the bounding spheres and one-form-per-look outside `looks.ts`, which `rollout-city.ts` now does.
-- **Coordinator:** when the rollout merges, re-measure the ginkgo with tree-lab's `__lab.crownStats`.
+1. Wait for coordinator's final A16 pan rerun and explicit merge OK for #348.
+   Sam visual gate has passed; performance/merge gate has NOT yet passed.
+2. Resolve integration conflicts if needed. Main has advanced substantially;
+   preserve both build-log entries on conflicts and rerun tests. Preserve Winn
+   carpet exclusions. Tell phone-perf if rendering changes relative to frozen SHA.
+3. Merge only after gates, then verify with
+   `gh pr view 348 --json state,mergeCommit`; quote actual state and merge commit
+   in notices. Never announce MERGED based only on a merge command attempt.
+   Only the coordinator deploys. Release requires web rebuild, no data rebuild.
+4. AFTER #348 merges, plan round 2: elm A, dogwood A, magnolia A3, white oak A,
+   willow oak A, water oak A. Send placement proposal and low-tier cost estimate
+   BEFORE building. Reuse mask gate; retain A16 and Sam day/night sheet gates.
 
-## Rules that bit me
-- **Merging:** don't auto-merge PRs that need an outside sign-off. The merge loop merges on CLEAN.
-- **Stash:** with `git stash`, always use a named push and apply by SHA, because the stash is shared across worktrees.
-- **Fetch stubs:** tests stub `fetch` and can throw synchronously, so wrap new fetches in `Promise.resolve().then(...)`.
-- **Ink mask:** `FoliageMaskPass` redraws registered foliage, so per-row meshes multiply draw calls.
+## Coordination / promises
+
+Our predecessor session: orca_session_id:752c9656-15cc-4501-99e1-e59257d6fdcb.
+CLI: /Applications/Orca.app/Contents/Resources/bin/orca.
+Direct Studio→Air sends fail pairing token; reply to coordinator incoming thread.
+Coordinator: term_05a952fa-de06-4064-8655-3e98e1caf1e0 on Sam's MacBook Air.
+Useful reply IDs: msg_68a775b113fe (6.2 migration), msg_82d32d6ae289 (round2),
+msg_92a329d9b040 (Sam approval). Use your own session as --from after takeover.
+
+Phone-perf: orca_session_id:dd052a89-7838-444f-a6d9-f1dfde9fcc25.
+Owe final result/merge notice and any source SHA change. They freeze and compare;
+no overlapping source edits. Frozen ports:4616 baseline d1411a9e,4617 rollout
+b4993131,4618 probe546ab349,4619 fixfb699bbb. 53 staged files identical.
+Do NOT stop these other-agent servers. Latest reply msg_7c211368680f confirms
+docs-only head equivalent to frozen rendering. Target roughly within3% baseline.
+
+Tree-lab: orca_session_id:48c0c9e4-ceda-4b87-adf1-6ada97d12390.
+Magnolia A3 #345 verified f1f638b0a4714feb6d6f31c2098fe4cb82a3b194;
+dogwood A #352 ab68dea70208ff535920f8795edb03d8e560999d;
+white oak A #353 b1ad388f1e5287538268f255dea2e6d3a3b0677a.
+Use preferred variants. White oak 193/81 tris incl carpet, near tips +120 per
+eligible tree; winter retention crown-wide. cardHeight/bloomFill opt-in API.
+No City wiring in lab PRs. Original coordinator request to remeasure High ginkgo
+with __lab.crownStats remains unfulfilled; C4 City swap needs separate approval.
+
+Winn: orca_session_id:ef6ac039-f20d-4773-bbff-e84554815860.
+PR349 VERIFIED MERGED a64509686c54314f208ddd9eafcd64323a8e1e5d (earlier notice
+was wrong then corrected). Carpet exclusion4710a123 adds optional RowTrees flag,
+carpeted-list filter and rolloutSpecies exclusion rings, no mask/update edits.
+
+## Cleanup / local resources
+
+Own port5471 dev server was stopped; no listener at migration check. Own research
+and capture tabs already closed. Other-agent Chrome/proxy/frozen servers remain
+untouched. Do not shut down shared resources. Temp logs: /tmp/tree-mask-review.log,
+/tmp/tree-mask-perf.log, /tmp/tree-mask-build.log, /tmp/studio-tree-species-tests.log.
+No deployment performed. Coordinator requested this clean pushed handoff, then
+no new work until successor takes over.
