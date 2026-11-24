@@ -268,7 +268,8 @@ const SWEPT_HALF_WIDTH = 2.4;
 /**
  * The ground a streetcar body sweeps through each filleted street corner, as one closed polygon
  * per corner and path: the drawn shape near the corner, offset SWEPT_HALF_WIDTH to either side.
- * Ground paint (ground-map.ts) can lay carriageway under it, so the track never crosses sidewalk.
+ * Exported for ground-contact's paving follow-up: ground-map.ts will lay carriageway under it, so
+ * the track never crosses sidewalk. Only the shape test reads it until then.
  */
 export function streetcarSweptCorners(rf: Pick<RoutesFile, 'paths'>, origin: Origin, route: string, minTurn = 0.5): P2[][] {
   const out: P2[][] = [];
