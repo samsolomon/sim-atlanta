@@ -2972,3 +2972,7 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 ### 2026-11-23 — XE60 roof fairings
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — A common roof profile for the Rapid buses
+
+The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
