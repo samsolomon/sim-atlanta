@@ -111,3 +111,16 @@ But it would also change every other dark surface: roofs, asphalt, water, shaded
 3. Move the buildings listed above in one small follow-up per worker. Each changes only colour constants, with matched day crops before and after. There are no draw, triangle or program changes.
 
 Landmarks still look real: photo-backed distinctive glass stays, including 1105's green, Hanover's and Square on 5th's teal, the Atlantic and the Proscenium.
+
+## Held branches, ready when Sam picks
+
+Each branch changes colour constants only, for buildings that are already merged. Each needs a rebase and re-shoot before it opens as a PR.
+
+| Branch | Owner | Changes |
+|---|---|---|
+| `samsolomon/glass-palette-midtown-culture` (d20f8720) | Culture agent | Four Seasons `#3f4b59` → `#4b5868` (V 41). Square on 5th `#4f8a86` → `#558c88` (S 40). Two Midtown Plaza `#5d82ad` → `#6a87a6` (S 36). |
+| `samsolomon/glass-saturation-held` | skins-6 | NCR and Midtown Union glass saturation brought to S ≤ 36 |
+| `samsolomon/palette-hold-coke-euhm` (a23eed89) | skins-7 | One Coca-Cola `#4b565b` (V 36) → `#6a7378` (S 12, V 47). EUHM stair tower `#5d7f98` (S 39) → `#6d8090` (S 24, V 56). |
+| (to confirm) | skins-3 | Amli's dark field `#2f3a44` (V 27) lifted to V ≥ 40 |
+
+Skins merged before the provisional rules that aren't on a held branch yet: 1075 Peachtree, 10 10th, Metropolis (low glass), 903 Peachtree, ViewPoint. Their owners prepare branches only if Sam asks.
