@@ -36,6 +36,15 @@ describe('farTriangles', () => {
     expect(far.kept).toEqual([4, 5, 6, 7]);
   });
 
+  it('keeps detail that overhangs the edge of its wall', () => {
+    // Centroid over the wall (x < 10), one corner beyond it: no wall behind that part.
+    const overhang = { corners: [[9, 1, 0.07], [11, 1, 0.07], [11, 3, 0.07], [9, 3, 0.07]], color: [0, 0, 0] };
+    const { P, C } = quads([wall, pane(1, 1), overhang]);
+    const far = farTriangles(P, C, 3, 0, P.length / 9, 4)!;
+    expect(far.dropped).toBe(2);
+    expect(far.kept).toEqual([4, 5]);
+  });
+
   it('returns null when nothing would drop', () => {
     const { P, C } = quads([wall]);
     expect(farTriangles(P, C, 3, 0, 2, 4)).toBeNull();

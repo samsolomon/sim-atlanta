@@ -39,6 +39,18 @@ export function farTriangles(P: ArrayLike<number>, C: ArrayLike<number>, k: numb
     }
   }
   if (!faceArea.length) return null;
+  // Each face's triangles (one, or the two halves of a quad).
+  const faceTris: number[][] = faceArea.map(() => []);
+  for (let i = 0; i < n; i++) if (face[i] >= 0) faceTris[face[i]].push(i);
+  /** Whether every corner of the triangle at offset o projects onto face f (plane of wall w). */
+  const onFace = (o: number, f: number, w: number) => {
+    for (let v = 0; v < 3; v++) {
+      const x = P[o + v * 3], y = P[o + v * 3 + 1], z = P[o + v * 3 + 2], q = (t0 + w) * 9;
+      const d = (x - P[q]) * nx[w] + (y - P[q + 1]) * ny[w] + (z - P[q + 2]) * nz[w];
+      if (!faceTris[f].some(t => inside(P, (t0 + t) * 9, x - d * nx[w], y - d * ny[w], z - d * nz[w]))) return false;
+    }
+    return true;
+  };
   // A spatial hash of the walls, by bounding box.
   const G = 6;
   // Numeric cell keys; a collision only adds a candidate, which the plane test rejects.
@@ -77,6 +89,9 @@ export function farTriangles(P: ArrayLike<number>, C: ArrayLike<number>, k: numb
       // On the wall's plane: panes sit ~7 cm proud of it, recessed glass a little behind.
       if (Math.abs(d) > 0.4 || Math.abs(d) >= bestD) continue;
       if (!inside(P, q, px - d * nx[w], py - d * ny[w], pz - d * nz[w])) continue;
+      // All of it must sit on the wall: detail that overhangs the wall's edge has nothing behind
+      // that part, and dropping it would open a hole.
+      if (!onFace(o, face[w], w)) continue;
       best = w;
       bestD = Math.abs(d);
     }
