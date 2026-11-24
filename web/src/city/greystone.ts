@@ -171,6 +171,9 @@ export function createGreystone(buildings: VBuilding[], site: VBuilding, _base: 
 
   const group = new THREE.Group();
   group.name = 'greystone';
+  // The pool, its deck and the lake wall lie east of the bathhouse's OSM outline, as the leaf-off
+  // aerial and the photo across the lake show; they belong to the site, up to about 47 m out.
+  group.userData.footprint = { maxProjection: 48 };
   const make = (b: Builder, material: THREE.MeshLambertMaterial) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
