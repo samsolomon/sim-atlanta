@@ -232,7 +232,7 @@ function makeScenery(...args: Parameters<typeof buildScenery>) {
 function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
-  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
+  const options = { cityFacades: true, terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
@@ -243,7 +243,7 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   let before = world.group.children.length;
   // Houses stay in the data (lamps and trees keep clear of them) but are drawn by house-lod.ts.
   yield* world.buildingSteps(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor,
-    farBoard && quality === 'low');
+    farBoard && quality === 'low', quality);
   tagNew(before, 'buildings');
   yield 'buildings done';
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);

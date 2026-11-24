@@ -31,8 +31,12 @@ const sourceEnds = new Set(
   Object.values(rawWays).flatMap((w) => [w.pts[0].join(','), w.pts.at(-1)!.join(',')]),
 );
 export const ribbons: Ribbon[] = [];
+/** Ways OSM tags as tunnels that are really open freeway under a wide street deck: the
+ * Fifth Street park deck (51 m, lidar) over the Connector. Drawn and driven as ground; the deck
+ * is Fifth Street's own profiled run (landbridges.json). */
+const UNDER_LAND_BRIDGE = new Set(['560940890', '560940891']);
 for (const [id, raw] of Object.entries(rawWays)) {
-  const way = raw as Way;
+  const way = UNDER_LAND_BRIDGE.has(id) ? { ...(raw as Way), kind: 'ground' as Kind } : raw as Way;
   let first = 0;
   for (let i = 1; i < way.pts.length; i++) {
     if (i < way.pts.length - 1 && !sourceEnds.has(way.pts[i].join(','))) continue;
