@@ -32,15 +32,31 @@ const top = (group: import('three').Group, x: number, z: number) => {
 it('builds each row fragment as its own part at shared NAVD88 heights', () => {
   const south: VBuilding = { id: euhmDeckId, h: null, floors: 15, rings: [southRing] };
   const north: VBuilding = { id: euhmDeckId, h: null, floors: 15, rings: [northRing] };
-  const a = createEuhmStaffDeck([south], south, grid)!;
-  const b = createEuhmStaffDeck([north], north, grid)!;
-  // Both rows claim their fragment, so neither draws the generic box.
-  expect(a.buildings).toEqual([]);
-  expect(b.buildings).toEqual([]);
+  const other: VBuilding = { id: 'osm:way:1', h: 10, floors: 3, rings: [[[0, -1500], [10, -1500], [10, -1490], [0, -1490]]] };
+  const a = createEuhmStaffDeck([south, other], south, grid)!;
+  const b = createEuhmStaffDeck([north, other], north, grid)!;
+  // Both rows claim only their fragment, so neither draws the generic box.
+  expect(a.buildings).toEqual([other]);
+  expect(b.buildings).toEqual([other]);
+  // Parapet rim at the seam from both sides: a level ray from Spring Street hits
+  // the deck just under 348.8 m NAVD88 and clears it just above.
+  const hits = (g: import('three').Group, z: number, y: number) => {
+    g.updateMatrixWorld(true);
+    return new Raycaster(new Vector3(240, y - 323.8, z), new Vector3(1, 0, 0)).intersectObject(g).length > 0;
+  };
+  for (const [g, z] of [[a.group, -1699], [b.group, -1701]] as const) {
+    expect(hits(g, z, 348.6)).toBe(true);
+    expect(hits(g, z, 349)).toBe(false);
+  }
   // The deck parapet meets at the seam from both sides; the wing and stair differ.
   expect(top(a.group, 300, -1702 + 4)).toBeCloseTo(347, 1);
   expect(top(b.group, 300, -1702)).toBeCloseTo(347, 1);
   expect(top(a.group, 300, -1665)).toBeCloseTo(316, 1);
   expect(top(b.group, 359.5, -1742)).toBeCloseTo(352.2, 1);
   expect(createEuhmStaffDeck([], { ...north, id: 'osm:way:1' }, grid)).toBeNull();
+  // An uncut ring builds both halves, wing and stair together.
+  const whole: VBuilding = { ...north, rings: [[...northRing.slice(1), ...southRing.slice(0, -1)]] };
+  const c = createEuhmStaffDeck([whole], whole, grid)!;
+  expect(top(c.group, 300, -1665)).toBeCloseTo(316, 1);
+  expect(top(c.group, 359.5, -1742)).toBeCloseTo(352.2, 1);
 });

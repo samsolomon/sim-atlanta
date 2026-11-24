@@ -18,7 +18,7 @@ OSM names this outline "Emory University Hospital Midtown Staff Parking", and it
 ## Model
 
 - **Fin screen:** white folded-metal fins in two alternating widths (1.1 m and 0.8 m) on a 2 m world grid, set 0.75 m in front of the deck edge. Slab lines sit at every 3.2 m level behind them, ten levels from 315 m to 347 m NAVD88, with a parapet to 348.8 m. The pleated diamond pattern is simplified to alternating fins because it is finer than City's orbit can resolve.
-- **Base:** a dark louvre band from 312.5 m to 315 m. On Linden Avenue and West Peachtree there is a storey of street glazing below it. Spring Street and the south side have open levels above a concrete plinth instead, because the site falls 8 m from West Peachtree (307.8 m) to Spring (299.7 m).
+- **Base:** a dark louvre band from 312.5 m to 315 m. On Linden Avenue and West Peachtree a storey of street glazing sits below it. The site falls 8 m from West Peachtree (307.8 m) to Spring (299.7 m), so the levels below 307.4 m show as open parking above a concrete plinth wherever the ground drops away: along Spring Street, on the south side and at the west end of Linden.
 - **Stair tower:** blue glass with a frame grid, rising to 352.2 m.
 - **Low south wing:** three open concrete levels to 316 m.
 
@@ -26,7 +26,7 @@ Estimated: the level count, the plinth and glazing heights, the fin spacing and 
 
 ## The row seam
 
-The mapped outline is cut by the row seam at z = −1700. north-band holds the deck south of the seam and the low wing, and midtown-south holds the rest and the stair tower. Each row builds its own physical part, following the same convention as The Atlantic (skins-5). Both rows share one NAVD88 base and the same world fin grid, so the halves meet without a step whichever row mounts first, and neither ever draws the generic box. The seam was checked close up on both tiers.
+The mapped outline is cut by the row seam at z = −1700. north-band holds the deck south of the seam and the low wing, and midtown-south holds the rest and the stair tower. Each row builds its own physical part, following the same convention as The Atlantic (skins-5). Both rows share one NAVD88 base (299.3 m, lowered only if a row's ground is lower) and the same world fin grid, so the halves meet without a step whichever row mounts first, and neither ever draws the generic box. The seam was checked close up on both tiers.
 
 ## Lighting
 
@@ -40,6 +40,7 @@ The dusk photograph shows every parking level evenly lit, a warm-white band behi
 | Starting camera | `310,-1681,32,60,150` | 11:30 PM EST | [Night](night.jpg) |
 | Stair tower and Linden face, looking southwest | `330,-1700,215,58,420` | 11:30 AM EST | [Wide](wide.jpg) |
 | Stair tower and Linden face, looking southwest | `330,-1700,215,58,420` | 11:30 PM EST | [Wide at night](wide-night.jpg) |
+| Linden Avenue face, looking south-southeast | `300,-1740,160,66,260` | 11:30 AM EST | [Linden](linden.jpg) |
 | Spring Street face and south wing, looking east | `290,-1700,80,64,300` | 11:30 AM EST | [West](west.jpg) |
 | Row seam on Spring Street, high and low (close) | `262,-1700,80,70,90` | 11:30 AM EST | [High](seam-high.jpg) · [Low](seam-low.jpg) |
 
