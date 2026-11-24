@@ -4145,3 +4145,7 @@ bands. My first version drew the north tower as a rectangle, which spilled 8 m
 past the mapped outline where the north edge steps in. A footprint test caught it
 before any screenshot did.
 [Before and after](log/ui/courtland-grand/compare-s.jpg) · [notes](courtland-grand.md)
+
+### 2026-11-24 · 715 Peachtree, the white cube that isn't generic
+
+A white 10-storey egg-crate office cube looks, at 500 m, almost exactly like the generic beige grid it replaces, so this skin leans on the differences the photographs show. The frame is a step brighter white, each window is a deep dark reveal rather than a pale pane, there's a penthouse block on the roof (the lidar's 44–45 m), and a warm wood-clad retail base faces Peachtree. [Before/after, views and four-side sheet](log/ui/715-peachtree/README.md)
