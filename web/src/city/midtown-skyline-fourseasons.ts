@@ -13,14 +13,14 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // photographs; the 186 m apex is the mapped height, which the 2019 lidar's
 // 95th percentile matches (see docs/four-seasons.md).
 
-const GRANITE = '#cfbcb0', RUSTIC = '#c2ada0', ROOF = '#b2a197', GOLD = '#d6ad4a', COPPER = '#7f9f94';
+const GRANITE = '#cfbcb0', RUSTIC = '#c2ada0', ROOF = '#b2a197', GOLD = '#d6ad4a', COPPER = '#8fbcab';
 const GLASS = ['#3f4b59', '#475465', '#4f5b6a'];
 const ARCH_GLASS = ['#45546a', '#4d5d72'];
 
 export const FOUR_SEASONS = {
   setbacks: [68, 118, 150, 160, 168],
   attic: 176,
-  apex: 186,
+  apex: 190,
 };
 
 /** A rectangle centred on the origin with its corners notched in by `n`, counter-clockwise. */
@@ -190,7 +190,7 @@ export function fourSeasons(shell: Shell) {
     });
 
   // The pyramid, with a row of small dormers along each face's foot.
-  const eave: P2[] = [[12.8, -8.3], [12.8, 8.3], [-12.8, 8.3], [-12.8, -8.3]];
+  const eave: P2[] = [[13.1, -8.6], [13.1, 8.6], [-13.1, 8.6], [-13.1, -8.6]];
   eave.forEach(([x, z], i) => {
     const [a, b] = eave[(i + 1) % 4];
     body.tri([x, attic, z], [a, attic, b], [0, apex, 0], COPPER);

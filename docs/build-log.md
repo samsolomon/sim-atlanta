@@ -3288,7 +3288,8 @@ Midtown Union's 26-storey office tower at Spring and 17th was a generic striped 
 The 186 m Four Seasons Hotel was a plain extruded box. It now steps back like the
 photographs: a rose-granite hotel base to the 19th floor, office and residential
 shafts with notched corners, crown tiers, a gold-latticed attic and a grey-green
-standing-seam pyramid. A 12-storey glazed arch rises over the 14th Street
+standing-seam pyramid. It rises 14 m to 190 m, under the 193 m lidar maximum, because a
+10 m cap got lost against the tower behind it. A 12-storey glazed arch rises over the 14th Street
 porte-cochère. The first draft gave every window on every floor its own quad,
 5,679 triangles. One glass strip per bay column, with a stone spandrel at each
 floor, gives the same grid in 1,587 triangles, inside the 2,400 allowed for a

@@ -54,7 +54,7 @@ it.each([
   ['osm:way:885660351','1180 Peachtree',200],
   ['osm:way:269636921','Promenade Central',36.2],
   ['osm:way:269637575','Promenade Tower',211],
-  ['osm:way:269843469','Four Seasons Hotel',186],
+  ['osm:way:269843469','Four Seasons Hotel',190],
 ] as const)('replaces %s at the measured local grade', (id, name, height) => {
   const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === id);
   const model = createSkylineLandmark([building,tower], building, -8, () => -3)!;
@@ -278,7 +278,7 @@ it('steps the Four Seasons back to a pyramid and keeps its crown floors dark', (
   model.group.updateMatrixWorld(true);
   const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0))
     .intersectObject(model.group)[0]?.point.y ?? 0;
-  expect(heightAt(577.4, -3601.9)).toBeCloseTo(186, 0); // pyramid apex
+  expect(heightAt(577.4, -3601.9)).toBeCloseTo(190, 0); // pyramid apex, inside the 193 m lidar maximum
   expect(heightAt(577.4 + 20, -3601.9)).toBeLessThan(151); // outside the crown tiers
   expect(heightAt(577.4 + 22.5, -3601.9)).toBeLessThan(69); // the hotel base below the first setback
   expect(heightAt(577.4, -3560)).toBeCloseTo(16.8, 1); // south podium

@@ -22,12 +22,12 @@ The frame runs u east and v south, with the origin at the shaft centre (City 577
 | Residential shaft | 38 × 25 | 118–150 | inset estimated |
 | Crown tiers with notched pier tops | 34 × 22, then 30 × 19 | 150–168 | estimated |
 | Attic with gold lattice | 25 × 16 | 168–176 | the 25 × 16 m plan matches the mapped 186 m core part |
-| Standing-seam pyramid | 25.6 × 16.6 eave | 176–186 | the apex equals the mapped height, which the 2019 lidar's 95th percentile confirms (its maximum is 193). The 10 m rise is estimated from a pyramid-to-attic ratio of about 0.4 in the 2008 close-up. |
+| Standing-seam pyramid | 26.2 × 17.2 eave | 176–190 | The mapped 186 m and the lidar 95th percentile mark the main roofline; the lidar maximum is 193 m. The first draft used a 10 m pyramid to 186 m, which the coordinator couldn't pick out at the review camera, so the apex rises to 190 m, still under the lidar maximum. The colour is the light verdigris (`#8fbcab`) seen in the 2006 photographs. |
 
 - **Walls.** Rose granite, `#cfbcb0`, with rustication joints up to 17 m. Paired punched windows sit at a 3.3 m bay, one quad per bay per floor. City estimates the bay; the photos show a pair of panes per bay.
 - **14th Street (north) face.** A recessed granite arch frames a glazed bay from 18 to 62 m, about 12 m wide, under a round head. Below it are the arched hotel entrance and a navy porte-cochère canopy.
 - **Ornament.** Gold starburst rosettes run along the first setback. Round balconies stack down the centre of the east and west faces, between about 70 and 148 m. That fits the 2006 photographs, whose left face is the narrow west face. The broad faces carry an arched top window.
-- **Crown.** The attic's dark windows sit behind small gold X-lattice panels. The grey-green pyramid has a row of dark dormers along each face's foot.
+- **Crown.** The attic's dark windows sit behind small gold X-lattice panels. The verdigris pyramid has a row of dark dormers along each face's foot.
 
 ## Night
 
