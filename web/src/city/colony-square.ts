@@ -47,11 +47,16 @@ type Style = {
   majorEvery: number;
   /** A darker shadow band under every nth spandrel; 0 for none. */
   bandEvery: number; band: string;
+  /** Solid precast at each end of a face, in metres (the photographed blank corners). */
+  cornerSolid: number;
+  /** A continuous dark mechanical band at this floor index; -1 for none. */
+  mechFloor: number;
 };
 
 const DEFAULT_STYLE: Style = {
   glass, pier: precast, crown: precast, lobby: storefront,
   bay: 2.5, spandrel: 2.3, pierWidth: 1.2, pierDepth: 0, majorEvery: 0, bandEvery: 0, band: shade,
+  cornerSolid: 0, mechFloor: -1,
 };
 
 /**
@@ -81,13 +86,25 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
         if (k < n) f.quad(r - 0.0001, r, lo, top, d / 2, st.band);
       }
     }
+    if (st.cornerSolid > 0) {
+      const c = st.cornerSolid / f.len;
+      f.quad(0, c, lo, top, d + 0.02, st.pier);
+      f.quad(1 - c, 1, lo, top, d + 0.02, st.pier);
+    }
     for (let j = 0; j < floors; j++) {
       const y = lo + j * pitch;
+      if (j === st.mechFloor) {
+        // The mechanical floor reads as one continuous dark glazed band.
+        const c = st.cornerSolid / f.len;
+        f.quad(c, 1 - c, y + 0.3, y + pitch - 0.3, d + 0.01, st.band === shade ? st.glass : '#4c4844');
+        continue;
+      }
       f.quad(0, 1, y, y + st.spandrel, 0, st.pier);
       if (st.bandEvery && j % st.bandEvery === 0) f.quad(0, 1, y + st.spandrel - 0.45, y + st.spandrel, 0.02, st.band);
       const w = st.pierWidth / 2 / f.len;
       for (let k = 0; k < n; k++) {
-        if (litHash(seed, i, j, k) >= occupancy) continue;
+        if (j === st.mechFloor || litHash(seed, i, j, k) >= occupancy) continue;
+        if (st.cornerSolid > 0 && ((k + 0.5) / n < st.cornerSolid / f.len || (k + 0.5) / n > 1 - st.cornerSolid / f.len)) continue;
         f.quad(k / n + w, (k + 1) / n - w, y + st.spandrel, y + pitch, -0.5, st.glass, true);
       }
     }
@@ -111,13 +128,15 @@ const TOWERS: Record<string, Tower> = {
   },
   [colony400Id]: {
     id: colony400Id, name: '400 Colony Square', origin: [796.77, -3752.77], probes: [[0, 0], [-12, -20], [12, 20]],
-    half: [19, 27.75], lobby: 7.8, floors: 20, pitch: 3.6, roof: 83.3, parapet: 86, podium: 7.8,
+    half: [19, 27.75], lobby: 7.8, floors: 19, pitch: 3.6, roof: 83.3, parapet: 86, podium: 7.8,
     // Shared Colony Square palette (agreed with skins-6): warm bronze-grey glass,
     // bright precast, proud piers with a major pier every fourth bay, a floor
     // shadow band every second floor, a pale crown and a dark two-storey lobby.
     style: {
       glass: '#6b655e', pier: '#ece8de', crown: '#d6d1c6', lobby: '#3f4448', band: '#b9b3a7',
-      bay: 2.5, spandrel: 1.7, pierWidth: 1.1, pierDepth: 0.6, majorEvery: 4, bandEvery: 2,
+      // Tall narrow slit windows (2007 photo): wide piers, short spandrels.
+      bay: 2.5, spandrel: 1.2, pierWidth: 1.55, pierDepth: 0.35, majorEvery: 0, bandEvery: 0,
+      cornerSolid: 3.2, mechFloor: 13,
     },
     cores: [{ at: [-0.5, -10], size: [11, 12], top: 91.2 }, { at: [-0.5, 0], size: [11, 8], top: 89.9 }], seed: 400,
   },
