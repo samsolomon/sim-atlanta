@@ -3213,6 +3213,10 @@ Two of the six freight locomotive studies had a boxcar attached. The Model Lab n
 
 The first car in the freight kit is a three-bay covered grain hopper, sized from Greenbrier's 5,400 ft³ data sheet: 17.88 m over couplers and 3.25 m wide. It shares the boxcar's trucks and costs 660 triangles on phones and 1,000 on desktop. Three of them now follow the NS-like locomotives through Brookwood. The first build passed on desktop but pushed phones to 91 shader programs against a ceiling of 90. The car's geometry wasn't the cause. The WIP had switched the Brookwood train to instancing on phones, and an instanced, clipped Lambert is a different program from a plain one. Separate meshes on low tier brought it back to 90 with 567 draws, and a test now pins that choice. A second test caught the hexagonal phone wheels floating 2.4 cm above the rail because they rested on a flat edge. Turning every freight wheel a quarter-step puts a vertex on the rail. [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
 
+### 2026-11-23 — Three paints for one boxcar
+
+The freight kit's boxcar now comes in its original oxide, a sun-bleached brown with darker painted-out patches, and a CSX-family navy. All three share one shape and one material. Each paint is a separate vertex-coloured geometry of 800 triangles, and the patches add 12. The first navy, input `#3f5d84`, rendered as a bright royal blue in the Lab. Halving its saturation to `#34465e` landed on the photo's navy, and on Sam's review a little grime (`#3b4859`) sat it beside the weathered oxide. The faded car went pink when lightened, so bleached rust needed less red, not more white. Downtown now runs three navy cars and two oxide; Brookwood runs three hoppers, three faded cars and two oxide. [Lab and City, day and night](log/freight/boxcar-variants/comparison.jpg)
+
 **2026-11-23 — The Empire Building on Broad.** A 14-floor count had supplied the old extrusion. Roof returns put the buff masonry shaft near 375 m NAVD88, with two courts opening down to 345 and 335 m behind it. The public door sits in the southern arch of the central three. The roof camera gained 2,258 triangles and two draws on low. [Broad Street and the surrounding block by day and night](log/ui/empire-building/README.md)
 
 ### 2026-11-23 — Five shader programs back on the phone board
@@ -3226,3 +3230,50 @@ Sam wanted a Route 49 bus to sit "pretty close" to its live GPS, and the timetab
 The review turned up a sign error that would have hurt Route 49 most, since it runs north–south. GTFS bearings were compared against scene headings with north and south swapped, so a bus with a correct bearing scored better on the opposite direction's shape. Claims now resolve in a fixed order: exact descriptors, then proximity, then hiding a twin. A fresher unmatched report could otherwise hide a genuine trip. A simulation of a bus driving 250 m between stops and reporting every 15 s stays within 151 m of its fix without a single relocation fade. With 30 s reports the bound is 210 m. Our first measurement surprised us: the present-clock path planned every trip in the coming hour in a single frame, a 26 ms hitch on the hour. Planning two trips per frame over the last two minutes brought that frame to 0.4 ms.
 
 At 22:55, MARTA bus 2360 was on trip 302 near Grant Park and drew 149 m ahead of a 57 s old fix. 1.1 s later, trip 141 had no GPS and drew at its timetable place Downtown. [The live and fallback pair](log/ui/route-49/present-pair.jpg) · [Noon and 21:00](log/ui/route-49/day-night.jpg)
+
+### 2026-11-23 — Lunch at the High
+
+Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on
+Friday, six visitors sit facing their tables while eight walkers cross the
+paving, climb the entry ramp and follow the lawn path. The ramp needed its own
+height calculation because the deck rises away from the ground beneath it.
+At 23:00 the tables and paths are quiet.
+
+Sam couldn't find the tables at his usual 260 m orbit. They sat in the Woodruff
+shadow, tucked against a wall. A leaf-on aerial showed where the real café sits:
+in a gridded tree grove in the open square, beside four pale squares that turned
+out to be open umbrellas. The tables now stand there, twelve in three rows of four,
+with warm pale tops and cream umbrellas. No November photograph shows the
+umbrellas, so they started furled. At 260 m the furled ones read only as a dark
+smudge, so Sam picked them open. Ten visitors sit at lunch. The grove adds about 1,100 triangles
+to the existing shell batch, with no new draw or material.
+[Before and after](log/ui/high-visitors/compare-lunch.jpg) ·
+[café grove close-up](log/ui/high-visitors/tables.jpg) ·
+[day and night](log/ui/high-visitors/day-night.jpg) ·
+[furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
+
+**2026-11-23 — The Marriott Marquis stops smearing.** Sam asked whether a cream band down the hotel's curved face was texture or reality. It was neither. An ellipse of one-sided stone wedges filled up to 64% of each window mid-bulge, and at 0.3 m per pixel the slivers of glass left over aliased into vertical streaks. Photographs show the real piers splaying symmetrically into V fins that are widest at the terrace and gone about a dozen floors up. Rebuilding the flare that way keeps every bay a centred dark pane. A raycast test samples 168 bay centres on the lower bulge and fails on the old wedges (bay 6, floor 8 hit stone). No new material. [Before and after](log/ui/marriott-marquis/day-before-after.jpg)
+
+### 2026-11-23 — Where North Avenue meets its tunnel
+
+Sam kept seeing a dark band where North Avenue drops under the railway. The paint wasn't causing it. The open ramp at each mouth took its height from the board at only six points across 22.6 m, and the outer two sat on the bank. At the west mouth the lanes rose 1.3 m to meet a bank that had climbed onto the painted road. The east step was 0.3 m. The shadowed faces of those steps were the band. Vehicles followed the same function, so they ran up to 1.38 m away from the drawn pavement.
+
+The fix starts on the board. The site's existing DEM regrade now levels the road for 10 m beyond each mouth and eases back into the terrain by 30 m. The ramp follows the board at 1 m intervals across, then descends to the surveyed floor over 20 m. Its strips keep a fixed vertex count, so neighbouring rows share every vertex, and a 0.4 m apron tucks under the board to close the seam. A new test compares the board and the drawn pavement across both mouths on both tiers. At baseline it found a 1.40 m step, 1.38 m vehicle error and 4.6 m cross-fall. After the fix those are 0.04 m, 0.01 m and 0.05 m.
+
+Markings were the second seam. The board paints one yellow line down each mapped carriageway. At the mouths those lines are 1–1.7 m from the pale dashes the cut drew. The cut now carries the board's own line from mouth to mouth, and the median nose and kerbs grow from zero width over 12 m. The low tier spends 921 more triangles on the underpass, which now totals 4,399 against a 5,000 cap. It adds no shader program; low holds 85 of 90 after rebasing on main.
+
+[West mouth, before and after](log/underpass-road-joins/join-compare-na-west-a-high-14.jpg) · [East mouth](log/underpass-road-joins/join-compare-na-east-a-high-14.jpg) · [West at night](log/underpass-road-joins/join-compare-na-west-a-high-23.jpg)
+
+### 2026-11-23 · 171 Seventeenth at the bridge
+
+From the Connector, the 71 × 36 m office tower reads as three shapes. The stone-framed west wing steps down 9 m from the ribbon-glazed shaft, and the crown rises 8 m above it. In the night photograph the brightest surface was the broad glass crown itself. The City model gives that surface a warm glow and shares its window lighting with the scattered panes below. The skin uses 3,848 triangles across two meshes and keeps the low tier at 90 shader programs. [Matched day and night views](log/ui/171-seventeenth/README.md)
+
+### 2026-11-23 · The garage screen at 903 Peachtree
+
+The 24.4 m base under 903 Peachtree’s glazed shaft contains six parking levels above streetfront retail. In the close-up, the panels read as one large opening framed in aluminum, with staggered bronze and charcoal strips inside it. The screen and eighth-floor terrace give the broad podium a different scale from the apartment floors above. City draws the skin in 4,523 triangles using its two existing landmark materials. [Day, night and close views](log/ui/903-peachtree/README.md)
+
+### 2026-11-23 · 1100 Peachtree and a 200 m tower that was 96 m
+
+The top-40 building-skin survey went through two checks before anyone built from it. First, a throwaway probe in the generic building builder logged every footprint City still draws: 6,171 across 12 areas. That showed three "candidates" were already modelled, including Twelve Downtown, which no name search would have caught. Second, lidar: the April 2019 3DEP returns put the Campanile at 96 m, not the mapped 200. They also confirmed 171 Seventeenth's 89/98/106 m parts, but only after the ground reference moved from "lowest nearby return" to the median of a ring 3 to 20 m around each footprint. On the slope down to the Connector, the old reference added 14 m. Rank 2 turned out to be the unnamed 60-floor outline at West Peachtree and 12th, which is 1072 West Peachtree, topped out in November 2025 and absent from the 2019 point cloud.
+
+The first skin is 1100 Peachtree. It is a notched 47 m square on the diagonal grid: cream stone ribbons, a dark glass slot up each face, a loggia under the cornice and a nine-tread pyramid. Lidar sets the cornice at 409.8 m NAVD88 and the apex at 428.6 m. The first pass read almost black: the photos' reflective glass sits on light sky, so the ribbon colour had to rise to about #6c7f92 and the glass share fall to 44% of each floor. At night only the loggia is lit, as on the owner's dusk cover, and 8% of office panes. The body is 2,300 triangles in one existing material. [Research, cameras and captures](log/ui/1100-peachtree/README.md)

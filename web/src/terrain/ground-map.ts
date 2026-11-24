@@ -21,6 +21,8 @@ const landColors: Record<string, string> = {
 };
 const landOrder = Object.keys(landColors);
 const paths = new Set(['footway', 'pedestrian', 'steps', 'cycleway', 'path']);
+/** Street centrelines; the North Avenue cut carries the same line (underpass.ts). */
+export const STREET_LINE = '#d8bd79';
 const streets = new Set(['residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk']);
 type PaintRoad = { name?: string | null; cls: string; sub?: string | null; pts: P2[] };
 
@@ -233,7 +235,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
       ctx.setLineDash([3, 6]); stroke(r, .24, PAL.lineWhite); ctx.setLineDash([]);
     } else if (streets.has(r.cls) && r.cls !== 'residential' && roadWidth(r) >= 9) {
       // Wide residential streets (Ansley's circles) carry no centreline.
-      stroke(r, .4, '#d8bd79');
+      stroke(r, .4, STREET_LINE);
     }
   }
   paintStreetBridgeApproaches(ctx, data);

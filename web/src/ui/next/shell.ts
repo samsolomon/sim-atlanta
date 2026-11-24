@@ -709,7 +709,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     range.setAttribute('aria-valuetext', `${dayTimeFmt.format(now)}${v === 0 ? '' : `, ${v > 0 ? '+' : '−'}${fmtSpan(Math.abs(v))} from the middle`}`);
     const anchorLabel = anchorLive ? `Now · ${timeFmt.format(Date.now())}` : `${shortDate.format(anchorMs)} · ${timeFmt.format(anchorMs)}`;
     anchorText.textContent = anchorLabel;
-    anchorPhone.textContent = anchorLabel;
+    // Phones show the slider's middle beside the current time; when they match it would just repeat it.
+    anchorPhone.textContent = anchorLabel === `${shortDate.format(now)} · ${timeFmt.format(now)}` ? '' : anchorLabel;
     dateText.textContent = shortDate.format(now);
     panel.querySelector('.a2-date-time')?.replaceChildren(timeFmt.format(now));
     // Never rewrite the date while someone is picking or typing one.

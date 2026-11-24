@@ -243,3 +243,30 @@ it('replaces the Federal Reserve Bank with its stepped marble tower and forecour
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
 });
+
+it('replaces 1100 Peachtree with its notched shaft, lit loggia and stepped pyramid at lidar heights', () => {
+  const site: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:39450210');
+  const model = createSkylineLandmark([site, tower], site, -2, () => 0)!;
+  expect(model.group.name).toBe('1100 Peachtree');
+  expect(model.buildings).toEqual([tower]);
+  model.group.updateMatrixWorld(true);
+  const top = (u: number, v: number) => {
+    const x = 745.5 + (u - v) * Math.SQRT1_2, z = -3430.5 + (u + v) * Math.SQRT1_2;
+    return new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
+  };
+  // NAVD88 from 3DEP (2019) less the 297.1 m Peachtree sidewalk the flat test ground stands for.
+  expect(top(0, 0)).toBeCloseTo(428.6 - 297.1, 0);
+  expect(top(21, 0)).toBeCloseTo(409.8 - 297.1, 0);
+  expect(top(-50, 0)).toBeCloseTo(308.6 - 297.1, 0);
+  const [, lamps] = model.group.children as Mesh[];
+  model.setNight(1);
+  expect((lamps.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  const body = (model.group.children[0] as Mesh).geometry;
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});

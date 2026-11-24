@@ -1,9 +1,11 @@
 import { crownKey } from '../trees/rollout';
-import { daylightSlots, underpassMesh, type Underpass } from './underpass';
+import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
+import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
+import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -195,7 +197,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
-  const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero);
+  const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero, boardLines(options.underpass, paintCity.roads));
   if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
@@ -229,7 +231,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
       : site.id === gazeboId ? createClaraMeer : null;
-    const landmark = create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+    const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
+      : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
+      : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };

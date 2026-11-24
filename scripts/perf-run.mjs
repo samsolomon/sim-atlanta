@@ -15,12 +15,14 @@ let out = null;
 let desktop = false;
 let extra = null;
 let netMbps = 0;
+let cpu = 1;
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
   else if (args[i] === '--desktop') desktop = true;
   else if (args[i] === '--eval') extra = args[++i];
   else if (args[i] === '--net') netMbps = Number(args[++i]) || 0;
+  else if (args[i] === '--cpu') cpu = Number(args[++i]) || 1;
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -74,6 +76,8 @@ if (netMbps > 0) {
   await send('Network.enable');
   await send('Network.emulateNetworkConditions', { offline: false, latency: 100, downloadThroughput: netMbps * 125000, uploadThroughput: netMbps * 62500 });
 }
+// --cpu 6 slows the page's CPU about 6x, a rough stand-in for the A16 when reading load phases.
+if (cpu > 1) await send('Emulation.setCPUThrottlingRate', { rate: cpu });
 // Galaxy A16: 1080x2340 at DPR 2.625 = 411x891 CSS px.
 if (desktop) await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
 else {
