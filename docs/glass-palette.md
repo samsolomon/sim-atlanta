@@ -123,4 +123,6 @@ Each branch changes colour constants only, for buildings that are already merged
 | `samsolomon/palette-hold-coke-euhm` (a23eed89) | skins-7 | One Coca-Cola `#4b565b` (V 36) → `#6a7378` (S 12, V 47). EUHM stair tower `#5d7f98` (S 39) → `#6d8090` (S 24, V 56). |
 | (to confirm) | skins-3 | Amli's dark field `#2f3a44` (V 27) lifted to V ≥ 40 |
 
+**Signature landmarks the pick would move (Sam reviews; no change tonight):** Promenade Tower (`web/src/city/midtown-promenade.ts`). Its glass bases #5a525c, #6b626b and #4e505e are V 36, 42 and 37, so two of the three sit under the V 40 dark-glass floor before the grade. In shade from about 100 m it reads near-black navy, with the granite #826e68 showing as a pink grid. Rendered readings from the default view and a 600 m view will be added here.
+
 Skins merged before the provisional rules that aren't on a held branch yet: 1075 Peachtree, 10 10th, Metropolis (low glass), 903 Peachtree, ViewPoint. Their owners prepare branches only if Sam asks.
