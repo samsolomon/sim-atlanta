@@ -239,6 +239,8 @@ export interface PiazzaSpec {
   stairLanding?: number;
   /** Bistro tables and benches; positions are illustrative. */
   tables: P2[];
+  /** Market umbrellas through alternate tables, if any. */
+  umbrellas?: 'furled' | 'open';
   benches: P2[];
 }
 
@@ -341,14 +343,15 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
     for (const s of [-w - 0.12, w + 0.12])
       body.quad(q(0, s, yTop - 0.1), q(0, s, yTop + 0.45), q(len, s, yFoot + 0.45), q(len, s, yFoot - 0.1), curb);
   }
-  // Café seating: round white tables with three red wire chairs each.
-  for (const [u, v] of spec.tables) {
+  // Café grove seating: round tables with four red-cushioned wire chairs each,
+  // in the loose grid the photographs show. Warm pale tops stand out from the paving.
+  spec.tables.forEach(([u, v], t) => {
     const g = ground(u, v);
-    if (g === null) continue;
+    if (g === null) return;
     body.box(0.08, 0.72, 0.08, u, g + 0.36, v, '#9a9b98');
-    body.box(0.75, 0.04, 0.75, u, g + 0.74, v, '#efefec');
-    for (let c = 0; c < 3; c++) {
-      const a = (c * 2 * Math.PI) / 3,
+    body.box(0.8, 0.04, 0.8, u, g + 0.74, v, '#f5ead4');
+    for (let c = 0; c < 4; c++) {
+      const a = (c * Math.PI) / 2,
         cu = u + 0.72 * Math.cos(a),
         cv = v + 0.72 * Math.sin(a);
       body.box(0.44, 0.05, 0.44, cu, g + 0.45, cv, '#c44a4f');
@@ -366,7 +369,25 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
         '#c44a4f',
       );
     }
-  }
+    // Cream market umbrellas through alternate tables, furled out of season.
+    if (!spec.umbrellas || (t + Math.floor(t / 4)) % 2) return;
+    body.box(0.05, 2.5, 0.05, u, g + 1.25, v, '#d8d4ca');
+    const cream = '#f4ecdc';
+    if (spec.umbrellas === 'furled') {
+      body.box(0.22, 1.2, 0.22, u, g + 1.85, v, cream);
+      return;
+    }
+    // Open: a shallow octagonal cone, 2.6 m across.
+    const apex = [u, g + 2.65, v];
+    for (let k = 0; k < 8; k++) {
+      const a0 = (k * Math.PI) / 4 + Math.PI / 8,
+        a1 = a0 + Math.PI / 4;
+      const p0 = [u + 1.3 * Math.cos(a0), g + 2.2, v + 1.3 * Math.sin(a0)],
+        p1 = [u + 1.3 * Math.cos(a1), g + 2.2, v + 1.3 * Math.sin(a1)];
+      body.tri(p1, p0, apex, cream);
+      body.tri(p0, p1, apex, '#d9cfbc');
+    }
+  });
   for (const [u, v] of spec.benches) {
     const g = ground(u, v);
     if (g === null) continue;
