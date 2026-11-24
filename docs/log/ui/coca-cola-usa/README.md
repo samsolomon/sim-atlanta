@@ -27,13 +27,24 @@ The 1.1 m deck recess inside the parapet is not modelled.
 - The [Wikimedia Commons Coca-Cola headquarters category](https://commons.wikimedia.org/wiki/Category:Coca-Cola_headquarters) gives the campus context.
 - The second angle is the campus seen from the Guggenheim side, used for #402.
 
+## 2026-11-24 rework
+
+The first skin drew a red-brown granite grid with slate glass, which read at 620 m as a beige punched grid close to its generic neighbour. Re-reading the Enclos aerial shows that was the wrong material. The shaft is a **dark blue-grey glass curtain wall with dense silver mullions and recessed corners**. **Dark red-brown** appears only on the crown band and the penthouse, and the base is **pale**. The rework draws exactly that:
+- glass `#93a3b3`;
+- silver mullions `#cfd4d8` about every 1.5 m, with a thin dark line at each floor;
+- dark recessed strips at the corners;
+- a crown band `#6e4538` and penthouse `#5b392f`;
+- a pale plinth `#d6d0c4`.
+
+At 11:30, high tier, the sunlit curtain wall renders H214 S28 V44. [Before and after](rework-before-after.jpg) · [Four sides](four-side.jpg)
+
 ## Not drawn
 
 The red script sign and any wordmarks are logos. The frieze stays plain.
 
 ## Glass
 
-The glass base is `#a2aeb6` (S11 V71) and the granite is `#a07a66`. The first glass value, `#74838e`, rendered too dark.
+Rework: the glass base is `#93a3b3`. The first version used `#a2aeb6` glass and `#a07a66` granite. The first glass value, `#74838e`, rendered too dark.
 
 At 11:30, high tier, camera `-582,-1817,280,62,330`, the sunlit east-face panes render about H205 S16 V43 ([frame](glass-sample.jpg)).
 

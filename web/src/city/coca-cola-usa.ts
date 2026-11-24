@@ -6,20 +6,25 @@ import { litFacade, seedOf } from './skin-kit';
 
 /**
  * The Coca-Cola USA Building (Heery International, 1987) on the North Avenue
- * campus: a 20-storey tower of dark slate glass in a red-brown granite grid,
- * with a deep frieze band under the roof and a long penthouse. Heights are
+ * campus. Per the Enclos aerial (the facade contractor's photo): a dark blue-grey
+ * glass curtain wall with dense silver mullions and recessed corners, a dark
+ * red-brown crown band and penthouse, on a pale plaza-level base. Heights are
  * NAVD88 from the April 2019 lidar: roof deck 382.1, parapet 383.2, penthouse
  * 388.8 m, on a plaza near 316 m (the site falls to 297 m on the west).
  * The frieze is plain: no logos.
  */
 export const cokeUsaId = 'osm:way:536718218';
 
-const glass = '#a2aeb6',
-  granite = '#a07a66',
-  graniteShade = '#8d6a57',
+const glass = '#93a3b3',
+  mullion = '#cfd4d8',
+  floorLine = '#6f7d8a',
+  corner = '#56616c',
+  crown = '#6e4538',
+  crownShade = '#5b392f',
+  granite = '#d6d0c4',
+  graniteShade = '#bdb6a8',
   storefront = '#6b7880',
-  roofDeck = '#a3a09a',
-  plant = '#b8b4ab';
+  roofDeck = '#a3a09a';
 
 export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, site.id, 'Coca-Cola USA Building', [-582.5, -1816.9], [1, 0],
@@ -47,10 +52,10 @@ export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid:
   // Granite base from the low west grade up to the plaza, then the glass shaft.
   s.prism(plan, s.base, firstFloor, granite, roofDeck);
   s.prism(plan, firstFloor, frieze, glass, roofDeck);
-  s.prism(plan, frieze, parapet, granite, roofDeck);
+  s.prism(plan, frieze, parapet, crown, roofDeck);
   // Long penthouse over the core (lidar: x −584…−570, z −1849…−1794).
   const pen: P2[] = [[-1.5, -32], [12.5, -32], [12.5, 23], [-1.5, 23]];
-  s.prism(pen, roof, penthouse, plant, roofDeck);
+  s.prism(pen, roof, penthouse, crownShade, roofDeck);
 
   plan.forEach((a, face) => {
     const b = plan[(face + 1) % plan.length];
@@ -59,15 +64,20 @@ export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid:
     const at = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / len, y, a[1] + t * dz - out * dx / len];
     const quad = (l: number, r: number, y0: number, y1: number, out: number, c: string, lit = false) =>
       (lit ? s.lights : s.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
-    // Granite grid: a pier every ~3 m and a spandrel at each floor.
+    // Curtain wall: dense silver mullions about every 1.5 m, a thin dark line at
+    // each floor, and a dark recessed strip at each end of a long face (the
+    // notched corners in the Enclos aerial).
     const bays = Math.max(1, Math.round(len / 3));
-    for (let k = 0; k <= bays; k++) {
-      const w = (k === 0 || k === bays ? 0.6 : 0.3) / len;
-      quad(Math.max(0, k / bays - w), Math.min(1, k / bays + w), firstFloor, frieze, 0.1, granite);
-    }
-    for (let f = 0; f <= floors; f++) {
+    const mullions = Math.max(1, Math.round(len / 1.5));
+    for (let k = 1; k < mullions; k++) quad(k / mullions - 0.13 / len, k / mullions + 0.13 / len, firstFloor, frieze, 0.06, mullion);
+    for (let f = 1; f < floors; f++) {
       const y = firstFloor + f * pitch;
-      quad(0, 1, y - 0.35, y + 0.35, 0.08, graniteShade);
+      quad(0, 1, y - 0.25, y + 0.25, 0.05, floorLine);
+    }
+    if (len > 12) {
+      const c = 1.8 / len;
+      quad(0, c, firstFloor, frieze, 0.08, corner);
+      quad(1 - c, 1, firstFloor, frieze, 0.08, corner);
     }
     // Offices at 23:30: a sparse, well-mixed set of panes. The glass prism is
     // the pane colour, so only the lit panes need their own quads.
