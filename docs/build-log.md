@@ -3026,3 +3026,7 @@ revision gives the two wings separate upper setbacks and silver mullions around
 blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
 building and eight suspended globes trace the approach to the lobby.
 [Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).
+
+### 2026-11-23 — The second copy of the bridge
+
+With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
