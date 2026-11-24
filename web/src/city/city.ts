@@ -1509,6 +1509,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     greySky: C('#cfd4da'), greyBg: C('#c6c8c9'), greyBgNight: C('#1e2229'), greySun: C('#e8ecf0'),
     overcastSky: C('#f4f5f2'), overcastGround: C('#c4bdb0'), overcastHaze: C('#e2e5e6'),
     morningSky: C('#ffe0c6'), morningHaze: C('#efbcab'),
+    eveningSun: C('#ffbe62'), eveningHaze: C('#f7c48c'), afterglow: C('#ffb479'), twilightSky: C('#9daed6'),
     snowBg: C('#eef0f2'),
   };
   const sm = (a: number, c: number, x: number) => {
@@ -1744,6 +1745,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       * dry * (1 - 0.75 * cl) * (1 - wx.fog);
     hemi.color.lerp(pal.morningSky, 0.38 * morning);
     bg.lerp(pal.morningHaze, 0.45 * morning);
+    // Low western sun picks out façades and tree crowns; the sky keeps its cool ambient fill.
+    const west = sm(0, 0.65, -Math.sin(az)) * dry * (1 - cl) * (1 - wx.fog);
+    const evening = (1 - sm(5, 16, el)) * west;
+    const beam = sm(-1.25, 5, el) * evening;
+    sun.color.lerp(pal.eveningSun, 0.9 * beam);
+    sun.intensity += 1.7 * beam;
+    // The visible solar disc fades first. Scattered light above the horizon outlasts it.
+    const twilight = sm(-9, -2, el) * (1 - sm(1, 8, el)) * west;
+    hemi.color.lerp(pal.twilightSky, 0.55 * twilight);
+    hemi.intensity += 0.45 * twilight;
+    bg.lerp(pal.eveningHaze, 0.32 * beam);
+    bg.lerp(pal.afterglow, 0.48 * twilight * sm(-7, -1, el));
     bg.lerp(pal.snowBg, wx.snow * day * 0.4);
     world.setWet(wx.rain);
     terrain?.setWet(wx.rain);
