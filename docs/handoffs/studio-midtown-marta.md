@@ -17,6 +17,17 @@ Downtown rail owns integration on `samsolomon/live-marta-motion`, prototype `97a
 
 The prototype budgets 60 s from receipt to the corresponding displayed fix. Source delay adds to that budget; stale observations expire and playback holds at the final supported position. Report time is the latest source observation; buffered positions are inferred. Map and City share TrainSource in code. Next, exercise delayed, duplicate and out-of-order feeds through the public poll path, measure the lag tradeoff and verify shifted-clock fallback. Full tests, rendered Map/City parity, matched before/after clips and acceptance are pending the dedicated check window. Keep this branch separate from release work.
 
+**Delay comparison** at `6a2b20fa6e61c4967b4f4538cc21ce56074ede75`: replay with `node --experimental-strip-types scripts/study-live-motion.mjs` on the prototype branch. Six synthetic reports have a 30 s cadence, 5 s observation age at receipt and a 300 m cruising increment. In the delayed trace, one observation arrives 20 s later (25 s old). Durations below are in seconds. Speeds are the two quarter-second samples straddling the third moving update, in m/s.
+
+| Receipt to displayed endpoint | Cruise hold per poll | Cruise update speeds | Displayed 60 s dwell | Hold before delayed update | Effective age at ordinary / delayed endpoint |
+|---|---:|---:|---:|---:|---:|
+| 8 s linear | 22 | 0 → 37.50 | 82 | 42 | 13 / 33 |
+| 15 s buffered | 15 | 0 → 0.99 | 75 | 35 | 20 / 40 |
+| 30 s buffered | 0 | 0.25 → 0.25 | 60 | 20 | 35 / 55 |
+| 60 s buffered | 0 | 10.08 → 10.00 | 60 | 0 | 65 / 85 |
+
+No endpoint overshoot in any quarter-second sample. The 30 s curve touches zero instantaneous speed on a timely update. The 15 s curve brakes into its hold and restarts gradually. The input-expiry regression is written; execution and rendered clips await the explicit window. Endpoint age in the table is measured when the display reaches a distinct fix; age continues growing during a hold. The 60 s setting is experimental.
+
 ## Sam's decisions and coordinator rulings that touch this area
 
 Today's decisions as the coordinator relayed them in the handoff call; ask the coordinator for details, since they're not all written up on main yet:
