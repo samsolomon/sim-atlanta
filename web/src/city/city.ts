@@ -1403,16 +1403,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
-  // Low, far orbits: shadows fade out where a typical building's shadow is under 2 pixels, then the
-  // shadow camera looks at an empty layer, so the map is cleared once and every re-centre after it
-  // is free (a redraw at the default view submits ~1.4M triangles, more than half a second scene).
+  // Low, far orbits: shadows fade out where a typical building's shadow is under 2 pixels, and the
+  // map stops redrawing there, so every pan re-centre is free (a redraw at the default view submits
+  // ~1.4M triangles, more than half a second scene).
   // The threshold is screen-space: a TYPICAL_H building's shadow (h / tan(sun elevation)) against
   // the pixel size at the orbit distance, so long dusk shadows stay further out. Strength fades
-  // across 0.85-1x the threshold with the orbit, so a zoom never pops; casters switch at zero
+  // across 0.85-1x the threshold with the orbit, so a zoom never pops; redraws stop at zero
   // strength. Shadow programs stay compiled: toggling shadowMap.enabled or castShadow would change
   // every lit material's program key. ?perf&farshadow=<m> fixes the threshold (0: never).
   const TYPICAL_H = 12, SHADOW_PX = 2;
-  const NO_CASTERS = 30;
   let shadowsFar = false;
   let shadowDebug: object = {};
   if (perfEnabled) Object.assign(window, { __shadowFar: () => shadowDebug });
@@ -1442,11 +1441,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const nextFar = shadowsFar ? orbit > 0.97 * farAt : orbit > farAt;
     if (nextFar !== shadowsFar) {
       shadowsFar = nextFar;
-      if (nextFar) sun.shadow.camera.layers.set(NO_CASTERS); else sun.shadow.camera.layers.set(0);
-      // Redraw on the switch: once to clear the map going far, once to fill it coming back.
-      // (shadowTarget keeps its last centre: the light sits over it, so Infinity there would
-      // put NaN in the shadow camera and in every clipped material's planes.)
-      renderer.shadowMap.needsUpdate = true;
+      // Going far the map just stops redrawing (strength is 0 there). Coming back it is stale, so
+      // redraw once. (three's shadow pass tests casters against the main camera's layers, so a
+      // layer on the shadow camera cannot empty it; the saving is the skipped redraws.)
+      if (!nextFar) renderer.shadowMap.needsUpdate = true;
     }
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
