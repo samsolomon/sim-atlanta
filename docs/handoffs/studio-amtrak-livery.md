@@ -204,3 +204,15 @@ Earlier bus decisions are complete: #358 added the XE60 / Rapid XN40; #364 and #
 Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. Reply to an incoming coordinator message from **your** session; direct send from Studio has a pairing-token failure. Check replies. Quote actual `gh pr view <n> --json state,mergeCommit` before every MERGED notice. Do not deploy. All my browser tabs closed and my dev server stopped. Temp capture helpers /tmp/hopper-shots.py and /tmp/solo-capture.py refer to closed page IDs; create fresh tabs and update them.
 
 #390 final verification: `gh pr view 390 --json state,mergeCommit` returned `{"mergeCommit":{"oid":"13630a38d817a98c0bb89d7a3c180050aa94a362"},"state":"MERGED"}`. Fresh full tests and build passed after syncing main. Coordinator notified. No Part A merge work remains.
+
+## Claude Opus continuation — 2026-11-23 night (session bceb5cfc)
+
+- **PR #394** (`samsolomon/covered-grain-hopper`) opened and **held for Sam's OK**. 91/90 was the WIP's
+  low-tier instancing, not the car: low draws per-car meshes with the shared freight Lambert again
+  (90/90 low, 567 calls; high 105, 1,191). Codex review: no findings. Coordinator thread `msg_b0d56579dbfd`
+  (reply `msg_45eb50b51160`).
+- Freight wheels now start a quarter turn (vertex on rail); this also touched the approved boxcar.
+- Open for PR 4: low-tier instancing of long consists needs a #391-freed program slot.
+- Next: boxcar variants on `samsolomon/boxcar-variants`, stacked on #394 (retarget to main before merging #394's base).
+- Capture: `orca tab create --json --url ...`, `orca eval --page <id>`, `orca screenshot --page <id>`;
+  Lab canvas via `__lab.setNight/view/render` + `toDataURL`.
