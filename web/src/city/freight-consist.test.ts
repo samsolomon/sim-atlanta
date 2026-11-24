@@ -44,7 +44,10 @@ describe('seeded freight passages', () => {
         cars.forEach((u, i) => (i && u.kind === cars[i - 1].kind ? runs[runs.length - 1]++ : runs.push(1)));
         expect(Math.min(...runs)).toBeGreaterThanOrEqual(3);
       }
-      if (p.recipe === 'unit') expect(new Set(cars.map(u => u.kind))).toEqual(new Set(['grainHopper']));
+      if (p.recipe === 'unit') {
+        expect(new Set(cars.map(u => u.kind)).size).toBe(1);
+        expect(['grainHopper', 'tank']).toContain(cars[0].kind);
+      }
       // No double stacks downtown until the cut's clearance is verified.
       if (profile.railroad === 'csx') expect(cars.some(u => u.kind.startsWith('well'))).toBe(false);
     }

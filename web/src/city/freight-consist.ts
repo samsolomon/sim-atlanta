@@ -5,7 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-export const CONSIST_VERSION = 1;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars. */
+export const CONSIST_VERSION = 2;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -32,7 +33,9 @@ const ROAD_POWER: Record<FreightRailroad, FreightUnit[]> = {
   csx: ['locomotive', 'es44ah'],
   ns: ['locomotiveNs', 'es44acNs', 'sd70ace'],
 };
-const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper'];
+const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank'];
+/** Unit-train commodities: grain hoppers, or tanks for an illustrative ethanol movement. */
+const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank'];
 const WELL_LOADS: FreightUnit[] = ['wellA', 'wellB', 'wellC'];
 /** Distinct car geometries a train may draw, so each passage costs a small, fixed number of
  * instanced draws (one per kind present) on both tiers. */
@@ -105,7 +108,8 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
     const loads = shuffled(r, WELL_LOADS).slice(0, MAX_CAR_KINDS.intermodal);
     for (let i = 0; i < n; i++) cars.push(pick(r, loads));
   } else {
-    cars.push(...Array<FreightUnit>(int(r, 12, 30)).fill('grainHopper'));
+    const kind = pick(r, UNIT_CARS);
+    cars.push(...Array<FreightUnit>(int(r, 12, 30)).fill(kind));
   }
 
   const trailing = trainLength(cars) + COUPLER_GAP;
@@ -131,7 +135,7 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
 
 /** The longest train a profile can produce, for sizing slots. */
 export function maxTrainLength(profile: LineProfile) {
-  const longestCar = Math.max(...[...MANIFEST_CARS, 'grainHopper', ...(profile.recipes.intermodal ? WELL_LOADS : [])]
+  const longestCar = Math.max(...[...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? WELL_LOADS : [])]
     .map((k) => FREIGHT_LENGTH[k as FreightUnit]));
   const longestPower = Math.max(...Object.values(ROAD_POWER).flat().map((k) => FREIGHT_LENGTH[k]));
   return 30 * longestCar + 3 * longestPower + COUPLER_GAP * 33;
