@@ -39,7 +39,7 @@ import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
+import { GroundSurface, joinList, type BuiltSurface, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createCoda, codaIds } from '../city/midtown-culture-coda';
@@ -91,6 +91,8 @@ export interface DowntownTerrainOptions {
   /** The tree rollout (trees/rollout-city.ts) for a canopy-map row: every crown of the row (the
    *  high tier's list) and the Ansley Park test. */
   rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
+  /** The ground surface, already built off the main thread (terrain/surface-worker.ts). */
+  surface?: BuiltSurface;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -215,14 +217,20 @@ let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
 
+/** The openings the ground surface is cut by, so a surface built off the main thread matches. */
+export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings'>) {
+  const zero = grid.manifest.vertical.sceneZeroNavd88M;
+  return options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+}
+
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  const openings = options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
-  const mesh = new GroundSurface(grid, options.quality, openings, options.join);
+  const openings = terrainOpenings(grid, options);
+  const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
