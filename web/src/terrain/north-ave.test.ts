@@ -108,7 +108,7 @@ it.each(['low', 'high'] as const)('meets the board road level and flush at both 
     return null;
   };
   const w = site.halfWidth,
-    worst = { step: 0, cross: 0, floor: 0 };
+    worst = { step: 0, cross: 0, floor: 0, kink: 0, grade: 0 };
   for (const [mouth, out] of [[site.start, -1], [site.end, 1]] as const) {
     for (let t = -w + 0.05; t <= w - 0.05; t += 0.25) {
       // The joint: board just outside against the drawn pavement just inside.
@@ -117,6 +117,16 @@ it.each(['low', 'high'] as const)('meets the board road level and flush at both 
       expect(outside, String([mouth, t])).not.toBeNull();
       expect(inside, String([mouth, t])).not.toBeNull();
       worst.step = Math.max(worst.step, Math.abs(outside! - inside!));
+      // The surface normal in the lanes (kerbs rise 14 cm as they taper in):
+      // along-road grade on either side of the joint.
+      if (Math.abs(t) < w - 2.2 && Math.abs(t) > 0.8) {
+        const board = (outside! - ground(...site.point(mouth + out * 1.5, t))!) / 1.48,
+          ramp = (drawn(mouth - out * 1.5, t)! - inside!) / 1.48;
+        worst.kink = Math.max(worst.kink, Math.abs(board + ramp));
+        // And the ramp itself, metre by metre down to the floor.
+        for (let d = 0.02; d < 25; d += 1)
+          worst.grade = Math.max(worst.grade, Math.abs(drawn(mouth - out * (d + 1), t)! - drawn(mouth - out * d, t)!));
+      }
       // Vehicles ride underpassFloor, so it must be the drawn lane surface.
       if (Math.abs(t) < w - 2.2 && Math.abs(t) > 0.8)
         for (const ds of [0.5, 3, 9, 15])
@@ -137,6 +147,9 @@ it.each(['low', 'high'] as const)('meets the board road level and flush at both 
   expect(worst.step).toBeLessThan(0.05);
   expect(worst.floor).toBeLessThan(0.16);
   expect(worst.cross).toBeLessThan(0.15);
+  // Grades: no fold at the joint and no ramp steeper than a street.
+  expect(worst.kink).toBeLessThan(0.06);
+  expect(worst.grade).toBeLessThan(0.09);
   street.dispose();
   board.geometry.dispose();
 });
