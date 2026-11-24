@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 // In dev, /api/* goes to the Cloudflare Worker running under wrangler dev.
 export default defineConfig(({ command }) => {
-  const input: Record<string, string> = { main: 'index.html', vignette: 'vignette.html', models: 'models.html', about: 'about.html' };
+  const input: Record<string, string> = { main: 'index.html', vignette: 'vignette.html', models: 'models.html', about: 'about/index.html' };
   if (existsSync(new URL('./public/data/scene/square-board/north-band/ground.json', import.meta.url))) {
     input.squareBoard = 'square-board.html';
   }
