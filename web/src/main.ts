@@ -137,6 +137,8 @@ function refreshFreightCard() {
   const key = `${hit.consist}|${hit.lead}`;
   if (key !== freightCardKey) { freightCardKey = key; showCard(cityFreightCard(hit), !!follow); }
 }
+let selectedMapFeature: { kind: 'crossing' | 'arc'; id: string } | undefined;
+let keepSharedCamera = false;
 function showCard(html: string, canFollow = false) {
   followPanel.hidden = !canFollow;
   if (canFollow) updateFollowPanel();
@@ -148,7 +150,7 @@ function showCard(html: string, canFollow = false) {
   if (key !== shownKey) {
     shownKey = key;
     card.dispatchEvent(new Event('a2-select'));
-    requestAnimationFrame(focusSelection);
+    if (!keepSharedCamera) requestAnimationFrame(focusSelection);
   }
 }
 let shownKey = '';
@@ -185,6 +187,7 @@ function focusSelection() {
 }
 function hideCard() {
   shownKey = '';
+  selectedMapFeature = undefined;
   follow?.stop();
   card.classList.remove('following-trip');
   followPanel.hidden = true;
@@ -209,6 +212,12 @@ function renderTrainCard() {
   const t = source.find(selectedTrain);
   if (!t) {
     if (follow?.ended?.id === selectedTrain) return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
+    if (selectedTrain === params.get('train')) {
+      if (selectedTrain.startsWith('marta:train:') && clock.isRealTime() && !live.firstPollComplete) {
+        return showCard('<h2>Checking train location…</h2>');
+      }
+      return showCard('<h2>Train location unavailable</h2><p class="sub">This train has no position for the shared time.</p>');
+    }
     return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   }
   showCard(
@@ -222,7 +231,10 @@ function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
   if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
-  else hideCard();
+  else if (selectedBus && selectedBus === params.get('bus')) {
+    if (clock.isRealTime() && !buses.firstPollComplete) return showCard('<h2>Checking bus location…</h2>');
+    showCard('<h2>Bus location unavailable</h2><p class="sub">This bus has no current position for the shared time.</p>');
+  } else hideCard();
 }
 
 // A review link names a route, not a trip id, which changes with each timetable refresh.
@@ -283,6 +295,10 @@ if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
 const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 if (import.meta.env.DEV) Object.assign(window, { __source: source, __follow: follow });
+// The Map may still be waiting for tiles when the shared train's first live fix arrives.
+live.onUpdate = () => {
+  if (selectedTrain && selectedTrain === params.get('train')) source.update();
+};
 live.start();
 
 let override: AtmosphereOverride | null = null;
@@ -424,7 +440,24 @@ function addMapLayers(map: maplibregl.Map) {
       map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: ['buses', 'crossings', 'freight-hit'] }).length > 0;
     map.getCanvas().style.cursor = hit ? 'pointer' : '';
   });
+  const showMapFeature = (kind: 'crossing' | 'arc', props: Record<string, unknown>) => {
+    selectedMapFeature = { kind, id: String(props.id) };
+    if (kind === 'crossing') return showCard(crossingCard(props as unknown as CrossingProps));
+    const rights = typeof props.rights === 'string' ? JSON.parse(props.rights) : (props.rights ?? []);
+    showCard(freightCard({ ...props, rights } as TrackArcProps));
+  };
+  if (landing === 'map' && (params.has('crossing') || params.has('arc'))) {
+    const kind = params.has('crossing') ? 'crossing' : 'arc';
+    const id = params.get(kind);
+    const layer = map.getSource<maplibregl.GeoJSONSource>(kind === 'crossing' ? 'crossings' : 'freight');
+    void layer?.getData().then(data => {
+      if (!view3d.hidden || !card.hidden || data.type !== 'FeatureCollection') return;
+      const feature = data.features.find(f => f.properties?.id === id);
+      if (feature?.properties) showMapFeature(kind, feature.properties);
+    }).catch(() => { /* The source can disappear if the view changes during loading. */ });
+  }
   map.on('click', (e) => {
+    selectedMapFeature = undefined;
     const directBus = map.queryRenderedFeatures(e.point, { layers: ['buses'] })[0];
     const train = directBus ? nearestTrain(e.point, 5) : nearestTrain(e.point);
     selectedBus = null; selectedFreight = null;
@@ -444,13 +477,7 @@ function addMapLayers(map: maplibregl.Map) {
       if (!bus || !clock.isRealTime()) return hideCard();
       selectedBus = bus.id;
       renderBusCard();
-    } else if (f.layer.id === 'crossings') {
-      showCard(crossingCard(f.properties as unknown as CrossingProps));
-    } else {
-      const p = { ...f.properties } as Record<string, unknown>;
-      p.rights = typeof p.rights === 'string' ? JSON.parse(p.rights) : (p.rights ?? []);
-      showCard(freightCard(p as unknown as TrackArcProps));
-    }
+    } else showMapFeature(f.layer.id === 'crossings' ? 'crossing' : 'arc', f.properties);
   });
 
   // ---- animation loop: ~30 Hz is plenty for trains moving a few px/sec --------
@@ -1048,14 +1075,16 @@ const shellOptions: ShellOptions = {
     }
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;
+    const selection = selectedTrain ? { kind: 'train', id: selectedTrain }
+      : selectedBus ? { kind: 'bus', id: selectedBus } : selectedFreight ? { kind: 'freight', id: selectedFreight } : undefined;
     if (diorama) {
       const t = diorama.target(), c = diorama.camera();
-      return { view: 'city' as const, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
+      return { view: 'city' as const, selection, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
     }
     if (!map) return null;
     const c = map.getCenter();
     const b = Math.round(map.getBearing());
-    return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
+    return { view: 'map' as const, selection: selection ?? selectedMapFeature, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
   },
 };
 // The A2c interface (docs/ui-controls-brief.md).
@@ -1084,14 +1113,29 @@ updateAtmosphere();
 updateClock(clock.now());
 shell.tick(clock.now());
 setInterval(updateAtmosphere, 60_000);
+let restoreSelection = params.has('train') || params.has('bus') || params.has('freight');
 setInterval(() => {
   const now = clock.now();
   updateClock(now);
   shell.tick(now);
+  if (restoreSelection && (landing === 'city' ? diorama : map)) {
+    restoreSelection = false;
+    keepSharedCamera = true;
+    if (params.has('train')) {
+      selectedTrain = params.get('train');
+      source.update(now);
+    }
+    else if (params.has('bus')) selectedBus = params.get('bus');
+    else if (diorama && ['illustrative:freight:downtown', 'illustrative:freight:norcross'].includes(params.get('freight') ?? '')) {
+      selectedFreight = params.get('freight');
+      showCard(cityFreightCard(selectedFreight === 'illustrative:freight:norcross' ? 'NS Norcross District' : undefined), !!follow);
+    }
+  }
   followFromLink();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
   else if (selectedFreight) { refreshFreightCard(); if (follow) updateFollowPanel(); }
+  keepSharedCamera = false;
 }, 500);
 
 

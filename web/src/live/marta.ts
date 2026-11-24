@@ -45,6 +45,7 @@ export class LiveMarta {
   private tracked = new Map<string, Tracked>();
   private lastFetch = -Infinity;
   private lastOk = 0;
+  firstPollComplete = false;
   error: string | null = null;
   onUpdate: () => void = () => {};
 
@@ -94,6 +95,7 @@ export class LiveMarta {
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
     }
+    this.firstPollComplete = true;
     this.onUpdate();
   }
 
