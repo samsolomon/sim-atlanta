@@ -3445,6 +3445,10 @@ dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
 
+### 2026-11-24 — Taking the corners off the freight line
+
+The downtown freight track was drawn straight from Overture's polyline, so it turned at hard corners wherever the source had a vertex. Measured over 12 m chords, it bent as tightly as 65 m. A 28.6 m autorack spanning one of those corners swung 1.3 m off the rails, which is why autoracks and double stacks were kept off downtown. The pipeline now gives every free vertex on the freight route a 150 m circular fillet. Run ends, switches, junctions, bridge ends and board edges stay exactly where they were. The largest move from the source line is 16 cm, the ground audit's ballast count changed by one sample, and the seam with the King Memorial board stays closed. The first try left a doubled point on the board edge, where an end fillet started exactly on the pinned vertex. The seam test counted seven edge points instead of six and caught it. [Radius along the route, before and after](log/freight/curvature/radius-chart.png)
+
 ### 2026-11-24 — Cars that cost nothing when you can't see them
 
 The phone spent about 6 ms of every 33 ms frame updating City, and road traffic was most of it. Every car was posed every frame, wherever the camera was looking. Each pose meant three exact height lookups against the drawn terrain and decks, plus a signal-queue solve that allocated a string key for every car at every light. At 6× CPU throttle on the Studio, traffic alone took 7.7–9 ms.
@@ -3531,3 +3535,14 @@ frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16
 ### 2026-11-24 — More kinds of car, on desktop
 
 City's traffic had three vehicle types: a sedan, an SUV and a box truck. The high tier now adds the hatchbacks, pickups and vans already modelled in the vehicle kit, plus a tractor-trailer built from the existing cab and trailer: one rigid 19.16 m body with a white trailer. Semis make up 70% of trucks on the Connector and 15% on the arterials. Trucks stay bounded by each lane's sourced truck share, and they wait for a quarter of the peak hourly flow, so fewer run at night. Phones keep their three types, because their view is GPU-bound tonight. Each new type costs one draw where it is on screen: +9 at the default view, none at the Midtown view. Measuring that turned up a latent bug. A type the boot prewarm drew before any car of that type had a colour compiled a separate shader program. Allocating the colour buffer up front removed it. [Before and after](log/traffic/vehicle-variety/comparison.jpg)
+
+
+### 2026-11-24 — Transport far form
+
+On the phone tier, transport was 519,000 of the 2.43 million triangles in the default view: roads, decks, rails, lamps and the streetcar. That view puts the camera about 24 km from the board, where a phone pixel covers roughly 10 m. Rails, ties, lane lines, parapet tops and lamp posts are all smaller than a pixel there, and the phone still drew every one.
+
+Each transport mesh now orders its triangles so the parts that still read at that distance come first: road surfaces, deck sides, ballast and track slabs. Past 700 m from the camera on low, or 1,600 m on high, it draws only that prefix. The order is a permutation of whole triangles. Close up, every mesh draws exactly what it drew before, with no new memory or shader programs. Height lookups follow the permutation, and a test compares them on a dense sample with and without it. Lamp heads stay at night, so the lights still read.
+
+On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
+
+[Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)

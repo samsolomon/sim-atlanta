@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -1424,7 +1425,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
@@ -1811,6 +1818,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
   if (!perfOverrides.prewarmOff) {
     prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
     const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
     requestPrewarm = () => setTimeout(rescan, 500);
     // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
@@ -1987,6 +1995,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     dispose() {
       prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
