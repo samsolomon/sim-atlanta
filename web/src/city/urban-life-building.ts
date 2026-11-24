@@ -33,8 +33,8 @@ export function createUrbanLifeBuilding(buildings: VBuilding[], grid: GroundGrid
   const precast = surfaces.precast({ strength: 0.45 });
   const seed = seedOf(id);
   const courtyardWing: P2[] = [
-    [-46.65, -15.6], [-42.58, -15.6], [-42.52, -10.05], [-15.96, -10.05],
-    [-15.96, 6.24], [-42.4, 6.24], [-42.45, 10.82], [-46.63, 10.82],
+    [-46.65, -15.6], [-42.47, -15.6], [-42.47, -10.05], [-15.96, -10.05],
+    [-15.96, 6.24], [-42.4, 6.24], [-42.45, 10.82], [-46.63, 10.82], [-46.18, -0.3],
   ];
   const tower = slab(-16.07, 38.02, -14.39, 11.8);
   const entry = slab(1.58, 21.5, 11.65, 19.65);
