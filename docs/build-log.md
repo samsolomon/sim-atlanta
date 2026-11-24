@@ -3102,3 +3102,17 @@ On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data t
 ### 2026-11-23 — River birch starts with three stems and peeling bark
 
 River birch’s first A study pairs salmon-and-cream stems with an open crown of small green leaf cards. The bark first rendered as broad, regular stripes. Finer broken layers, a raised-looking edge and darker bases on large trees made it read closer to the papery reference. The mature clump uses 190 / 134 triangles with no new texture allocation. July Front luminance is 0.245 / 0.240 against the generic canopy’s 0.248. [Seasonal sheet, bark detail and 100–300 m views](log/ui/tree-species/options-river-birch.jpg). Lab study. Web rebuild only.
+### 2026-11-23 — A frame spent twenty minutes in traffic
+
+At 14:00:44.6 in the downtown simulation, one car slot started its next trip.
+Its lane then replayed 2,352 half-second steps in one draw. With 64 synthetic
+timetable buses on the board, that frame took 56.6 ms in desktop Chrome. The
+streetcar queue on main reproduced the same behavior with no buses at all.
+
+A lane now processes up to 64 historical steps per draw during catch-up.
+Surviving cars hold position briefly. In three repeats with the 64 timetable
+buses, the worst queue frame fell to 6.2 ms and p95 was 0.9 ms. With the
+published timetable the worst was 0.5 ms. A regression checks the bound on
+every frame and compares the final positions with a fresh seek.
+
+[The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
