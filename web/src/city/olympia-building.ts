@@ -51,7 +51,7 @@ export function createOlympia(buildings: VBuilding[], grid: GroundGrid) {
     const out = (t: number, y: number, d: number): [number, number, number] =>
       [a[0] + t * (b[0] - a[0]) + d * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - d * (b[0] - a[0]) / length];
     // Dark storefront band with shop glass.
-    shell.body.quad(out(0, datum, 0.04), out(0, shop, 0.04), out(1, shop, 0.04), out(1, datum, 0.04), storeBand);
+    shell.body.quad(out(0, datum, 0.035), out(0, shop, 0.035), out(1, shop, 0.035), out(1, datum, 0.035), storeBand);
     litFacade(shell, seed, face++, a, b, datum + 0.4, shop - 0.5, 1, 3.6, 0.82, 0.86, storefront, 0.5);
     // The stone storey: large green-tinted windows in a regular rhythm, and a cornice.
     litFacade(shell, seed, face++, a, b, shop + 0.6, stoneTop - 0.7, 1, 2.6, 0.58, 0.72, windows, 0.1);
