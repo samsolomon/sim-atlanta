@@ -1,8 +1,10 @@
 import {
   Box3, BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
-  Material, Matrix4, Mesh, MeshLambertMaterial, type Object3D, Sphere, Vector3,
+  LOD, Material, Matrix4, Mesh, MeshLambertMaterial, type Object3D, type Camera, Sphere, Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { farTriangles } from './landmark-lod';
+import LodWorker from './landmark-lod.worker?worker';
 
 /** For opaque, static landmark bodies with baked vertex colours and no per-building uniforms. */
 export class StaticLandmarkMaterial extends MeshLambertMaterial {
@@ -170,20 +172,198 @@ function syncer(days: DayGroup[]) {
         t.opacity = s.opacity;
         if (alike && lookOf(r.source, r.baked) !== d.look) alike = false;
       }
-      if (!d.mesh) continue;
-      d.mesh.visible = alike;
-      for (const r of d.runs) r.mesh.visible = !alike;
+      d.alike = alike;
+      show(d);
     }
   };
 }
 
-export interface BatchStats { candidates: number; merged: number; draws: number; dayDraws: number; nightDraws: number; skipped: Record<string, number>; ms: number }
+/** Distance LOD per cell: far beyond `farM` from the cell's box, full again inside `nearM`. */
+export interface LandmarkLod { farM: number; nearM: number; minArea: number }
+/**
+ * Past where a 1.5 m pane is about a pixel through City's 22° lens (d = 1.5 m x buffer height /
+ * (2 tan 11°)): 2.7 km for the A16's 692 px buffer, with a margin on low, and 6.9 km for a
+ * 1,800 px desktop buffer on high. Nearer than that a flat wall cannot stand in for a resolved
+ * window grid.
+ */
+export const LANDMARK_LOD = {
+  low: { farM: 3500, nearM: 3100, minArea: 4 },
+  high: { farM: 7000, nearM: 6300, minArea: 4 },
+} satisfies Record<string, LandmarkLod>;
+export type CellDetail = 'full' | 'lod';
+const cameraAt = new Vector3();
+
+/**
+ * One 500 m cell of batches. A LOD only so the renderer updates it, before its meshes, in the same
+ * pass. Each group of runs that currently look alike draws its far version (facade detail baked
+ * into the walls) while the camera is beyond `farM` from the cell, and its full version again
+ * inside `nearM`. Groups whose runs differ (lit windows at night) draw in full.
+ */
+export class LandmarkCell extends LOD {
+  readonly box = new Box3();
+  readonly groups: DayGroup[] = [];
+  /** Set by setCellDetail (streaming rings); null follows the distance rule. */
+  detail: CellDetail | null = null;
+  private showingFar = false;
+  private readonly inv = new Matrix4();
+  constructor(readonly cell: [number, number], readonly lod: LandmarkLod | null) {
+    super();
+    this.name = `landmark cell ${cell}`;
+    this.userData.cell = cell;
+    this.autoUpdate = true;
+  }
+  get isFar() { return this.showingFar; }
+  override update(camera: Camera) {
+    if (!this.lod || !this.groups.some(g => g.far)) return;
+    let far = this.detail === 'lod';
+    if (!this.detail) {
+      // The box is in the batch container's frame, which the cell's parent shares.
+      this.inv.copy((this.parent ?? this).matrixWorld).invert();
+      const d = this.box.distanceToPoint(camera.getWorldPosition(cameraAt).applyMatrix4(this.inv));
+      far = this.showingFar ? d > this.lod.nearM : d > this.lod.farM;
+    }
+    if (far === this.showingFar) return;
+    this.showingFar = far;
+    for (const g of this.groups) show(g);
+  }
+}
+
+/**
+ * While its cell is far, a group's full version still casts the shadows (so they keep their
+ * detail, and the far version needs no shadow-depth programs of its own) but draws nothing in the
+ * view: three calls onBeforeRender for view draws, not shadow draws, and skips a negative range.
+ */
+function hideFromView(this: Mesh) { (this.userData as { range?: number }).range = this.geometry.drawRange.count; this.geometry.drawRange.count = -1; }
+function restoreRange(this: Mesh) { this.geometry.drawRange.count = (this.userData as { range: number }).range; }
+
+/** Which of a group's draws show, from its night state (`alike`) and its cell's distance. */
+function show(d: DayGroup) {
+  const far = !!d.far && d.alike && d.cell.isFar;
+  if (d.far) d.far.visible = far;
+  if (d.mesh) {
+    d.mesh.visible = d.alike;
+    for (const r of d.runs) r.mesh.visible = !d.alike;
+  }
+  if (!d.far) return;
+  const full = d.mesh ?? d.runs[0].mesh;
+  full.onBeforeRender = far ? hideFromView : Mesh.prototype.onBeforeRender;
+  full.onAfterRender = far ? restoreRange : Mesh.prototype.onAfterRender;
+}
+
+interface FarJob { group: DayGroup; geometry: BufferGeometry; meshes: Mesh[]; start: number; count: number; material: Mat; rep: Mesh }
+type FarResult = { kept: Uint32Array | null; walls?: Uint32Array; colors?: Float32Array; dropped?: number };
+
+let worker: Worker | null = null;
+let nextJob = 1;
+const pending = new Map<number, (r: FarResult) => void>();
+function runFar(P: Float32Array, C: Float32Array, k: number, minArea: number, sync: boolean): Promise<FarResult> {
+  if (sync || typeof Worker === 'undefined') {
+    const far = farTriangles(P, C, k, 0, P.length / 9, minArea);
+    if (!far) return Promise.resolve({ kept: null });
+    const colors = new Float32Array(far.walls.length * 3 * k);
+    far.walls.forEach((w, i) => colors.set(w.color, i * 3 * k));
+    return Promise.resolve({ kept: Uint32Array.from(far.kept), walls: Uint32Array.from(far.walls, w => w.t), colors, dropped: far.dropped });
+  }
+  if (!worker) {
+    worker = new LodWorker();
+    worker.onmessage = (e: MessageEvent<FarResult & { id: number }>) => { pending.get(e.data.id)?.(e.data); pending.delete(e.data.id); };
+  }
+  const id = nextJob++;
+  return new Promise(resolve => { pending.set(id, resolve); worker!.postMessage({ id, P, C, k, minArea }, [P.buffer, C.buffer]); });
+}
+
+/**
+ * Builds each group's far version off the main thread. When a class's results are in, its buffer
+ * is rebuilt once with the blended walls appended, every mesh of the class moves to it, and each
+ * far version draws as one index into it (the walls it blends, then the triangles it keeps).
+ * Until then the cell draws in full.
+ */
+async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync: boolean) {
+  const byClass = new Map<BufferGeometry, FarJob[]>();
+  for (const j of jobs) (byClass.get(j.geometry) ?? byClass.set(j.geometry, []).get(j.geometry)!).push(j);
+  for (const [g, list] of byClass) {
+    const pos = g.getAttribute('position') as BufferAttribute, col = g.getAttribute('color') as BufferAttribute;
+    const k = col.itemSize;
+    const t0 = performance.now();
+    const results = await Promise.all(list.map(({ start, count }) => runFar(
+      (pos.array as Float32Array).slice(start * 3, (start + count) * 3),
+      Float32Array.from((col.array as Uint8Array).subarray(start * k, (start + count) * k)), k, minArea, sync)));
+    stats.lodMs += performance.now() - t0;
+    const extra = results.reduce((n, r) => n + (r.walls?.length ?? 0), 0) * 3;
+    if (!extra) continue;
+    // The class's buffer, grown by the blended walls.
+    const total = pos.count;
+    const grown: Record<string, BufferAttribute> = {};
+    for (const [name, a] of Object.entries(g.attributes) as [string, BufferAttribute][]) {
+      const it = a.itemSize, src = a.array as Float32Array | Uint8Array;
+      const dst = new (src.constructor as Float32ArrayConstructor | Uint8ArrayConstructor)((total + extra) * it);
+      dst.set(src);
+      let at = total * it;
+      list.forEach((job, j) => {
+        const r = results[j], base = job.start / 3;
+        if (!r.walls) return;
+        // Blended colours come back in the buffer's own units (bytes, here).
+        if (name === 'color') { for (const v of r.colors!) dst[at++] = a.normalized ? Math.round(v) : v; return; }
+        for (const t of r.walls) { dst.set(src.subarray((base + t) * 3 * it, (base + t + 1) * 3 * it), at); at += 3 * it; }
+      });
+      grown[name] = new BufferAttribute(dst, it, a.normalized);
+    }
+    for (const m of list[0].meshes) {
+      const old = m.geometry, next = new BufferGeometry();
+      for (const [name, a] of Object.entries(grown)) next.setAttribute(name, a);
+      if (old.index) next.setIndex(old.index);
+      next.setDrawRange(old.drawRange.start, old.drawRange.count);
+      next.boundingBox = old.boundingBox;
+      next.boundingSphere = old.boundingSphere;
+      m.geometry = next;
+      old.dispose();
+    }
+    let slot = total;
+    list.forEach((job, j) => {
+      const r = results[j];
+      if (!r.kept || !r.walls) return;
+      stats.lodDropped += r.dropped ?? 0;
+      stats.lodDoubled += r.walls.length;
+      const base = job.start / 3;
+      const index = new Uint32Array((r.walls.length + r.kept.length) * 3);
+      let i = 0;
+      for (let w = 0; w < r.walls.length * 3; w++) index[i++] = slot++;
+      for (const t of r.kept) { index[i++] = (base + t) * 3; index[i++] = (base + t) * 3 + 1; index[i++] = (base + t) * 3 + 2; }
+      const fg = new BufferGeometry();
+      for (const [name, a] of Object.entries(grown)) fg.setAttribute(name, a);
+      fg.setIndex(new BufferAttribute(index, 1));
+      const b = new Box3(), v = new Vector3(), p = grown.position;
+      for (let n = 0; n < index.length; n++) b.expandByPoint(v.fromBufferAttribute(p, index[n]));
+      fg.boundingBox = b;
+      fg.boundingSphere = b.getBoundingSphere(new Sphere());
+      const far = new Mesh(fg, job.material);
+      far.name = 'landmark batch (far)';
+      // The full version keeps casting (see hideFromView).
+      far.castShadow = false;
+      far.receiveShadow = job.rep.receiveShadow;
+      far.renderOrder = job.rep.renderOrder;
+      far.layers.mask = job.rep.layers.mask;
+      far.visible = false;
+      job.group.cell.add(far);
+      job.group.far = far;
+      stats.draws++;
+      show(job.group);
+    });
+  }
+  stats.lodMs = Math.round(stats.lodMs);
+}
+
+export interface BatchStats {
+  candidates: number; merged: number; draws: number; dayDraws: number; nightDraws: number; skipped: Record<string, number>; ms: number;
+  /** Triangles the far version drops, and wall triangles it stores twice. */
+  lodDropped: number; lodDoubled: number; lodMs: number;
+}
 
 interface Member { mesh: Mesh; bake: Color | null; day: string; run: string }
 /** Meshes that look alike at every probe: drawn as one range with one material. */
 /** `source` is the landmark's own material, which its setNight drives; `material` draws, synced from it. */
 interface Run { source: Mat; material: Mat; baked: boolean; mesh: Mesh }
-interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null }
+interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean }
 
 /**
  * Merges static landmark meshes into one buffer per 500 m cell and material class, baked relative
@@ -199,10 +379,34 @@ interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null }
  * is left at night 0; City sets the real value on its next frame. Run before City applies board
  * clipping.
  */
-export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: { cellM?: number; name?: string } = {}) {
+/** `syncFar` builds far versions on the main thread, without a worker (tests). */
+export interface LandmarkBatchOptions { cellM?: number; name?: string; lod?: LandmarkLod | null; syncFar?: boolean }
+export interface LandmarkBatches {
+  group: Group; stats: BatchStats; cells: Map<string, LandmarkCell>;
+  /** Mirror each landmark's night state onto its batch: call after their setNight. */
+  sync(): void;
+  setCellDetail(cell: string, level: CellDetail | null): void;
+  /** Resolves once every far version is in (they are built off the main thread). */
+  farReady: Promise<void>;
+}
+
+/** batchLandmarks, all at once. */
+export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: LandmarkBatchOptions = {}): LandmarkBatches {
+  const build = buildLandmarkBatches(entries, container, o);
+  for (let step = build.next(); ; step = build.next()) if (step.done) return step.value;
+}
+
+/**
+ * batchLandmarks as a sliced build step: yields a label after each landmark's probe and after each
+ * cell class is merged, so an area build can spread it over frames. Nothing is shared across a
+ * yield, so the result does not depend on where it pauses. `stats.ms` is then wall time.
+ */
+export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], container: Object3D,
+  o: LandmarkBatchOptions = {}): Generator<string | void, LandmarkBatches, void> {
+  const lod = landmarkLodOff ? null : o.lod ?? null;
   const t0 = performance.now();
   const cellM = o.cellM ?? CELL_M;
-  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0 };
+  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0 };
   const skip = (why: string, n = 1) => { stats.skipped[why] = (stats.skipped[why] ?? 0) + n; };
   container.updateMatrixWorld(true);
   const toContainer = new Matrix4().copy(container.matrixWorld).invert();
@@ -256,14 +460,16 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
         { mesh, bake, day: looks[looks.length - 1], run: looks.join(';') });
       stats.candidates++;
     });
+    yield 'landmark probe';
   }
 
   const group = new Group();
   group.name = o.name ?? 'Landmark batches';
   group.userData.perf = 'buildings';
   group.userData.building = true;
-  const cells = new Map<string, Group>();
+  const cells = new Map<string, LandmarkCell>();
   const days: DayGroup[] = [];
+  const farJobs: FarJob[] = [];
   const m = new Matrix4();
   // three draws opaque meshes in material-id order, which settles coplanar ties (a pane 7 cm
   // off its wall, far away). Batch materials are new, so make them in their sources' order.
@@ -277,25 +483,36 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
     if (!merged) throw new Error(`landmark batch: could not merge ${members.length} meshes in cell ${cell}`);
     const counts = parts.map(p => p.getAttribute('position').count);
     for (const part of parts) part.dispose();
+    // Day groups as vertex ranges, and (by day, from afar) their far versions.
+    const ranges: { from: number; to: number; start: number; count: number }[] = [];
+    for (let i = 0, start = 0; i < members.length;) {
+      const from = i, s0 = start;
+      while (i < members.length && members[i].day === members[from].day) start += counts[i++];
+      ranges.push({ from, to: i, start: s0, count: start - s0 });
+    }
+    const lodable = !!lod && !!merged.getAttribute('color') && !merged.getAttribute('uv');
     const ck = `${cell}`;
     let cellGroup = cells.get(ck);
     if (!cellGroup) {
-      cellGroup = new Group();
-      cellGroup.name = `landmark cell ${ck}`;
-      cellGroup.userData.cell = cell;
+      cellGroup = new LandmarkCell(cell, lod);
       cells.set(ck, cellGroup);
       group.add(cellGroup);
     }
     const rep = members[0].mesh;
-    const draw = (start: number, count: number, material: Mat, name: string) => {
+    const geo = merged;
+    const classMeshes: Mesh[] = [];
+    const draw = (start: number, count: number, material: Mat, name: string, index?: Uint32Array) => {
       const g = new BufferGeometry();
-      for (const [n, a] of Object.entries(merged.attributes)) g.setAttribute(n, a);
-      g.setDrawRange(start, count);
-      const pos = merged.getAttribute('position') as BufferAttribute;
+      for (const [n, a] of Object.entries(geo.attributes)) g.setAttribute(n, a);
+      if (index) g.setIndex(new BufferAttribute(index, 1));
+      else g.setDrawRange(start, count);
+      const pos = geo.getAttribute('position') as BufferAttribute;
       const b = new Box3(), v = new Vector3();
-      for (let i = start; i < start + count; i++) b.expandByPoint(v.fromBufferAttribute(pos, i));
+      if (index) for (let i = 0; i < index.length; i++) b.expandByPoint(v.fromBufferAttribute(pos, index[i]));
+      else for (let i = start; i < start + count; i++) b.expandByPoint(v.fromBufferAttribute(pos, i));
       g.boundingBox = b;
       g.boundingSphere = b.getBoundingSphere(new Sphere());
+      cellGroup!.box.union(b);
       const mesh = new Mesh(g, material);
       mesh.name = name;
       mesh.castShadow = rep.castShadow;
@@ -303,16 +520,16 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
       mesh.renderOrder = rep.renderOrder;
       mesh.layers.mask = rep.layers.mask;
       cellGroup!.add(mesh);
+      classMeshes.push(mesh);
       stats.draws++;
       return mesh;
     };
-    let i = 0, start = 0;
-    while (i < members.length) {
-      const dayGroup: DayGroup = { look: members[i].day, runs: [], mesh: null };
-      const dayStart = start;
-      while (i < members.length && members[i].day === dayGroup.look) {
+    for (const range of ranges) {
+      const dayGroup: DayGroup = { look: members[range.from].day, runs: [], mesh: null, far: null, cell: cellGroup, alike: true };
+      let i = range.from, start = range.start;
+      while (i < range.to) {
         const first = members[i], runStart = start;
-        while (i < members.length && members[i].run === first.run) start += counts[i++];
+        while (i < range.to && members[i].run === first.run) start += counts[i++];
         const source = first.mesh.material as Mat;
         const material = source.clone() as Mat;
         if (first.bake) {
@@ -321,8 +538,9 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
         }
         dayGroup.runs.push({ source, material, baked: !!first.bake, mesh: draw(runStart, start - runStart, material, 'landmark batch') });
       }
+      // By day the runs look alike: one draw with a still copy of that look.
+      let dayMaterial = dayGroup.runs[0].material;
       if (dayGroup.runs.length > 1) {
-        // By day the runs look alike: one draw with a still copy of that look.
         const material = dayGroup.runs[0].material.clone() as Mat;
         const [color, emissive, opacity] = dayGroup.look.split('/');
         material.color?.set(`#${color}`);
@@ -332,10 +550,15 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
           material.emissiveIntensity = 1;
         }
         material.opacity = Number(opacity);
-        dayGroup.mesh = draw(dayStart, start - dayStart, material, 'landmark batch (day)');
+        dayMaterial = material;
+        dayGroup.mesh = draw(range.start, range.count, material, 'landmark batch (day)');
         stats.dayDraws++;
       }
+      // The far version is computed off the main thread and arrives later; until then the cell
+      // draws in full.
+      if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material: dayMaterial, rep });
       stats.nightDraws += dayGroup.runs.length;
+      cellGroup.groups.push(dayGroup);
       days.push(dayGroup);
     }
     stats.merged += members.length;
@@ -352,6 +575,7 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
       // Sources still drive their runs' copies through sync(), but never draw again.
       if (!users.get(mat)) mat.dispose();
     }
+    yield 'landmark cell';
   }
 
   // sync() lives outside this scope: a closure here would keep this function's maps, and with
@@ -361,7 +585,14 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
   const sync = syncer(days);
   sync();
   stats.ms = Math.round(performance.now() - t0);
-  return { group, stats, cells, sync };
+  stats.lodMs = Math.round(stats.lodMs);
+  // Far versions come from a worker, after the build. Without one (node tests) they are built only
+  // on request, so a scene built in a test does not change under it when a promise settles.
+  const farReady = lod && farJobs.length && (o.syncFar || typeof Worker !== 'undefined')
+    ? buildFar(farJobs, lod.minArea, stats, o.syncFar ?? false) : Promise.resolve();
+  /** Streaming rings pick a cell's level; null hands it back to the distance rule. */
+  const setCellDetail = (cell: string, level: CellDetail | null) => { const c = cells.get(cell); if (c) c.detail = level; };
+  return { group, stats, cells, sync, setCellDetail, farReady };
 }
 
 /**
@@ -405,6 +636,13 @@ export function batchLandmarkBodies(landmarks: Object3D[]) {
   }
   return group;
 }
+
+/** `?perf&lod=off` (or batch=off) draws every landmark cell at full detail at any distance. */
+export const landmarkLodOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && (p.get('lod') === 'off' || p.get('batch') === 'off');
+})();
 
 /** `?perf&batch=off` restores the 2026-11-23 batching, for A/B runs from one build. */
 export const landmarkBatchOff = (() => {
