@@ -4,7 +4,7 @@ City replaces the generic mesh for `osm:way:269542125` on the Brookwood South ro
 
 The architect’s daylight view shows the dark horizontal spandrels, the projecting vertical glass return and its lighter cap, and the closely spaced stone piers of the west wing. The architect’s dusk view from the opposite approach shows the long curtain-wall elevation and the lightwell above the 17th Street bridge. [Smallwood daylight and dusk gallery](https://smallwood-us.com/projects/171-17th-street/)
 
-The full-night view shows a warm backlit crown, intermittent office windows, and separate bridge lighting. The window pattern in City illustrates partial occupancy. The full extent of the crown lighting on the concealed faces is inferred. [Night exterior by Julian Waters](https://www.skydb.net/file/162451671/171-17th-street-atlanta/)
+The full-night view shows a warm backlit crown, intermittent office windows, and separate bridge lighting. City draws the crown as one even glass panel per face with thin mullions, light glass by day and a single warm glow at night. The stone base reads as pale stone with smaller openings, and the west wing carries narrow windows between stone piers at about 1.7 m. The window pattern in City illustrates partial occupancy. The full extent of the crown lighting on the concealed faces is inferred. [Night exterior by Julian Waters](https://www.skydb.net/file/162451671/171-17th-street-atlanta/)
 
 | Review view | City query |
 |---|---|
