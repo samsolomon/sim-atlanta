@@ -3531,3 +3531,6 @@ so "no long task" can't measure the build. The driver now reports the longest ru
 inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
 batching, which the buildings agent is turning into a generator. A row now mounts over about 200
 frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+### 2026-11-24 · Nine15 Midtown from Street View
+
+Nine15 Midtown on 8th Street was mapped at 94 m, but the lidar puts its flat roof at 71.3 m. With no property photograph of the tower itself, this skin uses the rule for dated Street View: three captures from December and March 2025 agree on white and grey panels, tall glass, dark balcony stacks at the corners and a dark base. The Midtown Alliance rendering only confirms the massing. It is the first skin to cost no draws on the phone tier, because landmark batching folds it into its 500 m cell. [Before/after, day and night](log/ui/nine15-midtown/README.md)
