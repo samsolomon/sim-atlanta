@@ -100,6 +100,11 @@ export class GroundSurface {
    * either neighbour exactly; cells over an opening are 5 m and clipped like the near mesh.
    * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
    */
+  /** True when a Worker already built this far level (so taking it costs no main-thread time). */
+  hasPrebuiltFar(errorM: number, lower = false) {
+    return !!this.prebuiltFar && this.prebuiltFar.errorM === errorM && !!this.prebuiltFar.lower === lower;
+  }
+
   farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;

@@ -406,7 +406,20 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // the DEM, so it does not show stair or rail carves (sub-pixel at that range), and it is
   // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
   const nearGeometry = mesh.geometry;
-  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, FAR_GROUND_SETTLED) : null;
+  // The settled far level costs a settling pass per board: take it from the Worker when it
+  // prebuilt one, else boot on the plain level and settle it in an idle slice (below).
+  const settleNow = FAR_GROUND_SETTLED && mesh.hasPrebuiltFar(FAR_GROUND_ERROR_M, true);
+  let farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, settleNow) : null;
+  if (farGeometry && FAR_GROUND_SETTLED && !settleNow) {
+    veryFarQueue.push(() => {
+      if (disposed || !farGeometry) return;
+      const settled = mesh.farGeometry(FAR_GROUND_ERROR_M, 160, true);
+      if (board.geometry === farGeometry) { board.geometry = settled; groundLodChanged = true; }
+      farGeometry.dispose();
+      farGeometry = settled;
+    });
+    pumpVeryFar();
+  }
   // Low tier, very far (VERY_FAR_M and out): the same far quadtree at VERY_FAR_ERROR_M, settled
   // below the DEM so nothing drawn on the ground is buried. Built lazily, one board per idle
   // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.
