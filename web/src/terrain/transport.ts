@@ -537,11 +537,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from),deckWeight:road.deckWeight?.slice(from)} : road,'road',road);
   }
   for (const r of data.rail) if (!r.replaced) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
-  drawNorthAve(city,grid,structures);
+  const underpass = new Builder();
+  drawNorthAve(city, grid, underpass);
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };
-  for (const [builder, name] of [[structures, 'Decks and embedded rails'], [seventeenth, '17th Street Bridge'], [freight, 'Freight track']] as const) {
+  for (const [builder, name] of [[structures, 'Decks and embedded rails'], [seventeenth, '17th Street Bridge'], [underpass, 'North Avenue underpass'], [freight, 'Freight track']] as const) {
     if (!builder.pos.length) continue;
     const geometry = builder.geometry();
     const isFreight = builder === freight;
@@ -549,7 +550,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     if (builder === structures) structurePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
     if (isFreight) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
-      map: isFreight ? map : null, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+      map: isFreight ? map : null, polygonOffset: builder !== underpass, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     if (builder === seventeenth) {
       // Contractor night photographs show lit steel and pier faces. Fill the
       // vertex colours locally without adding point lights to the whole City.
@@ -568,6 +569,21 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           'outgoingLight += diffuseColor.rgb * vec3(.54, .40, .25) * bridgeNight * bridgeSpill;\n#include <opaque_fragment>');
       };
     }
+    if (builder === underpass) {
+      // Diffuse daylight bounced from the two mouths keeps the shaded pavement
+      // and soffits legible. The walls use true depth: slope-based polygon
+      // offset can pull an edge-on wall in front of the tracks above it.
+      material.onBeforeCompile = shader => {
+        shader.uniforms.northAveCeiling = { value: 302.3 - sceneZero };
+        shader.uniforms.northAveNight = bridgeNight;
+        shader.vertexShader = 'uniform float northAveCeiling; varying float northAveBounce;\n' +
+          shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+            northAveBounce = 1.0 - smoothstep(northAveCeiling - .6, northAveCeiling, position.y);`);
+        shader.fragmentShader = 'uniform float northAveNight; varying float northAveBounce;\n' +
+          shader.fragmentShader.replace('#include <opaque_fragment>', `outgoingLight += diffuseColor.rgb * vec3(.24,.23,.21) * northAveBounce * (1.0 - northAveNight);
+            #include <opaque_fragment>`);
+      };
+    }
     const mesh = new THREE.Mesh(geometry, material);
     if (builder === structures && buriedFaces) mesh.userData.groundAuditBuriedFaces = buriedFaces;
     mesh.name = name;
@@ -580,13 +596,13 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   cutting.push(...footbridgeYields);
   // The mesh attributes now own their copies. Drop build-time arrays held by the transport closures.
   const hasBridge = seventeenth.pos.length > 0;
-  for (const builder of [structures, seventeenth, freight]) {
+  for (const builder of [structures, seventeenth, freight, underpass]) {
     builder.pos.length = 0;
     builder.col.length = 0;
   }
   uv.length = 0;
   return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
-    setNight: hasBridge ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
+    setNight: (northAve || hasBridge) ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();

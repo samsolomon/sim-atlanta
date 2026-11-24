@@ -64,12 +64,12 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const zero = grid('midtown-south').manifest.vertical.sceneZeroNavd88M;
     expect(roadHeight(...position, lower)).toBeCloseTo(296.64 - zero);
     expect(roadHeight(...position, upper)).toBeCloseTo(302.32 - zero);
-    const decks = south.group.getObjectByName('Decks and embedded rails')!;
+    const decks = south.group.getObjectByName('North Avenue underpass')!;
     const crossing = groundAudit(decks, [{ id: 'midtown-south', bounds: south.bounds, terrainAt: south.terrainAt, terrain: [south.board] }], {
       colors: CITY_COLORS, layer: () => 'structures',
       exclude: (_layer, x, z) => {
         const [s, t] = northAveLocal(x, z);
-        return s < -12 || s > 168 || Math.abs(t) > 12;
+        return s < -12 || s > 168 || Math.abs(t) > 23;
       },
     });
     expect(crossing.layers.reduce((sum, layer) => sum + layer.samples, 0)).toBeGreaterThan(0);

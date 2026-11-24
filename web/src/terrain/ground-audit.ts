@@ -73,7 +73,7 @@ export function cityLayer(path: string[], mesh: THREE.Mesh): string | null {
   if (names.includes('ground-cover')) return 'ground cover';
   const curated = names.find(n => n.startsWith('curated:'));
   if (curated) return 'curated landscape';
-  if (names.includes('Decks and embedded rails')) return 'streets';
+  if (names.includes('Decks and embedded rails') || names.includes('North Avenue underpass')) return 'streets';
   if (names.includes('Freight track')) return 'rail ballast';
   if (names.includes('Atlanta Streetcar track')) return 'streetcar track';
   const own = defaultLayer(path, mesh);

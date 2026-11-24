@@ -6,8 +6,8 @@ The original survey and model decisions are in [North Avenue](../north-ave-under
 The [build log](../build-log.md#2026-11-23--north-avenue-reappears-beneath-the-railway)
 links the matched daytime and nighttime overviews and the under-deck view.
 Against main at 7319005e, the low-tier daylight camera measured 1,595,963 triangles
-before and 1,600,830 after, with 83 draws in each frame. The 4,867-triangle delta
-includes 392 more triangles in moving vehicles. Both tier budgets passed.
+before and 1,600,242 after, with 83 and 84 draws respectively. Sam is reviewing the revised
+ballast and underpass lighting on draft PR #361. Hold the merge for his decision. Both tier budgets passed.
 
 The rail grade test uses the actual crossing tracks. Both tiers check the rendered
 soffit and support clearance, road-specific vehicle heights and local structure

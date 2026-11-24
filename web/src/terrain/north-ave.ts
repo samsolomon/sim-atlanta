@@ -57,41 +57,104 @@ export function northAveRoadHeight(x:number,z:number,run: Pick<TransportRun,'nam
   if(run.name==='Marietta Street Northwest' && s>=0 && s<=19 && Math.abs(t)<=11.3) return 302.32-zero;
   return null;
 }
-/** Appends to the existing structural batch: no new material, texture or draw. */
+/** One structural batch for the five covers, their supports and the divided road. */
 export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
   if(!hasNorthAve(city))return;
   const zero=grid.manifest.vertical.sceneZeroNavd88M;
   const p=(s:number,t:number,h:number)=>{const [x,z]=northAvePoint(s,t);return [x,h-zero,z];};
   const quad=(a:number[],b:number[],c:number[],d:number[],color:string)=>out.quad(a,b,c,d,color);
-  function slab(a:number,b:number,l:number,r:number,top:(s:number,t:number)=>number,bottom:(s:number,t:number)=>number,color:string){
+  function slab(a:number,b:number,l:number,r:number,top:(s:number,t:number)=>number,bottom:(s:number,t:number)=>number,color:string,soffit=color){
     const vs=[[a,l],[b,l],[b,r],[a,r]],hi=vs.map(([s,t])=>p(s,t,top(s,t))),lo=vs.map(([s,t])=>p(s,t,bottom(s,t)));
-    quad(hi[3],hi[2],hi[1],hi[0],color);quad(lo[0],lo[1],lo[2],lo[3],color);
+    quad(hi[3],hi[2],hi[1],hi[0],color);quad(lo[0],lo[1],lo[2],lo[3],soffit);
     for(let i=0;i<4;i++){const j=(i+1)%4;quad(lo[i],lo[j],hi[j],hi[i],color);}
   }
   // Low road and sidewalks continue through every opening; centre strip reserves pier space.
-  for(let a=-12;a<168;a+=4){const b=Math.min(168,a+4);
+  // Split the pavement only where its grade or mapped direction changes.
+  for(const [a,b] of [[-12,20],[20,80],[80,128],[128,168]]) {
     quad(p(a,11.3,northAveFloor(a)+.04),p(b,11.3,northAveFloor(b)+.04),p(b,-11.3,northAveFloor(b)+.04),p(a,-11.3,northAveFloor(a)+.04),'#525354');
     for(const [l,r] of [[-11.3,-9],[9,11.3],[-.55,.55]]){
       quad(p(a,r,northAveFloor(a)+.18),p(b,r,northAveFloor(b)+.18),p(b,l,northAveFloor(b)+.18),p(a,l,northAveFloor(a)+.18),'#aaa394');
       for(const t of [l,r])quad(p(a,t,northAveFloor(a)+.04),p(b,t,northAveFloor(b)+.04),p(b,t,northAveFloor(b)+.18),p(a,t,northAveFloor(a)+.18),'#aaa394');
     }
-    for(const t of [-4.7,4.7])if((a+12)%12<4)slab(a,b,t-.06,t+.06,s=>northAveFloor(s)+.05,s=>northAveFloor(s)+.04,'#d4cba7');
+  }
+  for(let a=-12;a<168;a+=4){const b=Math.min(168,a+4);
+    for(const t of [-4.7,4.7])if((a+12)%12<4)
+      quad(p(a,t+.06,northAveFloor(a)+.05),p(b,t+.06,northAveFloor(b)+.05),
+        p(b,t-.06,northAveFloor(b)+.05),p(a,t-.06,northAveFloor(a)+.05),'#d4cba7');
     for(const t of [-11.3,11.3]){
       const [x,z]=northAvePoint((a+b)/2,t),h=grid.sample(x,z);if(h===null)continue;
-      const top=Math.max(h,northAveFloor(a)+.2,northAveFloor(b)+.2);
-      quad(p(a,t,northAveFloor(a)),p(b,t,northAveFloor(b)),p(b,t,top),p(a,t,top),'#9c978a');
+      // Raw DEM at the bank includes the deviating track grade. Terminate the
+      // retaining wall inside the rail cover so its crest cannot pierce a tread.
+      const inRailCover = a >= 24 && b <= 86;
+      const top = inRailCover ? Math.min(h,northAveRail(t)-.7)
+        : Math.max(h,northAveFloor(a)+.2,northAveFloor(b)+.2);
+      quad(p(a,t,northAveFloor(a)),p(b,t,northAveFloor(b)),p(b,t,top),p(a,t,top),'#c7c2b5');
     }
   }
   for(const [i,[a,b]] of NORTH_AVE.groups.entries()){
-    const top=(s:number,t:number)=>i===0?302.32:i===1?northAveRail(t)-.45:[0,0,304.24,304.03,304.52][i];
+    const top=(s:number,t:number)=>i===0?302.32:i===1?northAveRail(t)-.65:[0,0,304.24,304.03,304.52][i];
     const underside=(s:number)=>northAveFloor(s)+.04+(i===0?4.69:4.5);
-    slab(a,b,-11.3,11.3,top,underside,i===0?'#525354':'#a9a396');
+    slab(a,b,-11.3,11.3,top,underside,i===0?'#525354':i===1?'#726b5c':'#a9a396','#d5d1c3');
+    if(i===1){
+      // Take a cross-section through the actual mapped tracks at each bank. Carry
+      // the bed between tracks at their formation heights, below the textured treads.
+      const tracks=(city.terrainTransport?.rail ?? []).map(run=>({
+        points:run.pts.map(([x,z])=>northAveLocal(x,z)), grade:northAveRailProfile(run,grid),
+      }));
+      const section=(t:number)=>{
+        const centers:{s:number;h:number}[]=[];
+        for(const track of tracks){
+          for(let j=1;j<track.points.length;j++){
+            const [s0,t0]=track.points[j-1],[s1,t1]=track.points[j];
+            if(t0===t1 || (t-t0)*(t-t1)>0)continue;
+            const s=s0+(s1-s0)*(t-t0)/(t1-t0);
+            if(s<a || s>b)continue;
+            const [x,z]=northAvePoint(s,t);
+            const h=track.grade(x,z,null);
+            if(h!==null)centers.push({s,h:h+zero});
+          }
+        }
+        centers.sort((u,v)=>u.s-v.s);
+        if(!centers.length)return [];
+        const left=centers[0],right=centers[centers.length-1];
+        // Only the running corridor has an exposed gravel shoulder. The wider
+        // surveyed cover continues below the earth beside it.
+        return [[a,top(a,t)+.02],[left.s-3.35,left.h-.12],[left.s-2.25,left.h+.005],
+          ...Array.from({length:9},(_,j)=>{
+            const s=left.s+(right.s-left.s)*j/8;
+            const upper=centers.find(c=>c.s>=s)??right,lower=centers.slice().reverse().find(c=>c.s<=s)??left;
+            const f=upper.s===lower.s?0:(s-lower.s)/(upper.s-lower.s);
+            return [s,lower.h+(upper.h-lower.h)*f+.005];
+          }),[right.s+2.25,right.h+.005],[right.s+3.35,right.h-.12],[b,top(b,t)+.02]];
+      };
+      let previous:number[][]=[];
+      let previousT = -11.3;
+      for(const t of [-11.3,-6,0,6,11.3,13.5]){
+        const row=section(t);
+        const outside = Math.max(0,Math.abs(t)-11.3);
+        if(outside){
+          // A short sloped toe closes the abutment edge below the continuing
+          // tracks while the bank still lies below the formation.
+          for(const vertex of row) vertex[1] -= outside * .08;
+        }
+        for(let j=1;j<row.length && previous.length;j++){
+          // Extend only the ballast shoulder onto the bank. Its taper bridges the
+          // DEM dip without extending the deck or its earth margins into the yard.
+          if ((outside || Math.abs(previousT)>11.3) && (j===1 || j===row.length-1)) continue;
+          const color=j===1||j===row.length-1?'#b2b589':j===2||j===row.length-2?'#877d6a':'#7e7363';
+          quad(previous[j-1],p(row[j-1][0],t,row[j-1][1]),
+            p(row[j][0],t,row[j][1]),previous[j],color);
+        }
+        previousT=t;
+        previous=row.map(([s,h])=>p(s,t,h));
+      }
+    }
     if(i===0){
       for(const t of [-9,-3,3,9])slab(9.45,9.55,t-1.5,t+1.5,()=>302.33,()=>302.32,'#d4cba7');
     }
     // Two road bays: columns occupy only the reserved median, with wall abutments outside shoulders.
     for(const s of [a+.6,b-.6]) for(const t of [0,-10.7,10.7]) {
-      slab(s-.35,s+.35,t-.35,t+.35,underside,q=>northAveFloor(q)+.18,'#918c80');
+      slab(s-.35,s+.35,t-.35,t+.35,underside,q=>northAveFloor(q)+.18,'#aca798');
       slab(s-.55,s+.55,t-.5,t+.5,underside,q=>underside(q)-.55,'#aaa496');
     }
     // Balustrade on Marietta; pipe-like narrow bars on the rail/disused decks.

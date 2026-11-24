@@ -3050,7 +3050,7 @@ Five cover groups now follow the survey along North Avenue. Lowering the road al
 left a dip in the freight tracks. Carrying the tracks between approach elevations
 removed the dip, and lowering the active slab beneath the ballast kept all tracks
 visible. At the same low-tier daylight camera the change took City from 1,595,963
-to 1,600,830 triangles and held at 83 draws. The western carriageways bend away
+to 1,600,242 triangles and from 83 to 84 draws. The western carriageways bend away
 from the straight lidar transect, so the trench bends with them.
 
 The [day before](log/north-ave-before-day.jpg), [day after](log/north-ave-after-day.jpg),
@@ -3058,3 +3058,16 @@ The [day before](log/north-ave-before-day.jpg), [day after](log/north-ave-after-
 use City camera `-783,-1860,235,55,350` at 14:00 and 23:00 Eastern on November 20.
 The [under-deck view](log/north-ave-under-deck.jpg) uses scene eye
 `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75 and near plane 0.05 m.
+
+### 2026-11-23 — Ballast across the North Avenue cover
+
+The dotted line across the rails survived a change in deck height. A render with
+slope-based depth offset disabled revealed the cause. Seen edge-on, the retaining
+walls could appear in front of the tracks. The five covers now share one draw at
+their actual depth. A gravel bed follows the crossing tracks, with earth over the
+wider covered area and a little reflected daylight in the trench.
+
+Compare the [earlier overview](https://github.com/samsolomon/sim-atlanta/blob/030d123f/docs/log/north-ave-after-day.jpg)
+and [earlier under-deck view](https://github.com/samsolomon/sim-atlanta/blob/030d123f/docs/log/north-ave-under-deck.jpg)
+with the [revised overview](log/north-ave-after-day.jpg) and [revised under-deck view](log/north-ave-under-deck.jpg).
+The matched low-tier frame adds 4,279 triangles and one draw over main.
