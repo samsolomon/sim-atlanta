@@ -178,3 +178,15 @@ it('draws a moving-obstacle queue and reproduces it after clock seeks',()=>{
   expect(snapshot(fleet)).toEqual(snapshot(fresh));
   fleet.dispose();fresh.dispose();
 });
+
+it('gives every traffic mesh per-instance colour from construction, so prewarm compiles the drawn program', () => {
+  // core/prewarm.ts draws never-drawn meshes at boot. A mesh without instanceColor then compiles a
+  // program without USE_INSTANCING_COLOR, and the first coloured car compiles a second one.
+  for (const quality of ['low', 'high'] as const) {
+    const fleet = new ArterialTraffic({...base, quality});
+    const meshes = fleet.group.children.filter((o): o is InstancedMesh => (o as InstancedMesh).isInstancedMesh && !o.name.startsWith('Signal'));
+    expect(meshes.length).toBeGreaterThan(0);
+    for (const mesh of meshes) expect(mesh.instanceColor, mesh.name).not.toBeNull();
+    fleet.dispose();
+  }
+});

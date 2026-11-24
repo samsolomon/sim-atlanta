@@ -227,6 +227,9 @@ export class RoadTraffic {
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      // Allocate per-instance colour now. setColorAt would create it on a kind's first visible car, so a
+      // kind the boot prewarm drew before then compiled a separate program without instance colour.
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage);
       mesh.frustumCulled = false;
       mesh.receiveShadow = true;
       mesh.count = 0;
