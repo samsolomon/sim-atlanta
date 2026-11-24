@@ -2963,3 +2963,7 @@ region in plan, so the falloff follows the tower's own masonry vertices.
 ### 2026-11-23 — Rapid bus glazing at night
 
 At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — XE60 roof fairings
+
+The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).

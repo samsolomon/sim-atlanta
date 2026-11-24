@@ -78,8 +78,8 @@ All captures use camera position `[-16,5.8,12]`, target `[0,1.6,0]`, vertical FO
 
 | Geometry | Triangles | Attribute bytes | Meshes per preview |
 | --- | ---: | ---: | ---: |
-| XE60 low | 1,190 | 157,080 | 3 |
-| XE60 high | 2,510 | 331,320 | 3 |
+| XE60 low | 1,350 | 178,200 | 3 |
+| XE60 high | 2,622 | 346,104 | 3 |
 | XN40 Rapid | 6,060 | 727,200 | 1 |
 
 Counts exclude shadow passes. The low XE60 fits the proposed 1,500-triangle phone budget. Future instanced draws can share one batch per section. Phone frame rate is unmeasured.
