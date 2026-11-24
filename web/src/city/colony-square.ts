@@ -96,7 +96,7 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
       if (j === st.mechFloor) {
         // The mechanical floor reads as one continuous dark glazed band.
         const c = st.cornerSolid / f.len;
-        f.quad(c, 1 - c, y + 0.3, y + pitch - 0.3, d + 0.01, st.band === shade ? st.glass : '#4c4844');
+        f.quad(c, 1 - c, y + 0.3, y + pitch - 0.3, d + 0.01, st.band === shade ? st.glass : '#5c5751');
         continue;
       }
       f.quad(0, 1, y, y + st.spandrel, 0, st.pier);
