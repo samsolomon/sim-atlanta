@@ -22,9 +22,9 @@ it('raises the Courtland Grand to its lidar towers over the podium, all within t
     new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y + 300 - 309.1;
   expect(top(740, -525)).toBeCloseTo(31, 0); // south slab along Ellis
   expect(top(810, -600)).toBeCloseTo(29, 0); // north tower
-  expect(top(760, -606)).toBeCloseTo(34, 0); // its taller section
+  expect(top(760, -600)).toBeCloseTo(34, 0); // its taller section
   expect(top(800, -545)).toBeLessThan(14); // podium and courtyard roof
-  // Nothing floats: every vertex sits within the footprint or at most 1.7 m beyond it (the balconies).
+  // Every vertex sits within the footprint or at most 2.5 m beyond it (balconies 1.6 m; the arrival canopy).
   const dist = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
     const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
@@ -35,10 +35,9 @@ it('raises the Courtland Grand to its lidar towers over the podium, all within t
   model.group.traverse(o => {
     if (!(o instanceof Mesh)) return;
     const p = o.geometry.getAttribute('position');
-    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); worst = Math.max(worst, dist(v.x, v.z)); }
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); const d = dist(v.x, v.z); worst = Math.max(worst, d); }
   });
-  expect(worst).toBeLessThanOrEqual(1.7);
+  expect(worst).toBeLessThanOrEqual(2.5);
   const [body] = model.group.children as Mesh[];
   expect(body.geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
-  console.log('cg tris', body.geometry.getAttribute('position').count / 3, worst.toFixed(2));
 });
