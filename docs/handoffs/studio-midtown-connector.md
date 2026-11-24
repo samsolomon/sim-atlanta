@@ -1,6 +1,19 @@
 # Handoff: studio-midtown-connector (Claude Opus → Codex, 2026-11-24)
 
-## Current handoff — Fifth Street release fix
+## Current release and traffic handoff — 2026-11-24
+
+The Midtown Connector owner is accountable for the Fifth Street park release and for traffic behavior and combined traffic integration. The vehicle models owner supplies the independently reviewed seven-body contribution from #541, source commit `c23bd25fdbbf10c36ec13d6fed262409b2df16ea`. Its integrated revision is pending.
+
+**Park release.** Code is on `codex/fifth-street-park-release` at `98798ba75458312a67574d29556548fb54067b6b`. The road and walks keep their measured profile through both abutments. The approach grade extends 25 m and the brick bands and lane paint reach both ends. The change passed `git diff --check`. The [five matched day/night comparisons](https://github.com/samsolomon/sim-atlanta/tree/6053b430/docs/log/ui/fifth-street-park) document the preceding geometry at `6053b430`.
+
+**Next park action.** When the park has the Studio window, run the endpoint and freeway clearance checks and capture low views looking onto the deck from both ends. Check the curb and sidewalk joins, Williams Street crossfall and freeway lanes before refreshing the five comparisons. Final build, tests including strict release checks, both-tier ground audit, performance checks, cross-review, build log and release-12 PR are pending. Hold the PR for Sam.
+
+**Traffic follow-up.** After generic deployment, pin the deployed baseline and the candidate integrating the reviewed bodies. At identical camera, clock, playback speed, traffic inputs and car cap, capture Fifth Street rush-hour directional congestion and braking, then a Midtown signal queue forming on red and discharging on green. Include a body-style detail and the observed car counts. Per-instance brake state, integrated head, tests, paired clips and Sam's review are pending.
+
+**Overlap.** Ground-contact owns the Capitol crossing investigation. Fifth Street changes the Midtown floor handling in shared terrain code. The traffic cost and incremental traffic branches, held #368, #409 and #418, and the pending body-style integration remain separate.
+
+## Previous park handoff at 6053b430
+
 
 Resume on **`codex/fifth-street-park-release` at `6053b430`**. It is pushed, with no PR. Use that branch for the release PR so handoff history stays separate. The older handoff below describes the original model.
 
