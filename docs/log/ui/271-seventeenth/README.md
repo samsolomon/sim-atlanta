@@ -34,7 +34,16 @@ April 2019 3DEP lidar on a 2.5 m raster, measured above the 276.2 m NAVD88 groun
 - **Split between the masses:** 38% of each long face, measured from the east, as judged from the N6 aerial. East of the split, vertical mullions stand about 4.5 m apart. West of it, a silver band 0.95 m deep runs at every office floor.
 - **Ground:** floors are measured from the lidar ground ring (276.2 m NAVD88), the same datum as the roof, not from the rendered grade.
 - **Materials:** flat vertex colours. Every library surface compiles its own shader program, and dark glass, a silver band and a mullion read at the City orbit without texture.
-- **Glass:** dark blue-grey with a slight sky tint (`#6a8694`), the darkest tower in its group. The aerial reads almost black, but at midday dark glass still reflects sky. A near-black first pass (`#3d505c`) hid the mullions and bands at the 600 m view, so on review (Sam via the coordinator, 2026-11-24) it was lifted toward the dark end of the planned shared glass palette.
+- **Glass:** near-neutral dark grey with a slight cool tint (`#7e8c94`, base S15 V58). It is the darkest tower in its group. The aerial reads almost black, but at midday dark glass still reflects sky. Two earlier bases were rejected: near-black `#3d505c` hid the mullions and bands at the 600 m view, and `#6a8694` (S28) rendered over the saturation cap once the colour grade was applied. Rendered-pixel check, 11:30 high tier, start cam, median HSV (S and V in %):
+
+  | Base | Sunlit shaft | Sunlit podium | Shaded west face |
+  |---|---|---|---|
+  | `#6a8694` (S28 V58) | S35 V51 | S47 V42 | S96 V27 |
+  | **`#7e8c94` (S15 V58), chosen** | **S10 V50** | **S22 V40** | S67 V25 |
+  | `#8a979f` (S13 V62), test only | S7 V55 | — | S55 V29 |
+  | Generic glass tower, same frame | S6 V72 | — | S37 V43 |
+
+  The cap applies to sunlit faces (S ≤ 36, V ≥ 40). Shaded faces are recorded, not capped: the grade's shadow tint turns any dark glass navy, and that tint is Sam's call in the palette doc.
 
 ## Lighting
 
