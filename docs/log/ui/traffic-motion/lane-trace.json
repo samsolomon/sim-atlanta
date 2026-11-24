@@ -1,0 +1,1423 @@
+{
+  "baseline": "b91f1c0f1445257a82efe56ddba13b1777f49270",
+  "candidate": [
+    {
+      "frame": 0,
+      "cars": [
+        {
+          "x": 47.61494445800781,
+          "z": -2911.021728515625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 3.840182697063597e-09,
+          "brake": 0
+        },
+        {
+          "x": 78.91383361816406,
+          "z": -2558.971435546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 1.3537827939988452e-05,
+          "brake": 0
+        },
+        {
+          "x": 130.83236694335938,
+          "z": -2304.090576171875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.7038554170450936e-06,
+          "brake": 0
+        },
+        {
+          "x": 89.673583984375,
+          "z": -2559.0830078125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 5.611245211616235e-06,
+          "brake": 0
+        },
+        {
+          "x": 79.87094116210938,
+          "z": -2359.943359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            70
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 7,
+          "lanes": 7,
+          "centerErrorM": 1.6933597698945633e-05,
+          "brake": 0
+        },
+        {
+          "x": 96.28881072998047,
+          "z": -2349.2060546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            86
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 3.2111965975709126e-06,
+          "brake": 0
+        },
+        {
+          "x": 74.43400573730469,
+          "z": -2416.958740234375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 560940887,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 8,
+          "centerErrorM": 1.4853472660116033e-05,
+          "brake": 0
+        },
+        {
+          "x": 90.6091079711914,
+          "z": -2599.238525390625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            15,
+            69
+          ],
+          "way": 560940894,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 1.534584497462456e-05,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 259.5509948730469,
+          "z": -2561.389892578125,
+          "hx": -0.009684199467301369,
+          "hz": 0.9997926950454712,
+          "way": 234013260,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 32,
+      "cars": [
+        {
+          "x": 18.472457885742188,
+          "z": -2899.608154296875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 978061546,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 1,
+          "centerErrorM": 8.236372330635013e-06,
+          "brake": 0
+        },
+        {
+          "x": 49.633113861083984,
+          "z": -2767.054931640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 1.5402095725240223e-06,
+          "brake": 0
+        },
+        {
+          "x": 75.49243927001953,
+          "z": -2580.893310546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 3.943045757448391e-06,
+          "brake": 0
+        },
+        {
+          "x": 137.2593231201172,
+          "z": -2245.176513671875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            56
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 1.2061655415401251e-05,
+          "brake": 0
+        },
+        {
+          "x": 110.90982055664062,
+          "z": -2416.915771484375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.3457916789838107e-05,
+          "brake": 1
+        },
+        {
+          "x": 86.24153900146484,
+          "z": -2581.080322265625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.4009808246422894e-05,
+          "brake": 0
+        },
+        {
+          "x": 102.59943389892578,
+          "z": -2217.806884765625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            70
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 7,
+          "lanes": 7,
+          "centerErrorM": 9.895135925127007e-06,
+          "brake": 0
+        },
+        {
+          "x": 117.72148132324219,
+          "z": -2206.89599609375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            86
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 6.864926674671866e-06,
+          "brake": 0
+        },
+        {
+          "x": 38.87708282470703,
+          "z": -2804.851318359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 7.81515235780514e-07,
+          "brake": 0
+        },
+        {
+          "x": 98.5113296508789,
+          "z": -2275.002197265625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 1.575440807206024e-05,
+          "brake": 0
+        },
+        {
+          "x": 82.75205993652344,
+          "z": -2656.16845703125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            15,
+            69
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 6.56396408042758e-06,
+          "brake": 0
+        },
+        {
+          "x": 138.92828369140625,
+          "z": -2279.843994140625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            18,
+            19
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 5,
+          "lanes": 7,
+          "centerErrorM": 8.267756735400014e-06,
+          "brake": 0
+        },
+        {
+          "x": 44.079524993896484,
+          "z": -2890.654052734375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 7,
+          "centerErrorM": 9.157806839230272e-07,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 258.9011535644531,
+          "z": -2498.3935546875,
+          "hx": -0.011703378520905972,
+          "hz": 0.9996633529663086,
+          "way": 1103152009,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 40,
+      "cars": [
+        {
+          "x": 20.50919532775879,
+          "z": -2863.902099609375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 978061546,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 1,
+          "centerErrorM": 9.578367436003064e-07,
+          "brake": 0
+        },
+        {
+          "x": 50.881072998046875,
+          "z": -2731.08935546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 9.031959077677089e-06,
+          "brake": 0
+        },
+        {
+          "x": 74.25665283203125,
+          "z": -2588.811279296875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 1.2299161928267707e-05,
+          "brake": 0
+        },
+        {
+          "x": 131.25523376464844,
+          "z": -2282.259521484375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            56
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 2.1830561303765047e-06,
+          "brake": 0
+        },
+        {
+          "x": 107.50411224365234,
+          "z": -2438.46630859375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.7870934226903472e-05,
+          "brake": 1
+        },
+        {
+          "x": 85.0008544921875,
+          "z": -2589.032470703125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 2.962843155766565e-06,
+          "brake": 0
+        },
+        {
+          "x": 38.978031158447266,
+          "z": -2768.851318359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 1.872298104066835e-06,
+          "brake": 0
+        },
+        {
+          "x": 103.74678039550781,
+          "z": -2239.38525390625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 1.7689240176698092e-05,
+          "brake": 0
+        },
+        {
+          "x": 80.80775451660156,
+          "z": -2676.076171875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            15,
+            69
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 5.424836329155797e-06,
+          "brake": 0
+        },
+        {
+          "x": 132.70355224609375,
+          "z": -2314.17724609375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            18,
+            19
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 5,
+          "lanes": 7,
+          "centerErrorM": 8.993740808478257e-06,
+          "brake": 0
+        },
+        {
+          "x": 45.15122985839844,
+          "z": -2854.67333984375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 7,
+          "centerErrorM": 3.4814889412239335e-06,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 258.69000244140625,
+          "z": -2480.394775390625,
+          "hx": -0.011722402647137642,
+          "hz": 0.9992337226867676,
+          "way": 1103152009,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 63,
+      "cars": [
+        {
+          "x": 24.800888061523438,
+          "z": -2760.680908203125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 8,
+          "lanes": 8,
+          "centerErrorM": 5.544011701924307e-07,
+          "brake": 0
+        },
+        {
+          "x": 59.46225357055664,
+          "z": -2627.949951171875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 3.5525935067154354e-06,
+          "brake": 0
+        },
+        {
+          "x": 69.42813873291016,
+          "z": -2620.300048828125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 560940894,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 3.240295272440818e-06,
+          "brake": 0
+        },
+        {
+          "x": 123.1229476928711,
+          "z": -2287.136962890625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 9.31824363851896e-06,
+          "brake": 0
+        },
+        {
+          "x": 115.35741424560547,
+          "z": -2372.820556640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            56
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 1.5112958136111555e-05,
+          "brake": 0
+        },
+        {
+          "x": 99.92804718017578,
+          "z": -2487.1455078125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 337901396,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 9.350455390754285e-08,
+          "brake": 1
+        },
+        {
+          "x": 80.14883422851562,
+          "z": -2620.648681640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 560940894,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 7.729241611644891e-06,
+          "brake": 0
+        },
+        {
+          "x": 45.345882415771484,
+          "z": -2665.586181640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 1.0799060262905917e-06,
+          "brake": 0
+        },
+        {
+          "x": 76.42823028564453,
+          "z": -2748.076904296875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            15,
+            69
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 5.096000664772783e-06,
+          "brake": 0
+        },
+        {
+          "x": 118.08780670166016,
+          "z": -2397.21240234375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            18,
+            19
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 5,
+          "lanes": 7,
+          "centerErrorM": 2.1900050295962084e-05,
+          "brake": 0
+        },
+        {
+          "x": 46.1865234375,
+          "z": -2751.18896484375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 8,
+          "centerErrorM": 4.531423460374522e-06,
+          "brake": 0
+        }
+      ]
+    }
+  ],
+  "camera": [
+    68,
+    -2555,
+    9,
+    52,
+    570
+  ],
+  "startEST": "2026-11-20T17:05:00-05:00",
+  "simulationSecondsPerFrame": 0.25,
+  "quality": "high",
+  "connectorCap": 120,
+  "note": "Submitted instances. Lane numbers count from the median. Center error is distance to a modeled lane trajectory. Course indices list all compatible joined paths when those paths share a segment.",
+  "r14": [
+    {
+      "frame": 0,
+      "cars": [
+        {
+          "x": 47.61494445800781,
+          "z": -2911.021728515625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 3.840182697063597e-09,
+          "brake": 0
+        },
+        {
+          "x": 74.34033203125,
+          "z": -2588.275146484375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 8.785232263494492e-06,
+          "brake": 0
+        },
+        {
+          "x": 84.97588348388672,
+          "z": -2589.192626953125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 560940891,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.343857924360453e-05,
+          "brake": 0
+        },
+        {
+          "x": 79.87094116210938,
+          "z": -2359.943359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            70
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 7,
+          "lanes": 7,
+          "centerErrorM": 1.6933597698945633e-05,
+          "brake": 0
+        },
+        {
+          "x": 96.28881072998047,
+          "z": -2349.2060546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            86
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 3.2111965975709126e-06,
+          "brake": 0
+        },
+        {
+          "x": 74.43400573730469,
+          "z": -2416.958740234375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 560940887,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 8,
+          "centerErrorM": 1.4853472660116033e-05,
+          "brake": 0
+        },
+        {
+          "x": 74.95438385009766,
+          "z": -2808.397216796875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            15,
+            69
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 6.487112335233e-07,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 259.5509948730469,
+          "z": -2561.389892578125,
+          "hx": -0.009684199467301369,
+          "hz": 0.9997926950454712,
+          "way": 234013260,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 32,
+      "cars": [
+        {
+          "x": 18.472457885742188,
+          "z": -2899.608154296875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 978061546,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 1,
+          "centerErrorM": 8.236372330635013e-06,
+          "brake": 0
+        },
+        {
+          "x": 49.633113861083984,
+          "z": -2767.054931640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 1.5402095725240223e-06,
+          "brake": 0
+        },
+        {
+          "x": 59.52947235107422,
+          "z": -2731.401611328125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 4.006701170081576e-06,
+          "brake": 0
+        },
+        {
+          "x": 70.1461410522461,
+          "z": -2732.31591796875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 4.3464690979726325e-06,
+          "brake": 0
+        },
+        {
+          "x": 102.59943389892578,
+          "z": -2217.806884765625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            70
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 7,
+          "lanes": 7,
+          "centerErrorM": 9.895135925127007e-06,
+          "brake": 0
+        },
+        {
+          "x": 117.72148132324219,
+          "z": -2206.89599609375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            86
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 3,
+          "lanes": 7,
+          "centerErrorM": 6.864926674671866e-06,
+          "brake": 0
+        },
+        {
+          "x": 38.87708282470703,
+          "z": -2804.851318359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 7.81515235780514e-07,
+          "brake": 0
+        },
+        {
+          "x": 98.5113296508789,
+          "z": -2275.002197265625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 1.575440807206024e-05,
+          "brake": 0
+        },
+        {
+          "x": 44.079524993896484,
+          "z": -2890.654052734375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 7,
+          "centerErrorM": 9.157806839230272e-07,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 258.9011535644531,
+          "z": -2498.3935546875,
+          "hx": -0.011703378520905972,
+          "hz": 0.9996633529663086,
+          "way": 1103152009,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 40,
+      "cars": [
+        {
+          "x": 20.50919532775879,
+          "z": -2863.902099609375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 978061546,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 1,
+          "centerErrorM": 9.578367436003064e-07,
+          "brake": 0
+        },
+        {
+          "x": 50.881072998046875,
+          "z": -2731.08935546875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 9.031959077677089e-06,
+          "brake": 0
+        },
+        {
+          "x": 57.82152557373047,
+          "z": -2767.3583984375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 2.136397561506778e-06,
+          "brake": 0
+        },
+        {
+          "x": 68.45893859863281,
+          "z": -2768.27294921875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 1.1105221320224206e-06,
+          "brake": 0
+        },
+        {
+          "x": 38.978031158447266,
+          "z": -2768.851318359375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 1.872298104066835e-06,
+          "brake": 0
+        },
+        {
+          "x": 103.74678039550781,
+          "z": -2239.38525390625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "way": 337901430,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 6,
+          "lanes": 7,
+          "centerErrorM": 1.7689240176698092e-05,
+          "brake": 0
+        },
+        {
+          "x": 45.15122985839844,
+          "z": -2854.67333984375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901433,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 7,
+          "centerErrorM": 3.4814889412239335e-06,
+          "brake": 0
+        },
+        {
+          "group": "Illustrative Midtown arterial traffic",
+          "x": 258.69000244140625,
+          "z": -2480.394775390625,
+          "hx": -0.011722402647137642,
+          "hz": 0.9992337226867676,
+          "way": 1103152009,
+          "kind": "ground",
+          "direction": "southbound",
+          "road": "Spring Street Northwest",
+          "lane": null,
+          "lanes": 4
+        }
+      ]
+    },
+    {
+      "frame": 63,
+      "cars": [
+        {
+          "x": 24.800888061523438,
+          "z": -2760.680908203125,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            6
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 8,
+          "lanes": 8,
+          "centerErrorM": 5.544011701924307e-07,
+          "brake": 0
+        },
+        {
+          "x": 59.46225357055664,
+          "z": -2627.949951171875,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            44,
+            45,
+            46,
+            47
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 1,
+          "lanes": 8,
+          "centerErrorM": 3.5525935067154354e-06,
+          "brake": 0
+        },
+        {
+          "x": 56.66323471069336,
+          "z": -2870.8505859375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            45,
+            46,
+            50,
+            51,
+            53,
+            54
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 1,
+          "lanes": 7,
+          "centerErrorM": 1.2987659406924986e-06,
+          "brake": 0
+        },
+        {
+          "x": 141.59593200683594,
+          "z": -2235.624755859375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 119686421,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 7.920271424913896e-07,
+          "brake": 0
+        },
+        {
+          "x": 67.30883026123047,
+          "z": -2871.765380859375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            57
+          ],
+          "way": 316454375,
+          "kind": "ground",
+          "direction": "northbound",
+          "lane": 4,
+          "lanes": 7,
+          "centerErrorM": 3.3320914853913743e-06,
+          "brake": 0
+        },
+        {
+          "x": 45.345882415771484,
+          "z": -2665.586181640625,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            87
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 4,
+          "lanes": 8,
+          "centerErrorM": 1.0799060262905917e-06,
+          "brake": 0
+        },
+        {
+          "x": 46.1865234375,
+          "z": -2751.18896484375,
+          "group": "Illustrative Connector traffic",
+          "courseCandidates": [
+            25
+          ],
+          "way": 337901434,
+          "kind": "ground",
+          "direction": "southbound",
+          "lane": 2,
+          "lanes": 8,
+          "centerErrorM": 4.531423460374522e-06,
+          "brake": 0
+        }
+      ]
+    }
+  ]
+}
