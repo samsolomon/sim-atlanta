@@ -3283,6 +3283,22 @@ The table listed the Campanile at 200 m. The 2019 lidar says 95.4 m. The bigger 
 
 Midtown Union's 26-storey office tower at Spring and 17th was a generic striped box. It is now a reflective glass shaft on raking V-shaped columns, with the optical-art garage running along 17th Street under a planted deck. The surprise was the compass. City's z axis points south, so 17th Street lies *north* of the footprint, not south, and that flips which face carries the garage art. Read the photos against the street signs first. The second surprise was grade: the street falls toward West Peachtree, which buried the first storefront band, so each garage face now samples its own ground. The skin is 1,360 triangles and 2 draw calls (lamps included), with no new shader program: low tier 543/600 calls, 85/90 programs.
 [Before and after](log/ui/midtown-union/compare.jpg) · [day and night](log/ui/midtown-union/daynight.jpg) · [garage close](log/ui/midtown-union/close.jpg)
+### 2026-11-23 — The Four Seasons' pyramid
+
+The 186 m Four Seasons Hotel was a plain extruded box. It now steps back like the
+photographs: a rose-granite hotel base to the 19th floor, office and residential
+shafts with notched corners, crown tiers, a gold-latticed attic and a grey-green
+standing-seam pyramid. It rises 14 m to 190 m, under the 193 m lidar maximum, because a
+10 m cap got lost against the tower behind it. A 12-storey glazed arch rises over the 14th Street
+porte-cochère. The first draft gave every window on every floor its own quad,
+5,679 triangles. One glass strip per bay column, with a stone spandrel at each
+floor, gives the same grid in 1,587 triangles, inside the 2,400 allowed for a
+landmark. Only the windows lit at night get their own quads, in the lamp mesh.
+After 23:00 the hotel floors are the busiest, and the crown floors never light,
+so the top doesn't speckle. The attic and corner piers are floodlit, as in the
+only full-night photograph I found. [Before and after](log/ui/four-seasons/compare-day.jpg) ·
+[night](log/ui/four-seasons/compare-night.jpg) · [crown, day and night](log/ui/four-seasons/day-night.jpg) ·
+[sources and estimates](four-seasons.md)
 
 
 ### 2026-11-23 — Every tree a species, for one look
