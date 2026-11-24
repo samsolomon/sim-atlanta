@@ -12,3 +12,5 @@ The low-tier camera at `327,-696,290,39,240` drew 1,350,460 triangles in 102 cal
 | Roof and west return | `290,-687,290,25,470` | [Day](roof-day.jpg) | [Night](roof-night.jpg) |
 
 Use November 20, 2026, clear weather, low quality, and speed zero. The frontage needs the dev option `mindist=20`. Web rebuild only.
+
+From the normal City orbit the ribbed tower stands beyond the promenade offices. The brighter foreground crown belongs to 191 Peachtree. Camera `267,-677,292,48,455`. [Context by day](context-day.jpg) · [Context by night](context-night.jpg)
