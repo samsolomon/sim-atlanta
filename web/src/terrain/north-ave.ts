@@ -28,7 +28,7 @@ export function northAveSlots(city: Pick<TerrainCity,'bounds'>, zero: number): O
 }
 /** Linear grade between DEM anchors outside the trench, evaluated across each track. */
 export function northAveRailProfile(run: Pick<TransportRun,'pts'>,grid:GroundGrid) {
-  const anchors = [-120,120].map(target=>{
+  const anchors = [-40,40].map(target=>{
     for(let i=1;i<run.pts.length;i++){
       const a=run.pts[i-1],b=run.pts[i],ta=northAveLocal(...a)[1],tb=northAveLocal(...b)[1];
       if((ta-target)*(tb-target)>0||ta===tb)continue;
@@ -40,8 +40,8 @@ export function northAveRailProfile(run: Pick<TransportRun,'pts'>,grid:GroundGri
   });
   return (x:number,z:number,base:number|null)=>{
     const [s,t]=northAveLocal(x,z);
-    if(s<20||s>90||Math.abs(t)>=120)return base;
-    return anchors[0].h+(anchors[1].h-anchors[0].h)*(t+120)/240-grid.manifest.vertical.sceneZeroNavd88M;
+    if(s<20||s>90||Math.abs(t)>=40)return base;
+    return anchors[0].h+(anchors[1].h-anchors[0].h)*(t+40)/80-grid.manifest.vertical.sceneZeroNavd88M;
   };
 }
 export function northAveRoadHeight(x:number,z:number,run: Pick<TransportRun,'name'>,zero:number) {

@@ -78,8 +78,6 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const freightTreads: FreightTreadPoint[][] = [];
   const footbridgeYields: GroundYield[] = [];
   const ballastRuns: BallastQuad[][] = [];
-  const northBeds: GroundYield[] = [];
-  const northPoints = new Map<TransportRun, number[][]>();
   // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
   const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
     minZ: bounds.minZ + grid.manifest.stepM + .01, maxZ: bounds.maxZ - grid.manifest.stepM - .01 };
@@ -383,12 +381,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           const drawn = (terrainGround as DrapeGround).triangles;
           // Ground ballast, for graded cuttings. The East cut's freight sits in its own slot.
-          const crossing = northAve && [a,b,c,d].some(p => { const [s,t]=northAveLocal(p[0],p[2]); return s>=20 && s<=90 && Math.abs(t)<120; });
+          const crossing = northAve && [a,b,c,d].some(p => { const [s,t]=northAveLocal(p[0],p[2]); return s>=20 && s<=90 && Math.abs(t)<40; });
           const graded = textured && !bridge && run !== cut?.freight;
-          if (crossing && textured) {
-            const points=northPoints.get(run) ?? []; northPoints.set(run,points);
-            points.push(...[a,b,c,d].filter(p=>{const [s,t]=northAveLocal(p[0],p[2]);return s>20&&s<90&&Math.abs(t)<119;}));
-          }
           // Ground ballast may draw after the loop, so it keeps this quad's own start station.
           const s0 = lastS;
           const draw = (flat: boolean) => { const lastS = s0; if (!flat && !crossing && graded && drawn) {
