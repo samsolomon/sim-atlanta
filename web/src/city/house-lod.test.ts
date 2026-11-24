@@ -184,3 +184,13 @@ test('raises a far-far box to a hillside house fitted floor', () => {
   expect(Math.max(...ys)).toBeCloseTo(4 + homes.boxOf(houses[0].id)!.height);
   lod.dispose();
 });
+
+test('keeps a forced house version at every distance (no far-far form)', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const lod = houseLod({ houses: homes.city.buildings.filter(b => homes.isHouse(b.id)), bounds: city.bounds, ground: () => 0, foundation: () => 0,
+    near: homes.finishFor, far: homes.farFinishFor, roofUnits: 3, box: b => homes.boxOf(b.id), force: 'far' });
+  expect(lod.group.getObjectByName('houses (far-far)')).toBeUndefined();
+  lod.setDetail({ farHouses: true });
+  expect(lod.group.children.every(c => c.visible)).toBe(true);
+  lod.dispose();
+});

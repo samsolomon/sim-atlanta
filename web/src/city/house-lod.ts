@@ -259,7 +259,8 @@ export function* buildHouseLod(o: HouseLodOptions) {
   // merged into one mesh on the far houses' own material and attribute layout, so it costs no
   // program. Past the very-far orbit a house is about 2 px: the boxes keep the ink outline and
   // side shading that give the wide view its texture (flat ground paint read flatter).
-  const farFar = o.box && !houseFarOff ? yield* buildFarFar(o, tiles) : null;
+  // A forced version (the dev houses=near|far pin) stays pinned at every distance.
+  const farFar = o.box && !houseFarOff && !o.force ? yield* buildFarFar(o, tiles) : null;
   if (farFar) { farFar.visible = false; group.add(farFar); }
   const merged: THREE.Mesh[] = [];
   for (const members of blocks.values()) {
