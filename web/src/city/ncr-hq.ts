@@ -4,7 +4,7 @@ import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, ramp, wound } from './skin-kit';
+import { along, faces, litHash, outwardSign, ramp, seedOf, wound } from './skin-kit';
 
 export const ncrId = 'osm:way:26795281';
 const origin: P2 = [181, -2793];
@@ -61,7 +61,7 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
    * runs north-south and dEW along the other, at the roof.
    */
   function slicedTower(ring: P2[], top: number, screen: number, corner: P2, dNS: number, dEW: number, lit: number[]) {
-    const sh = shell!;
+    const sh = shell!, seed = seedOf(site.id) ^ Math.round(top * 10);
     const ci = ring.reduce((best, p, i) => Math.hypot(p[0] - corner[0], p[1] - corner[1]) < Math.hypot(ring[best][0] - corner[0], ring[best][1] - corner[1]) ? i : best, 0);
     const n = ring.length, C = ring[ci], A = ring[(ci + n - 1) % n], B = ring[(ci + 1) % n];
     // A cut never runs past the next vertex: it stops 0.5 m short so the roof ring stays simple.
@@ -102,13 +102,13 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
         for (let v = k; v < body.pos.length; v += 3) body.col.splice(v, 3, ...c);
       }
       // Offices at 23:30: a few whole floors still lit, by day in the glass's own tone.
-      for (const [k, level] of lit.entries()) {
-        if ((k + i) % 2) continue;
+      for (const level of lit) {
+        if (litHash(seed, i, level, 0) >= 0.5) continue;
         const y = lo + (level + 0.18) * storey, y1 = y + storey * 0.64;
         const s = i === ci ? at(C, Cb, y1) : p, e = (i + 1) % n === ci ? at(C, Ca, y1) : q;
         const l = Math.hypot(e[0] - s[0], e[1] - s[1]);
-        // A lit bay run covering 30–55% of the face, placed by a stable hash.
-        const h = ((level * 73 + i * 37) % 100) / 100, w = 0.3 + 0.25 * ((level * 31 + i * 11) % 10) / 10;
+        // A lit bay run covering 30–55% of the face, placed by the kit's lit-pane hash.
+        const h = litHash(seed, i, level, 1), w = 0.3 + 0.25 * litHash(seed, i, level, 2);
         const u0 = 0.06 + (0.88 - w) * h;
         const s1 = along(s, e, l, l * u0, 0.09 * out), e1 = along(s, e, l, l * (u0 + w), 0.09 * out);
         quad(lights, [[s1[0], y, s1[1]], [s1[0], y1, s1[1]], [e1[0], y1, e1[1]], [e1[0], y, e1[1]]], glassAt);
