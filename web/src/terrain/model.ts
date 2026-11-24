@@ -8,11 +8,16 @@ import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventee
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
 import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
+import { createUniversityHouse, universityHouseId } from '../city/university-house';
 import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
 import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
+import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
+import { createModeraParkside, moderaParksideId } from '../city/modera-parkside';
+import { createTheStandard, theStandardId } from '../city/the-standard';
+import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
 import { createProscenium, prosceniumId } from '../city/proscenium';
@@ -31,6 +36,8 @@ import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { createLoews, loewsId } from '../city/loews-atlanta';
 import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
+import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
+import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -272,12 +279,17 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === universityHouseId ? createUniversityHouse(sceneryCity.buildings, grid, options.quality)
       : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === amliArtsCenterId ? createAmliArtsCenter(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
+      : site.id === winshipId ? createWinship(sceneryCity.buildings, site, grid)
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
+      : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
@@ -296,6 +308,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
       : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
+      : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
