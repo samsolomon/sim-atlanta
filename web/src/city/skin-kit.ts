@@ -72,3 +72,30 @@ export function litHash(seed: number, face: number, floor: number, bay: number) 
   h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
   return (h >>> 0) / 4294967296;
 }
+
+/** The parts of a landmarkShell that litFacade draws into. */
+interface FacadeShell { body: Builder; lights: Builder }
+
+/**
+ * landmarkShell.facade with the shared lit-pane hash: the same pane grid (rows between lo and hi,
+ * panes `bay` metres apart, `fill` and `verticalFill` of each cell), but each pane goes to the lamp
+ * mesh when litHash(seed, face, row, column) < occupancy, and its colour comes from the same hash
+ * (slot column + 4096). Faces run with the building on the left in the shell's (u, v) plan.
+ */
+export function litFacade(
+  shell: FacadeShell, seed: number, face: number, a: P2, b: P2, lo: number, hi: number,
+  rows: number, bay: number, fill: number, verticalFill: number, colors: readonly string[], occupancy: number,
+) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+  if (len < 1e-6 || rows < 1) return;
+  const count = Math.max(1, Math.round(len / bay)), pitch = (hi - lo) / rows;
+  const point = (t: number, y: number) => [a[0] + t * dx + (0.07 * dz) / len, y, a[1] + t * dz - (0.07 * dx) / len];
+  for (let j = 0; j < rows; j++)
+    for (let i = 0; i < count; i++) {
+      const l = (i + (1 - fill) / 2) / count, r = (i + (1 + fill) / 2) / count;
+      const y = lo + (j + (1 - verticalFill) / 2) * pitch, top = y + verticalFill * pitch;
+      const target = litHash(seed, face, j, i) < occupancy ? shell.lights : shell.body;
+      const color = colors[Math.min(colors.length - 1, Math.floor(litHash(seed, face, j, i + 4096) * colors.length))];
+      target.quad(point(l, y), point(l, top), point(r, top), point(r, y), color);
+    }
+}
