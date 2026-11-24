@@ -3542,3 +3542,7 @@ Each transport mesh now orders its triangles so the parts that still read at tha
 On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
 
 [Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+### 2026-11-24 — The shadow map was redrawing five times a second on a fly-over
+
+On the A16, `route:north` showed 206 shadow-map redraws in 10 s, each about a million triangles. The camera policy allows one redraw per 250 ms. The extra redraws came from level-of-detail swaps: every house tile, ground board or transport far-form swap set `needsUpdate` on its own, and a fly-over swaps something every few frames. On the phone tier a swap now just marks the map dirty, and the next redraw waits for the same 250 ms gap. The re-centre step also grows with the orbit, to max(80 m, 0.15 × orbit). Over a 20 s route, redraws fell from 209 to 94 on north and from 201 to 91 on the loop, and the worst frame on north fell from 167 to 33 ms. Frames at rest match the old path within film grain. [Fly-over strip](log/perf/shadow-gap/route-north-strip.png)
