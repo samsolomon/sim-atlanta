@@ -943,3 +943,11 @@ The mature model uses 195 / 135 triangles at high / low detail, three instanced 
 Nominal sapling, young, mature and specimen dimensions are 3.6 × 2.4 m, 7.5 × 6.4 m, 12.5 × 13.5 m and 15.2 × 16 m. Callipers and Atlanta seasonal dates are estimated, with about a week of variation between individuals. The palette follows one deciduous autumn progression from bronze-gold to copper. Samaras, individual serrations and cultivar variation are omitted.
 
 A uses the existing oval atlas and fine-scale leaf cards. Bark colour is procedural in tree-local metres and fades to the base colour at distance. The mature tree uses 194 / 102 triangles, three instanced draws including the leaf carpet, and no new texture allocation. Web rebuild only.
+
+### River birch
+
+`web/src/trees/river-birch.ts`, *Betula nigra*. The A study depicts a three-stem clump with an open crown, fine green sprays, salmon-and-cream bark, and soft yellow autumn foliage. The existing oval atlas approximates the pointed leaves at Lab scale. Catkins, individual serrations and the physical relief of curling bark are outside this first study. [Seasonal and distance sheet](log/ui/tree-species/options-river-birch.jpg).
+
+[NC State Plant Toolbox](https://plants.ces.ncsu.edu/plants/betula-nigra/) documents the multi-trunk habit, papery salmon-to-rust bark, spring catkins and modest yellow autumn colour. [Virginia Tech Dendrology](https://dendro.cnre.vt.edu/dendrology/carddetail.cfm?ID=13) describes bark that peels horizontally and becomes coarser with age. The sheet shows Jim Robbins’s spring form photo (CC BY-NC-ND 4.0, entire frame) and Kathleen Moore’s bark photo (CC BY 2.0, cropped), both from the NC State Plant Toolbox. The night frame is the Lab’s lighting treatment.
+
+Nominal sapling, young, mature and specimen dimensions are 4 × 2.3 m, 8 × 5.4 m, 15 × 11.5 m and 20 × 16 m. Callipers refer to the main stem, and all dimensions and Atlanta seasonal dates are illustrative. Older large stems get a darker base. Bark is procedural and fades at distance. The mature tree uses 190 / 134 triangles, three instanced draws including leaf litter, and no new texture allocation. Lab only. Web rebuild on release.
