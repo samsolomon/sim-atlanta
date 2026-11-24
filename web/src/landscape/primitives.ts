@@ -109,7 +109,7 @@ function speckle(color: string, r: () => number, amount: number) {
  * A tuft of blades rooted at one point, as in the trail-planting study: each blade is
  * one triangle with two fixed feet on the ground, leaning outward, heights varied.
  */
-function tuft(b: Builder, x: number, y: number, z: number, height: number, blades: number, color: string, r: () => number) {
+export function tuft(b: Builder, x: number, y: number, z: number, height: number, blades: number, color: string, r: () => number) {
   for (let i = 0; i < blades; i++) {
     const a = (i + r() * .6) / blades * Math.PI * 2, lean = .25 + r() * .35, h = height * (.65 + r() * .5);
     const fx = Math.cos(a), fz = Math.sin(a), w = .035;
@@ -313,7 +313,7 @@ export function hedge(b: Builder, line: P2[], ground: Ground,
 }
 
 /** Retaining edge: holds the higher grade, with its cap `reveal` above the high side. */
-export function retainingEdge(b: Builder, line: P2[], ground: Ground, o: { reveal?: number; width?: number; quality?: Quality } = {}) {
+export function retainingEdge(b: Builder, line: P2[], ground: Ground, o: { reveal?: number; width?: number; quality?: Quality; stone?: string; cap?: string } = {}) {
   const width = o.width ?? .35, reveal = o.reveal ?? .3;
   // Sample both faces and stand the wall from the low side to the high side plus the reveal.
   const pts = along(line, o.quality === 'low' ? 3 : 1);
@@ -322,7 +322,7 @@ export function retainingEdge(b: Builder, line: P2[], ground: Ground, o: { revea
     const a = g0(ground, x + p.nx * 1.2, z + p.nz * 1.2), c = g0(ground, x - p.nx * 1.2, z - p.nz * 1.2);
     return [Math.min(a, c, g0(ground, x, z)), Math.max(a, c, g0(ground, x, z))];
   };
-  strip(b, line, width, (x, z) => at(x, z)[0] - .25, (x, z) => at(x, z)[1] + reveal, STONE, CAP, o.quality === 'low' ? 3 : 1);
+  strip(b, line, width, (x, z) => at(x, z)[0] - .25, (x, z) => at(x, z)[1] + reveal, o.stone ?? STONE, o.cap ?? CAP, o.quality === 'low' ? 3 : 1);
 }
 
 /** Seat wall: a level-topped bench wall, about 0.45 m above the ground at its high end. */

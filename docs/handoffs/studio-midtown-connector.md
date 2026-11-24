@@ -1,5 +1,28 @@
 # Handoff: studio-midtown-connector (Claude → Codex, 2026-11-23)
 
+## Codex continuation — 2026-11-23
+
+- Arterial turns merged as #340. Twenty Midtown turn courses; incoming signal
+  phase, one-way rules and direct 15% illustrative turn share. Known limitation:
+  turn and through courses have independent queues with overlap suppression.
+- Next handoff item implemented on `codex/streetcar-traffic-queues`: three downtown
+  courses follow scheduled streetcars using deterministic half-second replay.
+  See `docs/streetcar-traffic-queues.md` and its comparison captures. The S70 model,
+  live buses, Connector and Midtown traffic interfaces remain unchanged.
+- Ground-contact successor is `orca_session_id:acad9721-185c-4ee8-84df-9fb8fe9fac1e`.
+  Initial measurements were sent: upper ground 272.960 m NAVD88 versus nearby
+  approach 272.337 m, axis 6.2 m away. Central and south are 487 m and 173 m from
+  the nearest surveyed Connector profile and remain unassigned pending a fresh
+  audit with mesh/path attribution. No surveyed heights have been changed.
+- Coordinator messages work by replying to `msg_ca3634b98b19`; direct sends to
+  the saved Air environment rejected its pairing token. Only coordinator deploys.
+- Claude cross-review now works here through `pnpm review -- --reviewer claude`.
+  A stale staged Midtown landscape caused the tree test to fail; restaging with
+  `node scripts/stage-square-board.mjs --midtown` fixed it without source changes.
+
+The original Claude handoff below records the earlier state.
+
+
 ## State
 - The worktree is clean. Nothing is in flight, and none of the open PRs are mine.
 - Last merged: #300, which skips drawing traffic cars that would overlap a streetcar. Earlier merges in this stream: #179, #186, #191, #199, #200, #204, #212, #223, #232, #239, #264, #268, #281 and #294.

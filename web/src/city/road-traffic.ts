@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MovingQueue, MOVING_QUEUE_WAIT_S, type MovingBlocks } from './traffic-queues';
 import { rng, type Line } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import { local } from '../vignette/time';
@@ -20,13 +21,15 @@ export interface RoadTrafficOptions {
   /** All distances in City metres. Heading is atan2(dx,dz), zero toward +z. */
   busOccupies?: (x: number, y: number, z: number, lengthM: number, headingRad: number) => boolean;
   clippingPlanes?: THREE.Plane[];
+  /** Optional historical same-lane blockers, bound once per arterial course. */
+  movingBlocks?: (course: TrafficCourse) => MovingBlocks | undefined;
 }
 /** Offstage metres for one course. A signalised course adds the longest it can be held,
  * so a trip delayed at every light still leaves before its slot's next trip begins. */
 function offstage(lane: TrafficCourse) {
   // The full red, plus headway for a 15-car queue, at every light.
   const budget = lane.signals?.length && !lane.closed ? lane.signals.length * (SIGNAL_MAX_WAIT_S + 30) : 0;
-  return (lane.offstageM ?? 0) + budget * lane.speedMps;
+  return (lane.offstageM ?? 0) + (budget + (lane.queueWaitS ?? 0)) * lane.speedMps;
 }
 export interface TrafficCourse {
   line: Line;
@@ -37,9 +40,13 @@ export interface TrafficCourse {
   truckShare: number;
   /** Extra time offstage between trips with separate endpoints. */
   offstageM?: number;
+  /** Replay allowance for moving queues; excluded from visible-car demand. */
+  queueWaitS?: number;
   closed?: boolean;
   /** Stop lines at mapped traffic signals (opt-in; courses without them run unchanged). */
   signals?: CourseSignal[];
+  /** Explicit incoming stop line for a turning course. */
+  turnSignal?: Omit<CourseSignal, 'axis'> & { dx: number; dz: number };
   /** Dissolve near unresolved interior endpoints; board edges use the City's clipping. */
   fadeStartM?: number;
   fadeEndM?: number;
@@ -104,8 +111,8 @@ export class RoadTraffic {
   private readonly material = vehicleMaterial(this.night);
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
+  private readonly movingQueues = new Map<TrafficCourse, MovingQueue>();
   private readonly peak: number;
-  private minute = NaN;
   private share = 0;
   private pose = new THREE.Object3D();
   private readonly visible: { x: number; z: number; y: number; half: number; ux: number; uz: number; lane?: TrafficCourse }[] = [];
@@ -121,6 +128,14 @@ export class RoadTraffic {
     // Heads first: a stop line whose head cannot be placed is dropped, so no car waits at a
     // light it cannot see.
     courses = this.buildHeads(courses);
+    courses = courses.map(course => {
+      const blocks = opts.movingBlocks?.(course);
+      if (!blocks) return course;
+      // A delayed trip gets three additional minutes before its slot repeats.
+      const queued = { ...course, queueWaitS: MOVING_QUEUE_WAIT_S };
+      this.movingQueues.set(queued, new MovingQueue(queued.signals ?? [], queued.line.length, queued.speedMps, blocks));
+      return queued;
+    });
     this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed) : [];
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
     const fade = courses.some(course => course.fadeStartM || course.fadeEndM);
@@ -154,7 +169,7 @@ export class RoadTraffic {
   }
 
   private buildHeads(courses: TrafficCourse[]): TrafficCourse[] {
-    const placed: { m: THREE.Matrix4; sig: CourseSignal }[] = [];
+    const placed: { m: THREE.Matrix4; sig: CourseSignal; x: number; z: number }[] = [];
     const kept = courses.map(course => {
       if (!course.signals?.length) return course;
       const signals = course.signals.filter(sig => {
@@ -164,7 +179,10 @@ export class RoadTraffic {
         if (y === null || !Number.isFinite(y)) return false;
         // On the approach's right, just beyond the lane, facing the oncoming driver.
         const x = p.x - p.dz * 5, z = p.z + p.dx * 5;
-        placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig });
+        // Turn courses reuse the existing approach head rather than adding a
+        // second mast a few metres before the same controller.
+        if (!course.turnSignal || !placed.some(h => h.sig.key === sig.key && h.sig.axis === sig.axis && Math.hypot(h.x-x,h.z-z)<12))
+          placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig, x, z });
         return true;
       });
       return { ...course, signals };
@@ -188,11 +206,7 @@ export class RoadTraffic {
     this.visibleCars = 0;
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return;
-    const minute = Math.floor(clockMs / 60000);
-    if (minute !== this.minute) {
-      this.minute = minute;
-      this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
-    }
+    this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads;
@@ -204,15 +218,16 @@ export class RoadTraffic {
     const signalled = new Map<Slot, number | null>();
     const byLane = new Map<TrafficCourse, Slot[]>();
     for (const slot of this.slots) {
-      if (slot.threshold >= this.share || !slot.lane.signals?.length || slot.lane.closed) continue;
+      if (slot.threshold >= this.share || (!slot.lane.signals?.length && !this.movingQueues.has(slot.lane)) || slot.lane.closed) continue;
       const list = byLane.get(slot.lane);
       if (list) list.push(slot); else byLane.set(slot.lane, [slot]);
     }
     for (const [lane, slots] of byLane) {
       const period = lane.line.length + offstage(lane), v = lane.speedMps;
       const trips = slots.map(sl => ({
-        start: seconds - THREE.MathUtils.euclideanModulo(seconds * v + sl.phase, period) / v, length: LENGTH[sl.kind] }));
-      const pos = signalPositions(lane.signals!, lane.line.length, v, trips, seconds);
+        start: (Math.floor((seconds * v + sl.phase) / period) * period - sl.phase) / v, length: LENGTH[sl.kind] }));
+      const pos = this.movingQueues.get(lane)?.at(trips, seconds)
+        ?? signalPositions(lane.signals!, lane.line.length, v, trips, seconds);
       slots.forEach((sl, i) => signalled.set(sl, pos[i]));
     }
     for (const slot of this.slots) {

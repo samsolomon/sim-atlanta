@@ -13,6 +13,25 @@ const house = (id: string, ring: P2[], extra: Partial<VBuilding> = {}) => ({ id,
 const city = (buildings: VBuilding[]) => ({ bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, buildings,
   roads: [{ cls: 'residential', name: 'Test St', bridge: false, tunnel: false, pts: [[-50, -6], [50, -6]] }], rail: [] }) as unknown as TerrainCity;
 
+it('keeps a shallow Foursquare roof below its ridge, including dormer geometry', () => {
+  const b = house('shallow-foursquare', rect(12, 8));
+  const homes = residential(city([b]), undefined, undefined, undefined, 'high', {
+    [b.id]: { style: 'colonial', form: 'foursquare', storeys: 2 },
+  });
+  const finish = homes.finishFor(b)!;
+  const eave = homes.city.buildings[0].h!;
+  const drawn = new Builder();
+  finish.dressRoof!(drawn, b.rings[0], eave, new Builder());
+  const color = new Color(finish.roof!);
+  const roofHeights: number[] = [];
+  for (let i = 0; i < drawn.pos.length; i += 3) {
+    if (Math.abs(drawn.col[i] - color.r) < 1e-6 && Math.abs(drawn.col[i + 1] - color.g) < 1e-6
+      && Math.abs(drawn.col[i + 2] - color.b) < 1e-6) roofHeights.push(drawn.pos[i + 1]);
+  }
+  expect(roofHeights.length).toBeGreaterThan(0);
+  expect(Math.max(...roofHeights)).toBeLessThanOrEqual(eave + 2.4 + 1e-6);
+});
+
 function roof(b: VBuilding, plan: ReturnType<typeof residential>) {
   const out = new Builder();
   const finish = plan.finishFor(b)!;
@@ -201,4 +220,41 @@ it('reports the yard budget per row and tier', () => {
   expect(totals.high).toBeLessThan(420000);
   expect(totals.low).toBeLessThan(70000);
   expect(totals.low).toBeLessThan(totals.high);
+});
+
+it('adds terraced yards only for detached Ansley houses on the high tier', () => {
+  const b=house('terrace-fixture',rect(12,10,1200,-4000));
+  const c={...city([b]),bounds:{minX:1000,maxX:1400,minZ:-4200,maxZ:-3800},
+    roads:[{cls:'residential',name:'Test St',bridge:false,tunnel:false,pts:[[1100,-4020],[1300,-4020]]}]} as TerrainCity;
+  const ground=(x:number,z:number)=>(z+4020)*.15+(x-1200)*.1;
+  for(const quality of ['high','low'] as const){
+    const yard=residential(c,undefined,ground,undefined,quality).yards()!;
+    expect(yard.terraceSites.length).toBe(quality==='high'?1:0);
+    if (quality === 'high') expect(yard.yields.length).toBeGreaterThan(3);
+    else expect(yard.yields).toHaveLength(0);
+    if (quality === 'high') {
+      const corners = yard.yields[2].ring.slice(2);
+      const midX = (corners[0][0] + corners[1][0]) / 2;
+      const midZ = (corners[0][1] + corners[1][1]) / 2;
+      const walk = new Color('#cbc6ba');
+      for (const [x,z] of corners) {
+        const heights: number[] = [];
+        yard.group.traverse(mesh => {
+          if (!(mesh instanceof Mesh)) return;
+          const pos = mesh.geometry.getAttribute('position'), color = mesh.geometry.getAttribute('color');
+          for (let i = 0; i < pos.count; i++) {
+            if (Math.abs(pos.getX(i)-x)<.001 && Math.abs(pos.getZ(i)-z)<.001 &&
+                Math.abs(color.getX(i)-walk.r)<.001) heights.push(pos.getY(i));
+          }
+        });
+        expect(heights.length).toBeGreaterThan(0);
+        for (const height of heights) expect(height).toBeCloseTo(ground(midX,midZ)+.04,5);
+      }
+    }
+    yard.dispose();
+  }
+  for(const cls of ['terrace','semidetached_house']){
+    const yard=residential({...c,buildings:[{...b,cls}]},undefined,ground).yards();
+    expect(yard?.terraceSites.length??0).toBe(0);yard?.dispose();
+  }
 });

@@ -1,9 +1,12 @@
+import { pradoYieldSigns } from '../terrain/ansley-street-edge';
 import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
 import { inAnsley, roadWidth, type TerrainCity } from '../terrain/transport-data';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { flowerBed, hedge, landscapeMesh } from '../landscape/primitives';
 import { GroundCover } from '../landscape/ground-cover';
+import type { GroundYield } from '../terrain/surface';
+import { yardTerrace } from './yard-terrace';
 import type { BuildingFinish, VBuilding } from '../vignette/world';
 
 /**
@@ -19,15 +22,19 @@ const tags = tagged as unknown as Record<string, [string | null, string | null, 
 type Shape = 'gabled' | 'hipped' | 'pyramidal';
 export type HouseStyle = 'colonial' | 'craftsman' | 'tudor' | 'apartment';
 /** Lab and test overrides: pin a footprint's style, siding, wall colour or storeys. */
-export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number }>;
+export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number; form: 'foursquare' | 'limestone' | 'white-brick' }>;
 type Plan = { style: HouseStyle; storeys: number; doorS: number; doors: number[]; id: string; wind: number; overhang: number; dormerEdge: P2[] | null;
   concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
   crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
-  wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
+  wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean;
+  /** Window frame colour (white trim, or black steel on newer Ansley houses). */
+  frame: string;
+  /** An American Foursquare: hipped, two storeys, a full-width porch with a balustrade and a centre dormer. */
+  foursquare: boolean };
 
 // Material families, each with its own colour range (Sam's notes, checked against Street View
 // in Ansley Park and Home Park). Repeated entries weight the common colours.
-export type Siding = 'clapboard' | 'brick' | 'stucco' | 'shingle';
+export type Siding = 'clapboard' | 'brick' | 'stucco' | 'shingle' | 'ashlar';
 export const FAMILIES: Record<Siding, string[]> = {
   // Lap siding: white, cream, pale yellow, sage, grey-blue, muted green; the occasional deep red or navy.
   // Values sit a little above Street View so they survive the City colour grade.
@@ -35,17 +42,24 @@ export const FAMILIES: Record<Siding, string[]> = {
   // Brick: warm red-orange, deep red, brown, tan, and some painted white brick.
   brick: ['#b8603f', '#b8603f', '#934634', '#80583f', '#c6a27a', '#efebe2'],
   // Cedar shingle: weathered brown or grey.
-  shingle: ['#8e7055', '#9d8467', '#9c9990', '#88867e'],
+  // Ansley adds painted shingle: grey-blue, and the odd dark green (Sam's walk, 2026-11-23).
+  shingle: ['#8e7055', '#9d8467', '#9c9990', '#88867e', '#8d9cab', '#8d9cab', '#5a6b58'],
   // Stucco: cream, pink-beige, pale ochre.
   stucco: ['#f1e9d4', '#ebd2bd', '#e6cd98'],
+  // Limestone ashlar (newer Ansley houses): pale warm cream.
+  ashlar: ['#e4dccb', '#e8e0cf', '#ddd4c1'],
 };
 // Weathered mid-greys and warm browns, with a little muted green and red: roofs no longer dominate.
 const ASPHALT = ['#8f8a83', '#857e76', '#9a8d7e', '#8a7a6a', '#7c8a80', '#8e6f63', '#99938b', '#7e858a', '#7a8a72'];
 const SLATE = ['#6f7880', '#68727b'];
+// Newer Ansley houses: cream limestone or white-painted brick under dark slate, with black steel windows.
+const LIMESTONE = '#e4dccb', WHITE_BRICK = '#efebe2', DARK_SLATE = ['#545b63', '#4c535b'], STEEL = '#22262a';
+// Foursquares and Colonial Revival: white or pale-grey clapboard.
+const FOURSQUARE = ['#f5f2ea', '#f5f2ea', '#e4e5e0', '#eef0ee'];
 const TERRACOTTA = ['#94604c', '#9d6a52', '#87574a'];
 const DOORS = ['#2f3a34', '#5b2a24', '#2b2f3a', '#3b2c22', '#6a5d4b', '#1f2224'];
 // Shader sidings 7–10: the 3–6 textures without shader windows; houses draw their own windows.
-const STYLE: Record<Siding, number> = { clapboard: 7, brick: 8, stucco: 9, shingle: 10 };
+const STYLE: Record<Siding, number> = { clapboard: 7, brick: 8, stucco: 9, shingle: 10, ashlar: 12 };
 
 function area(ring: P2[]) {
   let a = 0;
@@ -168,7 +182,7 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
     : style === 'tudor' ? (pick < .7 ? 'brick' : 'stucco')
     : style === 'colonial' ? (pick < .45 ? 'brick' : pick < .9 ? 'clapboard' : 'shingle')
     : ansley ? (pick < .55 ? 'clapboard' : pick < .85 ? 'shingle' : 'brick') : (pick < .75 ? 'clapboard' : pick < .9 ? 'shingle' : 'brick'));
-  const palette = FAMILIES[kind];
+  const palette = kind === 'shingle' && !ansley ? FAMILIES.shingle.slice(0, 4) : FAMILIES[kind];
   const roofs = kind === 'stucco' && r() < .6 ? TERRACOTTA : (kind === 'brick' || style === 'tudor') && ansley && r() < .25 ? SLATE : ASPHALT;
   // Door by style: centred on a Colonial, off-centre under a Craftsman porch, beside a Tudor gable.
   const doorS = style === 'colonial' ? 0 : style === 'craftsman' ? -.2 * frontLen : style === 'apartment' ? -.25 * frontLen : .22 * frontLen;
@@ -201,10 +215,39 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const wind = ring.reduce((a, q, i) => { const n = ring[(i + 1) % ring.length]; return a + q[0] * n[1] - n[0] * q[1]; }, 0) > 0 ? 1 : -1;
   // Eave and rake overhang by style: deep Craftsman eaves, tighter Tudor ones.
   const overhang = style === 'craftsman' ? .6 : style === 'tudor' || style === 'apartment' ? .3 : .45;
-  return { style, storeys, doorS, doors, id: b.id, wind, overhang, dormerEdge, concave, shape, eave, rise, centre: axis.centre, u: axis.u, long: axis.long, half: axis.half, front, siding: kind,
+  const plan: Plan = { style, storeys, doorS, doors, id: b.id, wind, overhang, dormerEdge, concave, shape, eave, rise, centre: axis.centre, u: axis.u, long: axis.long, half: axis.half, front, siding: kind,
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
-    trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick' };
+    trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick', frame: trim, foursquare: false };
+  return f.form || (ansley && !f.style && !f.siding && !f.wall) ? ansleyForms(plan, b, size, frontLen, !!shapeTag, !!tagged, f.form) : plan;
+}
+
+/**
+ * Ansley Park's larger houses (Sam's walk, 2026-11-23), from their own random stream so every other
+ * house keeps its look: American Foursquares among the Colonials, and newer limestone or
+ * white-brick houses with slate roofs and black steel windows among the Tudors. Illustrative.
+ */
+function ansleyForms(p: Plan, b: VBuilding, size: number, frontLen: number, roofTagged: boolean, storeysTagged: boolean,
+  form?: 'foursquare' | 'limestone' | 'white-brick'): Plan {
+  const r = rng(hashStr(b.id + ':ansley'));
+  let four = r(), fresh = r(), colour = r();
+  const slate = r();
+  if (form) { four = form === 'foursquare' ? 0 : 1; fresh = form === 'foursquare' ? 1 : 0; colour = form === 'limestone' ? 0 : .9; }
+  if (p.style === 'colonial' && !p.concave && p.front && frontLen >= 7 && size >= 90 && four < .45) {
+    const shape: Shape = roofTagged ? p.shape : 'hipped';
+    const rise = Math.min(3.6, Math.max(2.2, p.half * .6)), storeys = storeysTagged ? p.storeys : 2;
+    const eave = b.h ? Math.max(3, b.h - rise) : Math.floor(storeys) * 3 + .2;
+    return { ...p, foursquare: true, shape, rise, storeys, eave, siding: 'clapboard', brick: false, doorS: 0, doors: [0],
+      wall: FOURSQUARE[Math.floor(colour * FOURSQUARE.length)], trim: '#f6f3ea', frame: '#f6f3ea', porch: p.front, chimney: true,
+      // One hipped centre dormer on the front slope (high tier).
+      dormerEdge: shape === 'hipped' ? p.front : p.dormerEdge, dormers: p.quality === 'high' && rise >= 2.7 ? 1 : 0, crossGable: false, overhang: .5 };
+  }
+  if ((p.style === 'tudor' || form) && fresh < .3) {
+    const limestone = colour < .55;
+    return { ...p, siding: limestone ? 'ashlar' : 'brick', brick: !limestone, wall: limestone ? LIMESTONE : WHITE_BRICK,
+      roof: DARK_SLATE[Math.floor(slate * DARK_SLATE.length)], frame: STEEL, trim: limestone ? '#e2d9c3' : '#f2efe8', doorColor: '#2a2f33' };
+  }
+  return p;
 }
 
 /** Edges offset inward by d, intersected pairwise: the deck of a hip-and-deck roof. */
@@ -352,14 +395,14 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
       if (placed.some(([c, t]) => Math.abs(c - s) < (t + total) / 2 + Math.min(t, total))) return;
       placed.push([s, total]);
       const y0 = base + sill, y1 = y0 + h;
-      b.quad(at(s - total / 2 - .12, .03, y0 - .12), at(s + total / 2 + .12, .03, y0 - .12), at(s + total / 2 + .12, .03, y1 + .12), at(s - total / 2 - .12, .03, y1 + .12), p.trim);
+      b.quad(at(s - total / 2 - .12, .03, y0 - .12), at(s + total / 2 + .12, .03, y0 - .12), at(s + total / 2 + .12, .03, y1 + .12), at(s - total / 2 - .12, .03, y1 + .12), p.frame);
       // Lit and unlit panes share a colour by day; only the night glow tells them apart.
       const glass = r() < .33 ? lit : b;
       for (let k = 0; k < n; k++) {
         const c = s - total / 2 + w / 2 + k * (w + .12);
         glass.quad(at(c - w / 2, .045, y0), at(c + w / 2, .045, y0), at(c + w / 2, .045, y1), at(c - w / 2, .045, y1), '#8fa4b2');
       }
-      b.quad(at(s - total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .53), at(s - total / 2, .05, y0 + h * .53), p.trim);
+      b.quad(at(s - total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .53), at(s - total / 2, .05, y0 + h * .53), p.frame);
       if (shutters && high && role === 'front') for (const side of [-1, 1]) {
         const x0 = s + side * (total / 2 + .14), x1 = s + side * (total / 2 + .52);
         b.quad(at(Math.min(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y1), at(Math.min(x0, x1), .04, y1), '#26302b');
@@ -490,6 +533,17 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   }
 }
 
+// Two rectangular walks overlap when neither rectangle has an edge separating them.
+function frontWalksOverlap(a: P2[], b: P2[]) {
+  for (const ring of [a,b]) for (let i=0; i<2; i++) {
+    const p=ring[i], q=ring[i+1], nx=q[1]-p[1], nz=p[0]-q[0];
+    const project=([x,z]: P2)=>x*nx+z*nz;
+    const aa=a.map(project), bb=b.map(project);
+    if (Math.max(...aa)<=Math.min(...bb) || Math.max(...bb)<=Math.min(...aa)) return false;
+  }
+  return true;
+}
+
 const WALK = '#cbc6ba', DRIVE = '#b2ada3';
 
 /**
@@ -500,8 +554,11 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
  * near the street. The low tier keeps walks and driveways. All `illustrative`.
  */
 function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
-  street: (x: number, z: number) => number, quality: 'high' | 'low') {
+  street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
+  if (high) pradoYieldSigns(b,city.bounds,ground);
+  const yields: GroundYield[] = [], terraceSites: { id:string; at:P2; triangles:number }[] = [];
+  const classes = new Map(all.map(b=>[b.id,b.cls]));
   // Footprint index, so drives and walks never cross another building.
   const cells = new Map<string, P2[][]>();
   for (const o of all) {
@@ -525,15 +582,35 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
   // Off the board (null ground) a quad is simply not drawn.
   const y = (x: number, z: number, lift: number) => { const v = ground(x, z); return v === null ? null : v + lift; };
   // A flat strip draped on the ground between two points, `w` wide.
-  const strip = (a: P2, c: P2, w: number, color: string) => {
+  const strip = (a: P2, c: P2, w: number, color: string, endHeight?: number) => {
     const len = Math.hypot(c[0] - a[0], c[1] - a[1]);
     if (len < .5) return;
     const ux = (c[0] - a[0]) / len, uz = (c[1] - a[1]) / len, nx = -uz * w / 2, nz = ux * w / 2, n = Math.ceil(len);
+    const startHeight = endHeight === undefined ? 0 : (ground(...a) ?? endHeight) + .04;
+    let clearance = 0;
     for (let k = 0; k < n; k++) {
       const p0 = [a[0] + ux * len * k / n, a[1] + uz * len * k / n], p1 = [a[0] + ux * len * (k + 1) / n, a[1] + uz * len * (k + 1) / n];
       const ys = [y(p0[0] + nx, p0[1] + nz, .04), y(p1[0] + nx, p1[1] + nz, .04), y(p1[0] - nx, p1[1] - nz, .04), y(p0[0] - nx, p0[1] - nz, .04)];
+      if (endHeight !== undefined && k === n - 1) ys[1] = ys[2] = endHeight;
       if (ys.some(v => v === null)) continue;
+      if (endHeight !== undefined) {
+        const t0 = k / n, t1 = (k + 1) / n;
+        const ramp = endHeight - startHeight;
+        clearance = Math.min(clearance, ys[0]! - (startHeight + ramp*t0), ys[3]! - (startHeight + ramp*t0),
+          ys[1]! - (startHeight + ramp*t1), ys[2]! - (startHeight + ramp*t1));
+      }
       b.quad([p0[0] + nx, ys[0]!, p0[1] + nz], [p1[0] + nx, ys[1]!, p1[1] + nz], [p1[0] - nx, ys[2]!, p1[1] - nz], [p0[0] - nx, ys[3]!, p0[1] - nz], color);
+    }
+    if (endHeight !== undefined) {
+      // One plane below every walk vertex also clears the interiors of all walk triangles.
+      // The small margin keeps the terrain skirt outside the rounded mesh coordinates.
+      const half = w / 2 + .03;
+      const corner = (p: P2, side: number, along: number): P2 =>
+        [p[0] - uz*half*side + ux*along, p[1] + ux*half*side + uz*along];
+      yields.push({
+        ring: [corner(a,1,-.03), corner(c,1,.03), corner(c,-1,.03), corner(a,-1,-.03)],
+        floor: (x,z) => startHeight + clearance - .04 + (endHeight-startHeight)*((x-a[0])*ux+(z-a[1])*uz)/len,
+      });
     }
   };
   // How far from a point along a direction before the sidewalk (1.5 m from the kerb) or another
@@ -545,6 +622,31 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     }
     return max;
   };
+  // Only qualifying terraces query neighbouring walks. Cache drawn approaches across nearby lots.
+  const frontWalks = new Map<Plan, P2[][]>();
+  const sharedApproach = (owner: Plan, approach: P2[]) => {
+    for (const other of plans.values()) {
+      if (other === owner || !other.front || other.concave) continue;
+      const { m, e, n } = frontFrame(other);
+      if (Math.hypot(m[0]-approach[0][0], m[1]-approach[0][1]) > 70 + Math.abs(other.doorS)) continue;
+      let rings = frontWalks.get(other);
+      if (!rings) {
+        rings = [];
+        const start = other.porch ? 3.3 : 2.2;
+        for (const ds of other.doors) {
+          const a: P2 = [m[0]+ds*e[0]+start*n[0], m[1]+ds*e[1]+start*n[1]];
+          const length = reach(...a, ...n);
+          const c: P2 = [a[0]+length*n[0], a[1]+length*n[1]];
+          if (length <= 1 || stripBlocked(a,c,1.2)) continue;
+          const edge = (p: P2, side: number): P2 => [p[0]+side*.6*e[0],p[1]+side*.6*e[1]];
+          rings.push([edge(a,1),edge(c,1),edge(c,-1),edge(a,-1)]);
+        }
+        frontWalks.set(other,rings);
+      }
+      if (rings.some(ring => frontWalksOverlap(approach,ring))) return true;
+    }
+    return false;
+  };
   for (const p of plans.values()) {
     if (!p.front || p.concave) continue;
     const { len, e, n, m } = frontFrame(p);
@@ -553,11 +655,17 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     // Walks start past the 2.4 m porch and its steps, or past the stoop.
     const porchDepth = p.porch ? 2.4 + .9 : 1.3 + .3 * 3;
     // A front walk from every entry (two on apartments) to the street.
-    let walk = 0;
+    const mainDoor=at(p.doorS,porchDepth);
+    const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
+    const cls=classes.get(p.id);
+    const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
+      ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkStart:porchDepth,walkEnd:porchDepth+walk,
+        sharedApproach:ring=>sharedApproach(p,ring),newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
+    if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
     for (const ds of p.doors) {
       const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);
-      if (w > 1 && !stripBlocked(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2)) strip(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2, WALK);
-      if (ds === p.doorS) walk = w;
+      const end=terrace && ds===p.doorS ? at(ds,terrace.walkStop) : at(ds,porchDepth+w);
+      if (w > 1 && !stripBlocked(door,end,1.2)) strip(door,end,1.2,WALK, ds === p.doorS ? terrace?.stairTop : undefined);
     }
     // Driveway on the side away from the door, along the side wall and out to the street.
     const side = p.doorS <= 0 ? 1 : -1, dx = side * (len / 2 + 1.8);
@@ -584,12 +692,12 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       hedge(b, [at(s0 + .5, 1.05), at(s1 - .5, 1.05)], ground, { clipped: false, height: 1.1, width: .8, lumps: 1, spacing: 1.4, seed: p.id + s0 });
     }
     // A small bed beside the walk on some houses.
-    if (walk > 3 && r() < .3) {
+    if (walk > 3 && r() < .3 && !terrace) {
       const s = p.doorS + 1.1, o0 = porchDepth + .6, o1 = Math.min(walk + porchDepth - .6, o0 + 2.4);
       if (o1 - o0 > 1) flowerBed(b, [at(s, o0), at(s + 1.4, o0), at(s + 1.4, o1), at(s, o1)], ground, { doy: 300, quality, density: .7, seed: p.id + 'bed' });
     }
     // A clipped hedge near the street on some lots, broken at the walk.
-    if (walk > 4 && r() < .25) {
+    if (walk > 4 && r() < .25 && !terrace) {
       // Broken at every walk.
       const o = porchDepth + walk - .8, cuts = [...p.doors].sort((x, y) => x - y);
       let s0 = -len / 2;
@@ -597,7 +705,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       if (len / 2 - s0 > 1) hedge(b, [at(s0, o), at(len / 2, o)], ground, { height: .9, width: .6, quality, seed: p.id + 'hz' });
     }
   }
-  return { b, cover };
+  return { b, cover, yields, terraceSites };
 }
 
 /**
@@ -607,7 +715,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
  */
 export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
-  force?: Record<string, HouseForce>, footprints?: VBuilding[]) {
+  force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
   const buildings = city.buildings.map(b => {
@@ -665,7 +773,7 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
           if ((m[0] - p.centre[0]) * n[0] + (m[1] - p.centre[1]) * n[1] < 0) n = [-n[0], -n[1]];
           // Deep front porches (2.4 m): full-front on Craftsman houses, half-front on Colonials,
           // with columns, a shed roof that reads from the street, and steps down from the door.
-          const full = p.style === 'craftsman';
+          const full = p.style === 'craftsman' || p.foursquare;
           const w = full ? Math.min(len * .85, 10) : Math.max(3.6, Math.min(len * .5, 6)), depth = 2.4;
           const c0 = full ? 0 : Math.max(-len / 2 + w / 2, Math.min(len / 2 - w / 2, p.doorS));
           const at = (s: number, o: number): P2 => [m[0] + ex[0] * (s + c0) + n[0] * o, m[1] + ex[1] * (s + c0) + n[1] * o];
@@ -682,6 +790,16 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
           for (let k = 0; k < cols; k++) {
             const s = -w / 2 + .2 + (w - .4) * k / (cols - 1);
             quadBox(s - .14, s + .14, depth - .32, depth - .04, base + .55, Math.min(base + 2.95, eave - p.overhang * p.rise / p.half - .65), p.trim);
+          }
+          if (p.foursquare) {
+            // A white balustrade along the porch front, open at the steps: rails, and balusters on the high tier.
+            const ds = p.doorS - c0, deck = base + .55;
+            for (const [s0, s1] of [[-w / 2 + .1, ds - .85], [ds + .85, w / 2 - .1]] as [number, number][]) {
+              if (s1 - s0 < .4) continue;
+              quadBox(s0, s1, depth - .24, depth - .12, deck + .82, deck + .9, p.trim);
+              quadBox(s0, s1, depth - .22, depth - .14, deck + .06, deck + .12, p.trim);
+              if (p.quality === 'high') for (let k = s0 + .3; k < s1 - .15; k += .45) quadBox(k - .03, k + .03, depth - .2, depth - .16, deck + .12, deck + .82, p.trim);
+            }
           }
           // Shed roof falling from the wall to the porch front, with a fascia.
           // It starts under the main fascia line, so a one-storey eave never cuts through it.
@@ -716,14 +834,14 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     yards() {
       if (!ground || !plans.size) return null;
       // Every footprint blocks yards, including landmark sites already removed from `city`.
-      const { b, cover } = yards(plans, footprints ?? city.buildings, ground, street, quality);
+      const { b, cover, yields, terraceSites } = yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
       const group = new THREE.Group();
       group.name = 'yards';
       group.userData.perf = 'landscape';
       const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);
-      return { group, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
+      return { group, yields, terraceSites, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
     },
   };
 }

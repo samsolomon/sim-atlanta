@@ -1,0 +1,98 @@
+{
+  "label": "downtown-day",
+  "selectedAt": "2026-11-20T19:12:35.000Z",
+  "start": {
+    "status": "Following train · position Illustrative",
+    "camera": {
+      "x": 990.7167940505112,
+      "z": 437.88166202685863,
+      "bearing": -148,
+      "tilt": 26.000000000000007,
+      "metresPerPixel": 0.129586872758479
+    }
+  },
+  "end": "Follow ended · freight no longer drawn",
+  "ended": true,
+  "samples": [
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 986.5139948966307,
+        "z": 437.3356783970836,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 897.7208580035265,
+        "z": 422.88495618907746,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 810.6386055381653,
+        "z": 401.1511411631791,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 727.7855652046841,
+        "z": 366.7659596805047,
+        "bearing": -147.99999999999997,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 651.1975960858792,
+        "z": 320.03358614781143,
+        "bearing": -147.99999999999997,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 580.8926594846833,
+        "z": 264.0105846254589,
+        "bearing": -148,
+        "tilt": 25.99999999999998,
+        "metresPerPixel": 0.12958687275847897
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 510.6998128125956,
+        "z": 207.7998459401869,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": 472.08235573164023,
+        "z": 179.4062637220784,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    }
+  ]
+}

@@ -74,6 +74,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
+  const footbridgeYields: GroundYield[] = [];
   const ballastRuns: BallastQuad[][] = [];
   // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
   const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
@@ -81,6 +82,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const inCarvable = (q: BallastQuad) => q.every(([x, , z]) => x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ);
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
+  // Audit-only intent: a folded corner can wind a slab underside upward.
+  const buriedFaces = import.meta.env.DEV ? new Set<number>() : undefined;
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
   let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
@@ -170,6 +173,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const firstSupport=support(start),lastSupport=support(end);
     const elevation=(p:P2,height:number|null) => height===null ? grid.sample(...p) : height+grid.manifest.vertical.sceneZeroNavd88M;
     const startHeight = bridge && !startCut ? elevation(start,firstSupport) : null;
+    // The short Midtown South building-to-sidewalk span crosses a DEM crease.
+    const southFootbridge = bridge && use === 'road' && run.cls === 'footway' && !run.deckNavd88M &&
+      [start, end].some(([x, z]) => Math.hypot(x - 371.18, z + 1870.12) < .05) &&
+      [start, end].some(([x, z]) => Math.hypot(x - 360.93, z + 1870.15) < .05);
     const endHeight = bridge && !endCut ? elevation(end,lastSupport) : null;
     const profile = run.deckNavd88M;
     if (bridge && !profile && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
@@ -361,6 +368,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (!drawQuad) ballast = null;
         if (prev && drawQuad) {
           const [a, b] = prev, [d, c] = section;
+          if (southFootbridge && depth > 0) {
+            const floorY = Math.min(a[1], b[1], c[1], d[1]) - .05;
+            footbridgeYields.push({ ring: [a, b, c, d].map(([x, , z]) => [x, z]), floor: () => floorY });
+          }
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           const drawn = (terrainGround as DrapeGround).triangles;
@@ -408,6 +419,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const down = ([x, y, z]: number[]) => [x, y - depth, z];
             if (leftSide) structures.quad(a, d, down(d), down(a), PAL.concreteDark);
             if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
+            buriedFaces?.add(structures.pos.length / 3);
+            buriedFaces?.add(structures.pos.length / 3 + 3);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
@@ -549,6 +562,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       };
     }
     const mesh = new THREE.Mesh(geometry, material);
+    if (builder === structures && buriedFaces) mesh.userData.groundAuditBuriedFaces = buriedFaces;
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
     mesh.receiveShadow = true;
@@ -556,6 +570,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     meshes.push(mesh);
   }
   const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
+  cutting.push(...footbridgeYields);
   return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
     setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();

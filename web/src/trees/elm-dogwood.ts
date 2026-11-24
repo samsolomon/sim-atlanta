@@ -78,11 +78,11 @@ const dogwoodHabit: Habit = {
   // "Branches on the lower half of the crown grow horizontally, those in the upper half are more
   // upright … a strikingly horizontal impact" (UF ST185). GT: 96% single-stem, about as wide as
   // tall. Drawn as horizontal tiers of flat masses on a single trunk.
-  trunkTop: 0.7, crownBase: 0.18, widest: 0.42,
+  trunkTop: 0.2, forkM: 1.25, crownBase: 0.22, widest: 0.42,
   limbs: { high: 4, low: 3 }, limbAngle: 0.15, limbFrom: [0.2, 0.7], limbReach: 0.9,
-  ragged: 0.12, bark: '#5e5654', barkDark: '#4c4644',
-  mass: { r: 0.5, low: -0.7, high: 0.75 },
-  tiers: { high: [3, 3, 2], low: [2, 2, 1] },
+  ragged: 0.08, bark: '#82766e', barkDark: '#70665e',
+  mass: { r: 0.46, low: -0.7, high: 0.75 },
+  tiers: { high: [2, 2, 2], low: [2, 2, 1] },
   taper: 0.3,
   bySize: {
     sapling: { tiers: { high: [2, 2, 1], low: [2, 1] } },
@@ -103,7 +103,7 @@ const dogwoodPalette = keyedCalendar([
   { m: 3, d: 28, leaves: 0.55, a: '#a8bc72', b: '#b8c480', bloom: 0.5, label: 'bracts opening' },
   { m: 4, d: 6, leaves: 0.85, a: '#9ab868', b: '#aac27a', bloom: 1, label: 'white bracts' },
   { m: 4, d: 18, leaves: 0.9, a: '#7aa45a', b: '#8cb066', bloom: 0.3, label: 'last bracts, leafing out' },
-  { m: 5, d: 1, leaves: 1, a: '#69926a', b: '#789e70', bloom: 0, label: 'summer green' },
+  { m: 5, d: 1, leaves: 1, a: '#649d63', b: '#73a96b', bloom: 0, label: 'summer green' },
   { m: 9, d: 25, leaves: 1, a: '#60885c', b: '#8a6a48', label: 'green, first colour' },
   { m: 10, d: 25, leaves: 1, a: '#9a2e34', b: '#6e2a3c', label: 'red to maroon' },
   { m: 11, d: 20, leaves: 0.45, a: '#8a2a30', b: '#642838', carpet: 0.6, label: 'red-maroon, dropping' },
@@ -111,25 +111,24 @@ const dogwoodPalette = keyedCalendar([
 ]);
 
 const DOGWOOD_OPTIONS: LookOption[] = [
-  { id: 'A', label: 'Layered branch-mass cards', technique: 'cards', ink: 2, tips: 3, flat: 0.55, units: { high: 18, low: 9 }, blooms: { high: 26, low: 14 }, cover: 0.85,
-    note: 'The ginkgo C4 technique on the dogwood’s horizontal layers: flat masses on near-level limbs, white bracts on bare twigs in early April, red-maroon in the fall; warm silhouette ink and leaf tips close up.' },
-  { id: 'B', label: 'Cored layers', technique: 'cored', ink: 2, flat: 0.55, units: { high: 9, low: 8 }, blooms: { high: 14, low: 8 }, cover: 0.9,
+  { id: 'A', label: 'Layered branch-mass cards', technique: 'cards', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 13, low: 8 }, cover: 1.2,
+    note: 'The ginkgo C4 technique on the dogwood’s horizontal layers: flat masses on near-level limbs, white bracts on bare twigs in early April, red-maroon in the fall; warm silhouette ink.' },
+  { id: 'B', label: 'Cored layers', technique: 'cored', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 2, low: 1 }, cover: 0.9,
     note: 'The same layers with a dark faceted core under the cards: fuller and more solid.' },
-  { id: 'C', label: 'Faceted layers', technique: 'lobes', facets: 4, squash: 0.6, flat: 0.6, units: { high: 9, low: 6 }, blooms: { high: 16, low: 8 }, cover: 0.95,
-    note: 'The same layers as flattened faceted pads with every facet inked: the house style, for comparison.' },
+
 ];
 
 export const floweringDogwood = broadleafSpecies({
   id: 'flowering-dogwood',
   name: 'Flowering dogwood',
   carpet: true,
-  bloomColour: '#f6f4ec',
+  bloomColour: '#edf4ff',
   // Ranges: NC State and UF ST185; GT's 339 measured dogwoods; Trees Atlanta champions (458
   // Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m).
   sizes: {
-    sapling: { heightM: 3, spreadM: 2.6, calliperM: 0.07 },
-    young: { heightM: 6, spreadM: 5.5, calliperM: 0.2 },
-    mature: { heightM: 7.5, spreadM: 8, calliperM: 0.35 },
+    sapling: { heightM: 2.5, spreadM: 3, calliperM: 0.07 },
+    young: { heightM: 5, spreadM: 6.5, calliperM: 0.2 },
+    mature: { heightM: 6, spreadM: 9, calliperM: 0.45 },
     specimen: { heightM: 9.1, spreadM: 13.7, calliperM: 0.6 },
   },
   ranges: {
@@ -138,12 +137,12 @@ export const floweringDogwood = broadleafSpecies({
     mature: { heightM: [6, 9.3], spreadM: [4.6, 11.1], calliperM: [0.3, 0.5] },
     specimen: { heightM: [8, 12.9], spreadM: [9, 13.7], calliperM: [0.45, 0.65] },
   },
-  clumps: { high: 13, low: 7 },
+  clumps: { high: 6, low: 4 },
   offsetDays: 6,
   habit: dogwoodHabit,
   palette: dogwoodPalette,
 });
 export const floweringDogwoodLook: Look = {
-  species: floweringDogwood, habit: dogwoodHabit, leaf: 'oval', palette: dogwoodPalette, options: DOGWOOD_OPTIONS,
-  bloomColour: '#f6f4ec', bloomSizeM: 0.9, bloomWash: 0.8, bloomLift: 0.55,
+  species: floweringDogwood, habit: dogwoodHabit, leaf: 'oval', palette: dogwoodPalette, options: DOGWOOD_OPTIONS, preferred: 'A', lowLift: 0.015,
+  bloomColour: '#edf4ff', bloomWash: 1, bloomLift: 1, bloomFill: 0.65,
 };
