@@ -91,7 +91,6 @@ const KNOWN: Record<string, number> = {
  */
 const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:1021839184': 84, // EUHM staff deck, midtown-south, worst 0.67 m off
-  'osm:way:269542143': 29, // Emmi Midtown, brookwood-south, worst 0.52 m off
   // Midtown station east entrance, midtown-central. Declared, not floating: the free-standing coffered
   // canopy on its six piers, two entrance headers on posts and two draped plaza pavings all stand on the
   // ground beside the stair house; the sixth is the end cross-rib, which crosses the long ribs (no vertex within 0.3 m).
