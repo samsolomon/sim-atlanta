@@ -213,8 +213,9 @@ From the impeccable critique of the Final section (26/40):
   clock, never "Live". Weather is "reported" when observed. The train panel splits Next
   arrival (Live) from Position (Inferred).
 - **One search field:** results rise from the dock field, which shows the query and a
-  focus ring; popovers never repeat the field. In Models, the dock field filters the left
-  browser, so the browser has no field of its own on desktop. Phones open a full-screen
+  focus ring; popovers never repeat the field. In Models, the browser keeps its own search
+  field (Sam, 2026-11-24); the dock's "Search models" opens the browser and focuses that
+  field, so only one field is ever active. Phones open a full-screen
   search with Cancel (P12).
 - **Targets:** every control has a 44×44 hit area, padded invisibly where the visual is
   smaller (sheet ✕, chips, segments, the tilt thumb). Dock buttons are 44 px.
@@ -225,6 +226,11 @@ From the impeccable critique of the Final section (26/40):
 - **Radio** shows no "Music later" tag to visitors.
 - **Phone boards added:** Time & weather sheet (P9), dragging state (P10), Share (P11),
   Search (P12), Radio (P13), Models Details (P14), arriving (P15), off-area (P16).
+- **Models on wide screens (≥1280 px):** the browser (left) and Details (right) are both
+  open by default when you enter Models; the model is framed in the space between them
+  (Final 09). Narrower screens fold the browser into the card (Final 10).
+- **Share:** the link preview on its own row, then **Copy link** and **Share…** side by
+  side, both separator-tint buttons.
 - **Models exception:** the camera group (reset, zoom) stays beside Models Details,
   because Details is the lab's main tool rather than a passing selection.
 
