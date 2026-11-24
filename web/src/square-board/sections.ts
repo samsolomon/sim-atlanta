@@ -2,7 +2,7 @@ import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks, withoutLandBridgeTrees } from '../terrain/midtown-connector-decks';
-import { onFifthStreetPark } from '../terrain/fifth-street-park';
+import { gradeFifthStreetBanks, onFifthStreetPark } from '../terrain/fifth-street-park';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
@@ -144,6 +144,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   if (Array.from(digest, b => b.toString(16).padStart(2, '0')).join('') !== manifest.sha256)
     throw Error('Ground checksum mismatch at ' + path);
   const terrain = midtownConnectorGround(manifest, bytes);
+  if (path.endsWith('/midtown-central')) gradeFifthStreetBanks(manifest, terrain);
   if (brookwood) return brookwood(manifest, terrain);
   if (northBand) return northConnectorGround(manifest, bytes);
   if (path.endsWith('/midtown-south')) underpassGround(northAvenue, manifest, terrain);

@@ -17,7 +17,7 @@ const landbridgeByRoad = new Map(landbridges.map(p => [endKey(p.start, p.end), p
  * between two 24 ft sidewalks. The landscaped decks beyond them are fifth-street-park.ts, which
  * paints the lanes (so the run carries one undivided lane here). */
 const LAND_BRIDGE = { road: { width: 2 * FIFTH_PARK.roadHalf, lanes: 1, opposing: 0, fixedWidth: true },
-  plazaOffset: (FIFTH_PARK.roadHalf + FIFTH_PARK.walkOuter) / 2, plazaWidth: FIFTH_PARK.walkOuter - FIFTH_PARK.roadHalf, blendM: FIFTH_PARK.blendM };
+  plazaOffset: (FIFTH_PARK.roadHalf + FIFTH_PARK.walkOuter) / 2, plazaWidth: FIFTH_PARK.walkOuter - FIFTH_PARK.roadHalf };
 
 /** A polyline offset sideways (+ is left of travel). */
 function offset(pts: P2[], by: number): P2[] {
@@ -56,18 +56,14 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
     if (road.tunnel || road.pts.length < 2) continue;
     const land = landbridgeByRoad.get(endKey(road.pts[0], road.pts.at(-1)!));
     if (land) {
-      // Road and sidewalk share a curb all the way to each abutment. Only height blends.
-      // The deck meets the street at grade: blend the profile into bare earth over its last metres.
+      // The bank meets the surveyed profile at each abutment.
       const pts = land.pts as P2[];
-      let total = 0;
-      const cum = pts.map((p, i) => (total += i ? Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0));
-      const weights = cum.map(s => Math.min(1, s / LAND_BRIDGE.blendM, (total - s) / LAND_BRIDGE.blendM));
       roads.unshift({ cls: road.cls, name: road.name, sub: road.sub ?? undefined, kind: 'bridge', sourceAxis: road.pts,
-        pts, deckNavd88M: land.heights, deckWeight: weights, crossSection: { ...LAND_BRIDGE.road } });
+        pts, deckNavd88M: land.heights, crossSection: { ...LAND_BRIDGE.road } });
       for (const side of [1, -1]) {
         const plaza = offset(pts, side * LAND_BRIDGE.plazaOffset);
         roads.unshift({ cls: 'footway', name: null, kind: 'bridge', sourceAxis: plaza, pts: plaza,
-          deckNavd88M: land.heights, deckWeight: weights, crossSection: { width: LAND_BRIDGE.plazaWidth, lanes: 1, opposing: 0, fixedWidth: true } });
+          deckNavd88M: land.heights, crossSection: { width: LAND_BRIDGE.plazaWidth, lanes: 1, opposing: 0, fixedWidth: true } });
       }
     }
     for (const part of approachesByRoad.get(endKey(road.pts[0], road.pts.at(-1)!)) ?? []) {

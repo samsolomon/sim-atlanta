@@ -1,4 +1,7 @@
 import { DoubleSide, Group, Matrix4, Mesh, MeshLambertMaterial } from 'three';
+import landbridgeFloors from '../../../pipeline/prototypes/midtown-connector/landbridge-floors.json';
+import type { GroundManifest } from './grid';
+import { inConnectorLanes } from './connector-paint';
 import landbridges from '../city/fixtures/midtown-connector/landbridges.json';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import { applySurfaces, surfaceDefaults, SurfacePainter, surfaces } from '../materials';
@@ -31,8 +34,6 @@ export const FIFTH_PARK = {
   /** Lidar deck edges: 36.6 + 31.4 = 68.0 m (ASPIRE: 223 ft 3 in = 68.05 m). */
   north: 36.6,
   south: -31.4,
-  /** The profile blends to bare earth over its last metres (midtown-connector-decks.ts). */
-  blendM: 6,
 } as const;
 
 // A straight frame along the deck: s from the east abutment (Williams Street) westward, t north.
@@ -71,6 +72,42 @@ export function parkEastEnd(t: number) {
   const edge = williamsX(z) - 5.5;
   // s where parkPoint(s, t)[0] reaches the edge (T is nearly due west).
   return Math.max(0, (parkPoint(0, t)[0] - edge) / -T[0]);
+}
+
+/** Grade the approach DEM before streets, walks and terrain sample it. Leave a full
+ * triangle's clearance around the freeway so its drawn shoulders keep their grade. */
+export function gradeFifthStreetBanks(m: GroundManifest, bytes: ArrayBuffer) {
+  const cells = new DataView(bytes);
+  const floor = (landbridgeFloors as Record<string, number[][]>)[m.sha256];
+  if (!floor) return;
+  for (const [index, navd] of floor) {
+    cells.setInt16(index * 2, Math.round((navd - m.offsetM) / m.scaleM), true);
+  }
+  const reach = 25;
+  const margin = 12;
+  const radius = reach + margin + m.stepM * 2;
+  const corners = [-radius, LENGTH + radius].flatMap(s =>
+    [FIFTH_PARK.south - radius, FIFTH_PARK.north + radius].map(t => parkPoint(s, t)));
+  const firstRow = Math.max(0, Math.floor((Math.min(...corners.map(p => p[1])) - m.bounds.minZ) / m.stepM));
+  const lastRow = Math.min(m.rows - 1, Math.ceil((Math.max(...corners.map(p => p[1])) - m.bounds.minZ) / m.stepM));
+  const firstCol = Math.max(0, Math.floor((Math.min(...corners.map(p => p[0])) - m.bounds.minX) / m.stepM));
+  const lastCol = Math.min(m.cols - 1, Math.ceil((Math.max(...corners.map(p => p[0])) - m.bounds.minX) / m.stepM));
+  for (let row = firstRow; row <= lastRow; row++) for (let col = firstCol; col <= lastCol; col++) {
+    const x = m.bounds.minX + col * m.stepM, z = m.bounds.minZ + row * m.stepM;
+    const s = (x - east[0]) * T[0] + (z - east[1]) * T[1];
+    const t = (x - east[0]) * N[0] + (z - east[1]) * N[1];
+    const edge = s < LENGTH / 2 ? parkEastEnd(t) : LENGTH;
+    const outward = edge === LENGTH ? s - edge : edge - s;
+    const side = Math.max(0, FIFTH_PARK.south - t, t - FIFTH_PARK.north);
+    const weight = Math.min(1, (reach - outward) / (reach - m.stepM),
+      (outward + 2 * m.stepM) / m.stepM, 1 - side / margin);
+    if (weight <= 0 || inConnectorLanes(x, z, Math.SQRT2 * m.stepM)) continue;
+    const at = 2 * (row * m.cols + col);
+    const raw = cells.getInt16(at, true);
+    if (raw === m.noData) continue;
+    const target = (parkDeckNavd88(edge) - m.offsetM) / m.scaleM;
+    cells.setInt16(at, Math.round(raw + weight * (target - raw)), true);
+  }
 }
 
 /** The whole deck's plan outline (closed ring). */
@@ -243,9 +280,8 @@ export function fifthStreetPark(bounds: { minX: number; maxX: number; minZ: numb
 
   // Brick paver bands at both curbs, then the roadway's paint (the inventory lanes are not
   // published: an 11 ft turn lane and two bike lanes inside the curbs, estimated).
-  const paved = [FIFTH_PARK.blendM, LENGTH - FIFTH_PARK.blendM] as const;
   const strip = (t0: number, t1: number, lift: number, color: string) => {
-    const ss = along(paved[0], paved[1]);
+    const ss = along(0, LENGTH);
     for (let i = 1; i < ss.length; i++) body.quad(P(ss[i - 1], t0, lift), P(ss[i], t0, lift), P(ss[i], t1, lift), P(ss[i - 1], t1, lift), color);
   };
   painter.paint(surfaces.brick({ colour: 'commonRed' }), () => {

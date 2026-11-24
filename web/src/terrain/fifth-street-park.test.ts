@@ -2,10 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { inConnectorLanes } from './connector-paint';
-import { FIFTH_PARK, fifthStreetPark, onFifthStreetPark, parkDeckNavd88, parkEastEnd, parkOutline, parkPoint } from './fifth-street-park';
+import { FIFTH_PARK, fifthStreetPark, gradeFifthStreetBanks, onFifthStreetPark, parkDeckNavd88, parkEastEnd, parkOutline, parkPoint } from './fifth-street-park';
 import { midtownConnectorDecks, withoutLandBridgeTrees } from './midtown-connector-decks';
 import type { TerrainCity } from './transport-data';
 import floors from '../../../pipeline/prototypes/midtown-connector/landbridge-floors.json';
+import { GroundGrid } from './grid';
 
 const row = resolve(__dirname, '../../../pipeline/prototypes/square-board/midtown-central');
 const staged = existsSync(resolve(row, 'context.json'));
@@ -47,20 +48,21 @@ describe('the Fifth Street park deck', () => {
 
 describe.skipIf(!staged)('the Fifth Street park deck over the real freeway', () => {
   const manifest = JSON.parse(readFileSync(resolve(row, 'ground.json'), 'utf8'));
-  const grid = new Int16Array(readFileSync(resolve(row, 'ground.i16')).buffer.slice(0));
-  // The drawn board: the DEM with the freeway floor inferred under the deck (surface-build.ts).
-  const floor = new Map(((floors as Record<string, number[][]>)[manifest.sha256] ?? []) as [number, number][]);
-  const node = (i: number) => floor.get(i) ?? grid[i] / 10;
-  const ground = (x: number, z: number) => {
-    const gx = (x - manifest.bounds.minX) / 5, gz = (z - manifest.bounds.minZ) / 5, i = Math.floor(gx), j = Math.floor(gz), u = gx - i, v = gz - j;
-    const at = (a: number, b: number) => node((j + b) * manifest.cols + i + a);
-    return (at(0, 0) * (1 - u) + at(1, 0) * u) * (1 - v) + (at(0, 1) * (1 - u) + at(1, 1) * u) * v;
-  };
+  const bytes = Uint8Array.from(readFileSync(resolve(row, 'ground.i16'))).buffer;
+  gradeFifthStreetBanks(manifest, bytes);
+  const grid = new GroundGrid(manifest, bytes);
+  const ground = (x: number, z: number) => grid.sample(x, z)!;
+  it('carries the roadway and both curbs onto the graded banks', () => {
+    for (const s of [0, LENGTH]) for (const t of [-7.3, 0, 7.3]) {
+      const [x, z] = parkPoint(s, t);
+      expect(Math.abs(ground(x, z) - parkDeckNavd88(s))).toBeLessThan(0.15);
+    }
+  });
   const sceneZero = manifest.vertical.sceneZeroNavd88M;
   const park = fifthStreetPark(manifest.bounds, sceneZero, (x, z) => ground(x, z) - sceneZero)!;
 
   it('draws the freeway floor under the deck from its portals, not the DEM’s hump', () => {
-    expect(floor.size).toBeGreaterThan(100);
+    expect((floors as Record<string, number[][]>)[manifest.sha256].length).toBeGreaterThan(100);
     // Outer northbound lanes, mid-deck: the DEM puts them at 288-290 m; the portals at 284-285 m.
     for (const [s, t] of [[14, 0], [16, 20], [14, -20]]) {
       const [x, z] = parkPoint(s, t);
