@@ -14,3 +14,21 @@ export function frameFraction(per60: number, dtMs: number) {
   const frames = Math.min(DAMPING_MAX_DT_MS, Math.max(0, dtMs)) / FRAME_60_MS;
   return 1 - Math.pow(1 - per60, frames);
 }
+
+/** The coast time constant implied by `per60` per 60 Hz frame (0.05 gives ~325 ms). */
+export const coastTau = (per60: number) => (1000 / 60) / -Math.log(1 - per60);
+
+/**
+ * Direct manipulation's release: what a drag frame applied, as {t, amount}, gives the pointer's
+ * average velocity over its last `windowMs`; an exponential coast at that velocity with time
+ * constant `tauMs` travels velocity x tau in total. Holding still before release gives nothing.
+ */
+export function releaseCoast(trail: readonly { t: number; amount: number }[], now: number, tauMs: number, windowMs = 50) {
+  const recent = trail.filter(d => now - d.t <= windowMs + 1000 / 60);
+  if (!recent.length) return 0;
+  const span = Math.max(1000 / 60, now - recent[0].t);
+  return (recent.reduce((a, d) => a + d.amount, 0) / span) * tauMs;
+}
+
+/** The share of a pending wheel zoom to apply this frame (eased over ~3 x `easeMs`). */
+export const wheelShare = (frameMs: number, easeMs: number) => 1 - Math.exp(-Math.min(DAMPING_MAX_DT_MS, Math.max(0, frameMs)) / easeMs);
