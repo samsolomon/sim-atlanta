@@ -3764,3 +3764,12 @@ A shared camera opens the exact angle, but its link preview can last for days in
 ### 2026-11-24 · Ordinary buildings on the release 12 board
 
 At the downtown-wide camera, the towers make good reference points for seeing what changed around them. The eight generic facades give street walls a base and window rhythm. High adds the recessed lobbies and projecting caps. Low keeps those bases flush and uses 175.8 MB of geometry across the board. High uses 297.1 MB of its 300 MB budget. The East Portal illustration exporter still produced the same 51,108,052-byte GLB, including its baked panes. [Matched Low and High views against release 12](log/ui/generic-buildings/release-12-comparison.jpg)
+
+### 2026-11-24 · Four station presets in the radio dock
+
+The album cover opens a player with four station presets. At a 320 px viewport, the
+longest title in the catalog, “Something Small (Demo)”, needed 279 px at a 24 px text
+size. The space beside the artwork was 126 px wide. Letting the title and artist wrap
+kept the full names visible while preserving 44 px playback controls. The phone capture
+pairs the longest title and artist strings to stress-test the available space.
+[Large-text phone preview](log/ui/radio-presets/phone-large-text.png)
