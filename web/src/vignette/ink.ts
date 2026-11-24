@@ -146,6 +146,8 @@ export class FoliageMaskPass extends Pass {
   readonly target = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
   private materials = new WeakMap<THREE.Material, Map<number, THREE.MeshBasicMaterial>>();
   private res = new THREE.Vector2();
+  /** Where the scene's depth is, when it isn't the read buffer's own (City's multisampled pass). */
+  depth: (() => THREE.Texture | null | undefined) | null = null;
   constructor(private scene: THREE.Scene, private camera: THREE.Camera, private ink: { uniforms: Record<string, THREE.IUniform> }) {
     super();
     this.needsSwap = false;
@@ -181,7 +183,8 @@ export class FoliageMaskPass extends Pass {
     const live = [...registry].filter(([mesh]) => onStage(mesh, this.scene));
     this.ink.uniforms.uFoliage.value = live.length ? 1 : 0;
     this.ink.uniforms.tMask.value = live.length ? this.target.texture : EMPTY_MASK;
-    if (!live.length || !read.depthTexture) return;
+    const depth = this.depth ? this.depth() : read.depthTexture;
+    if (!live.length || !depth) return;
     const autoClear = renderer.autoClear;
     const clear = renderer.getClearColor(new THREE.Color()), alpha = renderer.getClearAlpha();
     renderer.autoClear = false;
@@ -190,7 +193,7 @@ export class FoliageMaskPass extends Pass {
     renderer.clear(true, false, false);
     for (const [mesh, mode] of live) {
       const own = mesh.material as THREE.Material;
-      mesh.material = this.maskMaterial(own, mode, read.depthTexture);
+      mesh.material = this.maskMaterial(own, mode, depth);
       const parent = mesh.parent, cast = mesh.castShadow;
       mesh.castShadow = false;
       // Render the mesh on its own; its world matrix is already current from the scene render.

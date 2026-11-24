@@ -14,6 +14,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { MsaaScenePass } from './msaa-scene';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
@@ -729,7 +730,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // ---- renderer -------------------------------------------------------------------------
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
+    // Only post's full-screen quads reach the canvas, so a multisampled canvas smooths nothing and
+    // costs a resolve each frame. High multisamples the scene draw instead (MsaaScenePass, below);
+    // `?perf&post=off` draws the scene straight to the canvas and keeps the canvas's own.
+    renderer = new THREE.WebGLRenderer({ antialias: !low && perfOverrides.postOff, powerPreference: 'high-performance' });
   } catch (err) {
     disposeBoard();
     throw err;
@@ -1245,15 +1249,25 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
+  // High draws the scene multisampled (city/msaa-scene.ts): sub-pixel floor lines otherwise alias
+  // into bands that crawl while the camera moves. `?perf&msaa=0` keeps the unsampled scene for A/B.
+  const msaaParam = perfEnabled ? new URLSearchParams(location.search).get('msaa') : null;
+  const msaaSamples = low ? 0 : msaaParam === null ? 4 : Math.max(0, Math.min(8, Number(msaaParam) || 0));
+  const msaaPass = msaaSamples ? new MsaaScenePass(scene, camera, msaaSamples) : null;
   const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
-  sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
+  // With the multisampled pass, post reads that pass's resolved depth, so the composer's two
+  // targets need none of their own.
+  if (!msaaPass) sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
   const composer = new EffectComposer(renderer, sceneTarget);
-  const renderPass = new RenderPass(scene, camera);
+  const renderPass = msaaPass ?? new RenderPass(scene, camera);
   composer.addPass(renderPass);
+  /** The depth the scene pass filled this frame (the composer's read buffer alternates). */
+  const sceneDepth = () => msaaPass ? msaaPass.depthTexture : composer.readBuffer.depthTexture;
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
   const foliageMask = new FoliageMaskPass(scene, camera, ink);
+  if (msaaPass) foliageMask.depth = () => msaaPass.depthTexture;
   composer.addPass(foliageMask);
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
@@ -1280,7 +1294,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // rebuilt from depth match face normals. The depth texture is set per frame, below.
     // `?perf&gtao=old` keeps the previous normal-override pass, for A/B runs from one build.
     if (!gtaoOld) {
-      gtao.setGBuffer(sceneTarget.depthTexture);
+      gtao.setGBuffer(sceneDepth()!);
       // AO only on the boards (aoClip, per frame, since joined boards arrive later). Normals
       // rebuilt from depth band on the far, grazing paper table (hyperbolic depth has no
       // precision left there), and the table needs no contact shading.
@@ -1872,7 +1886,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         camera.updateProjectionMatrix();
       }
     }
-    ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    ink.uniforms.tDepth.value = sceneDepth();
     // Ink fades out completely by 4.2 km of view depth (vignette/ink.ts). View depth is linear in
     // position, so its minimum over the boards' box is at a corner: when even that is beyond the
     // fade, the pass (and its foliage mask) would only copy the frame, so skip them.
@@ -1890,7 +1904,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
-      gtao.depthTexture = composer.readBuffer.depthTexture!;
+      gtao.depthTexture = sceneDepth()!;
       gtao.gtaoMaterial.uniforms.tDepth.value = gtao.depthTexture;
       gtao.pdMaterial.uniforms.tDepth.value = gtao.depthTexture;
       const lo = gtao.gtaoMaterial.uniforms.sceneBoxMin.value as THREE.Vector3;
