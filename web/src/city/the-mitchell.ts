@@ -39,11 +39,12 @@ export function createTheMitchell(buildings: VBuilding[], grid: GroundGrid, qual
   // The slab on the Elliott Street side, from the north line down to the Mitchell Street diagonal.
   const tower: P2[] = [[-24.4, -32.7], [-2.5, -32.7], [-2.5, 34.2], [-24.4, 23.2]];
   // Charcoal brick, a dark window frame and blue-grey glass (April 2026 Street View).
-  const brick = '#46454a', frame = '#4a4c51', panel = '#9a9ea5';
+  const brick = '#46454a', frame = '#4a4c51';
   const glass = ['#b3c3cf', '#bac9d4', '#adbdca'];
 
   shell.prism(shell.ring, shell.base, podiumTop, brick, '#77797a');
-  shell.prism(tower, podiumTop, top, panel, '#77797a');
+  // The tower wall itself is the dark mullion frame; the glass panes sit 7 cm proud of it.
+  shell.prism(tower, podiumTop, top, frame, '#77797a');
 
   edges(shell.ring, (a, b, length, i) => {
     if (length < 8) return;
@@ -52,9 +53,6 @@ export function createTheMitchell(buildings: VBuilding[], grid: GroundGrid, qual
   const floors = 16, pitch = (top - podiumTop - 1) / floors;
   edges(tower, (a, b, length, i) => {
     const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length, nx = uz, nz = -ux;
-    // Dark mullion frame as a full-height background; glass bays read lighter against it.
-    shell.body.quad([a[0] + nx * 0.03, podiumTop, a[1] + nz * 0.03], [a[0] + nx * 0.03, top - 1, a[1] + nz * 0.03],
-      [b[0] + nx * 0.03, top - 1, b[1] + nz * 0.03], [b[0] + nx * 0.03, podiumTop, b[1] + nz * 0.03], frame);
     if (high) litFacade(shell, seed, i, a, b, podiumTop + 0.3, top - 1.2, floors, 2.6, 0.82, 0.84, glass, 0.45);
     else litFacade(shell, seed, i, a, b, podiumTop + 0.3, top - 1.2, Math.round(floors / 3), 10, 0.82, 0.9, glass, 0.45);
     // Balcony stacks with glass rails on the long faces.
