@@ -3440,3 +3440,5 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+**2026-11-24 — Winship's floating roofs were a canopy.** OSM lifted two parts of the Winship Cancer Institute to 17.4 m with nothing under them, which looked like a data error. The architects' photographs explain it: they are the timber drop-off canopy, and the leftover "podium" part the pipeline generated between them is exactly its round oculus. The model keeps all three as mapped. The two parts become a 1.8 m slab, and the residual part stays a hole you can see the podium through. The 2019 lidar caught only the excavation, so the tower's 89 m comes from SOM's 292 ft. The podium part also arrived with two holes, the tower and hall footprints, and that is why the first build fell back to a box. [Captures and parts table](log/ui/winship/README.md)
