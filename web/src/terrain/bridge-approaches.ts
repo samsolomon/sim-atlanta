@@ -5,6 +5,8 @@ import { roadWidth, type TerrainCity } from './transport-data';
 import { triangleHeight } from './tread-height';
 
 type Ground = (x: number, z: number) => number | null;
+/** How far the query-only apron reaches back under each deck end. */
+const APRON_M = 0.5;
 export interface Portal {
   /** Left and right outside corners, as x, z, absolute NAVD88 metres. */
   edge: number[][];
@@ -27,6 +29,7 @@ export function bridgeApproaches(
     walls = new Builder(),
     uv: number[] = [];
   const index = new PlacementIndex<number>(16);
+  const apron: number[] = [], apronIndex = new PlacementIndex<number>(16);
   function tri(a: number[], b: number[], c: number[]) {
     const i = top.pos.length / 3;
     // The two banks of a bridge have opposite outward normals.
@@ -66,6 +69,18 @@ export function bridgeApproaches(
         break;
     }
     if (length === 0) continue;
+    // A query-only apron under the deck end: the street's ground way often runs a few cm past
+    // the surveyed row into the deck's footprint, where a car would otherwise read the bare
+    // ground (13 m below at 17th Street's west end). Never drawn; heights only.
+    for (let k = 0; k < 4; k++) {
+      const f0 = k / 4, f1 = (k + 1) / 4;
+      const p = (f: number, s: number): number[] => { const [x, z] = xy(f, s); return [x, deck(f) + 0.12, z]; };
+      for (const tri of [[p(f0, -APRON_M), p(f1, -APRON_M), p(f1, 0)], [p(f0, -APRON_M), p(f1, 0), p(f0, 0)]]) {
+        const i = apron.length / 3;
+        apron.push(...tri.flat());
+        apronIndex.add(i, tri.map((q) => [q[0], q[2]] as P2));
+      }
+    }
     const toe = bands.map((f) => bare(...xy(f, length))!);
     // Hermite vertical curves meet the deck tangent and the land-side street
     // tangent. Estimate the latter over several DEM cells to suppress quantization.
@@ -140,8 +155,13 @@ export function bridgeApproaches(
       .flatMap((r) => r.pts.map((p) => p.join(','))),
   );
   const bankPositions = new THREE.Float32BufferAttribute(top.pos, 3);
+  const apronPositions = new THREE.Float32BufferAttribute(apron, 3);
   function sample(positions: THREE.BufferAttribute, x: number, z: number) {
     let y = bare(x, z);
+    for (const i of apronIndex.at(x, z)) {
+      const h = triangleHeight(apronPositions, i, x, z);
+      if (h !== null) y = y === null ? h : Math.max(y, h);
+    }
     for (const i of index.at(x, z)) {
       if (i >= positions.count) continue;
       const h = triangleHeight(positions, i, x, z);

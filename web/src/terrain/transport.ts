@@ -155,6 +155,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   for (const rail of data.rail) if (rail.kind === 'ground') indexCrossing(rail.pts, 2.1, 7);
 
+  // Road deck runs by end point, for mitred joints between consecutive decks (see draw).
+  const deckEnds = new Map<string, TransportRun[]>();
+  for (const r of data.roads) if (r.kind === 'bridge' && r.pts.length > 1)
+    for (const p of [r.pts[0], r.pts.at(-1)!]) deckEnds.set(p.join(','), [...(deckEnds.get(p.join(',')) ?? []), r]);
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram', owner = run) {
     if (run.pts.length < 2) return;
     // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
@@ -227,8 +231,37 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }
       stations.sort((a,b)=>a-b);
     }
+    // Where another deck continues from this end at an angle, mitre the end on the bisector so
+    // the two strips meet edge to edge, without a wedge-shaped crack on the outside of the bend.
+    const mitreAt = (end: 0 | 1) => {
+      if (use !== 'road' || !bridge) return null;
+      const p = end ? line.at(line.length) : line.at(0), key = (end ? run.pts.at(-1)! : run.pts[0]).join(',');
+      for (const other of deckEnds.get(key) ?? []) {
+        if (other === owner || other === run) continue;
+        const q = other.pts[0].join(',') === key ? other.pts[1] : other.pts.at(-2)!;
+        const o = other.pts[0].join(',') === key ? other.pts[0] : other.pts.at(-1)!;
+        const len = Math.hypot(q[0] - o[0], q[1] - o[1]);
+        if (!len) continue;
+        // The other deck's direction leading away from the shared point, flipped to continue ours.
+        const sign = end ? 1 : -1;
+        const ox = sign * (q[0] - o[0]) / len, oz = sign * (q[1] - o[1]) / len;
+        const cos = p.dx * ox + p.dz * oz;
+        if (cos < Math.cos(Math.PI / 4) || cos > 0.99999) continue;
+        const bx = p.dx + ox, bz = p.dz + oz, bl = Math.hypot(bx, bz);
+        const half = Math.sqrt((1 + cos) / 2);
+        return [-bz / bl / half, bx / bl / half] as const;
+      }
+      return null;
+    };
+    const mitres = [mitreAt(0), mitreAt(1)];
     function lateral(s:number,off:number): P2 {
       const p=line.at(s);
+      const m = s === 0 ? mitres[0] : s === line.length ? mitres[1] : null;
+      if (!ribbon && m) {
+        // Keep the strip's own side: the mitre normal points the same way as p's normal.
+        const flip = m[0] * p.nx + m[1] * p.nz < 0 ? -1 : 1;
+        return [p.x + off * flip * m[0], p.z + off * flip * m[1]];
+      }
       if (!ribbon) return [p.x+off*p.nx,p.z+off*p.nz];
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
       return stripePoint(row,.5-off/travelWidth);
