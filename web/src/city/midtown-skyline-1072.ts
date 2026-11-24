@@ -1,4 +1,5 @@
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
+import { litHash, seedOf } from './skin-kit';
 import type { localLandmarkShell } from './landmark-shell';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -34,7 +35,8 @@ export function pinwheel(cu: number, cv: number, hu: number, hv: number, w = 3, 
 
 export function westPeachtree1072(shell: Shell) {
   const { body, lights } = shell;
-  const random = rng(1072);
+  const seed = seedOf('osm:way:1464967906');
+  let wall = 0;
   const edges = (ring: P2[], draw: (a: P2, b: P2, len: number) => void) =>
     ring.forEach((a, i) => {
       const b = ring[(i + 1) % ring.length];
@@ -51,14 +53,14 @@ export function westPeachtree1072(shell: Shell) {
    */
   function glaze(a: P2, b: P2, lo: number, hi: number, bay: number, fill: number, pitch: number,
     occupancy: number, glass: string, band: string, sill = .19) {
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), at = along(a, b);
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), at = along(a, b), face = wall++;
     const count = Math.max(1, Math.round(len / bay)), rows = Math.max(1, Math.round((hi - lo) / pitch));
     const step = (hi - lo) / rows, s = step * sill;
     for (let i = 0; i < count; i++) {
       const l = (i + (1 - fill) / 2) * len / count, r = (i + (1 + fill) / 2) * len / count;
       body.quad(at(l, lo + s, .07), at(l, hi - s, .07), at(r, hi - s, .07), at(r, lo + s, .07), glass);
       for (let j = 0; j < rows; j++)
-        if (random() < occupancy)
+        if (litHash(seed, face, j, i) < occupancy)
           lights.quad(at(l, lo + j * step + s, .11), at(l, lo + (j + 1) * step - s, .11),
             at(r, lo + (j + 1) * step - s, .11), at(r, lo + j * step + s, .11), glass);
     }
@@ -101,7 +103,7 @@ export function westPeachtree1072(shell: Shell) {
       body.quad(at(0, OFFICE, .02), at(0, ROOF, .02), at(len, ROOF, .02), at(len, OFFICE, .02), SLOT);
       return;
     }
-    const units = Math.max(1, Math.round(len / 4.6));
+    const units = Math.max(1, Math.round(len / 4.6)), face = wall++;
     for (let i = 1; i < units; i++) {
       const t = (i * len) / units;
       body.quad(at(t - .12, OFFICE, .06), at(t - .12, ROOF, .06), at(t + .12, ROOF, .06), at(t + .12, OFFICE, .06), MULLION);
@@ -113,7 +115,7 @@ export function westPeachtree1072(shell: Shell) {
     // Residences lit at night, one unit at a time; the crown above stays dark.
     for (let j = 0; j < floors; j++)
       for (let i = 0; i < units; i++)
-        if (random() < .32) {
+        if (litHash(seed, face, j, i) < .32) {
           const l = (i + .08) * len / units, r = (i + .92) * len / units, y = OFFICE + j * pitch;
           lights.quad(at(l, y + .3, .1), at(l, y + pitch - .3, .1), at(r, y + pitch - .3, .1), at(r, y + .3, .1), TOWER);
         }

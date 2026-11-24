@@ -26,11 +26,13 @@ describe('attached City passenger stock', () => {
       fleet.update([stock(s)],0);
       const cars = fleet.group.children.filter(c=>c.visible) as Mesh[];
       expect(cars.length).toBe(3);
-      const clipped = cars.filter(c=>(c.material as MeshLambertMaterial).clippingPlanes?.length);
+      // cq400Material pads clip sets with planes that never clip; count only real ones.
+      const real = (c: Mesh) => (c.material as MeshLambertMaterial).clippingPlanes?.filter(p => p.constant < 1e5) ?? [];
+      const clipped = cars.filter(c=>real(c).length);
       expect(clipped.length).toBe(1);
       const pose = route.car(s,0)!;
       expect(clipped[0].position.distanceTo(new Vector3(pose.x,-7,pose.z))).toBeLessThan(.00001);
-      expect((clipped[0].material as MeshLambertMaterial).clippingPlanes![0]).toBe(pose.plane);
+      expect(real(clipped[0])[0]).toBe(pose.plane);
     }
     fleet.update([stock(590)],0);
     expect(fleet.surfaceCars).toBe(0);
@@ -41,7 +43,7 @@ describe('attached City passenger stock', () => {
     const fleet = new CityTrains([{line,elev:()=>5}],manifest,bounds,colors,[]);
     fleet.update([stock(700)],0);
     expect(fleet.surfaceCars).toBe(5);
-    for (const car of fleet.group.children) expect(car.position.y).toBeCloseTo(5.55);
+    for (const car of fleet.group.children.filter(c=>c.userData.trainId)) expect(car.position.y).toBeCloseTo(5.55);
   });
 });
 

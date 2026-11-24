@@ -86,3 +86,12 @@ it('resolves a seek immediately during rollover catch-up', () => {
   expect(q.steps - steps).toBeLessThanOrEqual(66);
   expect(q.at(after, 600)).toEqual(makeQueue().at(after, 600));
 });
+
+it('keeps surviving poses through a rollover when the caller reuses its trip objects', () => {
+  // Road traffic updates one trips array in place every frame.
+  const queue = new MovingQueue([], 16000, 10, blocks);
+  const reused = [{start: 0, length: 4}, {start: 24, length: 6}, {start: 40, length: 4}];
+  const previous = queue.at(reused, 1200);
+  reused[0].start = 1200.1; // slot 0 begins its next trip; the others survive
+  expect(queue.at(reused, 1200.25)).toEqual([null, previous[1], previous[2]]);
+});
