@@ -3840,3 +3840,7 @@ Sam picked a place in search while in City and got thrown back to the 2D map. Se
 ### 2026-11-24 — Camera controls beside Models Details
 
 Selecting the S70 streetcar opens Details from either the catalogue or the model arrows. At 1280 × 800 the camera controls move 324 px, leaving 12 px beside the 312 px panel. Closing it returns the controls to the right edge. At 390 × 844 the camera stays at the top right while Details opens below the model. The desktop Details button needed its own layout rule so it would sit inside the model card. [Desktop open](log/models-follow-desktop-open.png) · [Desktop closed](log/models-follow-desktop-closed.png) · [Phone open](log/models-follow-phone-open.png) · [Phone closed](log/models-follow-phone-closed.png).
+
+### 2026-11-24 — An everyday sedan for moving traffic
+
+The moving sedan takes its silhouette from the July 2017 Camry G Leather Package, with a 2.825 m wheelbase, a crowned roof and a short rear deck. In the first street-height render, a flat taillight spanning the convex bumper broke into two red strokes. Clipping the housing against each bumper facet kept both lenses continuous at five rear bearings from 125° through 235°. The existing instanced brake channel lights the same surface. The static parking-deck cars retain their original dimensions. [Matched 145° rear views](log/road-sedan/rear.jpg) · [Toyota rear reference](https://global.toyota/pages/news/images/2017/07/10/1330/cmrh1707_10_s.jpg)

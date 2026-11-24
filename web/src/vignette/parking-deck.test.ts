@@ -4,7 +4,6 @@ import { World, type VBuilding, type VData } from './world';
 import { Builder, pointInRing, segDist, type P2 } from './geom';
 
 import { appendParkedSedan } from './parked-sedan';
-import { vehicleGeometry } from './vehicles';
 
 const butler: VBuilding = {
   id: '72f23ef4-84a0-4567-9af7-4478de81418f',
@@ -141,7 +140,7 @@ it('preserves the ordinary facade on unverified buildings and keeps surface lots
   );
 });
 
-it('places four tires on the pavement and matches the road sedan shell at sill and roof', () => {
+it('places four tires on the pavement and preserves the parked sedan sill and roof heights', () => {
   const parked = new Builder();
   const pavement = 6.5;
   appendParkedSedan(parked, [0, 0], pavement, 1, 0, '#fff');
@@ -157,16 +156,9 @@ it('places four tires on the pavement and matches the road sedan shell at sill a
     }
     if (parked.col[i] === 1) shell.push(y - pavement);
   }
-  const moving = vehicleGeometry('sedan');
-  const pos = moving.getAttribute('position'),
-    kind = moving.getAttribute('aKind');
-  const roadShell = Array.from({ length: pos.count }, (_, i) => i)
-    .filter((i) => kind.getX(i) === 0)
-    .map((i) => pos.getY(i));
   expect(contacts.size).toBe(4);
-  expect(Math.min(...shell)).toBeCloseTo(Math.min(...roadShell));
-  expect(Math.max(...shell)).toBeCloseTo(Math.max(...roadShell));
-  moving.dispose();
+  expect(Math.min(...shell)).toBeCloseTo(0.32);
+  expect(Math.max(...shell)).toBeCloseTo(1.42);
 });
 
 const piedmont: VBuilding = {

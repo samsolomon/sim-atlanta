@@ -1,5 +1,7 @@
 import { Builder, type P2 } from './geom';
-import { SEDAN } from './vehicles';
+
+// Dimensions of the sedan baked into the parking-deck batch.
+const SEDAN = { length: 4.7, width: 1.8, sill: 0.32, roof: 1.42, tireRadius: 0.33 };
 
 /** A static road sedan facing along (dx, dz), in the deck's vertex-colour batch. */
 export function appendParkedSedan(b: Builder, center: P2, pavement: number, dx: number, dz: number, paint: string) {
