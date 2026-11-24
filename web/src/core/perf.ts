@@ -99,6 +99,8 @@ function ring(area: string, to: StreamRing) {
   const ms = Math.round(performance.now());
   ringLog.push({ area, from, to, ms });
   if (perfEnabled) console.info('PERF_RING', area, from, to, ms);
+  // A user-timing mark, so a Chrome trace lines up ring swaps with long frames.
+  if (perfEnabled) try { performance.mark(`ring:${area}:${from ?? 'none'}>${to}`); } catch { /* old browser */ }
 }
 function thrash() {
   let n = 0;
