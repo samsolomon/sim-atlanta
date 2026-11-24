@@ -3544,3 +3544,9 @@ The Registry on the Park is mapped at 98 m and listed at 321 ft, but the 2019 li
 ### 2026-11-24 · The unnamed glass slab on Ivan Allen
 
 One of the largest footprints City still drew as a box was unnamed in the data. A reverse lookup put it at 45 Ivan Allen Jr Boulevard: the W Atlanta – Downtown, reflagged as a JW Marriott in 2026, a 25-storey hotel with condominiums above. The 2019 lidar resolved its mapped parts: a 102 m slab with a roof deck sunk to 98 m inside a glass parapet, a 106 m south block, balcony stacks on the east face up to 89 m, and a podium at 18 to 22 m. The first glass colour passed the sunlit check but sent both long faces deep navy, because the slab runs north–south and both are in shade most of the day. A paler, less saturated base brought the shaded faces' saturation within a point of a generic tower's (S 38 against 37), though they stay darker (V 35 against 44). The building costs about 1,740 low-tier triangles and adds no draws, since it merges into the downtown landmark batch. [Before and after](log/ui/jw-marriott-downtown/compare.jpg)
+
+## 2026-11-24: Park Central, split by tier
+
+Park Central's buff slab on 12th Street is now one of the park-edge buildings people actually see. The lidar trimmed it from a mapped 71 m to a 54.6 m hip ridge. The interesting part was the budget. Punched windows with frames came to 6,500 triangles, and the low tier caps a landmark at 2,400. On the phone tier, each window column is now one glass strip crossed by a stucco band per floor, and only lit windows get their own quads. That gives 1,724 triangles and reads almost the same at the orbit. The high tier keeps punched windows, framed on the lowest storeys only.
+[Before and after](log/ui/park-central/compare.jpg) · [day, night and low tier](log/ui/park-central/daynight.jpg) · [close](log/ui/park-central/close.jpg)
+
