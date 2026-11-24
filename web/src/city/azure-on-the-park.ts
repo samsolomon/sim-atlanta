@@ -50,8 +50,9 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
   // The shell's local y is NAVD88.
   const y = (navd: number) => navd;
   const brick = '#4f5052', precast = '#cdbfa6', slab = '#c9cbcc';
-  // Blue-grey curtain glass from Street View: base #9aa7b3 is S 14%, V 70%; the shadow tint adds the blue.
-  const glass = ['#9aa7b3', '#a0acb7', '#95a2ae'];
+  // Blue reflective curtain glass, visibly bluer than its neighbours in the March 2025 11th Street
+  // view and the October 2019 Piedmont House rooftop view: base #86a0c0 is S 30%, V 75%.
+  const glass = ['#86a0c0', '#8ca5c3', '#819bbb'];
   const t = local(tower), s = local(step), p = local(podium);
 
   shell.prism(p, shell.base, y(podiumTop), precast, '#9c9a93');
@@ -80,18 +81,19 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     } else if (length > 8) {
       litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, Math.round(rows / 3), 12, 0.9, 0.9, glass, 0.45);
     }
-    // Cantilevered balconies with glass rails on the long faces.
-    if (!high || length < 30) return;
-    const stacks = Math.round(length / 10);
-    for (let k = 0; k < stacks; k++) for (let j = 1; j < floors; j++) {
-      const c = (k + 0.5) * length / stacks, yy = towerLo + j * pitch;
+    // Cantilevered balconies stacked full height at the main tower's corners, wrapping them
+    // (both photos), with white slab edges and dark rails. Each face carries a stack at each end.
+    if (block !== 0 || length < 15) return;
+    const w = 2.1, d = 1.7;
+    for (const c of [w, length - w]) for (let j = 1; j < floors; j++) {
+      const yy = towerLo + j * pitch;
       const q = (u: number, out: number, h: number) => at(c + u, h, out);
-      const w = 2.1, d = 1.7;
+      // A bright slab nosing keeps the stacks legible on the shaded faces, on both tiers.
+      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
+      if (!high) continue;
       shell.body.quad(q(-w, 0.02, yy + 0.2), q(w, 0.02, yy + 0.2), q(w, d, yy + 0.2), q(-w, d, yy + 0.2), '#e4e5e4');
       shell.body.quad(q(-w, 0.02, yy), q(-w, d, yy), q(w, d, yy), q(w, 0.02, yy), '#c2c4c4');
-      shell.body.quad(q(-w, d, yy), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy), '#a8b9c7');
-      // A bright slab nosing keeps the balcony rhythm legible on the shaded faces.
-      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
+      shell.body.quad(q(-w, d, yy + 0.25), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy + 0.25), '#3a3f44');
     }
   });
   tower3(t, y(roof), 0);
