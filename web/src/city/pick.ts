@@ -31,7 +31,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
     if (distance <= 24) hits.push({ vehicle, distance, point: a.clone().lerp(b,t).unproject(camera) });
   }
   function railCar(car: THREE.Object3D, length: number, vehicle: VehicleSelection) {
-    if (!car.visible) return;
+    // A car under a hidden root (streaming hides Brookwood with its rows) is not on screen.
+    for (let o: THREE.Object3D | null = car; o; o = o.parent) if (!o.visible) return;
     const material = (car as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material;
     // The roof can be visible above a wall while the body is hidden.
     for (const height of [2, vehicle.kind === 'freight' ? 4 : 3.4]) {
