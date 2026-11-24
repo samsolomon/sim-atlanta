@@ -58,6 +58,7 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T<time>-05:00`.
 |---|---|---|---|
 | South-west: two faces and the crown | `411,-3010,20,40,480` | [Day](day.jpg) | [Night](night.jpg) |
 | Spec starting camera | `416,-3017,32,60,288` | [Day](start-day.jpg) | [Night](start-night.jpg) |
+| Four sides at 400 m (bearings 180, 270, 0 and 90, tilt 52) | `411,-3010,<bearing>,52,400` | [Sheet](four-sides.jpg) | |
 | Close: crown, slots and ledge (`&dev`, then `__setView(20,30,420,411,-3010,1.5)`) | | [Close](close.jpg) | |
 
 The Peachtree Place entrance and lunette sit on the north face. Neighbours shade it and block every City camera, so it has no close view.
