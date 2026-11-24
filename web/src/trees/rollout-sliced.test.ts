@@ -38,4 +38,4 @@ it.skipIf(!staged).each([['brookwood-south', false], ['brookwood-south', true], 
     expect(sliced.plan).toEqual(sync.plan);
     expect(sliced.crowns).toEqual(sync.crowns);
     expect(sync.plan.species.length + sync.plan.added.length + sync.plan.enlarged.size).toBeGreaterThan(0);
-  });
+  }, 30_000);

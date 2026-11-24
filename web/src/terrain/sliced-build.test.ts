@@ -64,7 +64,7 @@ it.each(['low', 'high'] as const)('a Midtown row built with a yield after every 
   expect(steps).toBeGreaterThan(8);
   expect(a.draws).toBeGreaterThan(20);
   expect(b).toEqual(a);
-});
+}, 60_000);
 
 // The staged rows (pnpm data) carry the canopy crowns the prototype fixture lacks, so generic
 // trees, their seasons and the tree rollout are covered too.
@@ -85,7 +85,8 @@ it.skipIf(!hasStaged).each(['low', 'high'] as const)('a staged Brookwood row wit
   sliced.dispose();
   expect(c.trees.length).toBeGreaterThan(100);
   expect(b).toEqual(a);
-});
+// Two full builds of a staged row: ~1-2 s alone, several times that in a parallel full suite.
+}, 60_000);
 
 it.skipIf(!hasStaged)('building with today\'s day of year equals building for summer then setting the season', () => {
   const ctx = new Proxy({}, { get: () => () => { } });
@@ -101,4 +102,5 @@ it.skipIf(!hasStaged)('building with today\'s day of year equals building for su
     expect(fingerprint(today.group)).toEqual(fingerprint(summer.group));
     summer.dispose(); today.dispose();
   }
-});
+// Six full builds of a staged row.
+}, 120_000);
