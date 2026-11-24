@@ -14,6 +14,7 @@ import { findPlaces, loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
+import { createRadio, PLAYLIST, type Radio } from './radio';
 import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
@@ -237,46 +238,41 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // ---- radio: off until tapped; while it plays, the track title shows beside it ----
   const NOTE = SVG('<path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>');
 
-  const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Play radio', 'aria-pressed': 'false' }, NOTE);
-  radioBtn.setAttribute('aria-label', 'Radio');
-  const radioPanel = el('section', { class: 'a2-dock-pop a2-g', hidden: '', 'aria-label': 'Radio' });
-  const play = el('button', { type: 'button', class: 'a2-btn' }, 'Play');
-  radioPanel.append(el('h2', {}, 'Radio'));
-  const radioTitle = el('span', { class: 'a2-radio-title', hidden: '' });
-  let radio: import('./radio').Radio | null = null;
-  let radioLoading: Promise<import('./radio').Radio> | null = null;
+  const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Radio', 'aria-expanded': 'false', 'aria-controls': 'a2-radio-player' }, NOTE);
+  const radioPanel = el('section', { class: 'a2-dock-pop a2-g a2-player', id: 'a2-radio-player', hidden: '', 'aria-label': 'Radio' });
+  const play = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Play' });
+  const previous = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Previous track' }, SVG('<path d="M6 5v14M19 5l-10 7 10 7z"/>'));
+  const next = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Next track' }, SVG('<path d="M18 5v14M5 5l10 7-10 7z"/>'));
+  const closePlayer = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Close radio' }, SVG('<path d="m6 6 12 12M18 6 6 18"/>'));
+  const playerHeader = el('div', { class: 'a2-player-head' });
+  playerHeader.append(el('h2', {}, 'Radio'), closePlayer);
+  const radioTitle = el('strong');
+  const trackNote = el('span');
+  const trackInfo = el('div', { class: 'a2-track-info' });
+  trackInfo.append(radioTitle, trackNote);
+  const progress = el('progress', { 'aria-label': 'Track progress' });
+  const transport = el('div', { class: 'a2-transport' });
+  transport.append(previous, play, next);
+  const volume = el('input', { type: 'range', min: '0', max: '1', step: '0.01', value: '0.55', 'aria-label': 'Volume' });
+  const volumeRow = el('label', { class: 'a2-volume' }, SVG('<path d="M4 10v4h4l5 4V6l-5 4z"/>'));
+  volumeRow.append(volume);
+  radioPanel.append(playerHeader, trackInfo, progress, transport, volumeRow);
+  let radio: Radio | null = null;
   const showRadio = () => {
     if (!radio) return;
-    // Until the music exists the playlist is a stub: say so rather than pose as playing audio.
-    const words = radio.track.src ? radio.track.title : `${radio.track.title} · no audio yet`;
-    play.textContent = radio.playing ? 'Pause' : 'Play';
-    play.setAttribute('aria-pressed', String(radio.playing));
-    play.setAttribute('aria-label', radio.playing ? `Pause radio: ${words}` : 'Play radio');
-    radioTitle.textContent = words;
-    radioTitle.title = words;
-    radioTitle.hidden = false;
+    radioTitle.textContent = `Track ${radio.index + 1} · ${radio.track.title}`;
+    trackNote.textContent = PLAYLIST.length + (radio.track.src ? ' tracks' : ' tracks · no audio yet');
+    play.innerHTML = SVG(radio.playing ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
+    play.setAttribute('aria-label', radio.playing ? 'Pause' : 'Play');
+    progress.max = radio.track.durationS;
+    progress.value = radio.elapsedS;
   };
-  play.addEventListener('click', async () => {
-    try {
-      // One load, however many taps land while it's in flight.
-      radioLoading ??= import('./radio').then(({ createRadio }) => {
-        const r = createRadio();
-        r.onChange(showRadio);
-        return r;
-      });
-      radio = await radioLoading;
-    } catch {
-      radioLoading = null; // try again on the next tap (a stale chunk after a deploy, say)
-      showNotice('The radio couldn’t load. Try again.');
-      return;
-    }
-    radio.toggle();
-  });
+  play.onclick = () => radio?.toggle();
+  previous.onclick = () => radio?.previous();
+  next.onclick = () => radio?.next();
+  volume.oninput = () => { if (radio) radio.volume = volume.valueAsNumber; };
+  closePlayer.onclick = () => { closePops(); radioBtn.focus(); };
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn);
-  radioTitle.hidden = false;
-  radioTitle.textContent = 'Peachtree Drift · no audio yet';
-  radioPanel.append(radioTitle, play);
-
   const searchBtn = el('button', { type: 'button', class: 'a2-ib a2-search-icon', 'aria-label': 'Search Atlanta' }, SVG('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>'));
   const searchWrap = el('div', { class: 'a2-dock-field' });
   const search = el('input', { type: 'search', placeholder: 'Search Atlanta', 'aria-label': 'Search Atlanta' });
@@ -572,12 +568,21 @@ export function createShellNext(o: ShellOptions): ShellApi {
   };
   searchBtn.onclick = startSearch;
   search.addEventListener('focus', startSearch);
-  search.addEventListener('input', renderResults);
+  search.addEventListener('click', startSearch);
+  search.addEventListener('input', startSearch);
   cancel.onclick = () => { closePops(); searchBtn.focus(); };
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); startSearch(); }
   });
-  radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => play.focus());
+  radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => {
+    if (!radio) {
+      radio = createRadio();
+      radio.volume = volume.valueAsNumber;
+      radio.onChange(showRadio);
+    }
+    showRadio();
+    play.focus();
+  });
   menuBtn.addEventListener('click', () => showGraphics());
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
   shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
@@ -642,6 +647,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const t = performance.now();
     if (t - lastTick < 500) return;
     lastTick = t;
+    if (radio && !radioPanel.hidden) progress.value = radio.elapsedS;
     const c = o.center();
     const mpp = o.metresPerPixel?.() ?? null;
     threeD.classList.toggle('a2-outside', !!outside());

@@ -3113,3 +3113,7 @@ published timetable the worst was 0.5 ms. A regression checks the bound on
 every frame and compares the final positions with a fresh seek.
 
 [The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
+
+### 2026-11-24 — Radio in the dock
+
+The radio popover now has the track controls from F07 and G13. The 10-track placeholder playlist advances and pauses locally, shows elapsed progress, and identifies its silent tracks with “no audio yet”. The phone uses the same player in a bottom sheet. [Desktop](log/ui/final-radio/desktop.jpg) · [Phone](log/ui/final-radio/phone.jpg).

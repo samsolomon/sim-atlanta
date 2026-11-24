@@ -24,6 +24,10 @@ export const PLAYLIST: Track[] = [
 export interface Radio {
   readonly playing: boolean;
   readonly track: Track;
+  readonly index: number;
+  readonly elapsedS: number;
+  volume: number;
+  previous(): void;
   toggle(): void;
   next(): void;
   onChange(fn: () => void): void;
@@ -47,12 +51,15 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
       ms.playbackState = playing ? 'playing' : 'paused';
     }
   };
-  const advance = () => {
-    i = (i + 1) % list.length;
+  const step = (direction: number) => {
+    clearTimeout(timer);
+    audio.pause();
+    i = (i + direction + list.length) % list.length;
     elapsed = 0;
     if (playing) start();
     else changed();
   };
+  const advance = () => step(1);
   audio.addEventListener('ended', advance);
   function start() {
     const t = list[i];
@@ -93,11 +100,14 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
       if (playing) start();
       else stop();
     },
-    next() {
-      clearTimeout(timer);
-      audio.pause();
-      advance();
+    get index() { return i; },
+    get elapsedS() {
+      return list[i].src ? audio.currentTime : Math.min(list[i].durationS, elapsed + (playing ? (performance.now() - startedAt) / 1000 : 0));
     },
+    get volume() { return audio.volume; },
+    set volume(value: number) { audio.volume = Math.max(0, Math.min(1, value)); },
+    next: advance,
+    previous: () => step(-1),
     onChange(fn) {
       listeners.push(fn);
     },
