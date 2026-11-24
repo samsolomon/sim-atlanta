@@ -2925,3 +2925,7 @@ calibration, with no geometry or texture cost. Matched 21:00 frames use the same
 ### 2026-11-23 — Two purple buses for the A-Line
 
 The purple bus photographed at the Phase One launch has two axles and a CNG roof pod. The 60-foot electric bought for the line has three axles and a folding joint. The Model Lab now puts the two silhouettes side by side in the vehicle list. Turning the electric trailer through 35° keeps both ends of the silver bellows attached. Its low-detail model uses 1,190 triangles across three meshes. [See the photographs and matched day/night studies](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — The Midtown South footbridge
+
+A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
