@@ -530,7 +530,7 @@ function drawNorcrossSpan(b: Builder, deck: Line, bed: (x: number) => number, sc
 }
 
 /** Attach to the City mosaic at its existing vertical datum. */
-export function createBrookwood(sceneZero: number, instanceFreight = true) {
+export function createBrookwood(sceneZero: number, instanceFreight = true, northFreight?: Line) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
@@ -600,7 +600,19 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
   stockTemplate.name = 'crescent prewarm template';
   stockTemplate.visible = false;
   group.add(stockTemplate);
-  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, clip, instanceFreight);
+  const main2 = corridor.main2.pts;
+  const seam = new Line(main2).length;
+  const last = main2[main2.length - 1];
+  if (northFreight && (last[0] !== northFreight.pts[0][0] || last[1] !== northFreight.pts[0][1]))
+    throw Error('North freight main does not join Brookwood Main 2');
+  // Use the same clock and full route before and after R16 loads. In particular,
+  // a southwestbound head must not jump when the northern row mounts.
+  const route = northFreight ? [...main2, ...northFreight.pts.slice(1)] : main2;
+  const freightEdge = northEdge.clone();
+  let northernHeight: ((s: number) => number) | undefined;
+  const freight = createNorcrossFreight(route, (x, s) =>
+    s > seam && northernHeight ? northernHeight(s - seam) : bed(x) + 0.32,
+    [freightEdge, westEdge, ...neverClip(2)], instanceFreight);
   group.add(freight.group);
   let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
@@ -646,13 +658,19 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
     structure,
     update,
     /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
-    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
+    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor, northernHeight ? undefined : seam),
     freight: freight.group,
     freightPoses: freight.poses,
     get freightCars() { return freight.visibleCars; },
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {
       northEdge.constant = -z;
+      if (!northernHeight) freightEdge.constant = -z;
+    },
+    mountNorthFreight(height: (s: number) => number) {
+      if (!northFreight) return;
+      northernHeight = height;
+      freightEdge.constant = -northFreight.pts[northFreight.pts.length - 1][1];
     },
 
     dispose() {
