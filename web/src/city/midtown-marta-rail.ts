@@ -1,3 +1,7 @@
+import { roadsideWalls } from '../../../pipeline/prototypes/paired-span-walls/walls';
+import { articulate, RailTops } from './north-running-gear';
+import { extensions } from './north-profile-study';
+import axes from './fixtures/north-axes-study.json';
 import * as THREE from 'three';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
@@ -6,7 +10,7 @@ import type { TransportRun } from '../terrain/transport-data';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
-import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
+import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure, undersideFaces } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
@@ -16,7 +20,7 @@ type Height = (x: number, z: number) => number | null;
 // Both mapped mains reach the north board boundary. Chain from that known edge
 // back to the end of the open track. Only the two contiguous North Line chains
 // can carry passenger trains, irrespective of neighboring freight geometry.
-export function northLineTracks(runs: readonly TransportRun[], northEdge: number) {
+export function northLineTracks(runs: readonly Pick<TransportRun, 'name' | 'pts'>[], northEdge: number) {
   const parts = runs.filter((r) => r.name === 'MARTA North Line').map((r) => r.pts);
   const tracks: Line[] = [];
   function same(a: P2, b: P2) {
@@ -201,6 +205,7 @@ export function createNorthLine(
   area: {
     group: THREE.Group;
     groundAt: (x: number, z: number) => number | null;
+    terrainAt?: (x: number, z: number) => number | null;
     connectorBoard?: { city: { roads: { cls: string; sub?: string | null; pts: [number, number][] }[] } };
   },
   rf: RoutesFile,
@@ -210,7 +215,8 @@ export function createNorthLine(
   const rows = railRows['brookwood-station'] as TransportRun[];
   const lines = northLineTracks(rows, -5700);
   if (lines.length !== 2) return;
-  const paths = northLinePaths(rf, origin, lines);
+  const stationPaths = northLinePaths(rf, origin, lines);
+  let paths = stationPaths;
   const roads = area.connectorBoard?.city.roads ?? [];
   const lanes = (x: number, z: number) => inConnectorLanes(x, z, 1);
   // Piers depend only on where the spans run, so place them first, size each girder
@@ -222,9 +228,53 @@ export function createNorthLine(
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
   const guideway = northLineGuideway(lines, profile, area.groundAt);
   area.group.add(guideway);
+  const walls = new THREE.Group();
+  if (area.terrainAt) {
+    const underside = undersideFaces(guideway, 425, 445, -5415, -5390);
+    for (const { name, geometry } of roadsideWalls(area.terrainAt, underside)) {
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+      mesh.name = name;
+      mesh.receiveShadow = mesh.castShadow = true;
+      walls.add(mesh);
+    }
+    area.group.add(walls);
+  }
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
-  const height = (line: Line, along: number) => profile.at(line, along);
+  let height = (line: Line, along: number) => profile.at(line, along);
+  let tops: RailTops | undefined;
+  function extend(addedRails: THREE.Mesh) {
+    const continuation = northLineTracks(axes.map(run => ({ name: run.name, pts: run.pts.map(([x, z]): P2 => [x, z]) })), -6500);
+    if (continuation.length !== lines.length) return;
+    const joined = lines.map((line, i) => new Line([...line.pts, ...continuation[i].pts.slice(1)]));
+    const nextPaths = northLinePaths(rf, origin, joined);
+    // A short-turn schedule may serve the original segment only. Its station
+    // samples still apply to the common prefix of the extended track.
+    for (const [id, run] of stationPaths) {
+      if (!nextPaths.has(id)) nextPaths.set(id, { ...run, line: joined[lines.indexOf(run.line)] });
+    }
+    tops = new RailTops();
+    tops.add(guideway, '#a69b8c');
+    tops.add(addedRails, '#c0b7a9');
+    joined.forEach((line, i) => {
+      const clip = planes.get(lines[i])!;
+      clip[1].constant = 6500;
+      planes.set(line, clip);
+    });
+    for (const extension of continuation) {
+      for (const [x, z] of extension.pts) {
+        bounds.minX = Math.min(bounds.minX, x - 60);
+        bounds.maxX = Math.max(bounds.maxX, x + 60);
+        bounds.minZ = Math.min(bounds.minZ, z);
+      }
+    }
+    paths = nextPaths;
+    height = (line, s) => {
+      const i = joined.indexOf(line);
+      const seam = lines[i].length;
+      return s <= seam ? profile.at(lines[i], s) : extensions[i].at(s - seam);
+    };
+  }
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
   let portalParts!: ReturnType<typeof portal>;
@@ -282,11 +332,11 @@ export function createNorthLine(
           front = height(run.line, clamp(place.along + run.dir * 2)),
           rear = height(run.line, clamp(place.along - run.dir * 2));
         const role = i === 0 ? 1 : i === n - 1 ? -1 : 0,
-          key = [t.routeId, run.dir, role].join('/');
+          key = [t.routeId, run.dir, role, !!tops].join('/');
         let pool = pools.get(key);
         if (!pool) {
           pool = {
-            geometry: cq400Geometry({ cab: role !== 0, u0: 0, u1: 1 }, color),
+            geometry: cq400Geometry({ cab: role !== 0, u0: 0, u1: 1 }, color, !!tops),
             material: cq400Material(color, { value: role }, darkness, planes.get(run.line)),
             meshes: [],
             count: 0,
@@ -309,6 +359,7 @@ export function createNorthLine(
           'YXZ',
         );
         if (i >= n / 2) car.rotateY(Math.PI);
+        if (tops) articulate(car,run.line,place.along,run.dir*(i>=n/2?-1:1),tops,s=>height(run.line,s));
         car.userData.trainId = t.id;
         car.userData.inferredTrack = true;
         car.visible = true;
@@ -322,7 +373,7 @@ export function createNorthLine(
   const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
   /** Free everything this North Line added; the area's own dispose only clears its group. */
   function dispose() {
-    for (const object of [guideway, spans.mesh, spans.lamps, portalParts.group]) {
+    for (const object of [guideway, walls, spans.mesh, spans.lamps, portalParts.group]) {
       object.removeFromParent();
       object.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return;
@@ -340,5 +391,5 @@ export function createNorthLine(
     }
     pools.clear();
   }
-  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown, dispose });
+  return Object.assign(update, { extend, bounds: planes.size ? bounds : null, cars: shown, dispose });
 }
