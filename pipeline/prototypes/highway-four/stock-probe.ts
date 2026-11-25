@@ -37,7 +37,13 @@ for (const quality of ['low','high'] as const) {
           // parallel road at a fork can be inside the same geographic window.
           const visible=traffic['visible'].slice(0,traffic['visibleCars']).find(v=>Math.hypot(v.x-m[12],v.z-m[14])<.005);
           if(!visible?.lane.roads.some(road=>road.pts===r.pts))continue;
-          console.log(JSON.stringify({quality,id,time:new Date(epoch+seconds*1000),x:m[12],z:m[14],
+          const pos=mesh.geometry.attributes.position, bottom=new Map<string,number[]>();
+          for (let v=0; v<pos.count; v++) {
+            const xyz=[pos.getX(v),pos.getY(v),pos.getZ(v)];
+            // Wheels are the lowest outboard vertices on every stock body.
+            if (Math.abs(xyz[0])>.4 && xyz[1]>=-.0001 && xyz[1]<.035) bottom.set(xyz.join(','),xyz);
+          }
+          console.log(JSON.stringify({quality,id,vertices:pos.count,bottom:[...bottom.values()],time:new Date(epoch+seconds*1000),x:m[12],z:m[14],
             mesh:mesh.name,index,rgb:Array.from(mesh.instanceColor.array.slice(index*3,index*3+3)),
             route:[...new Set(visible.lane.roads.map(road=>ribbons.find(w=>w.pts===road.pts)?.id))]}));
           remaining.delete(id);
