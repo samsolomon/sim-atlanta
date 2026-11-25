@@ -1,0 +1,224 @@
+{
+  "bounds": {
+    "minX": -1000.0,
+    "maxX": 1800.0,
+    "minZ": -6500.0,
+    "maxZ": -5700.0
+  },
+  "baseline": {
+    "ground.json": {
+      "sha256": "043a350ddbe1ab6e2e04a7f976d8456ba7e2ba8ac2cacdea8deb0b4f135331f8",
+      "bytes": 2146,
+      "gzip9": 956
+    },
+    "ground.i16": {
+      "sha256": "fd11f5a2992dc774dd2eab8d3fa7a8be5a959b528d8b1cae2f60fbf5abb7df82",
+      "bytes": 180642,
+      "gzip9": 89220
+    },
+    "context.json": {
+      "sha256": "462e0c1824ec094f77535a209612cef7eedec5c6a3df21b7b1c5f51e79a4cbb6",
+      "bytes": 410001,
+      "gzip9": 101278
+    }
+  },
+  "candidate": {
+    "ground.json": {
+      "sha256": "ffeca21b89dafe20c97c3d9b8de3f7f704800265ac62b14d8af7775019be4e55",
+      "bytes": 2132,
+      "gzip9": 948
+    },
+    "ground.i16": {
+      "sha256": "9421ae7d430022d46e3daeb49777dc7049c4393be8cc8ef317a7d1633c95bf6b",
+      "bytes": 180642,
+      "gzip9": 87519
+    },
+    "context.json": {
+      "sha256": "a0969a9924062678a316fc87a16db62962208621304433e1d30055a661afffa9",
+      "bytes": 339684,
+      "gzip9": 81430
+    }
+  },
+  "seamXAtMinus5700": {
+    "brookwood-station": {
+      "Montclair Drive Northeast": [
+        -53.81
+      ],
+      "Woodcrest Avenue Northeast": [
+        229.81
+      ],
+      "Ardmore Road Northwest": [
+        -693.4
+      ],
+      "Flagler Avenue Northeast": [
+        1482.66
+      ],
+      "Palisades Road Northeast": [
+        76.94
+      ],
+      "Huntington Road Northeast": [
+        366.8
+      ],
+      "Rockridge Place Northeast": [
+        1702.31
+      ],
+      "28th Street Northwest": [
+        -487.58
+      ],
+      "Anjaco Road Northwest": [
+        -532.93
+      ],
+      "(unnamed)": [
+        -541.87,
+        -528.15,
+        -442.73,
+        -212.38,
+        -186.43,
+        -140.45,
+        -104.88,
+        -59.09,
+        -46.64,
+        69.2,
+        85.92,
+        223.85,
+        235.38,
+        360.6,
+        373.35,
+        759.23,
+        1127.07,
+        1251.78,
+        1324.85,
+        1476.25,
+        1488.41,
+        1579.44,
+        1591.93,
+        1602.12,
+        1695.51,
+        1707.75
+      ],
+      "Atlanta Beltline Northeast Trail": [
+        1406.56
+      ],
+      "Atlanta Beltline Northside Trail": [
+        -824.72
+      ],
+      "Buford-Spring Connector": [
+        869.16,
+        893.26
+      ],
+      "Monroe Drive Northeast": [
+        1585.68
+      ],
+      "Northeast Expressway": [
+        801.05,
+        841.92
+      ],
+      "Huntington Hills Lane Northwest": [
+        -330.03
+      ],
+      "Peachtree Road Northeast": [
+        -197.1
+      ]
+    },
+    "r16": {
+      "Montclair Drive Northeast": [
+        -53.81
+      ],
+      "Woodcrest Avenue Northeast": [
+        229.81
+      ],
+      "Ardmore Road Northwest": [
+        -693.4
+      ],
+      "Flagler Avenue Northeast": [
+        1482.66
+      ],
+      "Palisades Road Northeast": [
+        76.94
+      ],
+      "Huntington Road Northeast": [
+        366.8
+      ],
+      "Rockridge Place Northeast": [
+        1702.31
+      ],
+      "28th Street Northwest": [
+        -487.58
+      ],
+      "Anjaco Road Northwest": [
+        -532.93
+      ],
+      "(unnamed)": [
+        -541.87,
+        -528.15,
+        -442.73,
+        -212.38,
+        -186.43,
+        -140.45,
+        -104.88,
+        -59.09,
+        -46.64,
+        69.2,
+        85.92,
+        223.85,
+        235.38,
+        360.6,
+        373.35,
+        759.23,
+        1127.07,
+        1251.78,
+        1324.85,
+        1476.25,
+        1488.41,
+        1579.44,
+        1591.93,
+        1602.12,
+        1695.51,
+        1707.75
+      ],
+      "Atlanta Beltline Northeast Trail": [
+        1406.56
+      ],
+      "Atlanta Beltline Northside Trail": [
+        -824.72
+      ],
+      "Buford-Spring Connector": [
+        869.16,
+        893.26
+      ],
+      "Monroe Drive Northeast": [
+        1585.68
+      ],
+      "Northeast Expressway": [
+        801.05,
+        841.92
+      ],
+      "Huntington Hills Lane Northwest": [
+        -330.03
+      ],
+      "Peachtree Road Northeast": [
+        -197.1
+      ]
+    }
+  },
+  "counts": {
+    "roads": 743,
+    "buildings": 771,
+    "ground": 6,
+    "rail": 0,
+    "trees": 0
+  },
+  "maysonBareEarthNAVD88": {
+    "(1291.81, -6202.19)": 258.1359,
+    "(1288.72, -6203.0)": 258.1554
+  },
+  "identicalEdgeNodes": 561,
+  "changedWay": 9242945,
+  "changedOutputs": [
+    "context.json"
+  ],
+  "rebuiltRows": [
+    "r16"
+  ],
+  "unchangedNeighbor": "brookwood-station"
+}
