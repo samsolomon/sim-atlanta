@@ -13,7 +13,7 @@ export const lowerEdges = [-2.375, 2.575] as const; // metres right of source tr
 
 type Ground = (x: number, z: number) => number | null; // existing exposed tread in scene metres
 export function lowerPoint(station: number, offset: number, exposed: Ground) {
-  if (station < east - 15 || station > west + 25 || offset < lowerEdges[0] || offset > lowerEdges[1]) return null;
+  if (station < east - 15.25 || station > west + 25.25 || offset < lowerEdges[0] || offset > lowerEdges[1]) return null;
   const p = lowerAxis.at(station);
   const back = lowerAxis.at(station - 0.5), ahead = lowerAxis.at(station + 0.5);
   const len = Math.hypot(ahead.x-back.x,ahead.z-back.z);
@@ -25,7 +25,7 @@ export function lowerPoint(station: number, offset: number, exposed: Ground) {
   let navd = 252.61 + rise*t + (0.014*boreLength-rise)*t*(1-t)*(1-2*t);
   if (s < 5) navd = 252.61 + (s-5)*0.014;
   if (station > west+5) navd = 256.13 + (station-west-5)*0.014;
-  const weight = Math.max(0,-s/15,(station-west-10)/15);
+  const weight = Math.min(1,Math.max(0,-s/15,(station-west-10)/15));
   let y = navd - 323.8;
   if (weight > 0) {
     const h = exposed(x,z);
@@ -38,7 +38,9 @@ export function lowerPoint(station: number, offset: number, exposed: Ground) {
 export function lowerStrips(exposed: Ground, emit: (
   vertices: [number,number,number][], color: string, tread: boolean
 ) => void) {
-  const lo=east-15, hi=west+25;
+  // Carry the floor one ground-tied section beyond the aperture cuts. Float32
+  // vertices can shift a shared boundary a fraction of a millimetre at this Z.
+  const lo=east-15.25, hi=west+25.25;
   const stations=new Set([lo,hi,east,west,west+5,west+10,...lowerAxis.cum.filter(s=>s>lo && s<hi)]);
   for(let s=lo+1;s<hi;s++) stations.add(s);
   for(const [from,to] of [[lo,east],[west+10,hi]])

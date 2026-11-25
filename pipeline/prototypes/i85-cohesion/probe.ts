@@ -49,7 +49,7 @@ for (const tier of ['low','high'] as const) {
       floor.push([a,b,c]);lowerTriangles++;
     }
   });
-  for(let s=east-14;s<west+24;s+=.5)for(const u of [-.79,.79]){
+  for(let s=east-15;s<=west+25;s+=.5)for(const u of [-.79,0,.79]){
     const [x,h,z]=lowerPoint(s,u,ground)!;
     let err=Infinity;
     for(const [a,b,c] of floor){
