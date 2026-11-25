@@ -63,13 +63,24 @@ export function maysonSupports(tracks: Track[], ground: Ground) {
     const slab = new Builder(), beams = new Builder(), caps = new Builder();
     const pads = new Builder(), stems = new Builder();
     // Continuous side faces and soffits. The signed track formation is the lid.
-    const knots = [start];
+    const southSeat = start + .72, northSeat = end - .72;
+    const seatY = (station: number) => deck(track, station, 0)[1];
+    const level = (ring: Vertex[], y: number): Vertex[] => ring.map(([x,,z]) => [x,y,z]);
+    const knots = [start, start + 1.25, end - 1.25];
     for (let s=Math.ceil(start/1.5)*1.5; s<end; s+=1.5) knots.push(s);
     knots.push(end);
+    knots.sort((a,b) => a-b);
     function ribbon(builder:Builder,left:number,right:number,top:number,bottom:number,color:string) {
       for (let i=1;i<knots.length;i++) {
         const a=knots[i-1], b=knots[i];
         const u=section(a,b,left,right,top), l=section(a,b,left,right,bottom);
+        // The short girder end over its bearing has a level lower seat.
+        if (builder === beams) {
+          for (const [index,s] of [[0,a],[1,b],[2,b],[3,a]]) {
+            if (s <= start + 1.25) l[index][1] = seatY(southSeat) - bottom;
+            if (s >= end - 1.25) l[index][1] = seatY(northSeat) - bottom;
+          }
+        }
         builder.quad(l[3],l[2],l[1],l[0],color);
         builder.quad(u[0],l[0],l[1],u[1],color);
         builder.quad(u[2],l[2],l[3],u[3],color);
@@ -81,15 +92,17 @@ export function maysonSupports(tracks: Track[], ground: Ground) {
     for(const offset of [-1.07,1.07])
       ribbon(beams,offset-.24,offset+.24,.26,1.22,'#8d9391');
 
-    for (const [label,station] of [['south',start+.72],['north',end-.72]] as const) {
+    for (const [label,station] of [['south',southSeat],['north',northSeat]] as const) {
+      const seat = (halfLength:number,left:number,right:number,depth:number) =>
+        level(section(station-halfLength,station+halfLength,left,right,0), seatY(station)-depth);
       for(const offset of [-1.07,1.07]){
-        const left=offset-.24,right=offset+.24;
-        prism(pads,section(station-.28,station+.28,left,right,1.22),
-          section(station-.28,station+.28,left,right,1.36),'#444741');
+        const left=offset-.21,right=offset+.21;
+        prism(pads,seat(.28,left,right,1.22),
+          seat(.28,left,right,1.36),'#444741');
       }
-      prism(caps,section(station-.64,station+.64,-1.57,1.57,1.36),
-        section(station-.64,station+.64,-1.57,1.57,1.88),'#aaa49b');
-      const upper=section(station-.53,station+.53,-1.32,1.32,1.88);
+      prism(caps,seat(.64,-1.57,1.57,1.36),
+        seat(.64,-1.57,1.57,1.88),'#aaa49b');
+      const upper=seat(.53,-1.32,1.32,1.88);
       // An interior terrain edge rises or dips relative to the four corner planes.
       // Ground found up to 16.9 mm of daylight in the zero-depth fit.
       const lower=upper.map(([x,,z]):Vertex=>[x,ground(x,z)-.03,z]);
