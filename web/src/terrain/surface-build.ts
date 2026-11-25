@@ -390,7 +390,7 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
     if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds);
+    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds, {settled: lower});
 }
 
 /**
