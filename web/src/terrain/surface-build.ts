@@ -23,6 +23,8 @@ export type TerrainQuality = 'low' | 'high';
  * vertices too, at both tiers.
  */
 export interface GroundYield {
+  /** A graded earth surface can also fill below its design height. Other yields only cut. */
+  grade?: boolean;
   conformEdges?: boolean;
   ring: readonly (readonly [number, number])[];
   floor(x: number, z: number, originalY?: number): number;
@@ -49,7 +51,7 @@ export function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, grade: y.grade, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
 
@@ -160,8 +162,14 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
       let f = Infinity;
-      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z, y));
-      if (!(y > f)) return i;
+      let designed = y;
+      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) {
+        const height = yd.floor(x, z, y);
+        if (yd.grade) designed = height;
+        else f = Math.min(f, height);
+      }
+      f = Math.min(designed, f);
+      if (Math.abs(y - f) < 1e-7) return i;
       let j = lowered.get(i);
       if (j === undefined) lowered.set(i, j = add(x, f, z));
       return j;

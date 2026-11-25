@@ -110,6 +110,21 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     for (const ring of g.rings) { trace(ctx, ring); ctx.closePath(); }
     ctx.fillStyle = landColors[g.kind];
     ctx.fill('evenodd');
+    if (g.kind === 'golf_tee') {
+      ctx.save();
+      ctx.clip('evenodd');
+      ctx.strokeStyle = '#889563';
+      ctx.lineWidth = 1.3;
+      // A tile seam is a clip boundary, not an edge of the tee.
+      ctx.beginPath();
+      for (const ring of g.rings) for (let i = 0; i < ring.length; i++) {
+        const a = ring[i], end = ring[(i+1) % ring.length];
+        if (a[1] === end[1] && (a[1] === b.minZ || a[1] === b.maxZ)) continue;
+        ctx.moveTo(a[0],a[1]); ctx.lineTo(end[0],end[1]);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
     if (g.kind === 'golf_fairway') {
       ctx.save();
       ctx.clip('evenodd');
