@@ -74,3 +74,28 @@ it('paints all eight edges of the seven-lane Midtown approach from its stationed
       stroke.points.every(([x,z], i) => x === points[i][0] && z === points[i][1]))).toBe(true);
   }
 });
+
+it('opens the Exit 250 gore at the common aerial tip and shares the third approach lane', () => {
+  const donor = ribbons.find(r => r.id === 9238120)!;
+  const main = ribbons.find(r => r.id === 73954042)!;
+  const ramp = ribbons.find(r => r.id === 27609107)!;
+  const end = donor.rows.at(-1)!;
+  for (const [child, firstLane] of [[main, 0], [ramp, 2]] as const) {
+    for (let i = 0; i < child.lanes; i++) {
+      const from = stripePoint(end, (firstLane + i + .5) / donor.lanes);
+      const to = stripePoint(child.rows[0], (i + .5) / child.lanes);
+      expect(Math.hypot(from[0] - to[0], from[1] - to[1])).toBeLessThan(.001);
+    }
+  }
+
+  const { ctx, strokes } = recording();
+  const bounds = { minX: -450, maxX: -160, minZ: -4900, maxZ: -4450 };
+  paintConnector(ctx, { ...city, name: 'brookwood-south', bounds }, 1);
+  const tip = main.rows.find(row => row.s >= 51 && row.s <= 53)!.outer;
+  const same = (a: P2, b: P2) => Math.hypot(a[0] - b[0], a[1] - b[1]) < .001;
+  for (const start of [main.rows[0].outer, ramp.rows[0].inner])
+    expect(strokes.some(s => !s.dash.length && same(s.points[0], start))).toBe(false);
+  const sides = strokes.filter(s => !s.dash.length && same(s.points[0], tip));
+  expect(sides).toHaveLength(2);
+  expect(same(sides[0].points.at(-1)!, sides[1].points.at(-1)!)).toBe(false);
+});
