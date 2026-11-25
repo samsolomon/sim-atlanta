@@ -104,6 +104,7 @@ export interface DowntownTerrainOptions {
   simpleLeafClumps?: boolean;
   /** Optional continuous road axes for the painted terrain surface. */
   underpass?: Underpass;
+  extraSlots?: readonly OpenSlot[];
   boardRoads?: TerrainCity['roads'];
   boardDetails?: (builder: Builder, ground: (x:number,z:number)=>number|null, material: THREE.MeshLambertMaterial) => void;
   join?: TerrainJoins;
@@ -311,9 +312,10 @@ let groundLodChanged = false;
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
 
 /** The openings the ground surface is cut by, so a surface built off the main thread matches. */
-export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings'>) {
+export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings' | 'extraSlots'>) {
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  return options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+  const slots = options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+  return options.extraSlots ? [...(slots ?? []), ...options.extraSlots] : slots;
 }
 
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,

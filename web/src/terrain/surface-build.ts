@@ -5,6 +5,7 @@ import { runSync, type Build } from '../core/slice';
  * GroundSurface (surface.ts) calls the same code, so both paths draw the same triangles.
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
+import { conformCutEdges } from './conform-cut-edges';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
@@ -20,6 +21,7 @@ export type TerrainQuality = 'low' | 'high';
  * vertices too, at both tiers.
  */
 export interface GroundYield {
+  conformEdges?: boolean;
   ring: readonly (readonly [number, number])[];
   floor(x: number, z: number): number;
 }
@@ -45,7 +47,7 @@ export function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
 
@@ -236,8 +238,19 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       }
     }
     starts[detail.length] = indices.length;
-    starts[detail.length] = indices.length;
-    return { pos, uv, indices, starts, blockCols };
+    const result = { pos, uv, indices, starts, blockCols };
+    if (yieldList.some(y=>y.conformEdges)) {
+      const blocks = new Set<number>();
+      for (const [k,ys] of yieldBlocks) if (ys.some(y=>y.conformEdges)) blocks.add(k);
+      conformCutEdges(result, blocks, (x,z)=>{
+        let floor=Infinity;
+        for (const y of nearYields(x,z)) if (y.conformEdges && contains(y,x,z,1e-6)) {
+          floor=Math.min(floor,y.floor(x,z));
+        }
+        return floor;
+      });
+    }
+    return result;
 }
 
 /**

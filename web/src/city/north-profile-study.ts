@@ -1,6 +1,5 @@
-import { formationEnds } from './north-formation-ends';
+import { formationEnvelope } from './north-formation-ends';
 import * as THREE from 'three';
-import { cuttingYields, type BallastQuad } from '../terrain/cutting';
 import type { Area } from '../square-board/sections';
 import cutWindows from './fixtures/north-formation-windows.json';
 import profiles from './fixtures/north-profile-study.json';
@@ -18,9 +17,8 @@ export const extensions = profiles.map(profile => {
 });
 
 export function studyRails(area: Area) {
-  const beds: BallastQuad[][] = cutWindows.map(() => []);
   const body = new Builder();
-  for (const { line, at, track } of extensions) {
+  for (const { line, at } of extensions) {
     for (let s = 0; s < line.length; s += 1.5) {
       const end = Math.min(s + 1.5, line.length);
       const a = line.at(s), b = line.at(end);
@@ -28,10 +26,6 @@ export function studyRails(area: Area) {
         [p.x + p.nx * offset, h, p.z + p.nz * offset];
       const h = at(s), k = at(end);
       const quad = [edge(a,h,-1.6),edge(a,h,1.6),edge(b,k,1.6),edge(b,k,-1.6)] as const;
-      if (track === 'NR') {
-        const interval = cutWindows.findIndex(([start,stop]) => s >= start && end <= stop);
-        if (interval >= 0) beds[interval].push(quad);
-      }
       body.quad(quad[0],quad[3],quad[2],quad[1],'#898375');
       orientedBox(body,a.x,a.z,a.dx,a.dz,h,h+.04,.11,1.28,'#65594f');
       for (const rail of [-.7175,.7175]) {
@@ -40,16 +34,9 @@ export function studyRails(area: Area) {
       }
     }
   }
-  const {minX,maxX,minZ,maxZ} = area.bounds;
-  // Adjacent track centres approach within 4 m. Limit the taper outside the 1.6 m half-bed.
-  const taperM = .9;
-  const margin = area.grid.manifest.stepM + .01;
-  if (!new URLSearchParams(location.search).has('uncutFormation')) area.carve(cuttingYields(beds, area.terrainAt, {
-    minX:minX+margin, maxX:maxX-margin, minZ:minZ+margin, maxZ:maxZ-margin
-  }, taperM);
   const nr = extensions.find(profile => profile.track === 'NR')!;
   if (!new URLSearchParams(location.search).has('uncutFormation'))
-    area.carve([...cutting, ...formationEnds(nr, cutWindows, area.terrainAt, 1.5)]);
+    area.carve(formationEnvelope(nr, cutWindows, area.terrainAt, .75));
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.name = 'Inferred North Line extension';
   return mesh;

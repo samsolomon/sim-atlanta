@@ -1,3 +1,4 @@
+import { freewaySides } from './i85-ramp-study';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
 import { mountSeamBuildings, mountStationFragments } from './north-seam-neighborhood';
@@ -1059,7 +1060,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const disposeBuildings = mountSeamBuildings(pilot, station, quality);
         const restoreMaps = !query.has('noGutter') ? joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture) : () => {};
         const dispose = pilot.dispose.bind(pilot);
-        pilot.dispose = () => { restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
+        const sides = freewaySides((x,z) => pilot.northTread?.(x,z) ?? station.northTread?.(x,z) ?? null);
+        pilot.group.add(sides);
+        pilot.dispose = () => { sides.geometry.dispose(); sides.material.dispose(); restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
         const rails = studyRails(pilot);
         pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
         northLine?.extend(rails);
