@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shepherd Center at night · Private North board</title>
+<style>
+body{margin:0;padding:20px;background:var(--background,#f5f4ef);color:var(--foreground,#24282b);font:16px var(--font-sans,system-ui,sans-serif)}
+main{max-width:1300px;margin:auto}h1{margin:0;font-size:1.65rem}h2{margin:14px 0 8px;font-size:1rem}
+.meta{margin:.35rem 0 .85rem;color:var(--muted-foreground,#58626a)}nav{display:flex;gap:.4rem;flex-wrap:wrap}
+button{cursor:pointer;border:1px solid var(--border,#c9ced0);border-radius:.45rem;background:var(--card,#fff);color:var(--card-foreground,#24282b);padding:.45rem .7rem;font:inherit}
+button:hover,button[aria-pressed=true]{background:var(--accent,#dce8ec);color:var(--accent-foreground,#24363c)}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}figure{margin:0}img{width:100%;display:block;border-radius:.35rem}figcaption{padding:.45rem 0}
+a{color:inherit}@media(max-width:680px){.pair{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Shepherd Center at night</h1><p class="meta">Frozen North board · Approved Piedmont and Shepherd · Lighting revision 198e71e6</p>
+<nav aria-label="Camera comparison">
+<button aria-pressed="true" data-view="1">Joint High</button>
+<button aria-pressed="false" data-view="2">Frontage High</button>
+<button aria-pressed="false" data-view="3">Joint Low</button>
+<button aria-pressed="false" data-view="4">Frontage Low</button>
+<button aria-pressed="false" data-view="5">Daylight control</button>
+</nav><section id="view-1"><h2>Joint view at 790 m · High</h2><div class="pair"><figure><img src="before-high-joint-night.jpg" alt="Before"><figcaption>Before</figcaption></figure><figure><img src="after-high-joint-night.jpg" alt="Revised"><figcaption>Revised</figcaption></figure></div></section><section id="view-2" hidden><h2>Peachtree frontage · High</h2><div class="pair"><figure><img src="before-high-peachtree-night.jpg" alt="Before"><figcaption>Before</figcaption></figure><figure><img src="after-high-peachtree-night.jpg" alt="Revised"><figcaption>Revised</figcaption></figure></div></section><section id="view-3" hidden><h2>Joint view at 790 m · Low</h2><div class="pair"><figure><img src="before-low-joint-night.jpg" alt="Before"><figcaption>Before</figcaption></figure><figure><img src="after-low-joint-night.jpg" alt="Revised"><figcaption>Revised</figcaption></figure></div></section><section id="view-4" hidden><h2>Peachtree frontage · Low</h2><div class="pair"><figure><img src="before-low-peachtree-night.jpg" alt="Before"><figcaption>Before</figcaption></figure><figure><img src="after-low-peachtree-night.jpg" alt="Revised"><figcaption>Revised</figcaption></figure></div></section><section id="view-5" hidden><h2>Peachtree daylight control · High</h2><div class="pair"><figure><img src="before-high-peachtree-day.jpg" alt="Before"><figcaption>Before</figcaption></figure><figure><img src="after-high-peachtree-day.jpg" alt="Revised"><figcaption>Revised</figcaption></figure></div></section><a href="README.md">Sources, dimensions and controls</a>
+</main><script>
+for (const b of document.querySelectorAll("button[data-view]")) {
+  b.addEventListener("click", () => {
+    for (const other of document.querySelectorAll("button[data-view]")) {
+      const selected = other === b;
+      other.setAttribute("aria-pressed", String(selected));
+      document.getElementById("view-" + other.dataset.view).hidden = !selected;
+    }
+  });
+}
+</script></body></html>
