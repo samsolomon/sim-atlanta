@@ -1,6 +1,14 @@
 # Handoff: studio-amtrak-livery (rolling stock)
 
-## Current handoff · 2026-11-24
+## Paused checkpoint · 2026-11-25
+
+The vehicle owner resumes from `samsolomon/vehicles-current-handoff`. The production sedan landed in [#680](https://github.com/samsolomon/sim-atlanta/pull/680) at `5c6462a4b3d162b0d66fba4fff4c9516e93ccfbd`. Its tree matches tested head `00014b32145c2c6abe1f85e7ab20d19ff4ccbc1d` on `codex/city-sedan`. The full suite, build and City performance checks passed. The PR contains the accepted rear comparison.
+
+On resumption, confirm the assigned verification window and current main before continuing Model Lab-only coach [#404](https://github.com/samsolomon/sim-atlanta/pull/404) from `samsolomon/xpress-coach` at `8eeaa3f5728f7311cc9c5cb080e4cb45934430b8`. Visual acceptance is complete. Final-base validation and independent review are pending.
+
+The streetcar door-frame trim is staged on `samsolomon/streetcar-door-decals` at `f39dc614fde34a206643b3b9ff01cef46d138467` for geometry tests and matched close-ups. The vehicle art study is on `codex/sedan-rear-polish` at `bc4fa26a26d5d04765a03a23601f73fdb4aa7977`. The optional close-detail comparison remains parked. Seven-body traffic integration landed through #675.
+
+## Previous handoff · 2026-11-24
 
 The vehicle owner is accountable for rolling-stock and road-body contributions. The connector owner integrates the combined traffic feature into main and owns queue behavior, per-instance brake state and matched motion clips.
 
