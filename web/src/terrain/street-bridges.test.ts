@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { northConnectorTransport } from '../square-board/connector-ground';
 import { southConnectorTransport } from '../square-board/south-connector-decks';
+import { cityRoadHeight } from '../city/road-height';
 import { Builder } from '../vignette/geom';
 import { drawStreetBridges } from './street-bridges';
 import { GroundGrid } from './grid';
@@ -176,6 +177,26 @@ it('samples the Ted Turner banks without pulling its first interior section down
     Math.hypot(px - x, pz - z) < 12 && pz < -1415 && px > 299 ? 285 - zero : 303.2 - zero);
   try {
     expect(deck.deckAt(x, z, road)! + zero).toBeCloseTo(303.7, 0);
+  } finally {
+    deck.dispose();
+  }
+});
+
+it.skipIf(!existsSync(stagedDowntown))('supports traffic at both Russell Plaza deck junctions', () => {
+  const board: TerrainCity = JSON.parse(readFileSync(stagedDowntown, 'utf8'));
+  const deck = createSurfaceTransport(board, grid, ground);
+  try {
+    const height = cityRoadHeight(board, ground, deck.deckAt);
+    for (const [x, z, tread, owners] of [
+      [-418.6, -42.6, 72, [668, 584]],
+      [-484.8, 100.7, 70, [582, 617]],
+    ] as const) {
+      const expected = deck.deckAt(x, z, board.terrainTransport!.roads[tread]);
+      expect(expected).not.toBeNull();
+      for (const index of owners) {
+        expect(height(x, z, board.roads[index]), `downtown road ${index}`).toBeCloseTo(expected!, 1);
+      }
+    }
   } finally {
     deck.dispose();
   }

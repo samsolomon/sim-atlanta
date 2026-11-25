@@ -57,8 +57,13 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
       if (Math.hypot(x - end[0], z - end[1]) > roadWidth(road) / 2) continue;
       const joined = ends.get(end.join(','));
       if (!joined) continue;
-      const own = cache.get(road)?.find(part => part.pts === road.pts || sharesAxis(part.pts, road.pts));
+      // A clipped road may have several owned runs. Only the run incident
+      // to this joint can establish its elevation.
+      const own = joined.find(part => part.cls === road.cls &&
+        (part.sub ?? null) === (road.sub ?? null) && sharesAxis(part.sourceAxis ?? part.pts, road.pts));
       if (!own) continue;
+      const ownTread = deckAt(x, z, own);
+      if (ownTread !== null) return ownTread;
       const level = deckAt(...end, own);
       if (level === null) continue;
       for (const other of joined) {
