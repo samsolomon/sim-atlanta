@@ -297,6 +297,10 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             return roadHeight(x, z, road);
           } },
           dispose() {
+            for (const detail of [flags, markers]) {
+              detail?.geometry.dispose();
+              detail?.material.dispose();
+            }
             hospitalLink?.dispose();
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();
