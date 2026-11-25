@@ -156,5 +156,8 @@ export function createPiedmontHospital(
   }
 
   const result = shell.finish('#e6cda0', 0.54);
+  // The entrance landing runs 7.5 m past the glass wall to meet the uphill Peachtree
+  // sidewalk (HKS plaza photograph; depth estimated). docs/hospital-sources.md
+  result.group.userData.footprint = { maxProjection: 7.6 };
   return { ...result, yields, buildings: result.buildings.filter(building => building.id !== towerId) };
 }

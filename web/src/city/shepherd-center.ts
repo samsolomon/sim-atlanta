@@ -126,5 +126,10 @@ export function createShepherdCenter(
     facade([-152.7, -6253.0], [-146.5, -6243.5],
       3.71, 3.94, 1, 12, 0.74, 1, ['#b4ae98'], 1);
   }
-  return shell.finish('#ebc99d', 0.49);
+  const result = shell.finish('#ebc99d', 0.49);
+  // Both reach past their mapped outlines in the contractor and owner photographs
+  // (docs/hospital-sources.md; positions estimated): Marcus carries the covered bridge to the main
+  // hospital, 48.3 m over the drop-off, and the main hospital's entrance canopy stands 5.2 m out.
+  result.group.userData.footprint = { maxProjection: isMarcus ? (mainPresent ? 48.4 : 2.5) : 5.25 };
+  return result;
 }

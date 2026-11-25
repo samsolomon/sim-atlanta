@@ -106,6 +106,10 @@ choose a tier yourself.
   decompressed context bytes and both ground files for each of the three northern rows.
   The expected [row hashes](pipeline/prototypes/combined-canopy/rows.sha256.json) include
   the 635,106-byte Brookwood Station context (SHA-256 beginning `ce24d47b`).
+  Those are the staged base files. `pnpm data:midtown` then applies the
+  [Ansley tee overlay](pipeline/prototypes/ansley-legibility/overlay/sha256.json), which
+  requires each base context's hash and rewrites it to the listed result (Station becomes
+  `33968fcc`). The six ground files are unchanged.
   To rebake the northern packets, download the two TIFFs linked in the
   [r16 ground manifest](pipeline/prototypes/square-board/r16/ground.json) as
   `x74y374.tif` and `x74y375.tif`. Extract `UTCMosaic2023.tif` from the Georgia Tech

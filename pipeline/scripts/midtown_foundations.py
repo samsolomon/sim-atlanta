@@ -47,8 +47,14 @@ def footprint_heights(rings, dem, bounds, step):
 DOWNTOWN = (PACK / "downtown-ground", Path(ROOT) / "web/public/data/scene/downtown/vignette.json")
 
 
+# City's campus massing (piedmont-campus.ts, shepherd-center.ts) sets these r16 parking decks'
+# heights where unmapped, and five floors on 289470493, so the burial test must match.
+MASSED_HEIGHTS = {"osm:way:269196219": 22.1, "osm:way:269196183": 22.5}
+MASSED_FLOORS = {"osm:way:289470493": 5}
+
+
 def boards():
-    for row in [*MIDTOWN_ROWS, "north-band"]:
+    for row in dict.fromkeys([*MIDTOWN_ROWS, "r16", "north-band"]):
         folder = PACK / "square-board" / row
         yield folder, json.loads((folder/"context.json").read_text())["buildings"]
     folder, staged = DOWNTOWN
@@ -75,7 +81,10 @@ def bake():
         for b in buildings:
             ident = b["id"].split("/")[0]
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
-            h = b["h"] if b["h"] is not None else (3.6*b["floors"] if b["floors"] else 8)
+            h = b["h"] if b["h"] is not None else MASSED_HEIGHTS.get(ident)
+            if h is None:
+                floors = b["floors"] or MASSED_FLOORS.get(ident)
+                h = 3.6*floors if floors else 8
             # A building drawn as mapped parts is buried first at its lowest grounded roof.
             # Even a small part sets the floor: its walls run down to the footing, so
             # lifting the floor leaves nothing floating, while a sunk part vanishes.
