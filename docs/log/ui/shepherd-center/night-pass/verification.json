@@ -1,0 +1,887 @@
+{
+  "before": "0e3b54f6",
+  "model": "198e71e6",
+  "jointCamera": [
+    -245,
+    -6160,
+    -58,
+    57,
+    790
+  ],
+  "frontageCamera": [
+    -172,
+    -6294,
+    -62,
+    60,
+    340
+  ],
+  "controls": {
+    "high-joint-night": {
+      "before": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 80,
+          "triangles": 1230947,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "after": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 80,
+          "triangles": 1231259,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "high-peachtree-night": {
+      "before": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 65,
+          "triangles": 781740,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "after": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 65,
+          "triangles": 782052,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "low-joint-night": {
+      "before": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 50,
+          "triangles": 788617,
+          "points": 0,
+          "lines": 0,
+          "programs": 46,
+          "programKinds": {
+            "?": 43,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "after": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 50,
+          "triangles": 788929,
+          "points": 0,
+          "lines": 0,
+          "programs": 46,
+          "programKinds": {
+            "?": 43,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "low-peachtree-night": {
+      "before": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 38,
+          "triangles": 523682,
+          "points": 0,
+          "lines": 0,
+          "programs": 46,
+          "programKinds": {
+            "?": 43,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "after": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 38,
+          "triangles": 523994,
+          "points": 0,
+          "lines": 0,
+          "programs": 46,
+          "programKinds": {
+            "?": 43,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "high-peachtree-day": {
+      "before": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 52,
+          "triangles": 781727,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "after": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833
+        ],
+        "camera": [
+          0.46947156278589064,
+          -2.7755575615628914e-17,
+          -0.882947592858927,
+          0,
+          -0.4414737964294638,
+          0.8660254037844385,
+          -0.2347357813929455,
+          0,
+          0.7646550456261503,
+          0.5000000000000003,
+          0.40657429972696235,
+          0,
+          87.98271551289105,
+          117.13999862670906,
+          -6155.764738092833,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 52,
+          "triangles": 782039,
+          "points": 0,
+          "lines": 0,
+          "programs": 63,
+          "programKinds": {
+            "?": 58,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "worldMatrixMaxDelta": 0.0
+    }
+  }
+}
