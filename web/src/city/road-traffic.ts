@@ -82,6 +82,8 @@ type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
   city: TerrainCity;
   quality: 'low' | 'high';
+  /** Give a private study movement one existing slot when rounding omitted its course. */
+  reserveMovement?: (course: TrafficCourse) => boolean;
   fitWheelPlane?: (road:VRoad,x:number,z:number)=>boolean;
   hourly: TrafficData['hourly'];
   roadHeight: RoadHeight;
@@ -189,6 +191,26 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
   return slots;
 }
 
+function coverMovement(slots: Slot[], courses: TrafficCourse[], matches: (course: TrafficCourse) => boolean) {
+  if (slots.some(slot => matches(slot.lane))) return;
+  const target = courses.find(matches);
+  if (!target) return;
+  const counts = new Map<TrafficCourse, number>();
+  let spare: Slot | undefined;
+  let largest = 1;
+  for (const slot of slots) {
+    const count = (counts.get(slot.lane) ?? 0) + 1;
+    counts.set(slot.lane, count);
+    if (count > largest) {
+      largest = count;
+      spare = slot;
+    }
+  }
+  if (!spare) return;
+  spare.phase *= (target.line.length + offstage(target)) / (spare.lane.line.length + offstage(spare.lane));
+  spare.lane = target;
+}
+
 /** A clock-seekable, illustrative layer. Source volumes describe typical demand.
  * A null road-surface sample or an observed bus has priority over a model car.
  */
@@ -234,6 +256,7 @@ export class RoadTraffic {
       return queued;
     });
     this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed, opts.quality) : [];
+    if (opts.reserveMovement) coverMovement(this.slots, courses, opts.reserveMovement);
     this.lanes = this.buildLanes(courses);
     if (this.heads) this.headPhases = new Uint8Array(this.heads.signals.length).fill(255);
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
