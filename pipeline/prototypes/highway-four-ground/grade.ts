@@ -137,3 +137,19 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
   if(starts)starts[blocks]=next.length;
   mesh.indices=next;return mesh;
 }
+
+// Blend lighting across the resampled grass only. The original coarse board
+// interpolated vertex normals across these faces before they were subdivided.
+export function exitBankNormalWeight(x: number, z: number) {
+  if (x < -350 || x > -228 || z < -4770 || z > -4560) return 0;
+  let nearest = Infinity, weight = 0;
+  for (const [station, sx, sz, nx, nz] of exitSections) {
+    const dx = x - sx, dz = z - sz, distance = dx * dx + dz * dz;
+    if (distance >= nearest) continue;
+    nearest = distance;
+    const outward = dx * nx + dz * nz;
+    weight = Math.max(0, Math.min(1, (outward - 0.4) / 1.5, (13 - outward) / 3,
+      (station - 174) / 10, (364.245932 - station) / 10));
+  }
+  return weight * weight * (3 - 2 * weight);
+}
