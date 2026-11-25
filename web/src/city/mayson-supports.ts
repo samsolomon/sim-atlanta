@@ -90,7 +90,9 @@ export function maysonSupports(tracks: Track[], ground: Ground) {
       prism(caps,section(station-.64,station+.64,-1.57,1.57,1.36),
         section(station-.64,station+.64,-1.57,1.57,1.88),'#aaa49b');
       const upper=section(station-.53,station+.53,-1.32,1.32,1.88);
-      const lower=upper.map(([x,,z]):Vertex=>[x,ground(x,z),z]);
+      // An interior terrain edge rises or dips relative to the four corner planes.
+      // Ground found up to 16.9 mm of daylight in the zero-depth fit.
+      const lower=upper.map(([x,,z]):Vertex=>[x,ground(x,z)-.03,z]);
       prism(stems,upper,lower,'#a09a8e');
       feet.push({track:name,end:label,vertices:lower});
     }
