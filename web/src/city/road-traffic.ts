@@ -97,6 +97,8 @@ function offstage(lane: TrafficCourse) {
   return (lane.offstageM ?? 0) + (budget + (lane.queueWaitS ?? 0)) * lane.speedMps;
 }
 export interface TrafficCourse {
+  /** Frozen allocation basis for matched private corridor comparisons. */
+  allocationLengthM?: number;
   line: Line;
   /** One original source road per segment. The callback selects ground, deck or a hole. */
   roads: VRoad[];
@@ -151,12 +153,12 @@ function hourShare(hourly: TrafficData['hourly'], clockMs: number) {
  * worst-case budget in `offstage` only adds idle slots, never fewer cars on the street. */
 function visibleLength(lane: TrafficCourse) {
   const delay = lane.signals?.length && !lane.closed ? lane.signals.length * 13 : 0;
-  return lane.line.length + (lane.offstageM ?? 0) + delay * lane.speedMps;
+  return (lane.allocationLengthM ?? lane.line.length) + (lane.offstageM ?? 0) + delay * lane.speedMps;
 }
 
 export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number, quality: 'low' | 'high' = 'low') {
   const random = rng(seed);
-  const demand = routes.map(r => r.dailyFlow * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
+  const demand = routes.map(r => r.dailyFlow * peak / 3600 * ((r.allocationLengthM ?? r.line.length) + offstage(r)) / r.speedMps);
   const visible = routes.map(r => r.dailyFlow * peak / 3600 * visibleLength(r) / r.speedMps);
   const total = visible.reduce((sum, n) => sum + n, 0);
   const factor = Math.min(1, cap / total);
@@ -168,7 +170,7 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
     const offset = random();
     for (let j = 0; j < count; j++) {
       const u = random();
-      const phase = (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane));
+      const phase = (j + offset + .65*(random()-.5)) / count * ((lane.allocationLengthM ?? lane.line.length) + offstage(lane));
       const threshold = random();
       const color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
       let kind: Kind;

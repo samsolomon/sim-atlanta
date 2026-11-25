@@ -1,3 +1,4 @@
+import { paintVariable } from '../brookwood-variable-lanes/profile';
 // Private post-road ground-map pass. The accepted I-85 NB tread owns its own material.
 import raw from './ways.json';
 import { paintSouthbound } from '../brookwood-lanes/profile';
@@ -70,4 +71,5 @@ export function paintI85Corridor(ctx: CanvasRenderingContext2D, board: string) {
     }
   }
   ctx.restore();
+  paintVariable(ctx);
 }
