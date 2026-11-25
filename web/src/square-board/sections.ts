@@ -60,6 +60,7 @@ export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
+import { piedmontCampusMassing, piedmontNorthLink } from '../city/piedmont-campus';
 import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
@@ -214,7 +215,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       const city = id === "r16" ? eastHighwayApproaches(freeway) : freeway;
       const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
       const edgeRow = !trackedOnly && (id === 'r16' || id === 'brookwood-station') ? id : undefined;
-      const scenery = edgeRow ? {...city, buildings: city.buildings.filter(b => !sharedIds.has(b.id))} : city;
+      const rowBuildings = id === 'r16' ? piedmontCampusMassing(city.buildings) : city.buildings;
+      const scenery = edgeRow ? {...city, buildings: rowBuildings.filter(b => !sharedIds.has(b.id))} : city;
       const area = yield* buildDowntownTerrain(grid, scenery, neighborhoodTrees(canopy, quality), {
         boardRoads: edgeRow ? joinedPaint(edgeRow, city) : undefined,
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
@@ -237,16 +239,20 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       const markers = teeMarkers(city.points?.golfMarkers,area.terrainAt);
       if (markers) area.board.add(markers);
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
+      const data = city.terrainTransport!;
+      const hospitalLink = id === 'r16' ? piedmontNorthLink(rowBuildings, data.roads, area.groundAt) : null;
       try {
         const stationRoad = id === 'brookwood-station' && city.roads.find(road => road.id === 'osm:way:38978515');
-        const data = city.terrainTransport!;
         const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
-        const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
+        const base = separate.length || hospitalLink
+          ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run) && run !== hospitalLink?.run) } }
+          : city;
         const decks = yield* buildSurfaceTransport(base, grid, area.groundAt);
         if (id === 'r16') decks.cutting.push(...eastLandingYields(eastLandingTriangles(city)));
         transports.push(decks);
         yield* area.carveSteps(trail ? [...decks.cutting, ...trail.yields] : decks.cutting);
         area.group.add(decks.group);
+        if (hospitalLink) area.group.add(hospitalLink.mesh);
         yield 'decks';
         if (stationRoad && separate.length) {
           const stationDeck = yield* buildSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
@@ -291,6 +297,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             return roadHeight(x, z, road);
           } },
           dispose() {
+            hospitalLink?.dispose();
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();
             (piers?.mesh.material as { dispose(): void } | undefined)?.dispose();
@@ -299,7 +306,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             area.dispose();
           },
         });
-      } catch (error) { for (const t of transports) t.dispose(); area.dispose(); throw error; }
+      } catch (error) { hospitalLink?.dispose(); for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }
     return added;
   } catch (error) {
