@@ -49,6 +49,7 @@ function carriageway(profile: Profile, east: number): Draw {
     const jointIndex = rows.findIndex(([x,z])=>Math.hypot(x-apronJoin[0],z-apronJoin[1])<.02);
     if (jointIndex < 0) throw Error('Missing east approach joint');
     const joint = line.cum[jointIndex];
+    const nbLimit = line.cum.find(station => station >= joint + 4) ?? joint;
     const stations = new Set(line.cum);
     for (let s = 0; s < line.length; s += 12) {
       stations.add(s);
@@ -83,9 +84,10 @@ function carriageway(profile: Profile, east: number): Draw {
           if (Math.abs(normal)<1e-8) continue;
           if (running) {
             top.push(builder.pos.length/3);
-            if (landingFirst ? s < joint + .001 : t > joint - .001) {
-              const start = landingFirst ? 645 : -joint;
-              landingFaces.push({way:landingFirst ? 369529886 : 38983384,
+            if (landingFirst ? s < nbLimit - .0001 : t > joint + .0001) {
+              const onNorthApproach = landingFirst && s < joint - .0001;
+              const start = onNorthApproach ? 645 : -joint;
+              landingFaces.push({way:landingFirst ? (onNorthApproach ? 369529886 : 38983378) : 38983384,
                 station:[start+s,start+t],points:[u,v,w]});
             }
           }
