@@ -1,6 +1,7 @@
 // Private R16 southbound I-85 trial. Heights in scene metres, station follows OSM 38983384.
 import sections from './sb-sections.json';
 import median from './deering-sections.json';
+import exitSections from './exit-sections.json';
 import { splitConvex } from '../../../web/src/terrain/openings';
 type Point = [number, number, number, number]; // x, z, design Y, blend weight
 type Bounds = {minX:number; maxX:number; minZ:number; maxZ:number};
@@ -43,6 +44,14 @@ registerRows(median.filter(row=>row[0]>=32 && row[0]<=78).map(([s,ax,az,bx,bz,y,
   return [[-.65,0],[0,1],[width-.60,1],[width,0]].map(([u,w]):Point =>
     [ax+u*nx,az+u*nz,y+(u-width*.5)*slope,w*weight]);
 }));
+// The second fork's outside lane follows the same painted edge through the node.
+ // Class-2 pavement on either side supplies the inferred section beneath the overpass.
+registerRows(exitSections.map(([s,x,z,nx,nz,y,slope]): Point[] => {
+  const blend = Math.max(0,Math.min(1,(s-174)/12,(365-s)/12));
+  const along = blend*blend*(3-2*blend);
+  return [[-6,0],[-4.15,1],[0.40,1],[2.8,0]].map(([offset,weight]) =>
+    [x+offset*nx,z+offset*nz,y+offset*slope,along*weight]);
+}));
 function blended(f:Face,x:number,z:number,y:number){
   const [a,b,c]=f.points, wa=cross(b,c,x,z)/f.det,wb=cross(c,a,x,z)/f.det,wc=1-wa-wb;
   const weight=Math.max(0,Math.min(1,wa*a[3]+wb*b[3]+wc*c[3]));
@@ -60,7 +69,7 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
   const east=bounds.minZ===-6500 && bounds.maxZ===-5700;
   const deering=bounds.minZ===-4900 && bounds.maxZ===-4100;
   if(!east && !deering)return mesh;
-  const window=east ? [1080,1540,-6300,-5870] : [-400,-330,-4900,-4830];
+  const window=east ? [1080,1540,-6300,-5870] : [-400,-240,-4900,-4575];
   const {pos,uv,indices}=mesh, next:number[]=[], cache=new Map<string,number>();
   const add=(x:number,y:number,z:number)=>{
     const key=[x,y,z].map(n=>Math.round(n*1e7)).join(',');
