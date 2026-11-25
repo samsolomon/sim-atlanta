@@ -7,7 +7,8 @@ import { mountSeamBuildings, mountStationFragments } from './north-seam-neighbor
 import type { TrafficArea as SeamArea } from '../square-board/sections';
 import { norcrossNorthRails } from './norcross-north-study';
 import { mountedWheelCheck, roadControl } from './north-contact-study';
-import { studyRails } from './north-profile-study';
+import { extensions, studyRails } from './north-profile-study';
+import { maysonSupports } from './mayson-supports';
 import { mountMayson } from './mayson-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
@@ -1066,6 +1067,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         pilot.group.add(sides);
         pilot.dispose = () => { sides.geometry.dispose(); sides.material.dispose(); restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
         const rails = studyRails(pilot);
+        const supports = maysonSupports(extensions, pilot.terrainAt);
+        pilot.group.add(supports);
+        const disposeSupportedArea = pilot.dispose.bind(pilot);
+        pilot.dispose = () => {
+          const materials = new Set<THREE.Material>();
+          supports.traverse(object => {
+            if (object instanceof THREE.Mesh) {
+              object.geometry.dispose();
+              for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material);
+            }
+          });
+          for (const material of materials) material.dispose();
+          disposeSupportedArea();
+        };
         pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
         northLine?.extend(rails);
       }
