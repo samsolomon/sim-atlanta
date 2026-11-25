@@ -6,7 +6,7 @@ import { PAL } from '../../../web/src/vignette/world';
 import { stripePoint } from '../../../web/src/terrain/connector-corridor';
 import type { TransportRun } from '../../../web/src/terrain/transport-data';
 import axes from './axes.json';
-import { sections, startGain } from './profile';
+import { entranceShoulderTie, sections, startGain } from './profile';
 
 const clamp = (v:number) => Math.min(1,Math.max(0,v));
 export function intakeTread(run:TransportRun):TransportRun {
@@ -29,7 +29,7 @@ export function intakeTread(run:TransportRun):TransportRun {
     const i=Math.min(Math.floor(vertex),heights.length-2),t=vertex-i;
     const layout=sections('gain',s);
     const section=ramp?layout.ramp:layout.main;
-    const tie=clamp((s-startGain)/12);
+    const tie=entranceShoulderTie(s);
     const inside=ramp?.7*(1-tie):1.8;
     const outside=ramp?.7+1.1*tie:1.8*(1-tie);
     const w=weights[i]+t*(weights[i+1]-weights[i]);
