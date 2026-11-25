@@ -1,3 +1,4 @@
+import { onStudyTread } from '../../../pipeline/prototypes/highway-four/contact';
 import { connectorTrafficRoutes, type TrafficLane } from './connector-traffic-routes';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 
@@ -45,7 +46,7 @@ export class ConnectorTraffic extends RoadTraffic {
       }
       return null;
     };
-    super({ ...opts, city: { ...opts.city, bounds }, roadHeight }, courses,
+    super({ ...opts, fitWheelPlane: neighbors.some(board=>board.city.bounds.minZ===-6500) ? (road,x,z)=>onStudyTread(road.pts,x,z) : undefined, city: { ...opts.city, bounds }, roadHeight }, courses,
       CONNECTOR_TRAFFIC_CAP[opts.quality], 80375, 'Illustrative Connector traffic');
   }
 }
