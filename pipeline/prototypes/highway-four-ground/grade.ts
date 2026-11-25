@@ -47,7 +47,7 @@ registerRows(median.filter(row=>row[0]>=32 && row[0]<=78).map(([s,ax,az,bx,bz,y,
 // The second fork's outside lane follows the same painted edge through the node.
  // Class-2 pavement on either side supplies the inferred section beneath the overpass.
 registerRows(exitSections.map(([s,x,z,nx,nz,y,slope]): Point[] => {
-  const blend = Math.max(0,Math.min(1,(s-174)/12,(365-s)/12));
+  const blend = Math.max(0,Math.min(1,(s-174)/12,(364.245932-s)/12));
   const along = blend*blend*(3-2*blend);
   return [[-6,0],[-4.15,1],[0.40,1],[2.8,0]].map(([offset,weight]) =>
     [x+offset*nx,z+offset*nz,y+offset*slope,along*weight]);
