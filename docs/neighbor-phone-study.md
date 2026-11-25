@@ -29,3 +29,5 @@ Each arm fetched exactly three Station files per session, totaling 688,688 encod
 Native pan and pinch changed the camera in all six runs. The search-result tap failed the destination check in all six. After input the camera was near (-104, -5056) at 206 m, while the expected Five Points view was (-60, 60) at 700 m. Selection latency is unavailable. These inputs followed resident return, so their latency does not measure interaction during the cold-approach stall.
 
 The p50/p95 entries are medians of per-run percentiles from request through one second after usable. With three runs per arm, these values describe this fixture and route. The deferred first-entry delay and stall make this version unsuitable for seamless boundary crossing on this handset.
+
+A separate physical Galaxy diagnostic verified selection in each arm. The original tap coordinates hit the developer performance overlay. Tapping an exposed portion of the same Five Points result reached (-60, 60) at 700 m in both arms. The six original selection latency samples remain unscored.
