@@ -1,3 +1,4 @@
+import { gradeSouthboundBoard } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import { runSync, type Build } from '../core/slice';
 /**
  * The ground surface's geometry as pure functions over typed arrays: no DOM, no three.js objects,
@@ -250,7 +251,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
         return floor;
       });
     }
-    return result;
+    return gradeSouthboundBoard(result, spec.bounds);
 }
 
 /**
@@ -386,7 +387,7 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
     if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return { pos, uv, indices };
+    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds);
 }
 
 /**
