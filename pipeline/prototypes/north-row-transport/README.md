@@ -54,3 +54,16 @@ cmp /tmp/north-line-profile.json "$fixture/north-line-profile.json"
 node "$fixture/probe.mjs"
 .venv/bin/python -B "$fixture/preview.py"
 ```
+
+### Scheduled Red wheel contacts at the south seam
+
+The private City run at `d732fc91` retained the scheduled northbound train, its six cars and camera follow across all 130 samples. The original clip and direct rail-triangle controls at `ffadf4f5` remain the baseline. Run `python3 contact_controls.py <original-log-directory>` from this fixture to compare both wheel centers with the drawn rail, the NR carrier and the best possible single rigid lift/pitch at the recorded footprints.
+
+| EST, November 20 | Car (one-based) | Local axle | Left/right signed gap | Smallest worst error across four axles with one rigid line |
+|---|---:|---:|---:|---:|
+| 08:00:49.701 | 1 | +5.95 m | −7.59 / −7.59 cm | 1.59 cm |
+| 08:00:50.401 | 2 | +8.05 m | +7.31 / +7.31 cm | 2.39 cm |
+
+Positive means the wheel bottom is above the rail. At both times the northern rail triangle heights under the forward axles agree with the frozen proxy bed plus the modeled 7 cm running rail to within 0.01 mm. The old mount placed the wheel plane at bed height and pitched the full car from heights 2 m either side of its center. Its rear and forward bogies straddle different grades. Separate truck poses must use the running rail beneath their respective axles. These samples concern the rendered NR running surface. The physical railhead and clearance remain unknown.
+
+Original log SHA-256 digests, in time order, are `f64d4f4e108f4e61db04001884b4916a301e2ac1c903d4bb7b69e601f7fad36a` and `76b3b1f87e72be583ebb30cde78e484adccc1e1993139b1fb00ff837d9fba1fd`.
