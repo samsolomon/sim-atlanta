@@ -349,6 +349,7 @@ export function createNorthLine(
           'YXZ',
         );
         if (i >= n / 2) car.rotateY(Math.PI);
+        car.userData.consistIndex = i;
         car.userData.trainId = t.id;
         car.userData.inferredTrack = true;
         car.visible = true;

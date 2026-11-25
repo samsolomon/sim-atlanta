@@ -1317,7 +1317,7 @@ if (params.has('northReplay')) {
   };
   requestAnimationFrame(start);
 }
-Object.assign(window, { __northSelection: () => ({ selectedTrain, followed: follow?.vehicle, phase: follow?.phase, time: clock.now().toISOString() }) });
+Object.assign(window, { __northFreeze: (instant: string) => { clock.baseSim=Date.parse(instant); clock.baseReal=performance.now(); clock.speed=0; }, __northSelection: () => ({ selectedTrain, followed: follow?.vehicle, phase: follow?.phase, time: clock.now().toISOString() }) });
 const shell = createShellNext(shellOptions);
 addEventListener('popstate', () => {
   const v = initialView(location.search, location.hash);

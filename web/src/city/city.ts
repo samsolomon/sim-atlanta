@@ -1,3 +1,4 @@
+import { mountedWheelCheck, roadControl } from './north-contact-study';
 import { studyRails } from './north-profile-study';
 import { mountMayson } from './mayson-study';
 /**
@@ -1434,6 +1435,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-40, 55, 300, x, z);
     },
     frames: northFrames,
+    roadCheck: () => roadControl(scene),
+    contact: () => mountedWheelCheck(northLine?.cars().filter(car=>car.userData.trainId==='marta:trip:25-27300-20261120') ?? [], scene),
     wheelWitness: () => northLine?.cars().filter(c=>c.userData.trainId==='marta:trip:25-27300-20261120').map(car=>({
       origin:car.position.toArray(), pitch:THREE.MathUtils.radToDeg(car.rotation.x), wheels:northLine!.wheelWitness(car) })),
     roadSurface: () => mosaic?.areas.get('r16')?.group.getObjectByName('Carrier 9270932')?.uuid,
