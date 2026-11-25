@@ -228,6 +228,26 @@ export function createNorthLine(
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   let height = (line: Line, along: number) => profile.at(line, along);
+  function wheelWitness(car: THREE.Mesh) {
+    const line = paths.get('marta:path:155235')?.line;
+    if (!line) return [];
+    const witnesses = [];
+    for (const z of [-8.8,-6.7,5.95,8.05]) {
+      for (const x of [-.74,.74]) {
+        const point = car.localToWorld(new THREE.Vector3(x,0,z));
+        let best = Infinity, along = 0;
+        for (let i=1;i<line.pts.length;i++) {
+          const [ax,az]=line.pts[i-1], [bx,bz]=line.pts[i];
+          const dx=bx-ax,dz=bz-az, len=Math.hypot(dx,dz);
+          const t=THREE.MathUtils.clamp(((point.x-ax)*dx+(point.z-az)*dz)/(len*len),0,1);
+          const off=Math.hypot(point.x-ax-dx*t,point.z-az-dz*t);
+          if(off<best){best=off;along=line.cum[i-1]+t*len;}
+        }
+        witnesses.push({z:point.z, gap:point.y-height(line,along)-.07, offset:best-.7175});
+      }
+    }
+    return witnesses;
+  }
   function extend() {
     const continuation = northLineTracks(axes.map(run => ({ name: run.name, pts: run.pts.map(([x, z]): P2 => [x, z]) })), -6500);
     const joined = lines.map((line, i) => new Line([...line.pts, ...continuation[i].pts.slice(1)]));
@@ -360,5 +380,5 @@ export function createNorthLine(
     }
     pools.clear();
   }
-  return Object.assign(update, { extend, bounds: planes.size ? bounds : null, cars: shown, dispose });
+  return Object.assign(update, { extend, wheelWitness, bounds: planes.size ? bounds : null, cars: shown, dispose });
 }
