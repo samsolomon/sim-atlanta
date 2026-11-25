@@ -1057,9 +1057,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
   // R16 bare earth spans -87.6 to -34.7 m in scene coordinates.
-  const northBoundsBox = square?.bounds.r16 && new THREE.Box3(
-    new THREE.Vector3(square.bounds.r16.minX, -88, square.bounds.r16.minZ),
-    new THREE.Vector3(square.bounds.r16.maxX, -34, square.bounds.r16.maxZ));
+  const northBoundsBox = square?.northStudyBounds && new THREE.Box3(
+    new THREE.Vector3(square.northStudyBounds.minX, -88, square.northStudyBounds.minZ),
+    new THREE.Vector3(square.northStudyBounds.maxX, -34, square.northStudyBounds.maxZ));
   const northFrustum = new THREE.Frustum();
   const viewProjection = new THREE.Matrix4();
   const northVisible = () => {
