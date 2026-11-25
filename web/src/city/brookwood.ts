@@ -467,6 +467,68 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
   return mesh;
 }
 
+/** Brookwood island railroad over I-75. The shared deck fixes the frame and grade
+ * for both tracks. November 2026 underside panorama D3jzz_wMUQeJhwtuEW6hpw.
+ * Section sizes, diaphragm spacing and transverse bent stations are inferred. */
+function drawNorcrossSpan(b: Builder, deck: Line, bed: (x: number) => number, sceneZero: number) {
+  const web = '#59463e', flange = '#514039', oxide = '#705444', concrete = '#aaa69c';
+  const corner = (s: number, offset: number, below: number) => {
+    const p = deck.at(s);
+    const x = p.x + p.nx * offset;
+    return [x, bed(x) - below, p.z + p.nz * offset];
+  };
+  // Closed prisms follow the rail grade across the skewed freeway crossing.
+  const member = (start: number, end: number, left: number, right: number, top: number, bottom: number, color: string) => {
+    const section = (s: number) => [
+      corner(s, left, top), corner(s, right, top), corner(s, right, bottom), corner(s, left, bottom),
+    ];
+    let previous = section(start);
+    b.quad(previous[3], previous[2], previous[1], previous[0], color);
+    for (let s = start; s < end;) {
+      s = Math.min(end, s + 2);
+      const next = section(s);
+      for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4;
+        b.quad(previous[i], previous[j], next[j], next[i], color);
+      }
+      previous = next;
+    }
+    b.quad(previous[0], previous[1], previous[2], previous[3], color);
+  };
+  // Keep the existing 13 m deck top. Its light coping sits over five longitudinal webs.
+  // Subdivide at the same two-metre stations as the deck so its corner heights agree.
+  for (let s = 287; s < 410; s += 2) {
+    const end = Math.min(410, s + 2);
+    const underside = [corner(s, -6.5, 0.29), corner(s, 6.5, 0.29),
+      corner(end, 6.5, 0.29), corner(end, -6.5, 0.29)];
+    b.quad(underside[0], underside[1], underside[2], underside[3], '#79746d');
+    for (const o of [-6.5, 6.5])
+      b.quad(corner(s, o, 0.04), corner(end, o, 0.04), corner(end, o, 0.29), corner(s, o, 0.29), concrete);
+  }
+  for (const o of [-5.9, -2.95, 0, 2.95, 5.9]) {
+    member(287, 410, o - 0.09, o + 0.09, 0.28, 1.52, web);
+    member(287, 410, o - 0.27, o + 0.27, 1.51, 1.62, flange);
+  }
+  for (let s = 294; s < 408; s += 9) {
+    member(s - 0.08, s + 0.08, -5.90, 5.90, 0.30, 1.16, web);
+    for (const side of [-5.9, 5.9])
+      member(s - 0.06, s + 0.06, side - 0.18, side + 0.18, 0.30, 1.51, oxide);
+  }
+  // Separate bents in the open strips between freeway and ramp pavements.
+  // Bases extend beneath the local bare-earth grid through the sloping banks.
+  for (const s of [301, 343, 383]) {
+    member(s - 0.75, s + 0.75, -6.3, 6.3, 1.62, 2.49, concrete);
+    for (const o of [-4.7, 0, 4.7]) {
+      const bottom = bed(deck.at(s).x) + sceneZero - 252;
+      member(s - 0.62, s + 0.62, o - 0.63, o + 0.63, 2.49, bottom, concrete);
+    }
+  }
+  // The northeast fascia ended in open air on the accepted board. Close both
+  // transverse ends through the terrain over their full width.
+  member(287, 287.75, -6.5, 6.5, 0.04, 2.4, concrete);
+  member(409.25, 410, -6.5, 6.5, 0.04, 5.4, concrete);
+}
+
 /** Attach to the City mosaic at its existing vertical datum. */
 export function createBrookwood(sceneZero: number, instanceFreight = true) {
   const b = new Builder(),
@@ -475,17 +537,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
   // The island and the mains cross the freeway on a common railway deck.
   const deck = main.offset(-4);
   b.ribbon(deck, 13, (_, x) => bed(x) - 0.04, '#939089', 2, 287, 410);
-  for (const d of [-6.5, 6.5])
-    b.wall(
-      deck,
-      d,
-      (s) => bed(deck.at(s).x) - 1.45,
-      (s) => bed(deck.at(s).x),
-      '#706f68',
-      2,
-      287,
-      410,
-    );
+  drawNorcrossSpan(b, deck, bed, sceneZero);
   for (const pts of [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts]) {
     const line = new Line(pts);
     b.ribbon(line, 3.6, (_, x) => bed(x) + 0.12, '#807a70');
