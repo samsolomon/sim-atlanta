@@ -1,5 +1,6 @@
 // Private R16 southbound I-85 trial. Heights in scene metres, station follows OSM 38983384.
 import sections from './sb-sections.json';
+import median from './deering-sections.json';
 import { splitConvex } from '../../../web/src/terrain/openings';
 type Point = [number, number, number, number]; // x, z, design Y, blend weight
 type Bounds = {minX:number; maxX:number; minZ:number; maxZ:number};
@@ -25,11 +26,23 @@ function register(points:[Point,Point,Point]){
   const face={points,det,bounds,planes:points.map((p,i)=>(x:number,_y:number,z:number)=>Math.sign(det)*cross(p,points[(i+1)%3],x,z))};
   binRange(bounds,key=>{const bin=bins.get(key);if(bin)bin.push(face);else bins.set(key,[face]);});
 }
-const rows=sections.filter(r=>r[0]>=40 && r[0]<=535).map(rowPoints);
-for(let j=1;j<rows.length;j++)for(let i=1;i<rows[j].length;i++){
-  const a=rows[j-1][i-1],b=rows[j][i-1],c=rows[j][i],d=rows[j-1][i];
-  register([a,b,c]);register([a,c,d]);
+function registerRows(rows:Point[][]){
+  for(let j=1;j<rows.length;j++)for(let i=1;i<rows[j].length;i++){
+    const a=rows[j-1][i-1],b=rows[j][i-1],c=rows[j][i],d=rows[j-1][i];
+    register([a,b,c]);register([a,c,d]);
+  }
 }
+registerRows(sections.filter(r=>r[0]>=40 && r[0]<=535).map(rowPoints));
+
+// Deering median branch at its measured stripe positions. The outside stripe is
+// the hard lateral limit so the neighboring four-lane branch keeps its surface.
+registerRows(median.filter(row=>row[0]>=32 && row[0]<=78).map(([s,ax,az,bx,bz,y,slope])=>{
+  const width=Math.hypot(bx-ax,bz-az), nx=(bx-ax)/width, nz=(bz-az)/width;
+  const t=Math.max(0,Math.min(1,(s-32)/8,(78-s)/8));
+  const weight=t*t*(3-2*t);
+  return [[-.65,0],[0,1],[width-.60,1],[width,0]].map(([u,w]):Point =>
+    [ax+u*nx,az+u*nz,y+(u-width*.5)*slope,w*weight]);
+}));
 function blended(f:Face,x:number,z:number,y:number){
   const [a,b,c]=f.points, wa=cross(b,c,x,z)/f.det,wb=cross(c,a,x,z)/f.det,wc=1-wa-wb;
   const weight=Math.max(0,Math.min(1,wa*a[3]+wb*b[3]+wc*c[3]));
@@ -43,7 +56,11 @@ export function sbTrialHeight(x:number,z:number,ground:number){
 }
 /** Replace only existing board faces, after slots and rail/trail cuts; retain UVs and block ownership. */
 export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
-  if(bounds.minX!==-1000 || bounds.minZ!==-6500 || bounds.maxZ!==-5700 || bounds.maxX!==1800)return mesh;
+  if(bounds.minX!==-1000 || bounds.maxX!==1800)return mesh;
+  const east=bounds.minZ===-6500 && bounds.maxZ===-5700;
+  const deering=bounds.minZ===-4900 && bounds.maxZ===-4100;
+  if(!east && !deering)return mesh;
+  const window=east ? [1080,1540,-6300,-5870] : [-400,-330,-4900,-4830];
   const {pos,uv,indices}=mesh, next:number[]=[], cache=new Map<string,number>();
   const add=(x:number,y:number,z:number)=>{
     const key=[x,y,z].map(n=>Math.round(n*1e7)).join(',');
@@ -67,7 +84,7 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
       const abc=indices.slice(j,j+3);
       const xs=abc.map(i=>pos[3*i]),zs=abc.map(i=>pos[3*i+2]);
       const box={minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)};
-      if(Math.abs(planArea(abc[0],abc[1],abc[2]))<1e-10||box.maxX<1080||box.minX>1540||box.minZ> -5870||box.maxZ< -6300){next.push(...abc);continue;}
+      if(Math.abs(planArea(abc[0],abc[1],abc[2]))<1e-10||box.maxX<window[0]||box.minX>window[1]||box.maxZ<window[2]||box.minZ>window[3]){next.push(...abc);continue;}
       const nearby=new Set<Face>();binRange(box,k=>{for(const f of bins.get(k)??[])nearby.add(f);});
       let pieces=[abc];
       for(const f of nearby){
