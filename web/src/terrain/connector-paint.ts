@@ -172,7 +172,17 @@ export function connectorMedians(city: TerrainCity, strips = groundStrips(city))
 export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity, texelM: number) {
   if (!isConnectorCity(city)) return;
   const box = city.bounds;
-  const visible = groundStrips(city);
+  // The private intake owns its right entrance and the first 75 m of the
+  // receiving ground paint. Preserve all other strips and source medians.
+  const original = groundStrips(city);
+  const ownsIntake = (city as TerrainCity & {name?:string}).name === 'brookwood-station' &&
+    city.terrainTransport?.roads.some(r => r.drawTread && r.sourceAxis?.[0][0] === 605.63 && r.sourceAxis[0][1] === -5537.24);
+  const visible = ownsIntake ? original.flatMap(({r,rows})=>{
+    if (r.id === 1257642775) return [];
+    if (r.id !== 369529905 || rows[0].s >= 75) return [{r,rows}];
+    if (rows.at(-1)!.s <= 75) return [];
+    return [{r,rows:[sectionAt(r,75),...rows.filter(row=>row.s>75)]}];
+  }) : original;
   function fill(rows: Section[], left: number, right: number, color: string) {
     path(ctx, [
       ...rows.map((r) => stripePoint(r, left)),
@@ -194,7 +204,7 @@ export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity,
   }
   ctx.save();
   // Paint shoulders first so a joining pavement always owns its travel surface.
-  for (const rows of connectorMedians(city, visible)) {
+  for (const rows of connectorMedians(city, original)) {
     fill(rows,0,1,'#66666c');
     fill(rows,.44,.56,'#aaa596');
   }
