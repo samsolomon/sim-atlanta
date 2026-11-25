@@ -26,3 +26,7 @@ The screenshots use November 20, 2026 and a pinned timetable clock.
 ## Deploy
 
 The skin ships with a `web/dist` rebuild and worker redeploy. Existing staged scene data supplies the footprint.
+
+## Verification checkpoint
+
+Branch `samsolomon/wd-grant-building` holds the model at `9f4964e5` and the preliminary daylight comparison at `fd26e3f2`. On resumption, capture matched daylight, night, low-tier, close and four-side views, then run the full tests, build and performance comparison against the integration baseline. The separate Ellis Hotel model is parked on `samsolomon/ellis-hotel-skin` at `121d408b`.
