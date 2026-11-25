@@ -1,5 +1,14 @@
 # Studio skins 2 handoff
 
+## Paused on November 25, 2026
+
+American Hotel product commit `6d84a23cd58d9d482aa963c1c608177d38122dcd` is on `samsolomon/american-hotel`. The build and targeted fixture passed, and the independent review found zero reportable issues. [Day, night, close-up and four-side views](../log/ui/american-hotel/) accompany the model.
+
+The Studio waiter stopped before the full suite and matched performance runs. On resume, obtain the verified integration base and timing window before running those checks. Preserve the comparison checkout at `d93c51d8`.
+
+Urban Life is parked on `samsolomon/urban-life-building` at `c135cf66552457a0f021fbe2bc87e55ea359014a`. Its next checks are the generic City baseline and the footprint and height fixture.
+
+
 Sam asked to "skin the remaining large/important buildings". The Air coordinator now relays merge OKs (Sam delegated building skins to it); nothing merges without that OK. Send every status by replying to the coordinator's latest message with `orca orchestration reply`, including PR links, the blob URLs of the day, night and close images, the cam strings, and `pnpm test` and `test:perf` results for both tiers. Each PR body embeds the day and night images side by side, plus the close view, with the cam string under each.
 
 ## Done
