@@ -5,7 +5,7 @@ import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
 import { mountSeamBuildings, mountStationFragments } from './north-seam-neighborhood';
 import type { TrafficArea as SeamArea } from '../square-board/sections';
-import { norcrossNorthRails } from './norcross-north-study';
+import { norcrossNorthRails, northFreightMain } from './norcross-north-study';
 import { mountedWheelCheck, roadControl } from './north-contact-study';
 import { extensions, studyRails } from './north-profile-study';
 import { maysonSupports } from './mayson-supports';
@@ -304,7 +304,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // surface and generic structures if the chunk or the model is unavailable.
     railModule ??= import('./brookwood').then(mod => {
       if (eastController.signal.aborted) return;
-      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low);
+      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low, query.has('baseline') ? undefined : northFreightMain);
       return mod;
     }).catch(error => {
       console.warn('Brookwood station unavailable', error);
@@ -1085,7 +1085,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           for (const material of materials) material.dispose();
           disposeSupportedArea();
         };
-        pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
+        const norcross = norcrossNorthRails(pilot.groundAt, 323.8);
+        pilot.group.add(mountMayson(), rails, norcross.mesh);
+        preparedBrookwood?.mountNorthFreight(norcross.freightRailhead);
         northLine?.extend(rails);
       }
       for (const area of added.values()) addArea(area);
