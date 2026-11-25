@@ -1,3 +1,5 @@
+import { trailDriveAxis, trailDrivePoint } from '../../../pipeline/prototypes/northeast-trail/access';
+import { trailAxis, trailPoint, trailBore, trailBridge } from '../../../pipeline/prototypes/northeast-trail/path';
 import { freewaySides } from './i85-ramp-study';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
@@ -1449,6 +1451,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   if (query.has('seamTrace')) Object.assign(window, { __cityDev: { areas: () => mosaic?.areas } });
   let requestedNorthZ: number | null = null;
+  if (query.has('trailWitness')) Object.assign(window, { __trail: {
+    length: trailDriveAxis.length, mainlineLength: trailAxis.length, bridge: trailBridge, bore: trailBore,
+    point: trailPoint,
+    walk(s: number) {
+      const area = mosaic?.areas.get('r16');
+      if (!area) throw Error('Northeast Trail row is loading');
+      return trailDrivePoint(s, area.terrainAt);
+    },
+  } });
   if (query.has('railWitness')) Object.assign(window, { __burial: { scene, camera, areas: () => mosaic?.areas,
     view(bearing: number, tilt: number, distance: number, x: number, z: number) {
       controls.minDistance = 5;
