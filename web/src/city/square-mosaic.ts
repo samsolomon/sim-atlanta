@@ -3,6 +3,8 @@ import { addSection, bounds, midtownRows, connect, joins, type Area, type Board,
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
+export const northStudyBounds = bounds.r16;
+
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
 // Lowest 5 m ground node is 239.9 m NAVD88 on the station row. Keep the tabletop below it.
