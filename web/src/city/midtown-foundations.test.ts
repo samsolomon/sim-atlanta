@@ -141,7 +141,7 @@ it.each(['low', 'high'] as const)('keeps every rendered generic roof in the rect
     // like the real ones they meet a sloping street at one end.
     for (const [board, list] of footprints) footprints.set(board, list.flatMap((b: Building) => b.parts?.length
       ? b.parts.flatMap((part, i) => part.minH ? [] : [{ ...b, id: `${b.id}#${i}`, rings: part.rings }]) : [b]));
-    expect(mounted.size).toBe(staged ? 12 : 10);
+    expect(mounted.size).toBe(staged ? 13 : 11);
     const buried: string[] = [];
     let roofs = 0;
     for (const [board, area] of mounted) {

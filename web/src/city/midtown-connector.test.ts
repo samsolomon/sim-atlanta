@@ -14,6 +14,8 @@ import { seventeenthAccess, seventeenthPortals } from './seventeenth-street';
 import { bridgeApproaches } from '../terrain/bridge-approaches';
 import { brookwoodGrid } from './brookwood';
 import { cityRoadHeight } from './road-height';
+import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
+import { eastHighwayApproaches } from '../../../pipeline/prototypes/highway-four/east';
 
 it('carries traffic in both directions between the downtown mainline and both Brookwood branches', () => {
   const city = { bounds: { minX: -1000, maxX: 1800, minZ: -5700, maxZ: 1100 } } as TerrainCity;
@@ -27,15 +29,18 @@ it('carries traffic in both directions between the downtown mainline and both Br
 });
 
 // Measured budget: 0.4 s alone; up to 4.2 s (high) with three full suites running at once
-// (2026-11-23, Mac Studio). Each tier builds five rows of real terrain, drawing only the freeway
+// (2026-11-23, Mac Studio). Each tier builds six rows of real terrain, drawing only the freeway
 // and deck runs the routes ride on, then samples every open route every 3 m.
 const BUDGET_MS = 20_000;
 it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s detail', quality => {
   const scene = midtownRows.map(row => {
     const read = (file: string) => readFileSync(new URL('../../../pipeline/prototypes/square-board/'+row+'/'+file, import.meta.url));
     const manifest = JSON.parse(read('ground.json').toString()), bytes = Uint8Array.from(read('ground.i16')).buffer;
-    const grid = row.startsWith('brookwood') ? brookwoodGrid(manifest, midtownConnectorGround(manifest, bytes)) : new GroundGrid(manifest,bytes);
-    const city = midtownConnectorDecks(seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString()))));
+    const north = row === 'r16' || row.startsWith('brookwood');
+    const grid = north ? brookwoodGrid(manifest, midtownConnectorGround(manifest, bytes)) : new GroundGrid(manifest,bytes);
+    const decked = northFreeway(midtownConnectorDecks(seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString())))));
+    // City adds r16's east landing: it carries the outer lanes to the oblique board edge.
+    const city = row === 'r16' ? eastHighwayApproaches(decked) : decked;
     const surface = new GroundSurface(grid, quality, undefined, joins(row));
     const banks = bridgeApproaches(seventeenthPortals(city), 323.8, surface.sampleScene.bind(surface), city.bounds, city.roads);
     // The routes ride only the freeway: draw its runs and the decks, not every street and track.
