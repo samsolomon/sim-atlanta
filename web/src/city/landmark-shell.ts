@@ -89,6 +89,8 @@ export function localLandmarkShell(
     occupancy: number,
     /** The panes' library surface. FLAT by default, so panes stay plain inside a painted wall. */
     glass: Surface = FLAT,
+    /** Light one smaller room within a pane that spans several real bays. */
+    litInset?: { width: number; height: number },
   ) {
     const dx = b[0] - a[0],
       dz = b[1] - a[1],
@@ -96,20 +98,31 @@ export function localLandmarkShell(
     const count = Math.max(1, Math.round(len / bay)),
       pitch = (hi - lo) / rows;
     const point = (t: number, y: number) => [a[0] + t * dx + (0.07 * dz) / len, y, a[1] + t * dz - (0.07 * dx) / len];
+    const pane = (left: number, right: number, bottom: number, upper: number, glow: boolean, color: string) => {
+      const batch = glow ? lights : body;
+      (glow ? lightPainter : painter).paint(glass, () => batch.quad(
+        point(left, bottom), point(left, upper), point(right, upper), point(right, bottom), color,
+      ));
+    };
     for (let j = 0; j < rows; j++)
       for (let i = 0; i < count; i++) {
         const l = (i + (1 - fill) / 2) / count,
           r = (i + (1 + fill) / 2) / count;
         const y = lo + (j + (1 - verticalFill) / 2) * pitch,
           top = y + verticalFill * pitch;
-        const batch = random() < occupancy ? lights : body;
-        (batch === body ? painter : lightPainter).paint(glass, () => batch.quad(
-          point(l, y),
-          point(l, top),
-          point(r, top),
-          point(r, y),
-          colors[Math.floor(random() * colors.length)],
-        ));
+        const lit = random() < occupancy;
+        const color = colors[Math.floor(random() * colors.length)];
+        if (lit && litInset) {
+          const left = l + (r - l) * (1 - litInset.width) / 2;
+          const right = r - (left - l);
+          const bottom = y + (top - y) * (1 - litInset.height) / 2;
+          const upper = top - (bottom - y);
+          pane(l, left, y, top, false, color);
+          pane(right, r, y, top, false, color);
+          pane(left, right, y, bottom, false, color);
+          pane(left, right, upper, top, false, color);
+          pane(left, right, bottom, upper, true, color);
+        } else pane(l, r, y, top, lit, color);
       }
   }
   function finish(lightColor = '#f2d5a5', nightIntensity = 0.64) {

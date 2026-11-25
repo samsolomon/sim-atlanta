@@ -1,3 +1,6 @@
+import { roadsidePoint } from '../../../pipeline/prototypes/paired-span-walls/walls';
+import { paintNorthboundWallShoulder } from '../../../pipeline/prototypes/paired-span-walls/shoulder';
+import { paintI85Corridor } from '../../../pipeline/prototypes/i85-cohesion/pavement';
 import { streetProfile, parallelPath } from './street-profile';
 import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
@@ -11,14 +14,17 @@ import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePat
 import { junctionMarkings, markedCrossing } from './junction-markings';
 import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
-import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
+import { eastGroundRoad, isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
 import { paintActiveOval } from '../city/active-oval';
 import { paintWinnPark } from '../city/winn-park';
+
+import { golfPaint } from './golf';
 
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
   brownfield: '#a99a7c', construction: '#b49a76', pedestrian: '#d6cdbd', plaza: '#d6cdbd',
   loading_apron: '#b2a89a', track: '#b98c77', pitch: '#78a467', playground: '#bba486', parking: '#76787c', fountain: '#91b4bc',
+  ...golfPaint,
   water: '#739a9c', swimming_pool: '#73c7cb',
 };
 const landOrder = Object.keys(landColors);
@@ -104,6 +110,23 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     for (const ring of g.rings) { trace(ctx, ring); ctx.closePath(); }
     ctx.fillStyle = landColors[g.kind];
     ctx.fill('evenodd');
+    if (g.kind === 'golf_fairway') {
+      ctx.save();
+      ctx.clip('evenodd');
+      ctx.strokeStyle = 'rgba(229,235,191,.095)';
+      ctx.lineWidth = 7;
+      const ring = g.rings[0];
+      const phases = ring.map(([x,z]) => x - z * .48);
+      const zs = ring.map(([,z]) => z);
+      const startZ = Math.min(...zs)-8, endZ = Math.max(...zs)+8;
+      ctx.beginPath();
+      for (let u = 16*Math.floor(Math.min(...phases)/16)-16; u < Math.max(...phases)+16; u += 16) {
+        ctx.moveTo(u + startZ*.48,startZ);
+        ctx.lineTo(u + endZ*.48,endZ);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
     if (g.kind === 'parking' && g.rings.length) stripeLot(ctx, g.rings[0], stallLine);
     if (g.kind === 'swimming_pool') { ctx.lineWidth = .45; ctx.strokeStyle = '#dbd9c9'; ctx.stroke(); }
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
@@ -162,7 +185,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
 
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
-    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
+    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !eastGroundRoad(data,r) && (!isConnectorCity(data) || !surveyedRoad(r)));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
   // A separately mapped sidewalk can continue above an OSM tunnel endpoint.
@@ -259,7 +282,10 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
   paintStreetBridgeApproaches(ctx, data);
   paintJunctionApproaches(ctx, data);
+  if ((data as TerrainCity & { name?: string }).name === 'brookwood-station')
+    paintNorthboundWallShoulder(ctx, roadsidePoint);
   paintConnector(ctx, data, texelM);
+  paintI85Corridor(ctx, (data as TerrainCity & { name?: string }).name ?? '');
   ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);

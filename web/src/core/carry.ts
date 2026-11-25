@@ -26,7 +26,7 @@ export function carries(sel: Selection, to: Side, realTime: boolean): boolean {
 }
 
 /** City's area in scene metres from Five Points (the 3D button's "3D covers downtown and Midtown"). */
-export const CITY_AREA = { minX: -1000, maxX: 1800, minZ: -5700, maxZ: 1100 };
+export const CITY_AREA = { minX: -1000, maxX: 1800, minZ: -6500, maxZ: 1100 };
 
 export function inCityArea(x: number, z: number): boolean {
   return x >= CITY_AREA.minX && x <= CITY_AREA.maxX && z >= CITY_AREA.minZ && z <= CITY_AREA.maxZ;

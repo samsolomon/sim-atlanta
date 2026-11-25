@@ -376,7 +376,7 @@ export interface CarSpec {
 }
 
 
-export function cq400Geometry(spec: CarSpec, line: string) {
+export function cq400Geometry(spec: CarSpec, line: string, separateGear = false) {
   const k = new Kit();
   const L = CAR_LENGTH;
   const h = L / 2;
@@ -447,6 +447,7 @@ export function cq400Geometry(spec: CarSpec, line: string) {
 
   // Underframe skirt, equipment and bogies.
   k.box(W - 0.4, 0.5, L - 5.5, 0, FLOOR - 0.45, -0.4, C.under, 0);
+  if (separateGear) return k.geometry();
   const wheel = new THREE.CylinderGeometry(0.42, 0.42, 0.13, 12).rotateZ(Math.PI / 2);
   for (const bz of [-7.75, 7.0]) {
     k.box(2.1, 0.32, 2.5, 0, 0.8, bz, C.bogie, 0);
@@ -460,6 +461,20 @@ export function cq400Geometry(spec: CarSpec, line: string) {
     }
   }
   return k.geometry();
+}
+
+/** Private seam study. Local origin is the wheel tread at the axle or bogie pivot. */
+export function cq400StudyGear() {
+  const bogie=new Kit(), axle=new Kit();
+  bogie.box(2.1,.32,2.5,0,.8,0,C.bogie);
+  for(const side of [-1,1]){
+    bogie.box(.16,.38,2.75,side, .55,0,C.bogie);
+    const wheel=new THREE.CylinderGeometry(.42,.42,.13,12).rotateZ(Math.PI/2);
+    wheel.translate(side*.74,.42,0);
+    axle.geo(wheel,C.wheel,0);
+    wheel.dispose();
+  }
+  return {bogie:bogie.geometry(),axle:axle.geometry()};
 }
 
 /**

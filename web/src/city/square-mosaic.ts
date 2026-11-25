@@ -3,6 +3,8 @@ import { addSection, bounds, midtownRows, connect, joins, type Area, type Board,
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
+export const northStudyBounds = bounds.r16;
+
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
 // Lowest 5 m ground node is 239.9 m NAVD88 on the station row. Keep the tabletop below it.
@@ -68,6 +70,7 @@ export class SquareMosaic {
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
   get bounds(): Rect { return { ...bounds['south-band'], minZ: this.northEdge }; }
   private fullBoard = false;
+  private fullNorth = false;
   readonly areas = new Map<Board, Area>();
   readonly patches = new Map<Board, TrafficArea>();
   readonly joins = joins;
@@ -98,20 +101,21 @@ export class SquareMosaic {
       }
     }
   }
-  requestFullBoard() { this.fullBoard = true; this.failed.clear(); }
+  requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
   cancelTarget() { this.wanted = undefined; }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,
-    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void) {
+    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void, northVisible?: () => boolean) {
     const target = this.wanted ?? { x, z };
-    const lastRow = this.midtown ? (this.fullBoard ? midtownRows.length - 1 :
+    const showNorth = this.fullNorth || (this.areas.has('brookwood-station') && !this.areas.has('r16') && northVisible?.());
+    const lastRow = this.midtown ? (this.fullBoard || showNorth ? midtownRows.length - 1 :
       midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) ? i : last, -1)) : -1;
     const requested: Section[] = [];
     if (lastRow >= 0 || this.fullBoard || nearSection('north', x, z)) requested.push('north');
     if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
     if (lastRow >= 0 && this.areas.has('north-band')) {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
-      if (next) requested.push(next);
+      if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100))) requested.push(next);
     }
     for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
     for (const direction of requested) {
@@ -125,7 +129,7 @@ export class SquareMosaic {
         const reached = p && [...added.values()].some(a => inside(a.bounds, p.x, p.z));
         if (reached) this.wanted = undefined;
         mounted(added, reached ? p : undefined);
-        if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure);
+        if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure, northVisible);
       }).catch(error => {
         if (!signal.aborted) {
           this.failed.add(direction);

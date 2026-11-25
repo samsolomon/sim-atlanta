@@ -66,6 +66,15 @@ it('builds a far ground mesh per board that is crack-free and within its error b
       if (e === 2) {
         // Same rim, voids and openings as the near mesh: no crack between boards or LODs.
         expect(Math.abs(openLength(far) - openLength(near.geometry)), path).toBeLessThan(1);
+        if (path === 'square-board/brookwood-south') {
+          // No source void or opening on this fixture. Comparing only the
+          // two levels can miss matching cracks in both meshes.
+          const {minX, maxX, minZ, maxZ} = near.grid.manifest.bounds;
+          const perimeter = 2 * (maxX - minX + maxZ - minZ);
+          for (const geometry of [near.geometry, far]) {
+            expect(Math.abs(openLength(geometry) - perimeter), path).toBeLessThan(1);
+          }
+        }
         // Error: cells that fan to finer neighbours can add their centre's deviation, so 2E.
         expect(maxGap(near, far), path).toBeLessThanOrEqual(2 * e + 0.2 + 1e-6);
         mb += (far.getAttribute('position').array.byteLength * 3 + far.index!.array.byteLength) / 2 ** 20;

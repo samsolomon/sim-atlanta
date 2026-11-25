@@ -19,6 +19,10 @@ interface Deck {
 }
 
 const decks = new Map<string, Deck>([
+  // North Parking at Piedmont Atlanta Hospital. The wooded face exposes more
+  // levels than the uphill entry. Roof and level count are estimated from photos.
+  ['osm:way:269196219', { levels: 7, colour: '#bcb9af', flat: '#9d9b92', occupancy: 0, axisDegrees: -45 }],
+
   [
     '10389dea-9cd3-4d48-afe6-c077296e0724',
     {

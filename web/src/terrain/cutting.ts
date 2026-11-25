@@ -24,7 +24,7 @@ export const CUTTING = { below: 0.05, slope: 1.5, width: 3, tolerance: 0.03, max
  * than `maxGrade` along the track is a DEM pit or a missing structure, not a cutting.
  */
 export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground: (x: number, z: number) => number | null,
-  inside: { minX: number; maxX: number; minZ: number; maxZ: number }): GroundYield[] {
+  inside: { minX: number; maxX: number; minZ: number; maxZ: number }, sideWidthM: number = CUTTING.width): GroundYield[] {
   const beds: V[][] = [], sides: V[][] = [];
   for (const run of runs) {
     const bed = bedFlags(run, ground);
@@ -34,7 +34,7 @@ export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground:
       // The bed, split on the same a-c diagonal as the drawn ballast quad.
       beds.push([a, b, c], [a, c, d]);
       // Side slopes: from each ballast edge outward, away from the other edge.
-      const [a2, d2] = [outer(a, b), outer(d, c)], [b2, c2] = [outer(b, a), outer(c, d)];
+      const [a2, d2] = [outer(a, b, sideWidthM), outer(d, c, sideWidthM)], [b2, c2] = [outer(b, a, sideWidthM), outer(c, d, sideWidthM)];
       sides.push([a, d, d2], [a, d2, a2], [b, b2, c2], [b, c2, c]);
     }
   }
@@ -65,9 +65,9 @@ export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground:
 const floorPoint = (p: V): V => [p[0], p[1] - CUTTING.below, p[2]];
 
 /** The point a side slope's width outward from edge point p, away from q, risen by its slope. */
-function outer(p: V, q: V): V {
+function outer(p: V, q: V, width: number): V {
   const dx = p[0] - q[0], dz = p[2] - q[2], len = Math.hypot(dx, dz) || 1;
-  return [p[0] + dx / len * CUTTING.width, p[1] + CUTTING.width / CUTTING.slope, p[2] + dz / len * CUTTING.width];
+  return [p[0] + dx / len * width, p[1] + width / CUTTING.slope, p[2] + dz / len * width];
 }
 
 function area(t: V[]) {

@@ -11,6 +11,7 @@ import {
   passengerGeometry,
   passengerMaterial,
 } from '../vignette/crescent-stock';
+import { drapeTriangle, type TriangleSource } from '../terrain/drape';
 import survey from './fixtures/brookwood.json';
 import { corridor, corridorGrade, corridorGrids } from './brookwood-corridor';
 import { createNorcrossFreight } from './brookwood-freight';
@@ -302,19 +303,6 @@ function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number)
   }
   // Bed-to-deck clearance is an estimate. NBI measures the highway underneath.
   b.ribbon(bridge, 34, () => floor, '#7f817c');
-  // The DEM drops below street grade at both abutments. Join the deck to the first
-  // on-street sample beyond each bank, following the mapped approach centreline.
-  const approaches: { points: P2[]; bank: number }[] = [
-    { points: [bridge.pts[0], [10.64, -4988.6], [32.25, -4966.97]], bank: 274.04 },
-    { points: [bridge.pts.at(-1)!, [-69, -5105.52], [-72, -5110]], bank: 272.88 },
-  ];
-  for (const approach of approaches) {
-    const line = new Line(approach.points),
-      bank = approach.bank - zero;
-    const height = (s: number) => floor + ((bank + 0.12 - floor) * s) / line.length;
-    b.ribbon(line, 31, height, '#7f817c');
-    for (const d of [-15, 15]) b.ribbon(line.offset(d), 3.1, (s) => height(s) + 0.12, '#c5bdac');
-  }
   // Twenty minor ribs and two 30-foot gateway arches over the paired sidewalks.
   // The ribs lean across each walkway; the long outer bow ties their silhouette together.
   for (const side of [-1, 1]) {
@@ -467,25 +455,123 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
   return mesh;
 }
 
+/** Brookwood island railroad over I-75. The shared deck fixes the frame and grade
+ * for both tracks. November 2026 underside panorama D3jzz_wMUQeJhwtuEW6hpw.
+ * Section sizes, diaphragm spacing and transverse bent stations are inferred. */
+function drawNorcrossSpan(b: Builder, deck: Line, bed: (x: number) => number, sceneZero: number) {
+  const web = '#59463e', flange = '#514039', oxide = '#705444', concrete = '#aaa69c';
+  const corner = (s: number, offset: number, below: number) => {
+    const p = deck.at(s);
+    const x = p.x + p.nx * offset;
+    return [x, bed(x) - below, p.z + p.nz * offset];
+  };
+  // Closed prisms follow the rail grade across the skewed freeway crossing.
+  const member = (start: number, end: number, left: number, right: number, top: number, bottom: number, color: string) => {
+    const section = (s: number) => [
+      corner(s, left, top), corner(s, right, top), corner(s, right, bottom), corner(s, left, bottom),
+    ];
+    let previous = section(start);
+    b.quad(previous[3], previous[2], previous[1], previous[0], color);
+    for (let s = start; s < end;) {
+      s = Math.min(end, s + 2);
+      const next = section(s);
+      for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4;
+        b.quad(previous[i], previous[j], next[j], next[i], color);
+      }
+      previous = next;
+    }
+    b.quad(previous[0], previous[1], previous[2], previous[3], color);
+  };
+  // Keep the existing 13 m deck top. Its light coping sits over five longitudinal webs.
+  // Subdivide at the same two-metre stations as the deck so its corner heights agree.
+  for (let s = 287; s < 410; s += 2) {
+    const end = Math.min(410, s + 2);
+    const underside = [corner(s, -6.5, 0.29), corner(s, 6.5, 0.29),
+      corner(end, 6.5, 0.29), corner(end, -6.5, 0.29)];
+    b.quad(underside[0], underside[1], underside[2], underside[3], '#79746d');
+    for (const o of [-6.5, 6.5])
+      b.quad(corner(s, o, 0.04), corner(end, o, 0.04), corner(end, o, 0.29), corner(s, o, 0.29), concrete);
+  }
+  for (const o of [-5.9, -2.95, 0, 2.95, 5.9]) {
+    member(287, 410, o - 0.09, o + 0.09, 0.28, 1.52, web);
+    member(287, 410, o - 0.27, o + 0.27, 1.51, 1.62, flange);
+  }
+  for (let s = 294; s < 408; s += 9) {
+    member(s - 0.08, s + 0.08, -5.90, 5.90, 0.30, 1.16, web);
+    for (const side of [-5.9, 5.9])
+      member(s - 0.06, s + 0.06, side - 0.18, side + 0.18, 0.30, 1.51, oxide);
+  }
+  // Separate bents in the open strips between freeway and ramp pavements.
+  // Bases extend beneath the local bare-earth grid through the sloping banks.
+  for (const s of [301, 343, 383]) {
+    member(s - 0.75, s + 0.75, -6.3, 6.3, 1.62, 2.49, concrete);
+    for (const o of [-4.7, 0, 4.7]) {
+      const bottom = bed(deck.at(s).x) + sceneZero - 252;
+      member(s - 0.62, s + 0.62, o - 0.63, o + 0.63, 2.49, bottom, concrete);
+    }
+  }
+  // The northeast fascia ended in open air on the accepted board. Close both
+  // transverse ends through the terrain over their full width.
+  member(287, 287.75, -6.5, 6.5, 0.04, 2.4, concrete);
+  member(409.25, 410, -6.5, 6.5, 0.04, 5.45, concrete);
+}
+
+/** The approach starts on the bridge's transverse section. A separate road
+ * tangent at this point would rotate the row and open the outside walkway. */
+function peachtreeLandings(floor: number, ground: (x: number,z: number) => number | null, terrain: TriangleSource) {
+  const builder = new Builder();
+  for (const [start, mid, end] of [
+    [true, [10.64,-4988.60], [32.25,-4966.97]],
+    [false, [-69,-5105.52], [-72,-5110]],
+  ] as const) {
+    const terminal = bridge.at(start ? 0 : bridge.length);
+    const line = new Line([[terminal.x,terminal.z], [...mid], [...end]]);
+    const dir = start ? -1 : 1;
+    const last = line.at(line.length);
+    function vertex(s: number, offset: number, curb: number) {
+      const p = line.at(s);
+      const nx = s === 0 ? terminal.nx * dir : p.nx;
+      const nz = s === 0 ? terminal.nz * dir : p.nz;
+      const x = p.x + nx*offset, z = p.z + nz*offset;
+      const toe = ground(last.x+last.nx*offset,last.z+last.nz*offset);
+      if (toe === null) throw new Error('Peachtree landing outside mounted Station terrain');
+      const t = s/line.length, weight = t*t*(3-2*t);
+      return [x, floor + curb + weight*(toe-floor-curb), z, weight];
+    }
+    function triangle(a: number[], b: number[], c: number[], color: string) {
+      // Split at every terrain crease, including those between terminal vertices.
+      const low = (p: number[]) => [p[0],-1000,p[2]];
+      drapeTriangle(terrain,low(a),low(b),low(c),0,(p,q,r) => {
+        const point = (v: typeof p) => {
+          const height = v[3]*a[1]+v[4]*b[1]+v[5]*c[1];
+          const blend = v[3]*a[3]+v[4]*b[3]+v[5]*c[3];
+          return [v[0],Math.max(v[1],height+(v[1]-height)*Math.max(0,(blend-.8)/.2)),v[2]];
+        };
+        builder.tri(point(p),point(q),point(r),color);
+      });
+    }
+    const sections = [...new Set([0,line.cum[1],line.length,...Array.from({length:Math.floor(line.length/2)},(_,i)=>2*(i+1))])].sort((a,b)=>a-b);
+    for (const [l,r,curb,color] of [[-17,17,0,'#7f817c'],[-16.55,-13.45,.12,'#c5bdac'],[13.45,16.55,.12,'#c5bdac']] as const) {
+      for (let j=1;j<sections.length;j++) {
+        const a=vertex(sections[j-1],l,curb), b=vertex(sections[j-1],r,curb);
+        const c=vertex(sections[j],r,curb), d=vertex(sections[j],l,curb);
+        triangle(a,b,c,color); triangle(a,c,d,color);
+      }
+    }
+  }
+  return builder.geometry();
+}
+
 /** Attach to the City mosaic at its existing vertical datum. */
-export function createBrookwood(sceneZero: number, instanceFreight = true) {
+export function createBrookwood(sceneZero: number, instanceFreight = true, northFreight?: Line) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
   // The island and the mains cross the freeway on a common railway deck.
   const deck = main.offset(-4);
   b.ribbon(deck, 13, (_, x) => bed(x) - 0.04, '#939089', 2, 287, 410);
-  for (const d of [-6.5, 6.5])
-    b.wall(
-      deck,
-      d,
-      (s) => bed(deck.at(s).x) - 1.45,
-      (s) => bed(deck.at(s).x),
-      '#706f68',
-      2,
-      287,
-      410,
-    );
+  drawNorcrossSpan(b, deck, bed, sceneZero);
   for (const pts of [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts]) {
     const line = new Line(pts);
     b.ribbon(line, 3.6, (_, x) => bed(x) + 0.12, '#807a70');
@@ -548,7 +634,19 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
   stockTemplate.name = 'crescent prewarm template';
   stockTemplate.visible = false;
   group.add(stockTemplate);
-  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, clip, instanceFreight);
+  const main2 = corridor.main2.pts;
+  const seam = new Line(main2).length;
+  const last = main2[main2.length - 1];
+  if (northFreight && (last[0] !== northFreight.pts[0][0] || last[1] !== northFreight.pts[0][1]))
+    throw Error('North freight main does not join Brookwood Main 2');
+  // Use the same clock and full route before and after R16 loads. In particular,
+  // a southwestbound head must not jump when the northern row mounts.
+  const route = northFreight ? [...main2, ...northFreight.pts.slice(1)] : main2;
+  const freightEdge = northEdge.clone();
+  let northernHeight: ((s: number) => number) | undefined;
+  const freight = createNorcrossFreight(route, (x, s) =>
+    s > seam && northernHeight ? northernHeight(s - seam) : bed(x) + 0.32,
+    [freightEdge, westEdge, ...neverClip(2)], instanceFreight, northFreight ? 3 : 0);
   group.add(freight.group);
   let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
@@ -588,23 +686,38 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
     for (let j = count; j < cars.children.length; j++) cars.children[j].visible = false;
     return count;
   }
+  let landing: THREE.Mesh | undefined;
   return {
+    mountLandings(ground: (x:number,z:number) => number|null, terrain: TriangleSource) {
+      if (landing) return;
+      landing = new THREE.Mesh(peachtreeLandings(273-sceneZero,ground,terrain),material);
+      landing.name = "Peachtree bridge approaches";
+      landing.castShadow = landing.receiveShadow = true;
+      group.add(landing);
+    },
     group,
     cars,
     structure,
     update,
     /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
-    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
+    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor, northernHeight ? undefined : seam),
     freight: freight.group,
     freightPoses: freight.poses,
     get freightCars() { return freight.visibleCars; },
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {
       northEdge.constant = -z;
+      if (!northernHeight) freightEdge.constant = -z;
+    },
+    mountNorthFreight(height: (s: number) => number) {
+      if (!northFreight) return;
+      northernHeight = height;
+      freightEdge.constant = -northFreight.pts[northFreight.pts.length - 1][1];
     },
 
     dispose() {
       group.removeFromParent();
+      landing?.geometry.dispose();
       litSlab.material.dispose();
       litSlab.geometry.dispose();
       for (const mesh of facades) {

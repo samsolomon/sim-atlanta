@@ -3,9 +3,9 @@
 // Pass { north: -4900 } when brookwood-station is withheld and eleven areas have mounted.
 import { OrthographicCamera, Scene, WebGLRenderTarget } from 'three';
 
-export async function assertBoardExterior({ north = -5700 } = {}) {
+export async function assertBoardExterior({ north = -6500 } = {}) {
   const label = document.querySelector('#city-info button:last-child')?.textContent;
-  if (north === -5700 ? label !== 'Frame the full board' : !label?.includes('(11/12 areas loaded)')) {
+  if (north === -6500 ? label !== 'Frame the full board' : !label?.includes('(11/13 areas loaded)')) {
     throw Error('Wait for every area that can mount: ' + label);
   }
 
