@@ -10,7 +10,7 @@ import type { TransportRun } from '../terrain/transport-data';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
-import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
+import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure, undersideFaces } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
@@ -230,9 +230,8 @@ export function createNorthLine(
   area.group.add(guideway);
   const walls = new THREE.Group();
   if (area.terrainAt) {
-    const underside = new RailTops();
-    underside.add(guideway, '#7f7c75');
-    for (const { name, geometry } of roadsideWalls(area.terrainAt, (x, z) => underside.at(x, z))) {
+    const underside = undersideFaces(guideway, 425, 445, -5415, -5390);
+    for (const { name, geometry } of roadsideWalls(area.terrainAt, underside)) {
       const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
       mesh.name = name;
       mesh.receiveShadow = mesh.castShadow = true;
