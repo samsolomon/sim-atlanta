@@ -11,6 +11,12 @@ The downtown rail maintainer owns integration of the freight portals, Five Point
 3. **CQ400 seating.** Branch `samsolomon/cq400-bogies` at `a7a95322` follows the cut faces. The earlier probe measured worst swing falling from 0.64 m to 0.46 m. Rebase and verify the frames before opening the PR. [Earlier four-site comparison](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true)
 4. **#427 landuse paving.** Downtown rail owns approved commercial/retail paving and the bounded Robinson frontage at `b1a9ce162408d20c2a8bb3015f46899cb91159dc`. Campus-wide paving stays off. Ticket 427 is queued for the matched door and campus-edge images, final-base tests, perf and review before explicit transfer.
 
+## North-row rail study · 2026-11-24
+
+Downtown rail owns the three-track Norfolk Southern continuation. Private fixture `6e425ea8f2745918d949ceb9bae25fe6c925100f` extends the two Brookwood mains and siding from the frozen City mount `d0251f98`. All three new axes meet the old axes at identical centimetre-rounded endpoints on z = −5700. Offline mesh inspection found 16,838 triangles and one ballast corner 5.03 cm below the raw DEM. The next check is the drawn terrain at that corner (706.49, −5700) and the matched 40° and 220° City frames. The frozen baseline frames are captured at 08:01:12 EST. Mounted comparison and screenshot identification remain pending.
+
+The Armour reference diagram distinguishes the NS siding-to-yard switches, MARTA yard lead and CSX crossing. The archived wider OSM extract has SHA-256 `368924db35efb0b0e04b126dade9d4ba3f4ba490ae57a0bd57ebeaf6dd7acb85`. BTS/FRA NARN corroborates the two railroad corridors. Sam's separate fork observation has no saved camera. The three-track fixture ends at the R16 edge for the mains and at the mapped yard node for the siding. Yard routing and operating status remain unverified.
+
 ## Rail references for expansion
 
 Grant Street remains the rail-over-road control for the current first-bake pilot. For future yard expansion, use Norfolk Southern Inman Yard as the reference for a shared graded track bed carrying parallel tracks. Verify each switch connection against source geometry or imagery before representing it as connected.
