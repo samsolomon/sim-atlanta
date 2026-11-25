@@ -1,8 +1,8 @@
 // The modeled mainline continues beyond this branch. The walk to Mayson turns
 // onto the existing three-node access way at its shared (interior) source node.
-import { Line, type P2 } from '../../../web/src/vignette/geom';
+import { Builder, Line, type P2 } from '../../../web/src/vignette/geom';
 import { alongOn } from '../../../web/src/terrain/connector-corridor';
-import { trailAxis, trailHalfWidth, trailPoint } from './path';
+import { trailAxis, trailHalfWidth, trailPoint, trailStations } from './path';
 import access from './access.json';
 
 const fork = trailAxis.pts.findIndex(p=>p[0]===access.axis[0][0] && p[1]===access.axis[0][1]);
@@ -10,12 +10,65 @@ if(fork<0)throw new Error('Missing Mayson access node in the directed trail');
 export const accessStation=trailAxis.cum[fork];
 export const trailDriveAxis=new Line([...trailAxis.pts.slice(0,fork+1), ...access.axis.slice(1) as P2[]]);
 
-// The private R16 ground map already paints 1396654839 and its receiving street.
-// Once the probe leaves the elevated concrete footprint, sample that drawn surface.
-export function trailDrivePoint(s:number, ground:(x:number,z:number)=>number|null) {
+type Vertex = [number,number,number];
+type Ground = (x:number,z:number)=>number|null;
+const accessAxis=new Line(access.axis as P2[]);
+const cross=(x:number,z:number,dx:number,dz:number)=>x*dz-z*dx;
+
+// Intersect each edge of the spur with the actual edge polyline drawn for the
+// main trail. Both strips use the exact same vertices at that joint.
+function edgeHit(offset:number): Vertex {
+  const p=accessAxis.at(0), x=p.x-offset*p.nx, z=p.z-offset*p.nz;
+  const stations=trailStations().filter(s=>Math.abs(s-accessStation)<10);
+  for(const side of [-trailHalfWidth,trailHalfWidth]){
+    for(let i=1;i<stations.length;i++){
+      const a=trailPoint(stations[i-1],side), b=trailPoint(stations[i],side);
+      const dx=b[0]-a[0], dz=b[2]-a[2],det=cross(p.dx,p.dz,dx,dz);
+      if(Math.abs(det)<1e-8)continue;
+      const t=cross(a[0]-x,a[2]-z,dx,dz)/det;
+      const u=cross(a[0]-x,a[2]-z,p.dx,p.dz)/det;
+      if(t<0||t>4||u<0||u>1)continue;
+      return [a[0]+u*dx,a[1]+u*(b[1]-a[1]),a[2]+u*dz];
+    }
+  }
+  throw new Error('No forward intersection with the paved trail edge');
+}
+
+// Only this short apron is added. The final 0.5 m uses the existing Mayson
+// surface; its receiving elevation is sampled separately at each cross section.
+const lanes=[-1,0,1];
+const from=lanes.map(edgeHit);
+const cache=new WeakMap<Ground,Vertex[][]>();
+function faces(ground:Ground) {
+  const found=cache.get(ground);
+  if(found)return found;
+  const end=accessAxis.at(accessAxis.length-.5);
+  const to:Vertex[]=lanes.map(offset=>{
+    const x=end.x-offset*end.nx,z=end.z-offset*end.nz,y=ground(x,z);
+    if(y===null)throw new Error('Missing receiving street');
+    return [x,y,z];
+  });
+  const tris:Vertex[][]=[];
+  for(let i=1;i<lanes.length;i++)
+    tris.push([from[i-1],from[i],to[i]],[from[i-1],to[i],to[i-1]]);
+  cache.set(ground,tris);
+  return tris;
+}
+export function drawAccessApron(builder:Builder,ground:Ground) {
+  for(const [a,b,c] of faces(ground))builder.tri(a,b,c,'#b4afa4');
+}
+export function trailDrivePoint(s:number, ground:Ground):Vertex {
   if(s<=accessStation)return trailPoint(s);
-  const p=trailDriveAxis.at(s), near=alongOn({line:trailAxis,pts:trailAxis.pts},[p.x,p.z]);
+  const p=trailDriveAxis.at(s);
+  for(const [a,b,c] of faces(ground)){
+    const bx=b[0]-a[0],bz=b[2]-a[2],cx=c[0]-a[0],cz=c[2]-a[2];
+    const x=p.x-a[0],z=p.z-a[2],det=cross(bx,bz,cx,cz);
+    const u=cross(x,z,cx,cz)/det,v=cross(bx,bz,x,z)/det;
+    if(u>=-1e-8 && v>=-1e-8 && u+v<=1+1e-8)
+      return [p.x,a[1]+u*(b[1]-a[1])+v*(c[1]-a[1]),p.z];
+  }
+  const near=alongOn({line:trailAxis,pts:trailAxis.pts},[p.x,p.z]);
   const h=near.distance<=trailHalfWidth ? trailPoint(near.s)[1] : ground(p.x,p.z);
   if(h===null)throw new Error('Missing mounted Mayson access surface');
-  return [p.x,h,p.z] as [number,number,number];
+  return [p.x,h,p.z];
 }
