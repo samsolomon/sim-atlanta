@@ -60,18 +60,20 @@ export function createShepherdCenter(
       const northGlass = Math.max(a[1], b[1]) < -6338 && length > 12;
       const windows = (from: P2, to: P2) => {
         facade(from, to, 5.1, 42.8, northGlass ? 10 : 5, roadFace ? 9.4 : 6.7,
-          northGlass ? 0.957 : 0.905, northGlass ? 0.91 : 0.86, glass, 0, curtain);
+          northGlass ? 0.957 : 0.905, northGlass ? 0.91 : 0.86, glass, 0.19, curtain,
+          { width: 0.27, height: northGlass ? 0.63 : 0.33 });
       };
       if (roadFace) {
         const point = (t: number): P2 => [a[0] + dx * t, a[1] + dz * t];
         windows(a, point(0.49));
         windows(point(0.52), b);
         facade(a, b, 0.15, 4.85, 1, 6.1, 0.16, 1, ['#bab7a9'], 0);
+        facade(recess[i], recess[(i + 1) % recess.length], 1.15, 3.95, 1, 5.7,
+          0.42, 0.75, ['#56696b'], 0.48, curtain);
       } else if (length > 8) windows(a, b);
       if (courtFace) {
-        // A few softly lit entry panes. Night photographs of the finished building
-        // could not establish the occupancy or after-hours lighting pattern.
-        facade(recess[i], recess[(i + 1) % recess.length], 0.5, 4.45, 1, 3.8, 0.81, 0.72, ['#677f81'], 0.23);
+        // Illustrative after-hours light at the drop-off lobby.
+        facade(recess[i], recess[(i + 1) % recess.length], 0.5, 4.45, 1, 3.8, 0.81, 0.72, ['#677f81'], 0.64);
       }
     }
     prism([[-137, -6342], [-122, -6338], [-141, -6286], [-151, -6290]],
@@ -86,7 +88,7 @@ export function createShepherdCenter(
       prism(link, underside, underside + 3.85, '#b5b8b1', '#bfc1b9', { wall: stone });
       for (let i = 0; i < link.length; i++) {
         facade(link[i], link[(i + 1) % link.length], underside + 0.68, underside + 3.35,
-          1, 1.7, 0.93, 0.98, ['#71918e', '#799894'], 0.06, bridgeGlass);
+          1, 1.7, 0.93, 0.98, ['#71918e', '#799894'], 0.73, bridgeGlass);
       }
       paint(stone, () => {
         body.quad([-155, underside, -6277], [-155, underside, -6281],
@@ -102,7 +104,7 @@ export function createShepherdCenter(
       const a = ring[i], b = ring[(i + 1) % ring.length];
       const len = Math.hypot(a[0] - b[0], a[1] - b[1]);
       if (len < 4) continue;
-      facade(a, b, 2.1, roof - 0.65, 7, 3.3, 0.95, 0.46, ribbon, 0.09);
+      facade(a, b, 2.1, roof - 0.65, 7, 3.3, 0.95, 0.46, ribbon, 0.11);
     }
     // Old inpatient wings step back at the top while the narrow dark brick piers
     // at the street and north court continue to the parapet.
@@ -118,8 +120,11 @@ export function createShepherdCenter(
       base, 32.5, '#95765e', '#a0998a', { wall: brick });
     prism([[-218, -6277], [-213.2, -6280.5], [-207.7, -6273], [-212.5, -6269.5]],
       base, 31.8, '#95765e', '#a0998a', { wall: brick });
-    prism([[-157.0, -6250.3], [-150.9, -6240.8], [-146.5, -6243.5], [-152.7, -6253.0]],
-      3.7, 4.45, '#cbc4af', '#a7a292', { wall: stone });
+    const canopy = ccw([[-157.0, -6250.3], [-150.9, -6240.8], [-146.5, -6243.5], [-152.7, -6253.0]]);
+    prism(canopy, 3.7, 4.45, '#cbc4af', '#a7a292', { wall: stone });
+    // A narrow fixture recessed into the fascia of the existing canopy.
+    facade([-152.7, -6253.0], [-146.5, -6243.5],
+      3.71, 3.94, 1, 12, 0.74, 1, ['#b4ae98'], 1);
   }
-  return shell.finish('#efd5b3', 0.48);
+  return shell.finish('#ebc99d', 0.49);
 }
