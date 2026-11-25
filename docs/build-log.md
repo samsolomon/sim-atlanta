@@ -3867,3 +3867,7 @@ At the pedestrian tunnel exit, two rail formations crossed the sky with no visib
 ### 2026-11-25 — Two forks on the same southbound road
 
 The two Brookwood screenshots came from opposite ends of the same 245 m stretch of I-75. At Deering, the third donor lane can feed either branch. Farther south at Exit 250, the old drawing started two solid stripes at the mapped fork. The 2024 Fulton aerial places their common gore about 52 m downstream. A second defect appeared during the traffic replay: one exit car straddled a 0.919 m elevation change across a 2 m sample. Fitting the road to the 2018 pavement returns brought the modeled crossfall at that station to +2.31%. The narrow outside bank uses an inferred transition where the survey is occluded. [Exit 250 from the registered camera](log/ui/brookwood-four-highways/exit-250.jpg)
+
+### 2026-11-25 — The Driving Club keeps its courtyard open
+
+The mapped footprint on the Midtown Upper row has a 617 m² hole. Keeping it open lets the pale gallery show between the low roofs. The park-facing terrace reads as columns and a dark rail from the 425 m orbit. A contractor photo at blue hour shows the recessed lights and wall lanterns, which carry the night cue in City. The photos leave the rest of the after-hours pattern uncertain. [Six private captures and references](log/ui/piedmont-driving-club/README.md)

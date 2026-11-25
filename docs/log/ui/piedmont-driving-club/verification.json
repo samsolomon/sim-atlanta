@@ -1,0 +1,529 @@
+{
+  "model": "db13de58",
+  "normalCamera": "1384,-3810,-43,58,425",
+  "entranceCamera": "1317,-3787,103,76,65",
+  "frames": {
+    "normal-day": {
+      "high": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "high",
+        "camera": [
+          0.7313537016191707,
+          0,
+          -0.6819983600624983,
+          0,
+          -0.3614040691725715,
+          0.848048096156426,
+          -0.38755841545626185,
+          0,
+          0.5783674108328064,
+          0.529919264233205,
+          0.6202231142750925,
+          0,
+          1629.8061496039425,
+          192.51568653617264,
+          -3546.405176433085,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 51,
+          "triangles": 762038,
+          "points": 0,
+          "lines": 0,
+          "programs": 45,
+          "programKinds": {
+            "?": 40,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      },
+      "low": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "low",
+        "camera": [
+          0.7313537016191707,
+          0,
+          -0.6819983600624983,
+          0,
+          -0.3614040691725715,
+          0.848048096156426,
+          -0.38755841545626185,
+          0,
+          0.5783674108328064,
+          0.529919264233205,
+          0.6202231142750925,
+          0,
+          1629.8061496039425,
+          192.51568653617264,
+          -3546.405176433085,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 33,
+          "triangles": 457030,
+          "points": 0,
+          "lines": 0,
+          "programs": 36,
+          "programKinds": {
+            "?": 33,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      }
+    },
+    "normal-night": {
+      "high": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "high",
+        "camera": [
+          0.7313537016191707,
+          0,
+          -0.6819983600624983,
+          0,
+          -0.3614040691725715,
+          0.848048096156426,
+          -0.38755841545626185,
+          0,
+          0.5783674108328064,
+          0.529919264233205,
+          0.6202231142750925,
+          0,
+          1629.8061496039425,
+          192.51568653617264,
+          -3546.405176433085,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 62,
+          "triangles": 752259,
+          "points": 0,
+          "lines": 0,
+          "programs": 53,
+          "programKinds": {
+            "?": 48,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      },
+      "low": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "low",
+        "camera": [
+          0.7313537016191707,
+          0,
+          -0.6819983600624983,
+          0,
+          -0.3614040691725715,
+          0.848048096156426,
+          -0.38755841545626185,
+          0,
+          0.5783674108328064,
+          0.529919264233205,
+          0.6202231142750925,
+          0,
+          1629.8061496039425,
+          192.51568653617264,
+          -3546.405176433085,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 33,
+          "triangles": 448062,
+          "points": 0,
+          "lines": 0,
+          "programs": 36,
+          "programKinds": {
+            "?": 33,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      }
+    },
+    "entrance-day": {
+      "high": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "high",
+        "camera": [
+          -0.22495105434386575,
+          2.7755575615628914e-17,
+          0.9743700647852351,
+          0,
+          0.3332541892100873,
+          0.9396926207859083,
+          0.07693779184794927,
+          0,
+          -0.9156083597933729,
+          0.3420201433256689,
+          -0.21138484580494055,
+          0,
+          1257.4854566134306,
+          -10.36868915795257,
+          -3800.7400149773207,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 49,
+          "triangles": 722418,
+          "points": 0,
+          "lines": 0,
+          "programs": 53,
+          "programKinds": {
+            "?": 48,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      },
+      "low": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "quality": "low",
+        "camera": [
+          -0.22495105434386575,
+          2.7755575615628914e-17,
+          0.9743700647852351,
+          0,
+          0.3332541892100873,
+          0.9396926207859083,
+          0.07693779184794927,
+          0,
+          -0.9156083597933729,
+          0.3420201433256689,
+          -0.21138484580494055,
+          0,
+          1257.4854566134306,
+          -10.368689157952584,
+          -3800.7400149773207,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper"
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 32,
+          "triangles": 417802,
+          "points": 0,
+          "lines": 0,
+          "programs": 36,
+          "programKinds": {
+            "?": 33,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "bounds": {
+          "minX": -1000,
+          "maxX": 1800,
+          "minZ": -4100,
+          "maxZ": -3300
+        },
+        "replaced": [
+          "osm:relation:3006786"
+        ]
+      }
+    }
+  }
+}
