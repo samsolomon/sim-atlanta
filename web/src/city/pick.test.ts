@@ -57,6 +57,9 @@ it('preserves drag and pinch gestures, including a drag that returns to its star
   send('pointerdown', 1, 4);
   send('pointercancel', 1, 4);
   send('pointerup', 1, 4);
+  send('pointerdown', 1, 4);
+  canvas.dispatchEvent(new Event('wheel'));
+  send('pointerup', 1, 4);
   expect(taps).toEqual([]);
   send('pointerdown', 1, 4);
   send('pointerup', 1, 6);

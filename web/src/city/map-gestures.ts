@@ -8,11 +8,14 @@
  * click/tap. A trackpad orbit and a two-finger twist keep the current Follow target.
  */
 import { MOUSE, TOUCH } from 'three';
+import { wheelShare } from './camera-damping';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 /** Wheel delta for one double-click zoom step: OrbitControls scales by 0.95^(|Δ|/100), ≈ ½ here. */
 const DOUBLE_ZOOM_DELTA = -1350;
 const TAP_MS = 300;
+/** Mouse-wheel zoom easing time constant (?camera=direct): ~95% of a notch lands in 120 ms. */
+const WHEEL_EASE_MS = 40;
 const TAP_PX = 24;
 
 /** Signed smallest angle from a to b, in radians. */
@@ -24,7 +27,7 @@ export function mapGestures(
   /** Turn the view by degrees, as City's rotate() does (positive turns the bearing down). */
   rotate: (degrees: number) => void,
   onZoom: () => void,
-  o: { legacy?: boolean } = {},
+  o: { legacy?: boolean; easeWheel?: boolean; motionPreference?: MediaQueryList } = {},
 ) {
   // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
   // r180's middle-drag dolly reads the cursor's y from its x, which zoomToCursor would expose.
@@ -39,7 +42,7 @@ export function mapGestures(
   // Two fingers: their midpoint moving up or down tilts (OrbitControls), the twist turns (below).
   // Sideways midpoint motion must not turn the map as well, so drop OrbitControls' azimuth share
   // while two touches are down. `_rotateLeft` is OrbitControls' private API (three 0.180).
-  const inner = controls as unknown as { _rotateLeft?: (angle: number) => void };
+  const inner = controls as unknown as { state: number; _rotateLeft?: (angle: number) => void };
   const rotateLeft = inner._rotateLeft?.bind(controls);
   if (rotateLeft) inner._rotateLeft = (angle: number) => { if (touches.size < 2) rotateLeft(angle); };
 
@@ -50,15 +53,37 @@ export function mapGestures(
   // Classify once for each wheel burst. Pinch (ctrl-wheel) and notched mouse wheels
   // retain OrbitControls' zoom-to-cursor behaviour.
   let lastWheel = -Infinity;
+  let wheelPending = 0;
+  // OrbitControls r180 ignores wheel zoom while another pointer gesture is active.
+  const acceptsWheel = () => controls.enabled && controls.enableZoom && inner.state === -1;
+  let wheelAt = { x: 0, y: 0 };
   let trackpad = false;
   el.addEventListener('wheel', e => {
+    // Our own synthetic wheels (double-click zoom, eased steps) go straight to OrbitControls and
+    // must not reclassify the device.
+    if (!e.isTrusted) return;
+    const mode = e.deltaMode;
     if (e.timeStamp - lastWheel > 140) {
       const wheelNotch = Math.abs(e.deltaY) / 4.000244140625; // MapLibre's macOS wheel increment
       const notched = wheelNotch > 0 && Math.abs(wheelNotch - Math.round(wheelNotch)) < 1e-6;
-      trackpad = !notched && e.deltaMode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
+      trackpad = !notched && mode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
     }
     lastWheel = e.timeStamp;
-    if (!trackpad || e.ctrlKey || !e.isTrusted) return;
+    // ?camera=direct: a notched mouse wheel's step eases in over ~120 ms (tick, below) instead of
+    // jumping in one frame. Split deltas multiply to the same zoom, at the same cursor.
+    if (o.easeWheel && !trackpad && !e.ctrlKey && e.deltaY) {
+      if (!acceptsWheel() || o.motionPreference?.matches) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      onZoom();
+      // OrbitControls r180 converts line and page units before zooming. Our synthetic
+      // steps use pixels, so accumulate the equivalent delta even across mixed units.
+      const unit = mode === 1 ? 16 : mode === 2 ? 100 : 1;
+      wheelPending += e.deltaY * unit;
+      wheelAt = { x: e.clientX, y: e.clientY };
+      return;
+    }
+    if (!trackpad || e.ctrlKey) return;
     e.stopImmediatePropagation();
     e.preventDefault();
     const orbit = controls as unknown as { _rotateUp(value: number): void };
@@ -140,8 +165,22 @@ export function mapGestures(
   on('pointerup', lift);
   on('pointercancel', lift);
 
-  return () => {
+  const stop = () => {
     events.abort();
     if (rotateLeft) inner._rotateLeft = rotateLeft;
   };
+  /** Each frame (City's loop): feed the eased share of pending wheel zoom to OrbitControls. */
+  const tick = (frameMs: number) => {
+    if (!wheelPending) return;
+    if (!acceptsWheel()) {
+      wheelPending = 0;
+      return;
+    }
+    const share = o.motionPreference?.matches ? 1 : wheelShare(frameMs, WHEEL_EASE_MS);
+    let d = wheelPending * share;
+    if (Math.abs(wheelPending - d) < 0.5) d = wheelPending;
+    wheelPending -= d;
+    el.dispatchEvent(new WheelEvent('wheel', { deltaY: d, clientX: wheelAt.x, clientY: wheelAt.y, bubbles: true, cancelable: true }));
+  };
+  return Object.assign(stop, { tick });
 }

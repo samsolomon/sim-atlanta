@@ -84,6 +84,7 @@ export function listenForTap(canvas: HTMLCanvasElement, select: (x: number, y: n
   canvas.addEventListener('pointermove', e => {
     if (finger && Math.hypot(e.clientX - finger.x, e.clientY - finger.y) > 6) finger = null;
   }, options);
+  canvas.addEventListener('wheel', () => { finger = null; }, { ...options, passive: true });
   canvas.addEventListener('pointercancel', () => { finger = null; }, options);
   canvas.addEventListener('pointerup', e => {
     const started = finger;
