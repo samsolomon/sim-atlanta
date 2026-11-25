@@ -2,6 +2,8 @@
 
 Model `d465d7c8` on `study/shepherd-center`. Before is `b357096c`, which includes Sam’s accepted Piedmont geometry `98cf2e1d`. Both use the same r16 map and bare-earth terrain. [Private comparison gallery](review.html)
 
+Sam approved the daylight and night model for 5250 on November 25, 2026. The acceptance covers model `198e71e6`, evidence `70e6d96c`, and combined build `7d57f34c`. [Acceptance and night comparison](night-pass/README.md)
+
 ## Footprints and heights
 
 | Mass | Frozen map | Model |
