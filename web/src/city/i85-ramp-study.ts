@@ -26,7 +26,7 @@ export function rampStudy(grid: GroundGrid, quality: TerrainQuality, joins: Terr
   const ribbon = {line: lowerAxis, pts: lowerAxis.pts};
   const owners = new WeakSet<P2[]>();
   return {
-    slots, surface, lining,
+    slots, surface, lining, originalHeight: exposed,
     register(axis: P2[]) {
       if (axis.length < 2) return;
       const a = alongOn(ribbon, axis[0]), b = alongOn(ribbon, axis[axis.length - 1]);
