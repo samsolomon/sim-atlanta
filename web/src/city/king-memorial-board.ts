@@ -1,3 +1,4 @@
+import { neighborMark } from './neighbor-study';
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
@@ -65,7 +66,9 @@ export async function loadEast(
   ]);
   signal.throwIfAborted();
   // The two static files can come from different browser cache generations.
+  neighborMark("king:fetch-ready");
   const digest = await crypto.subtle.digest('SHA-256', bytes);
+  neighborMark("king:build-start");
   const hex = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, '0')).join('');
   if (hex !== manifest.sha256) throw new Error('King Memorial ground checksum mismatch');
   signal.throwIfAborted();

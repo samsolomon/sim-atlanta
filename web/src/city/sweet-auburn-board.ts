@@ -1,3 +1,4 @@
+import { neighborMark } from './neighbor-study';
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
@@ -44,7 +45,9 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
     asset('ground.i16').then(r => r.arrayBuffer()),
     asset('context.json').then(r => r.json() as Promise<TerrainCity & NeighborhoodCanopy>),
   ]);
+  neighborMark("auburn:fetch-ready");
   const digest = await crypto.subtle.digest('SHA-256', bytes);
+  neighborMark("auburn:build-start");
   signal.throwIfAborted();
   if (Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2,'0')).join('') !== manifest.sha256)
     throw new Error('Sweet Auburn ground checksum mismatch');

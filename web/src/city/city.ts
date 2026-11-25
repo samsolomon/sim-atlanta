@@ -1086,8 +1086,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const downtown = terrain, king = east, westGrid = grid, signal = eastController.signal;
     void Promise.all([import('./sweet-auburn-board'), import('./king-memorial-board')]).then(async ([{ loadNorth }, { joinedPlinth }]) => {
       signal.throwIfAborted();
+      neighborMark("auburn:fetch-start");
       const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal, mosaic?.joins('auburn').slice(2));
       if (signal.aborted) { area.dispose(); return; }
+      neighborMark("auburn:attach-start");
       mosaic?.mount('auburn', area);
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
       addArea(area);
@@ -1125,6 +1127,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         downtown.openJoin(1); king.openJoin(1); area.openJoin(); area.openJoin(1);
       }
       renderer.shadowMap.needsUpdate = true;
+      neighborMark("auburn:attach-end");
       areaResult('auburn', null);
       if (pendingNorthTarget) {
         const { x, z } = pendingNorthTarget;
@@ -1155,8 +1158,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const westGrid = grid;
     void import('./king-memorial-board').then(async ({ loadEast, joinedPlinth }) => {
       eastController.signal.throwIfAborted();
+      neighborMark("king:fetch-start");
       const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal, mosaic ? mosaic.joins('king').slice(1) : previewNorth ? northSouthJoin : undefined);
       if (eastController.signal.aborted) { area.dispose(); return; }
+      neighborMark("king:attach-start");
       mosaic?.mount('king', area);
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY));
       addArea(area);
@@ -1167,6 +1172,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const next = pendingNorthTarget ?? controls.target;
       if (wholeBoardRequested) approachNorth(1400, 0);
       else approachNorth(next.x, next.z);
+      neighborMark("king:attach-end");
       areaResult('king', null);
       renderer.shadowMap.needsUpdate = true;
       if (pendingEastTarget) {
@@ -1438,6 +1444,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     frames: framesRecorded,
     areas: () => [...(mosaic?.areas.keys() ?? [])],
+    distance: () => camera.position.distanceTo(controls.target),
     pose: () => [controls.target.x, controls.target.z],
     allocations: () => ({ ...renderer.info.memory }),
   } });
