@@ -1,0 +1,258 @@
+[
+  {
+    "tier": "low",
+    "courses": 103,
+    "westCourses": 1,
+    "westSlots": 1,
+    "totalSlots": 48,
+    "activeWest": [
+      38981789
+    ],
+    "interval": [
+      {
+        "s": 0,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.74618459390149
+      },
+      {
+        "s": 1,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.729977818858
+      },
+      {
+        "s": 2,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.7142485924108
+      },
+      {
+        "s": 4,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.68425230344639
+      },
+      {
+        "s": 5,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.67000000000002
+      },
+      {
+        "s": 8,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.62800000000004
+      },
+      {
+        "s": 10,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.60000000000002
+      },
+      {
+        "s": 15,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.50923265255315
+      },
+      {
+        "s": 20,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.32870702717612
+      },
+      {
+        "s": 25,
+        "registered": null,
+        "fallback": -67.12740035154005,
+        "floor": -67.12739934353333
+      },
+      {
+        "s": 30,
+        "registered": null,
+        "fallback": -67.01566163322902
+      },
+      {
+        "s": 40,
+        "registered": null,
+        "fallback": -66.72111986333526
+      }
+    ],
+    "visiblePoseSamples": 166,
+    "nearMouthPoses": 29,
+    "firstByStation": {
+      "kind": "suv",
+      "contacts": 16,
+      "minGap": -0.036266502984403814,
+      "maxGap": 0.13504870751376075,
+      "seconds": 369.5,
+      "s": 28.203232936598752,
+      "offset": 0.0015487421433686838,
+      "carY": -67.02481079101562,
+      "drawn": null,
+      "opacity": 1
+    },
+    "firstByTime": {
+      "kind": "suv",
+      "contacts": 16,
+      "minGap": -0.03663665233722213,
+      "maxGap": 0.1535442243032037,
+      "seconds": 103,
+      "s": 30.638149225444337,
+      "offset": 0.002103235543861442,
+      "carY": -66.95925903320312,
+      "drawn": null,
+      "opacity": 1
+    },
+    "nearMouth": [
+      -0.0625705679163957,
+      0.15694794766757525
+    ],
+    "downstream": [
+      -0.09350649519053889,
+      0.21383044968004583
+    ],
+    "lastByStation": {
+      "kind": "suv",
+      "contacts": 16,
+      "minGap": 0.03522894464042281,
+      "maxGap": 0.04919024990340404,
+      "seconds": 516.5,
+      "s": 274.48585451086745,
+      "offset": 0.005567349910340411,
+      "carY": -67.6173095703125,
+      "drawn": null,
+      "opacity": 1
+    }
+  },
+  {
+    "tier": "high",
+    "courses": 103,
+    "westCourses": 1,
+    "westSlots": 3,
+    "totalSlots": 120,
+    "activeWest": [
+      38981789
+    ],
+    "interval": [
+      {
+        "s": 0,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.74618459390149
+      },
+      {
+        "s": 1,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.729977818858
+      },
+      {
+        "s": 2,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.7142485924108
+      },
+      {
+        "s": 4,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.68425230344639
+      },
+      {
+        "s": 5,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.67000000000002
+      },
+      {
+        "s": 8,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.62800000000004
+      },
+      {
+        "s": 10,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.60000000000002
+      },
+      {
+        "s": 15,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.50923265255315
+      },
+      {
+        "s": 20,
+        "registered": null,
+        "fallback": null,
+        "floor": -67.32870702717612
+      },
+      {
+        "s": 25,
+        "registered": null,
+        "fallback": -67.12740035154005,
+        "floor": -67.12739934353333
+      },
+      {
+        "s": 30,
+        "registered": null,
+        "fallback": -67.01566163322902
+      },
+      {
+        "s": 40,
+        "registered": null,
+        "fallback": -66.72111986333526
+      }
+    ],
+    "visiblePoseSamples": 554,
+    "nearMouthPoses": 94,
+    "firstByStation": {
+      "kind": "sedan",
+      "contacts": 8,
+      "minGap": -0.0436765313753682,
+      "maxGap": 0.10365906513533218,
+      "seconds": 588.5,
+      "s": 27.520572430221016,
+      "offset": 0.0013610069556634025,
+      "carY": -67.04087829589844,
+      "drawn": null,
+      "opacity": 1
+    },
+    "firstByTime": {
+      "kind": "suv",
+      "contacts": 16,
+      "minGap": -0.05402638477998778,
+      "maxGap": 0.13993831930520173,
+      "seconds": 24,
+      "s": 35.01903317831524,
+      "offset": 0.0028693972594642093,
+      "carY": -66.82477569580078,
+      "drawn": null,
+      "opacity": 1
+    },
+    "nearMouth": [
+      -0.06621740754414418,
+      0.16200036173326282
+    ],
+    "downstream": [
+      -0.10662134373451693,
+      0.2207881480035354
+    ],
+    "lastByStation": {
+      "kind": "pickup",
+      "contacts": 16,
+      "minGap": 0.026170232418536443,
+      "maxGap": 0.049696335771358235,
+      "seconds": 792.5,
+      "s": 276.68399730562726,
+      "offset": 0.005614115158311704,
+      "carY": -67.69840240478516,
+      "drawn": null,
+      "opacity": 1
+    }
+  }
+]
