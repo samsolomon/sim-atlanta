@@ -1,5 +1,7 @@
 # Downtown Connector crossing register
 
+**Open after Step 0, November 25.** Build `1d04eadc` passes 17th Street and north Peachtree on Low and High. Capitol Gateway reproduces both the unsupported walk and the deck/approach kink on each tier. Fixture `439abf84` records the accepted limits. Finish the combined Air 5250 delivery first, including Station/r16 arterial traffic and the Shepherd night correction when ready. Then take ordinary crossings in register order, followed by Capitol Gateway and I-20 as the two interchange projects. Those two table entries retain their visibility ranks. Each rebuild uses the same limits and publishes matched before/after close views. Whenever checker code changes, rerun the full three-site calibration before relying on the new results. [Six signed results and close pairs](http://127.0.0.1:5218/study/connector-crossing-checks/)
+
 Physical crossings in the City corridor and northern reference area, ordered by estimated visibility. Multiple co-carried streets or paths share a row. The lower mainline search intersects mapped street, rail and link axes with the directed Downtown Connector and checks bridge, cover and layer tags. The southern modeled edge is z=1100. A current Low/High inspection is still due at rows described as checks. Camera links use Air’s private City mount.
 
 | Priority | Crossing | Finding or acceptance test | View |
