@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { cuttingYields, type BallastQuad } from '../terrain/cutting';
+import type { Area } from '../square-board/sections';
 import profiles from './fixtures/north-profile-study.json';
 import { Builder, Line } from '../vignette/geom';
 import { orientedBox } from './midtown-marta-guideway';
@@ -13,16 +15,21 @@ export const extensions = profiles.map(profile => {
   return { line, at };
 });
 
-export function studyRails() {
+export function studyRails(area: Area) {
+  const beds: BallastQuad[][] = [];
   const body = new Builder();
   for (const { line, at } of extensions) {
+    const bed: BallastQuad[] = [];
+    beds.push(bed);
     for (let s = 0; s < line.length; s += 1.5) {
       const end = Math.min(s + 1.5, line.length);
       const a = line.at(s), b = line.at(end);
       const edge = (p: typeof a, h: number, offset: number) =>
         [p.x + p.nx * offset, h, p.z + p.nz * offset];
       const h = at(s), k = at(end);
-      body.quad(edge(a,h,-1.6),edge(b,k,-1.6),edge(b,k,1.6),edge(a,h,1.6),'#898375');
+      const quad = [edge(a,h,-1.6),edge(a,h,1.6),edge(b,k,1.6),edge(b,k,-1.6)] as const;
+      bed.push(quad);
+      body.quad(quad[0],quad[3],quad[2],quad[1],'#898375');
       orientedBox(body,a.x,a.z,a.dx,a.dz,h,h+.04,.11,1.28,'#65594f');
       for (const rail of [-.7175,.7175]) {
         body.quad(edge(a,h+.07,rail-.045),edge(b,k+.07,rail-.045),
@@ -30,6 +37,11 @@ export function studyRails() {
       }
     }
   }
+  const {minX,maxX,minZ,maxZ} = area.bounds;
+  const margin = area.grid.manifest.stepM + .01;
+  if (!new URLSearchParams(location.search).has('uncutFormation')) area.carve(cuttingYields(beds, area.terrainAt, {
+    minX:minX+margin, maxX:maxX-margin, minZ:minZ+margin, maxZ:maxZ-margin
+  }));
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.name = 'Inferred North Line extension';
   return mesh;

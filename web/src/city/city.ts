@@ -1060,7 +1060,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const restoreMaps = !query.has('noGutter') ? joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture) : () => {};
         const dispose = pilot.dispose.bind(pilot);
         pilot.dispose = () => { restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
-        const rails = studyRails();
+        const rails = studyRails(pilot);
         pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
         northLine?.extend(rails);
       }
@@ -1446,6 +1446,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   if (query.has('seamTrace')) Object.assign(window, { __cityDev: { areas: () => mosaic?.areas } });
   let requestedNorthZ: number | null = null;
+  if (query.has('railWitness')) Object.assign(window, { __burial: { scene, camera, areas: () => mosaic?.areas,
+    view(bearing: number, tilt: number, distance: number, x: number, z: number) {
+      controls.minDistance = 5;
+      manualCamera();
+      setView(-bearing, tilt, distance, x, z);
+      controls.update();
+      return camera.position.distanceTo(controls.target);
+    } } });
   const northFrames: number[] = [];
   Object.assign(window, { __northStudy: {
     go(x: number, z: number) {
