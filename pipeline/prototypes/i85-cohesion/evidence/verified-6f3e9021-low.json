@@ -1,0 +1,53 @@
+{
+  "interiorCount": 4122,
+  "interiorFailures": [],
+  "missingTravelFloor": [],
+  "missingShoulderSupport": [],
+  "west": [
+    {
+      "x": 867.7394672916787,
+      "z": -5781.943249053602,
+      "floor": -67.83409673701472,
+      "board": null
+    },
+    {
+      "x": 863.12,
+      "z": -5780.03,
+      "floor": -67.74612639590572,
+      "board": null
+    }
+  ],
+  "roads": {
+    "38983384": {
+      "n": 110,
+      "surfaceMisses": [],
+      "maxAbsDeltaM": 0.0
+    },
+    "1409808969": {
+      "n": 44,
+      "surfaceMisses": [],
+      "maxAbsDeltaM": 0.0
+    },
+    "879130781": {
+      "n": 131,
+      "surfaceMisses": [],
+      "maxAbsDeltaM": 0.0
+    },
+    "187141934": {
+      "n": 190,
+      "surfaceMisses": [],
+      "maxAbsDeltaM": 0.0
+    },
+    "369529900": {
+      "n": 94,
+      "surfaceMisses": [],
+      "maxAbsDeltaM": 0.0
+    }
+  },
+  "shoulderNearFloorMaxM": 0.004607648587210633,
+  "wheelNearFloorMaxM": 0.0013850139994104893,
+  "headroomRangeM": [
+    5.648154996513725,
+    5.654654565828153
+  ]
+}

@@ -1,0 +1,67 @@
+[
+  {
+    "way": 38983384,
+    "surface": "terrain",
+    "hits": 110,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 187141934,
+    "surface": "terrain",
+    "hits": 190,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 879130781,
+    "surface": "terrain",
+    "hits": 131,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 369529900,
+    "surface": "terrain",
+    "hits": 93,
+    "lost": [
+      341
+    ],
+    "maxDifference": 3.770747962050791e-05
+  },
+  {
+    "way": 369529900,
+    "surface": "tread",
+    "hits": 125,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 1409808969,
+    "surface": "terrain",
+    "hits": 44,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 1409808969,
+    "surface": "tread",
+    "hits": 19,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 879130781,
+    "surface": "tread",
+    "hits": 36,
+    "lost": [],
+    "maxDifference": 0
+  },
+  {
+    "way": 187141934,
+    "surface": "tread",
+    "hits": 38,
+    "lost": [],
+    "maxDifference": 0
+  }
+]
