@@ -1,3 +1,4 @@
+import { formationEnds } from './north-formation-ends';
 import * as THREE from 'three';
 import { cuttingYields, type BallastQuad } from '../terrain/cutting';
 import type { Area } from '../square-board/sections';
@@ -45,7 +46,10 @@ export function studyRails(area: Area) {
   const margin = area.grid.manifest.stepM + .01;
   if (!new URLSearchParams(location.search).has('uncutFormation')) area.carve(cuttingYields(beds, area.terrainAt, {
     minX:minX+margin, maxX:maxX-margin, minZ:minZ+margin, maxZ:maxZ-margin
-  }, taperM));
+  }, taperM);
+  const nr = extensions.find(profile => profile.track === 'NR')!;
+  if (!new URLSearchParams(location.search).has('uncutFormation'))
+    area.carve([...cutting, ...formationEnds(nr, cutWindows, area.terrainAt, 1.5)]);
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.name = 'Inferred North Line extension';
   return mesh;
