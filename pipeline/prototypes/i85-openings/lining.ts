@@ -6,6 +6,7 @@ type Emit=(a:V,b:V,c:V,d:V,color:string)=>void;
 const margin=1.525;
 const height=5.65; // Inferred clear profile. The bridge inventory reports a 5.51 m minimum.
 const slab=.45;
+export const roofTopAboveTread = height+slab;
 
 export function rampSection(s:number,exposed:Ground) {
   const left=lowerPoint(s,lowerEdges[0],exposed),right=lowerPoint(s,lowerEdges[1],exposed);
