@@ -1,3 +1,4 @@
+import { roadsideWalls } from '../../../pipeline/prototypes/paired-span-walls/walls';
 import { articulate, RailTops } from './north-running-gear';
 import { extensions } from './north-profile-study';
 import axes from './fixtures/north-axes-study.json';
@@ -204,6 +205,7 @@ export function createNorthLine(
   area: {
     group: THREE.Group;
     groundAt: (x: number, z: number) => number | null;
+    terrainAt?: (x: number, z: number) => number | null;
     connectorBoard?: { city: { roads: { cls: string; sub?: string | null; pts: [number, number][] }[] } };
   },
   rf: RoutesFile,
@@ -226,6 +228,18 @@ export function createNorthLine(
   Object.assign(window, { __northTie: lines.map(line => ({ x: line.pts.at(-1)![0], end: profile.at(line, line.length), clamp: profile.at(line, line.length - 2) })) });
   const guideway = northLineGuideway(lines, profile, area.groundAt);
   area.group.add(guideway);
+  const walls = new THREE.Group();
+  if (area.terrainAt) {
+    const underside = new RailTops();
+    underside.add(guideway, '#7f7c75');
+    for (const { name, geometry } of roadsideWalls(area.terrainAt, (x, z) => underside.at(x, z))) {
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+      mesh.name = name;
+      mesh.receiveShadow = mesh.castShadow = true;
+      walls.add(mesh);
+    }
+    area.group.add(walls);
+  }
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   let height = (line: Line, along: number) => profile.at(line, along);
@@ -369,7 +383,7 @@ export function createNorthLine(
   const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
   /** Free everything this North Line added; the area's own dispose only clears its group. */
   function dispose() {
-    for (const object of [guideway, spans.mesh, spans.lamps, portalParts.group]) {
+    for (const object of [guideway, walls, spans.mesh, spans.lamps, portalParts.group]) {
       object.removeFromParent();
       object.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return;
