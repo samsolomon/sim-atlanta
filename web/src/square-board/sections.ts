@@ -1,3 +1,5 @@
+import { matchRibbon } from '../terrain/connector-corridor';
+import { rampStudy } from '../city/i85-ramp-study';
 import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
 import { sharedIds, joinedPaint } from '../city/north-seam-neighborhood';
 import { underpassFloor, underpassGround } from '../terrain/underpass';
@@ -65,7 +67,7 @@ export const midtownRows = (Object.keys(trackedOnly || typeof location === 'unde
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
-export type TrafficArea = Area & { connectorBoard: ConnectorBoard };
+export type TrafficArea = Area & { connectorBoard: ConnectorBoard; northTread?: (x:number,z:number)=>number|null };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -155,7 +157,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return new GroundGrid(manifest, terrain);
 }
 
-async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
+async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band', id === 'r16' || id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
@@ -163,7 +165,8 @@ async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot =
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
-  return { id, grid, context };
+  const ramp = !trackedOnly && id === 'r16' ? rampStudy(grid, quality, joins(id)) : undefined;
+  return { id, grid, context, ramp };
 }
 
 export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {
@@ -171,15 +174,15 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
   const [patches] = await Promise.all([
-    Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood))),
+    Promise.all(ids.map(id => readPatch(id, quality, signal, options?.dataRoot, options?.brookwood))),
     // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).
     Promise.resolve().then(() => loadPlaces((options?.dataRoot ?? '/data') + '/ga/neighborhoods.json')).catch(() => undefined),
   ]);
   signal.throwIfAborted();
   // ?worker=1: every patch's ground surface is built in a Worker, in parallel, before the
   // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
-  const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid }) => prebuildSurface(grid, quality,
-    terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
+  const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid, ramp }) => prebuildSurface(grid, quality,
+    terrainOpenings(grid, { extraSlots: ramp?.slots, underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
     joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
   signal.throwIfAborted();
   // Hand each prebuilt surface over once and drop it here: the area's closures keep this scope
@@ -191,7 +194,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
   try {
-    for (const [patchIndex, { id, grid, context }] of patches.entries()) {
+    for (const [patchIndex, { id, grid, context, ramp }] of patches.entries()) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
         context.terrainTransport = { version: 1, roads: [], rail: northLineRail(id, brookwoodCorridorRail(railRows[id as keyof typeof railRows] as TransportRun[], grid)) };
       }
@@ -210,6 +213,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         lights: id in rowBounds ? midtownLights : undefined,
         underpass: id === 'midtown-south' ? northAvenue : undefined,
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
+        extraSlots: ramp?.slots,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
         surface: takeSurface(patchIndex),
@@ -237,12 +241,30 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         }
         const deckHeight: typeof decks.deckAt = (x, z, run) =>
           decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
+        const nbWays = new Set([28038801, 1416312985, 484857197, 369529900]);
+        const nbRuns = id === 'r16' || id === 'brookwood-station' ? data.roads.filter(run => {
+          const axis = run.sourceAxis ?? run.pts;
+          return axis.length > 1 && run.cls === 'motorway' && nbWays.has(matchRibbon(axis[0],axis[1],false)?.id ?? -1);
+        }) : [];
+        const northTread = (x:number,z:number) => {
+          for (const run of nbRuns) {
+            const y = deckHeight(x,z,run);
+            if (y !== null) return y;
+          }
+          return null;
+        };
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
-        const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
+        if (ramp) area.group.add(ramp.surface, ramp.lining);
+        const stockRoadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
+        if (ramp) for (const road of city.roads) {
+          if (road.cls === 'motorway' && road.sub === 'link') ramp.register(road.pts);
+        }
+        const roadHeight: typeof stockRoadHeight = ramp
+          ? (x,z,road) => ramp.roadHeight(x,z,road.pts) ?? stockRoadHeight(x,z,road) : stockRoadHeight;
         yield 'piers and road heights';
         added.set(id, {
-          ...area,
+          ...area, northTread,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: id !== 'midtown-south' ? roadHeight : (x, z, road) => {
             if (road.name === northAvenue.roadName) {
@@ -256,6 +278,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();
             (piers?.mesh.material as { dispose(): void } | undefined)?.dispose();
+            ramp?.dispose();
             area.dispose();
           },
         });

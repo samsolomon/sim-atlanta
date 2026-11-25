@@ -223,7 +223,7 @@ for (const joint of joints.values()) {
     }
 }
 
-export function alongOn(r: Ribbon, p: P2) {
+export function alongOn(r: Pick<Ribbon, "pts" | "line">, p: P2) {
   let best = Infinity,
     along = 0;
   for (let i = 1; i < r.pts.length; i++) {

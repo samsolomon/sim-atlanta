@@ -1,3 +1,4 @@
+import { paintI85Corridor } from '../../../pipeline/prototypes/i85-cohesion/pavement';
 import { streetProfile, parallelPath } from './street-profile';
 import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
@@ -260,6 +261,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   paintStreetBridgeApproaches(ctx, data);
   paintJunctionApproaches(ctx, data);
   paintConnector(ctx, data, texelM);
+  paintI85Corridor(ctx, (data as TerrainCity & { name?: string }).name ?? '');
   ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);
