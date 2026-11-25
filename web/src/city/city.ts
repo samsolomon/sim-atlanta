@@ -1040,6 +1040,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       scene.add(brookwood.group);
       scenery.push(brookwood.structure);
     }
+    const stationArea = mosaic?.areas.get('brookwood-station');
+    if (stationArea) brookwood.mountLandings(stationArea.terrainAt, stationArea.terrainTriangles);
     brookwood.setNorthEdge(area.bounds.minZ);
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
       const object = area.group.getObjectByName(id);
