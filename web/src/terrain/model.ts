@@ -482,7 +482,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
   const originalFinish = options.finishFor;
-  const homes = yield* buildResidential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
+  const homes = yield* buildResidential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees,
+    (x,z) => options.boardRoads && x >= 300 && x <= 425 && Math.abs(z+5700) < 70 ? mesh : undefined);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
   yield 'residential';

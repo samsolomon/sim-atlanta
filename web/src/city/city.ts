@@ -1,6 +1,6 @@
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
-import { mountSeamBuildings } from './north-seam-neighborhood';
+import { mountSeamBuildings, mountStationFragments } from './north-seam-neighborhood';
 import type { TrafficArea as SeamArea } from '../square-board/sections';
 import { norcrossNorthRails } from './norcross-north-study';
 import { mountedWheelCheck, roadControl } from './north-contact-study';
@@ -1057,7 +1057,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (pilot) {
         const station = mosaic!.areas.get('brookwood-station') as SeamArea;
         const disposeBuildings = mountSeamBuildings(pilot, station, quality);
-        const restoreMaps = joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
+        const restoreMaps = !query.has('noGutter') ? joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture) : () => {};
         const dispose = pilot.dispose.bind(pilot);
         pilot.dispose = () => { restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
         const rails = studyRails();
@@ -1069,6 +1069,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const atl = added.get('brookwood-station');
       if (atl && query.has('northReplay')) queueMicrotask(() => approachMosaic(731, -5701, true));
       if (atl) {
+        if (!query.has('baseline')) {
+          const disposeFragments = mountStationFragments(atl, quality);
+          const dispose = atl.dispose.bind(atl);
+          atl.dispose = () => { disposeFragments(); dispose(); };
+        }
         const line = createNorthLine(atl, rf, manifest.origin, trains.group);
         northLine = line;
         // The area's dispose clears its group without freeing it; free the North Line too.
@@ -1439,6 +1444,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setPixelRatio(pr);
     resize();
   };
+  if (query.has('seamTrace')) Object.assign(window, { __cityDev: { areas: () => mosaic?.areas } });
   let requestedNorthZ: number | null = null;
   const northFrames: number[] = [];
   Object.assign(window, { __northStudy: {

@@ -20,6 +20,9 @@ export function joinGroundMaps(north: CanvasTexture, south: CanvasTexture) {
   }
   const an = padded(a,b,true), bs = padded(b,a,false);
   function set(map: CanvasTexture, canvas: HTMLCanvasElement, yScale: number, yOffset: number) {
+    // Station has already uploaded its original storage while the new row
+    // may still be unrendered. Release that allocation before changing size.
+    map.dispose();
     map.image = canvas;
     map.repeat.y = yScale;
     map.offset.y = yOffset;
