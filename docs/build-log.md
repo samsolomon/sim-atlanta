@@ -3867,3 +3867,7 @@ A 16-story hospital tower was already hiding in the North board’s data. The 9,
 ### 2026-11-25 — The view from 3 Collier
 
 The first model treated the short Collier wall as terracotta. Sam’s July 2022 sidewalk frame put the missing glass right in front of us. The 21.65 m wall now turns 9.4 m of glass around the prow, beside a clay bay that steps down 5.2 m at the roof. From Peachtree, nine small elms mark the paved court in front of the recessed lobby and leave the entrance landing open. The plaza’s two walks follow the drawn slope, with a stair cut joining them. City’s audit found no ground showing through the court on either graphics tier. [Street views, matched campus captures and sources](log/ui/piedmont-hospital/second-pass/README.md)
+
+### 2026-11-25 — The walk reaches the corner
+
+The Peachtree walk used to end about one building bay before its curved sidewalk. A 651 m² apron now follows the terrain into the return around a 191 m² planting bed. The crossing spur stays open. The wide view revealed why the North Deck was hard to recognize. Its 8 m fallback roof was partly below the uphill ground. Matching the parking contractor’s photos gave it open concrete bands and a visible deck roof, and the mapped 10.6 m pedestrian span now reads as the enclosed link in the entrance photo. Building 105 rises to an estimated five levels, enough to separate it from the drive and deck. [Matched corner and campus views](log/ui/piedmont-hospital/corner-and-campus/README.md)

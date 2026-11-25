@@ -2,7 +2,7 @@ import { drapeTriangle, type DrapeGround } from '../terrain/drape';
 import { clump, drapeRing, landscapeMesh, retainingEdge, stairRun, tuft } from '../landscape/primitives';
 import { lacebarkElm } from '../trees/lacebark-elm';
 import type { TreePlacement } from '../trees/render';
-import { Builder, rng, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 
 // Cross-sections of the Peachtree forecourt, from the Collier corner to the
 // northern entry. The west edge follows the tower and the east edge stops at
@@ -21,6 +21,18 @@ const stations = [
   [-6026, -216.4, -210.4, -204.5],
 ] as const;
 type Station = (typeof stations)[number];
+
+// Return from the south end of the court to the Collier sidewalk. The outer
+// apron ties into the inside edge of the mapped footway, short of its crossing spur.
+const cornerApron: P2[] = [
+  [-245.9, -5928], [-221, -5928], [-222.1, -5919], [-223.8, -5908], [-225.7, -5900.8],
+  [-222.35, -5900.4], [-222.89, -5898.3], [-228, -5899.5], [-232.8, -5902], [-247, -5910.6], [-259, -5918.2], [-248, -5921.3],
+];
+const cornerBed: P2[] = [
+  [-244.5, -5925.5], [-239, -5926.1], [-234.1, -5924.7], [-231.4, -5922],
+  [-230.5, -5918.4], [-231.5, -5914.6], [-234.6, -5912.1], [-239.3, -5912.8],
+  [-246, -5916], [-252.3, -5919.7], [-249.2, -5920.5], [-246.8, -5922.5],
+];
 
 const elmRow: P2[] = [
   [-237.0, -5938], [-237.2, -5946], [-235.1, -5954],
@@ -52,9 +64,28 @@ export function piedmontGarden(ground: DrapeGround, quality: 'high' | 'low') {
   return {
     yields: stairs ? [stairs] : [],
     finish() {
-      const surface = (ring: P2[], colour: string) => drapeRing(ring, 4, (x, z) => (ground(x, z) ?? fromY) + 0.07,
+      const surface = (ring: P2[], colour: string, holes: P2[][] = []) => drapeRing(ring, 4, (x, z) => (ground(x, z) ?? fromY) + 0.07,
         (a, b, c) => drapeTriangle(drawn, a, b, c, 0.07,
-          (p, q, r) => body.tri(p.slice(0, 3), q.slice(0, 3), r.slice(0, 3), colour)));
+          (p, q, r) => body.tri(p.slice(0, 3), q.slice(0, 3), r.slice(0, 3), colour)), holes);
+      surface(cornerApron, '#c6bcaa', [cornerBed]);
+      surface(cornerBed, '#8c7460');
+      retainingEdge(body, [...cornerBed, cornerBed[0]], ground, {
+        width: 0.30, reveal: 0.16, stone: '#a49a8a', cap: '#bfb5a2', quality,
+      });
+      const cornerRandom = rng(31893);
+      const spacing = quality === 'high' ? 1.45 : 2;
+      for (let u = -251.5; u < -230.5; u += spacing) {
+        for (let v = -5925.4; v < -5912; v += spacing) {
+          const x = u + cornerRandom() * 0.6, z = v + cornerRandom() * 0.6;
+          // Keep the grasses and low shrubs away from the curb and apron.
+          if (![[0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]]
+            .every(([dx, dz]) => pointInRing(x + dx, z + dz, cornerBed))) continue;
+          const y = ground(x, z);
+          if (y === null) continue;
+          if (cornerRandom() < 0.65) tuft(body, x, y + 0.07, z, 0.42 + cornerRandom() * 0.28, 7, '#a48a58', cornerRandom);
+          else clump(body, x, y + 0.06, z, 0.41, 0.29 + cornerRandom() * 0.18, '#757b4d', cornerRandom() * 2);
+        }
+      }
       const random = rng(1893);
       for (let i = 1; i < stations.length; i++) {
         const a = stations[i - 1], b = stations[i];
