@@ -37,7 +37,7 @@ export function freightPass(clockMs: number, lineLength: number): FreightPass | 
   return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled, passage };
 }
 
-export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], highTier = true) {
+export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance: number) => number, planes: THREE.Plane[], highTier = true) {
   const line = new Line(pts);
   const batches = new FreightBatches(!highTier);
   const material = freightMaterial(planes);
@@ -54,13 +54,13 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
   function at(s: number, target: THREE.Vector3) {
     const clamped = THREE.MathUtils.clamp(s, 0, line.length), p = line.at(clamped), beyond = s - clamped;
     const x = p.x + beyond * p.dx, z = p.z + beyond * p.dz;
-    return target.set(x, railhead(x), z);
+    return target.set(x, railhead(x, clamped), z);
   }
   // The freight yields the whole corridor to any scheduled Crescent on it. This depends
   // only on the scene clock and the current train states, so scrubbing, reloads and a
   // slow timetable cannot put a freight beside the Crescent's approach or berth.
   let visibleCars = 0, draws = 0;
-  function update(clockMs: number, crescentOnCorridor: boolean) {
+  function update(clockMs: number, crescentOnCorridor: boolean, mountedLength = line.length) {
     const pass = crescentOnCorridor ? null : freightPass(clockMs, line.length);
     visibleCars = 0;
     let front = pass?.head ?? 0;
@@ -73,7 +73,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
       const length = FREIGHT_LENGTH[unit.kind];
       const center = front - (pass.dir * length) / 2;
       front -= pass.dir * (length + COUPLER_GAP);
-      const show = center > -length && center < line.length + length;
+      const show = center > -length && center < mountedLength + length;
       car.visible = show;
       if (!show) return;
       car.userData.lengthM = length;
