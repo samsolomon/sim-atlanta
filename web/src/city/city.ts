@@ -1080,38 +1080,41 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
-      const pilot = added.get('r16');
-      if (pilot) {
+      const northernRow = added.get('r16');
+      if (northernRow) {
         const station = mosaic!.areas.get('brookwood-station') as SeamArea;
-        const disposeBuildings = mountSeamBuildings(pilot, station, quality);
-        const restoreMaps = joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
-        const dispose = pilot.dispose.bind(pilot);
-        const sides = freewaySides((x,z) => pilot.northTread?.(x,z) ?? station.northTread?.(x,z) ?? null);
-        pilot.group.add(sides);
-        pilot.dispose = () => { sides.geometry.dispose(); sides.material.dispose(); restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
-        const rails = studyRails(pilot);
+        const disposeBuildings = mountSeamBuildings(northernRow, station, quality);
+        const restoreMaps = joinGroundMaps(
+          northernRow.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
+        const structures = new THREE.Group();
+        const sides = freewaySides((x, z) => northernRow.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
+        const rails = studyRails(northernRow);
         const supports = maysonSupports(extensions, (x, z) => {
-          const y = pilot.terrainAt(x, z);
-          if (y === null) throw Error("Missing terrain under Mayson support");
+          const y = northernRow.terrainAt(x, z);
+          if (y === null) throw Error('Missing terrain under Mayson support');
           return y;
         });
-        pilot.group.add(supports);
-        const disposeSupportedArea = pilot.dispose.bind(pilot);
-        pilot.dispose = () => {
+        const norcross = norcrossNorthRails(northernRow.groundAt, northernRow.grid.manifest.vertical.sceneZeroNavd88M);
+        structures.add(sides, supports, mountMayson(), rails, norcross.mesh);
+        northernRow.group.add(structures);
+        preparedBrookwood?.mountNorthFreight(norcross.freightRailhead);
+        northLine?.extend(rails);
+
+        const disposeArea = northernRow.dispose.bind(northernRow);
+        northernRow.dispose = () => {
           const materials = new Set<THREE.Material>();
-          supports.traverse(object => {
+          structures.traverse(object => {
             if (object instanceof THREE.Mesh) {
               object.geometry.dispose();
               for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material);
             }
           });
           for (const material of materials) material.dispose();
-          disposeSupportedArea();
+          restoreMaps();
+          disposeBuildings();
+          seamNormals.reset();
+          disposeArea();
         };
-        const norcross = norcrossNorthRails(pilot.groundAt, 323.8);
-        pilot.group.add(mountMayson(), rails, norcross.mesh);
-        preparedBrookwood?.mountNorthFreight(norcross.freightRailhead);
-        northLine?.extend(rails);
       }
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
