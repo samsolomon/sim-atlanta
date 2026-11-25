@@ -9,7 +9,7 @@ type Mesh = {pos:number[]; uv:number[]; indices:number[]; starts?:Uint32Array};
 const bins=new Map<string,Face[]>();
 const cross=(a:Point,b:Point,x:number,z:number)=>(b[0]-a[0])*(z-a[1])-(b[1]-a[1])*(x-a[0]);
 function rowPoints([s,x,z,rx,rz,y,grade]:number[]):Point[] {
-  const along=Math.max(0,Math.min(1,(s-35)/15,(535-s)/20));
+  const along=Math.max(0,Math.min(1,(s-40)/10,(535-s)/20));
   // The five-lane travel band remains planar. Across the outside shoulder the
   // upper bench meets 2018 lower returns near +12..+15 m. The face is inferred.
   return [[-14,0],[-11.075,1],[8.875,1],[10.6,1],[14,0]].map(([u,w])=>
@@ -25,7 +25,7 @@ function register(points:[Point,Point,Point]){
   const face={points,det,bounds,planes:points.map((p,i)=>(x:number,_y:number,z:number)=>Math.sign(det)*cross(p,points[(i+1)%3],x,z))};
   binRange(bounds,key=>{const bin=bins.get(key);if(bin)bin.push(face);else bins.set(key,[face]);});
 }
-const rows=sections.filter(r=>r[0]>=35 && r[0]<=535).map(rowPoints);
+const rows=sections.filter(r=>r[0]>=40 && r[0]<=535).map(rowPoints);
 for(let j=1;j<rows.length;j++)for(let i=1;i<rows[j].length;i++){
   const a=rows[j-1][i-1],b=rows[j][i-1],c=rows[j][i],d=rows[j-1][i];
   register([a,b,c]);register([a,c,d]);
