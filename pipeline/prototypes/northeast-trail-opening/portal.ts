@@ -65,7 +65,18 @@ export function trailOpening(
   }
   for (const s of trailBore) {
     const a=point(s,-wallOffset), b=point(s,wallOffset);
-    quad(lift(a,headroom),lift(b,headroom),lift(b,headroom+slab),lift(a,headroom+slab),'#c0b9ab');
+    // A shallow header projects beyond the angled threshold. This keeps both
+    // wheel paths under the lip as the approach direction turns at the node.
+    const near = point(s === south ? s+1 : s-1, 0), centre = point(s,0);
+    const dx=centre[0]-near[0], dz=centre[2]-near[2], length=Math.hypot(dx,dz);
+    const lip=(p:V):V=>[p[0]+.25*dx/length,p[1],p[2]+.25*dz/length];
+    const l=lip(a), r=lip(b);
+    quad(lift(a,headroom),lift(b,headroom),lift(r,headroom),lift(l,headroom),'#979388');
+    quad(lift(a,headroom+slab),lift(b,headroom+slab),lift(r,headroom+slab),lift(l,headroom+slab),'#aaa497');
+    quad(lift(l,headroom),lift(r,headroom),lift(r,headroom+slab),lift(l,headroom+slab),'#c0b9ab');
+    for(const [p,q] of [[a,l],[b,r]]) {
+      quad(lift(p,headroom),lift(q,headroom),lift(q,headroom+slab),lift(p,headroom+slab),'#aaa497');
+    }
   }
   // June 2026 north-facing panorama shows fixtures along the east side.
   // Spacing, size and height are illustrative. No per-fixture light sources.
