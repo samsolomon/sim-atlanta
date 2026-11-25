@@ -11,6 +11,7 @@ import {
   passengerGeometry,
   passengerMaterial,
 } from '../vignette/crescent-stock';
+import { drapeTriangle, type TriangleSource } from '../terrain/drape';
 import survey from './fixtures/brookwood.json';
 import { corridor, corridorGrade, corridorGrids } from './brookwood-corridor';
 import { createNorcrossFreight } from './brookwood-freight';
@@ -302,19 +303,6 @@ function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number)
   }
   // Bed-to-deck clearance is an estimate. NBI measures the highway underneath.
   b.ribbon(bridge, 34, () => floor, '#7f817c');
-  // The DEM drops below street grade at both abutments. Join the deck to the first
-  // on-street sample beyond each bank, following the mapped approach centreline.
-  const approaches: { points: P2[]; bank: number }[] = [
-    { points: [bridge.pts[0], [10.64, -4988.6], [32.25, -4966.97]], bank: 274.04 },
-    { points: [bridge.pts.at(-1)!, [-69, -5105.52], [-72, -5110]], bank: 272.88 },
-  ];
-  for (const approach of approaches) {
-    const line = new Line(approach.points),
-      bank = approach.bank - zero;
-    const height = (s: number) => floor + ((bank + 0.12 - floor) * s) / line.length;
-    b.ribbon(line, 31, height, '#7f817c');
-    for (const d of [-15, 15]) b.ribbon(line.offset(d), 3.1, (s) => height(s) + 0.12, '#c5bdac');
-  }
   // Twenty minor ribs and two 30-foot gateway arches over the paired sidewalks.
   // The ribs lean across each walkway; the long outer bow ties their silhouette together.
   for (const side of [-1, 1]) {
@@ -529,6 +517,52 @@ function drawNorcrossSpan(b: Builder, deck: Line, bed: (x: number) => number, sc
   member(409.25, 410, -6.5, 6.5, 0.04, 5.45, concrete);
 }
 
+/** The approach starts on the bridge's transverse section. A separate road
+ * tangent at this point would rotate the row and open the outside walkway. */
+function peachtreeLandings(floor: number, ground: (x: number,z: number) => number | null, terrain: TriangleSource) {
+  const builder = new Builder();
+  for (const [start, mid, end] of [
+    [true, [10.64,-4988.60], [32.25,-4966.97]],
+    [false, [-69,-5105.52], [-72,-5110]],
+  ] as const) {
+    const terminal = bridge.at(start ? 0 : bridge.length);
+    const line = new Line([[terminal.x,terminal.z], [...mid], [...end]]);
+    const dir = start ? 1 : -1;
+    const last = line.at(line.length);
+    function vertex(s: number, offset: number, curb: number) {
+      const p = line.at(s);
+      const nx = s === 0 ? terminal.nx * dir : p.nx;
+      const nz = s === 0 ? terminal.nz * dir : p.nz;
+      const x = p.x + nx*offset, z = p.z + nz*offset;
+      const toe = ground(last.x+last.nx*offset,last.z+last.nz*offset);
+      if (toe === null) throw new Error('Peachtree landing outside mounted Station terrain');
+      const t = s/line.length, weight = t*t*(3-2*t);
+      return [x, floor + curb + weight*(toe-floor-curb), z, weight];
+    }
+    function triangle(a: number[], b: number[], c: number[], color: string) {
+      // Split at every terrain crease, including those between terminal vertices.
+      const low = (p: number[]) => [p[0],-1000,p[2]];
+      drapeTriangle(terrain,low(a),low(b),low(c),0,(p,q,r) => {
+        const point = (v: typeof p) => {
+          const height = v[3]*a[1]+v[4]*b[1]+v[5]*c[1];
+          const blend = v[3]*a[3]+v[4]*b[3]+v[5]*c[3];
+          return [v[0],Math.max(v[1],height+(v[1]-height)*Math.max(0,(blend-.8)/.2)),v[2]];
+        };
+        builder.tri(point(p),point(q),point(r),color);
+      });
+    }
+    const sections = [...new Set([0,line.cum[1],line.length,...Array.from({length:Math.floor(line.length/2)},(_,i)=>2*(i+1))])].sort((a,b)=>a-b);
+    for (const [l,r,curb,color] of [[-17,17,0,'#7f817c'],[-16.55,-13.45,.12,'#c5bdac'],[13.45,16.55,.12,'#c5bdac']] as const) {
+      for (let j=1;j<sections.length;j++) {
+        const a=vertex(sections[j-1],l,curb), b=vertex(sections[j-1],r,curb);
+        const c=vertex(sections[j],r,curb), d=vertex(sections[j],l,curb);
+        triangle(a,b,c,color); triangle(a,c,d,color);
+      }
+    }
+  }
+  return builder.geometry();
+}
+
 /** Attach to the City mosaic at its existing vertical datum. */
 export function createBrookwood(sceneZero: number, instanceFreight = true) {
   const b = new Builder(),
@@ -640,7 +674,15 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
     for (let j = count; j < cars.children.length; j++) cars.children[j].visible = false;
     return count;
   }
+  let landing: THREE.Mesh | undefined;
   return {
+    mountLandings(ground: (x:number,z:number) => number|null, terrain: TriangleSource) {
+      if (landing) return;
+      landing = new THREE.Mesh(peachtreeLandings(273-sceneZero,ground,terrain),material);
+      landing.name = "Peachtree bridge approaches";
+      landing.castShadow = landing.receiveShadow = true;
+      group.add(landing);
+    },
     group,
     cars,
     structure,
@@ -657,6 +699,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
 
     dispose() {
       group.removeFromParent();
+      landing?.geometry.dispose();
       litSlab.material.dispose();
       litSlab.geometry.dispose();
       for (const mesh of facades) {
