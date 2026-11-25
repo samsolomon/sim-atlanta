@@ -1,0 +1,277 @@
+{
+ "junction": 330630047,
+ "projection": "Local east/south metres; origin lat 33.89, lon -84.26. Equirectangular using 111195 m/degree.",
+ "source": "OpenStreetMap contributors, ODbL, saved official API bbox -84.275,33.881,-84.242,33.905",
+ "ways": [
+  {
+   "id": 537071431,
+   "version": 3,
+   "timestamp": "2021-06-17T06:38:06Z",
+   "tags": {
+    "destination": "Greenville;Pleasantdale Road",
+    "destination:lanes": "Greenville|Greenville|Pleasantdale Road",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "3",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no",
+    "turn:lanes": "none|none|slight_right"
+   },
+   "nodes": [
+    68147912,
+    330630047
+   ],
+   "sourceXZ": [
+    [
+     585.9091173224434,
+     -542.4759269997604
+    ],
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ]
+   ],
+   "rangeM": [
+    99.83214885026254,
+    159.83214885026254
+   ],
+   "xz": [
+    [
+     665.3731757344327,
+     -602.9070561035338
+    ],
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ]
+   ]
+  },
+  {
+   "id": 9164544,
+   "version": 10,
+   "timestamp": "2022-06-21T20:29:32Z",
+   "tags": {
+    "destination": "Greenville",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "maxheight": "default",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "nodes": [
+    330630047,
+    68147915,
+    68147919,
+    9126510798
+   ],
+   "sourceXZ": [
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ],
+    [
+     778.953784277578,
+     -689.2978050002542
+    ],
+    [
+     980.26889311773,
+     -842.8580999996948
+    ],
+    [
+     1037.94045662215,
+     -891.772780500083
+    ]
+   ],
+   "rangeM": [
+    0,
+    205
+   ],
+   "xz": [
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ],
+    [
+     778.953784277578,
+     -689.2978050002542
+    ],
+    [
+     876.192026963983,
+     -763.469750256523
+    ]
+   ]
+  },
+  {
+   "id": 30027936,
+   "version": 6,
+   "timestamp": "2022-06-21T20:29:33Z",
+   "tags": {
+    "destination": "Pleasantdale Road",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "maxheight": "default",
+    "oneway": "yes"
+   },
+   "nodes": [
+    330630047,
+    330630238,
+    1832381123,
+    1832381113,
+    1832381079,
+    68157618
+   ],
+   "sourceXZ": [
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ],
+    [
+     805.5927299032194,
+     -702.5744879997594
+    ],
+    [
+     844.5265735110358,
+     -726.7816394997951
+    ],
+    [
+     876.879139146424,
+     -749.54325600032
+    ],
+    [
+     1034.137530219629,
+     -871.4796929999624
+    ],
+    [
+     1092.1690794766862,
+     -913.7337929999429
+    ]
+   ],
+   "rangeM": [
+    0,
+    205
+   ],
+   "xz": [
+    [
+     713.1317741381455,
+     -639.2266964997834
+    ],
+    [
+     805.5927299032194,
+     -702.5744879997594
+    ],
+    [
+     844.5265735110358,
+     -726.7816394997951
+    ],
+    [
+     876.879139146424,
+     -749.54325600032
+    ],
+    [
+     882.8193969021956,
+     -754.149266914301
+    ]
+   ]
+  },
+  {
+   "id": 67968161,
+   "version": 8,
+   "timestamp": "2025-05-29T23:50:14Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "secondary",
+    "lanes": "3",
+    "layer": "1",
+    "name": "Northcrest Road",
+    "oneway": "yes",
+    "surface": "concrete",
+    "tiger:cfcc": "A41",
+    "tiger:county": "DeKalb, GA",
+    "tiger:name_base": "Northcrest",
+    "tiger:name_type": "Rd",
+    "tiger:reviewed": "no",
+    "turn:lanes": "left|through|none"
+   },
+   "nodes": [
+    1832367518,
+    1832367528
+   ],
+   "sourceXZ": [
+    [
+     841.3236233624734,
+     -859.3260795001498
+    ],
+    [
+     856.2399560485602,
+     -723.0899655001086
+    ]
+   ],
+   "rangeM": [
+    83.69022594202279,
+    137.05026719650803
+   ],
+   "xz": [
+    [
+     850.4323341899762,
+     -776.1330190606651
+    ],
+    [
+     856.2399560485602,
+     -723.0899655001086
+    ]
+   ]
+  },
+  {
+   "id": 172322577,
+   "version": 5,
+   "timestamp": "2025-05-29T23:50:14Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "secondary",
+    "lanes": "3",
+    "layer": "1",
+    "name": "Northcrest Road",
+    "oneway": "yes",
+    "tiger:cfcc": "A41",
+    "tiger:county": "DeKalb, GA",
+    "tiger:name_base": "Northcrest",
+    "tiger:name_type": "Rd",
+    "tiger:reviewed": "no",
+    "turn:lanes": "left|none|none"
+   },
+   "nodes": [
+    1832367512,
+    1832367544
+   ],
+   "sourceXZ": [
+    [
+     866.7903076941593,
+     -730.70682299984
+    ],
+    [
+     851.5416804680846,
+     -861.0051240000191
+    ]
+   ],
+   "rangeM": [
+    0,
+    53.65449649826239
+   ],
+   "xz": [
+    [
+     866.7903076941593,
+     -730.70682299984
+    ],
+    [
+     860.553758993911,
+     -783.9976332281663
+    ]
+   ]
+  }
+ ]
+}

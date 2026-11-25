@@ -1,0 +1,68 @@
+{
+ "approach": 537071431,
+ "permitted": [
+  [
+   1,
+   9164544,
+   1
+  ],
+  [
+   2,
+   9164544,
+   2
+  ],
+  [
+   3,
+   30027936,
+   1
+  ]
+ ],
+ "forbidden": [
+  [
+   3,
+   9164544
+  ],
+  [
+   1,
+   30027936
+  ],
+  [
+   2,
+   30027936
+  ]
+ ],
+ "ordinals": "Order-preserving inference on Greenville; only one receiving lane on Pleasantdale. Exact paint and permitted lane changes upstream unverified.",
+ "negativeCrossings": [
+  {
+   "branch": 9164544,
+   "deck": 67968161,
+   "station": 176.70832298609594
+  },
+  {
+   "branch": 9164544,
+   "deck": 172322577,
+   "station": 189.71726757758216
+  },
+  {
+   "branch": 30027936,
+   "deck": 67968161,
+   "station": 170.76462380645128
+  },
+  {
+   "branch": 30027936,
+   "deck": 172322577,
+   "station": 183.59578088722594
+  }
+ ],
+ "inventory": {
+  "STRUCTURE_NUMBER_008": "000000008902090",
+  "FACILITY_CARRIED_007": "NORTHCREST ROAD",
+  "FEATURES_DESC_006A": "I85- 3 I85 RMP- 2 I285 R",
+  "LAT_016": "33534971",
+  "LONG_017": "084150258",
+  "ROADWAY_WIDTH_MT_051": "24.4",
+  "STRUCTURE_LEN_MT_049": "127.4",
+  "VERT_CLR_UND_054B": "4.87"
+ },
+ "heldOut": "Odd ten-metre stations (10 + 20k) on each cropped source axis; diagnostic wheel/edge and routing outcomes withheld from fit. Inventory separate from lidar acquisition."
+}
