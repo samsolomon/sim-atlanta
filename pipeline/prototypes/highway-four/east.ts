@@ -6,6 +6,19 @@ import type { TerrainCity, TransportRun } from '../../../web/src/terrain/transpo
 type Vertex = [number, number, number];
 type Draw = NonNullable<TransportRun['drawTread']>;
 type Profile = typeof sections[number];
+export interface EastLandingTriangle {
+  way: number;
+  station: [number,number];
+  points: [Vertex,Vertex,Vertex];
+}
+const landings = new WeakMap<Draw,EastLandingTriangle[]>();
+
+/** Call after buildSurfaceTransport, before area.carveSteps. Triangles are in
+ * scene metres on the original tier-specific tread, with directed way stations. */
+export function eastLandingTriangles(city: TerrainCity): EastLandingTriangle[] {
+  const owners = new Set(city.terrainTransport?.roads.map(r=>r.drawTread));
+  return [...owners].flatMap(draw=>draw ? landings.get(draw) ?? [] : []);
+}
 
 // Clip the solved cross section. Clipping the axis first strands the outer wheels at the oblique cut.
 function insideEastCut(polygon: Vertex[], east: number): Vertex[] {
@@ -26,10 +39,16 @@ function carriageway(profile: Profile, east: number): Draw {
   const line = new Line(rows.map(([x,z]) => [x,z]));
   const landingFirst = rows[0][0] < east;
   const cache = new WeakMap<object, number[]>();
-  return (builder, zero, ground) => {
+  const draw: Draw = (builder, zero, ground) => {
     const previous = cache.get(builder);
     if (previous) return previous;
     const top: number[] = [];
+    const landingFaces: EastLandingTriangle[] = [];
+    landings.set(draw,landingFaces);
+    const apronJoin = profile.owners[landingFirst ? 0 : 1].tie;
+    const jointIndex = rows.findIndex(([x,z])=>Math.hypot(x-apronJoin[0],z-apronJoin[1])<.02);
+    if (jointIndex < 0) throw Error('Missing east approach joint');
+    const joint = line.cum[jointIndex];
     const stations = new Set(line.cum);
     for (let s = 0; s < line.length; s += 12) {
       stations.add(s);
@@ -62,7 +81,14 @@ function carriageway(profile: Profile, east: number): Draw {
           const [u,v,w] = [poly[0],poly[j],poly[j+1]];
           const normal = (v[2]-u[2])*(w[0]-u[0])-(v[0]-u[0])*(w[2]-u[2]);
           if (Math.abs(normal)<1e-8) continue;
-          if (running) top.push(builder.pos.length/3);
+          if (running) {
+            top.push(builder.pos.length/3);
+            if (landingFirst ? s < joint + .001 : t > joint - .001) {
+              const start = landingFirst ? 645 : -joint;
+              landingFaces.push({way:landingFirst ? 369529886 : 38983384,
+                station:[start+s,start+t],points:[u,v,w]});
+            }
+          }
           builder.tri(u,normal>0?v:w,normal>0?w:v,color);
         }
       }
@@ -98,6 +124,7 @@ function carriageway(profile: Profile, east: number): Draw {
     cache.set(builder,top);
     return top;
   };
+  return draw;
 }
 
 export function eastHighwayApproaches(city: TerrainCity): TerrainCity {
