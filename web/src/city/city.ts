@@ -875,15 +875,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let midtownArterials: import('./midtown-arterial-traffic').MidtownArterialTraffic | undefined;
   let midtownBuild = 0;
   async function extendMidtownArterials(added: Iterable<string>) {
-    if (!trafficOptions || !mosaic || ![...added].some(id => Object.hasOwn(midtownRowBounds, id))) return;
+    const trafficRow = (id: string) => id === 'r16' || Object.hasOwn(midtownRowBounds, id);
+    if (!trafficOptions || !mosaic || ![...added].some(trafficRow)) return;
     const build = ++midtownBuild;
     const { MidtownArterialTraffic } = await import('./midtown-arterial-traffic');
     if (build !== midtownBuild || eastController.signal.aborted) return;
-    const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
+    const boards = [...mosaic.patches].filter(([id]) => trafficRow(id))
       .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
     // Share the four-plane shader variants with downtown. The perimeter moves as rows mount.
-    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: perimeter }, boards);
+    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: perimeter }, boards, true);
     midtownArterials?.dispose();
     midtownArterials = next;
     scene.add(next.group);
