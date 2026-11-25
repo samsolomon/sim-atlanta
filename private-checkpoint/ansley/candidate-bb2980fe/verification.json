@@ -1,0 +1,300 @@
+{
+  "low": {
+    "tees": 35,
+    "actualAnchorRiseRange": [
+      0.4499966081785658,
+      0.4600982666015625
+    ],
+    "capProbes": 292,
+    "minRise": 0.4499966081785516,
+    "maxRise": 0.45000361590172133,
+    "maxCapHeightRange": 2.842170943040401e-14,
+    "markerRimSamples": 557,
+    "maxMarkerError": 1.4210854715202004e-14,
+    "flagCount": 9,
+    "flagHeightRange": [
+      4.799995422363281,
+      4.8000030517578125
+    ],
+    "maxFlagError": 6.964057675418189e-06,
+    "cameraMaxMatrixError": {
+      "north": 0.0
+    },
+    "crossRowRimSamplesOnProbedLevelCap": [
+      {
+        "x": 1467.3246295090391,
+        "z": -4899.985370490961,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      },
+      {
+        "x": 1467.063,
+        "z": -4899.877,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      },
+      {
+        "x": 1466.801370490961,
+        "z": -4899.985370490961,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      }
+    ],
+    "ordinaryPinReadback": {
+      "1": {
+        "green": "way/1508747945",
+        "x": 1429.06,
+        "z": -4858.74,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "2": {
+        "green": "way/1221832782",
+        "x": 1588.13,
+        "z": -5172.09,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "3": {
+        "green": "way/1508747959",
+        "x": 1487.68,
+        "z": -5413.48,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "4": {
+        "green": "way/1508747964",
+        "x": 1324.79,
+        "z": -5781.12,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "5": {
+        "green": "way/1508747974",
+        "x": 1407.69,
+        "z": -5429.7,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "6": {
+        "green": "way/1508748699",
+        "x": 1191.35,
+        "z": -5769.73,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "7": {
+        "green": "way/1508748707",
+        "x": 1298.93,
+        "z": -5425.09,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "8": {
+        "green": "way/1508748717",
+        "x": 1281.29,
+        "z": -5147.94,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "9": {
+        "green": "way/1221832784",
+        "x": 1417.62,
+        "z": -5112.93,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      }
+    }
+  },
+  "high": {
+    "tees": 35,
+    "actualAnchorRiseRange": [
+      0.4499969482421733,
+      0.4600982666015625
+    ],
+    "capProbes": 292,
+    "minRise": 0.4499969482421591,
+    "maxRise": 0.45000361590172133,
+    "maxCapHeightRange": 2.842170943040401e-14,
+    "markerRimSamples": 557,
+    "maxMarkerError": 1.4210854715202004e-14,
+    "flagCount": 9,
+    "flagHeightRange": [
+      4.799995422363281,
+      4.8000030517578125
+    ],
+    "maxFlagError": 4.031322902164902e-06,
+    "cameraMaxMatrixError": {
+      "north": 0.0
+    },
+    "crossRowRimSamplesOnProbedLevelCap": [
+      {
+        "x": 1467.3246295090391,
+        "z": -4899.985370490961,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      },
+      {
+        "x": 1467.063,
+        "z": -4899.877,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      },
+      {
+        "x": 1466.801370490961,
+        "z": -4899.985370490961,
+        "owner": "brookwood-south",
+        "measuredCapYs": [
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953,
+          -73.63990020751953
+        ],
+        "markerCapY": -73.63990020751953,
+        "delta": 0.0
+      }
+    ],
+    "ordinaryPinReadback": {
+      "1": {
+        "green": "way/1508747945",
+        "x": 1429.06,
+        "z": -4858.74,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "2": {
+        "green": "way/1221832782",
+        "x": 1588.13,
+        "z": -5172.09,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "3": {
+        "green": "way/1508747959",
+        "x": 1487.68,
+        "z": -5413.48,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "4": {
+        "green": "way/1508747964",
+        "x": 1324.79,
+        "z": -5781.12,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "5": {
+        "green": "way/1508747974",
+        "x": 1407.69,
+        "z": -5429.7,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "6": {
+        "green": "way/1508748699",
+        "x": 1191.35,
+        "z": -5769.73,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "7": {
+        "green": "way/1508748707",
+        "x": 1298.93,
+        "z": -5425.09,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "8": {
+        "green": "way/1508748717",
+        "x": 1281.29,
+        "z": -5147.94,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      },
+      "9": {
+        "green": "way/1221832784",
+        "x": 1417.62,
+        "z": -5112.93,
+        "red": 12,
+        "changed": 28,
+        "nonempty": 3600
+      }
+    }
+  },
+  "lowPerformance": {
+    "north": {
+      "p50": {
+        "base": 16.7,
+        "candidate": 16.7,
+        "delta": 0.0
+      },
+      "p95": {
+        "base": 16.7,
+        "candidate": 33.4,
+        "delta": 16.7
+      },
+      "draw": {
+        "base": 63,
+        "candidate": 63,
+        "delta": 0
+      },
+      "tri": {
+        "base": 1265111,
+        "candidate": 1247212,
+        "delta": -17899
+      }
+    }
+  }
+}
