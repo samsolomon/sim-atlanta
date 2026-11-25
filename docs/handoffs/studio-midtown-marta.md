@@ -35,6 +35,12 @@ Downtown rail owns the portable Mayson support study at `53920e96e39147d60c45644
 
 Both detail tiers passed five matched camera pairs on the final private mount. All four stems seat over their whole footprints and all eight bearing pads meet both adjacent surfaces exactly. The matched Red replay retained six cars across all 130 samples. At 85 timestamps, all 4,080 wheel centres hit and all 21,466 lateral hits reproduced the baseline. At 08:01:12.365 EST, 16 centre rays fell directly on the modeled span and met the rail to numerical precision. Next, review the crossing bay with Sam. The adjacent approach needs independent structure evidence before extending the supports.
 
+### Mayson approach extensions
+
+Sam approved the center bay on `162fd608`. Downtown rail delivered the four inferred structural continuations at `eefa7db5755cf2fb72ae7ac5068e4688cc03a2fe`. Private mounted successor `21341f85a658f9230c22592a59733981cae2297f` passes the registered trail-exit and reverse-eye comparisons on Low and High. The NR girders extend 14.53 m south and 34.68 m north, and NL extends 21.04 m south and 32.87 m north. All four transverse end faces close into the drawn earth. The shallow pocket beyond initial NL north contact lies inside the extended structure. All 48 join vertices coincide with the approved bay. The field extent of the structure remains unverified. In the following 20 m the outer formation edge can still stand up to 0.29 m above earth on NR and 0.79 m on NL.
+
+Both detail tiers preserved the signed terrain and rail controls. At 85 fixed times all 4,080 tread centres reproduced baseline. The on-structure sample at 08:01:12.365 EST had 4, 16 and 14 wheel centres on the south approach, bay and north approach respectively, all in contact to numerical precision. The six-car scheduled Red trip stayed selected and drawn for all 129 follow samples. Next, present the private comparison to Sam. Formal OpenCode/Grok review is pending authentication.
+
 ## Rail references for expansion
 
 Grant Street remains the rail-over-road control for the current first-bake pilot. For future yard expansion, use Norfolk Southern Inman Yard as the reference for a shared graded track bed carrying parallel tracks. Verify each switch connection against source geometry or imagery before representing it as connected.
