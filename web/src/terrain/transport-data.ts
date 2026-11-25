@@ -24,6 +24,7 @@ export interface TransportRun {
 }
 
 export type TerrainCity = VData & {
+  golfTees?: { id: string; anchor: P2; sharedDatum: number | null; faces: [number, number, number][][] }[];
   golfBowls?: [number, number, number][][]; // x, z, inferred depth below the drawn terrain
   terrainTransport?: { version: 1; roads: TransportRun[]; rail: TransportRun[] };
 };
