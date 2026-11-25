@@ -311,6 +311,51 @@ export function orientedBox(body: Builder, x: number, z: number, dx: number, dz:
   }
 }
 
+function soffitEdge(profile: NorthLineProfile, station: number, side: number) {
+  const p = profile.centre[station];
+  const offset = side * (p.half - 2.1 + 2.6 - 2.4);
+  return [p.x + p.nx * offset, profile.height[station] - DECK - profile.depth[station], p.z + p.nz * offset];
+}
+
+/** Intersect the two adjoining drawn soffit quads with the bearing footprint.
+ * Clipping each triangle preserves the break at the support station and each
+ * quad's diagonal. The underside of the bearing stays on the shaft's plane. */
+function flyoverBearing(body: Builder, profile: NorthLineProfile, station: number, shaftTop: number) {
+  const p = profile.centre[station];
+  const planes = [
+    { x: p.nz, z: -p.nx, limit: 1.05 }, { x: -p.nz, z: p.nx, limit: 1.05 },
+    { x: p.nx, z: p.nz, limit: 1.4 }, { x: -p.nx, z: -p.nz, limit: 1.4 },
+  ];
+  const distance = (v: number[], plane: typeof planes[number]) =>
+    (v[0] - p.x) * plane.x + (v[2] - p.z) * plane.z - plane.limit;
+  for (let row = station - 1; row <= station; row++) {
+    const a = soffitEdge(profile, row, -1), b = soffitEdge(profile, row, 1);
+    const c = soffitEdge(profile, row + 1, 1), d = soffitEdge(profile, row + 1, -1);
+    for (let polygon of [[a, b, c], [a, c, d]]) {
+      for (const plane of planes) {
+        const clipped: number[][] = [];
+        for (let i = 0; i < polygon.length; i++) {
+          const v = polygon[i], w = polygon[(i + 1) % polygon.length];
+          const dv = distance(v, plane), dw = distance(w, plane);
+          if (dv <= 0) clipped.push(v);
+          if ((dv < 0 && dw > 0) || (dv > 0 && dw < 0))
+            clipped.push(v.map((n, k) => n + (w[k] - n) * dv / (dv - dw)));
+        }
+        polygon = clipped;
+      }
+      for (let i = 2; i < polygon.length; i++)
+        body.tri(polygon[0], polygon[i - 1], polygon[i], PIER);
+      for (let i = 0; i < polygon.length; i++) {
+        const v = polygon[i], w = polygon[(i + 1) % polygon.length];
+        if (planes.some(plane => Math.abs(distance(v, plane)) < 1e-7 && Math.abs(distance(w, plane)) < 1e-7))
+          body.quad(v, w, [w[0], shaftTop, w[2]], [v[0], shaftTop, v[2]], PIER);
+      }
+    }
+  }
+  const underside = (u: number, v: number) => [p.x + p.nz * u + p.nx * v, shaftTop, p.z - p.nx * u + p.nz * v];
+  body.quad(underside(-1.05, -1.4), underside(-1.05, 1.4), underside(1.05, 1.4), underside(1.05, -1.4), PIER);
+}
+
 /** Cast-in-place box girder: thin overhanging slab, sloped webs, flat soffit. */
 function deckRun(body: Builder, profile: NorthLineProfile, i0: number, i1: number) {
   const c = profile.centre;
@@ -326,8 +371,8 @@ function deckRun(body: Builder, profile: NorthLineProfile, i0: number, i1: numbe
       edgeR: at(w, top - 0.35),
       webTopL: at(-(w - 1.5), top - 0.35),
       webTopR: at(w - 1.5, top - 0.35),
-      botL: at(-(w - 2.4), top - profile.depth[i]),
-      botR: at(w - 2.4, top - profile.depth[i]),
+      botL: soffitEdge(profile, i, -1),
+      botR: soffitEdge(profile, i, 1),
     };
   };
   for (let i = i0; i < i1; i++) {
@@ -431,7 +476,7 @@ export function northLineStructure(profile: NorthLineProfile, piers: number[], g
       const shaft = new THREE.CylinderGeometry(radius, radius, seat - g + 0.4, 12);
       shaft.translate(p.x, (seat + g - 0.4) / 2, p.z);
       body.addGeometry(shaft, '#a7a399');
-      orientedBox(body, p.x, p.z, p.nz, -p.nx, seat, soffit + 0.05, 1.05, 1.4, PIER);
+      flyoverBearing(body, profile, i, seat);
       continue;
     }
     // Plain rectangular column with a flared cap under the girder (from the photographs).
