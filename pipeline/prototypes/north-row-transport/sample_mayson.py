@@ -31,5 +31,8 @@ for upper,lower in ((81137860,9270932),(319512612,429349499),(144485857,9270932)
             for cls in (2,17):
                 v=h[valid&(classes==cls)]
                 if len(v):groups[cls]=[len(v),*[round(float(a),3) for a in np.quantile(v,[.1,.5,.9])]]
+            other=np.sort(h[valid & ~np.isin(classes,[2,17])])
+            clusters=[g for g in np.split(other,np.where(np.diff(other)>0.55)[0]+1) if len(g)>=3]
+            groups["other"]=[[len(g),round(float(g.min()),2),round(float(np.median(g)),2),round(float(g.max()),2)] for g in clusters]
             out[(key,round(s,3))]=[key,round(s,3),round(q.x,3),round(q.y,3),groups]
 print(json.dumps(sorted(out.values()),separators=(',',':')))
