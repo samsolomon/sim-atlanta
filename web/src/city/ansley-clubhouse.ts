@@ -87,8 +87,8 @@ export function createAnsleyClubhouse(buildings: VBuilding[], site: VBuilding, f
   return shell.finish('#edc99b', .33);
 }
 
-/** The pool is a separate, ground-registered landscape mesh beside the shell. */
-export function ansleyClubPool(ground: DrapeGround) {
+/** The pool and valet apron follow the board beside the clubhouse shell. */
+export function ansleyClubGround(ground: DrapeGround) {
   const y = ground(...world(2, -40));
   if (y === null) return null;
   const map = (ring: P2[]) => ring.map(([u, v]) => world(u, v));
@@ -96,9 +96,14 @@ export function ansleyClubPool(ground: DrapeGround) {
   const apron = map([[-13.3, -54.5], [-12.8, -24.1], [19.5, -25.1], [20.2, -57.4]]);
   const b = new Builder();
   const drawn = ground.triangles;
-  const paving = (a: number[], c: number[], d: number[]) => b.tri(a, c, d, '#c6bca7');
-  drapeRing(apron, 2, (x, z) => (ground(x, z) ?? y) + .12,
-    (a, c, d) => { if (drawn) drapeTriangle(drawn, a, c, d, .12, paving); else paving(a, c, d); }, [pool]);
+  const pave = (ring: P2[], color: string, holes: P2[][] = []) => {
+    const emit = (a: number[], c: number[], d: number[]) => b.tri(a, c, d, color);
+    drapeRing(ring, 2, (x, z) => (ground(x, z) ?? y) + .12,
+      (a, c, d) => { if (drawn) drapeTriangle(drawn, a, c, d, .12, emit); else emit(a, c, d); }, holes);
+  };
+  pave(apron, '#c6bca7', [pool]);
+  pave(map([[-.5, 24.3], [3.1, 22.35], [20.2, 22.35], [24, 24.9], [22.7, 29.8],
+    [16.8, 31.1], [6.1, 30.65], [1.4, 28.7]]), '#b6aea0');
   const top = Math.max(...pool.map(([x, z]) => ground(x, z) ?? y)) + .13;
   const [a, c, d, e] = pool;
   const vertex = ([x, z]: P2) => [x, top, z];
@@ -109,6 +114,7 @@ export function ansleyClubPool(ground: DrapeGround) {
     b.quad(vertex(a), vertex(next), bed(next), bed(a), '#b9b39e');
   }
   const mesh = landscapeMesh(b);
-  mesh.mesh.name = 'Ansley clubhouse pool';
+  mesh.mesh.name = 'Ansley clubhouse grounds';
+  mesh.mesh.userData.perf = 'landscape';
   return mesh;
 }
