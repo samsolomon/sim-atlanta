@@ -1,0 +1,1410 @@
+{
+  "before": "b357096c",
+  "model": "d465d7c8",
+  "contextSha256": "a0969a9924062678a316fc87a16db62962208621304433e1d30055a661afffa9",
+  "terrainSha256": "9421ae7d430022d46e3daeb49777dc7049c4393be8cc8ef317a7d1633c95bf6b",
+  "jointCamera": [
+    -245,
+    -6160,
+    -58,
+    57,
+    790
+  ],
+  "controls": {
+    "joint-day": {
+      "before": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 63,
+          "triangles": 1228340,
+          "points": 0,
+          "lines": 0,
+          "programs": 53,
+          "programKinds": {
+            "?": 48,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "after": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 67,
+          "triangles": 1230934,
+          "points": 0,
+          "lines": 0,
+          "programs": 53,
+          "programKinds": {
+            "?": 48,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "joint-night": {
+      "before": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 76,
+          "triangles": 1228353,
+          "points": 0,
+          "lines": 0,
+          "programs": 61,
+          "programKinds": {
+            "?": 56,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "after": {
+        "clock": "2026-11-26T04:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.46483842481086,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 80,
+          "triangles": 1230947,
+          "points": 0,
+          "lines": 0,
+          "programs": 61,
+          "programKinds": {
+            "?": 56,
+            "Ink": 1,
+            "AoBlend": 1,
+            "TiltShift": 1,
+            "GlassBlur": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "high"
+      },
+      "worldMatrixMaxDelta": 0.0
+    },
+    "joint-low": {
+      "before": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 46,
+          "triangles": 785787,
+          "points": 0,
+          "lines": 0,
+          "programs": 41,
+          "programKinds": {
+            "?": 38,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "after": {
+        "clock": "2026-11-25T18:30:00.000Z",
+        "eye": [
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325
+        ],
+        "camera": [
+          0.5299192642332052,
+          -5.551115123125783e-17,
+          -0.8480480961564257,
+          0,
+          -0.4618800967369666,
+          0.838670567945424,
+          -0.28861471670784605,
+          0,
+          0.711232978448545,
+          0.544639035015027,
+          0.44442769029968343,
+          0,
+          316.87405297435066,
+          385.5148376618714,
+          -5808.90212466325,
+          1
+        ],
+        "projection": [
+          2.572277007985155,
+          0,
+          0,
+          0,
+          0,
+          5.14455401597031,
+          0,
+          0,
+          0,
+          0,
+          -1.0011117287381879,
+          -1,
+          0,
+          0,
+          -40.02223457476376,
+          0
+        ],
+        "viewport": [
+          1440,
+          720,
+          1
+        ],
+        "renderer": {
+          "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+          "pixelRatio": 1,
+          "drawingBuffer": [
+            1440,
+            720
+          ],
+          "calls": 50,
+          "triangles": 788617,
+          "points": 0,
+          "lines": 0,
+          "programs": 41,
+          "programKinds": {
+            "?": 38,
+            "Ink": 1,
+            "TiltShift": 1,
+            "Grade": 1
+          },
+          "shadowMap": {
+            "enabled": true,
+            "autoUpdate": false
+          }
+        },
+        "areas": [
+          "downtown",
+          "north-band",
+          "north-corner",
+          "midtown-south",
+          "midtown-central",
+          "midtown-upper",
+          "brookwood-south",
+          "brookwood-station",
+          "r16"
+        ],
+        "quality": "low"
+      },
+      "worldMatrixMaxDelta": 0.0
+    }
+  },
+  "frontage": {
+    "after-peachtree": {
+      "clock": "2026-11-25T18:30:00.000Z",
+      "eye": [
+        87.98271551289105,
+        117.13999862670906,
+        -6155.764738092833
+      ],
+      "camera": [
+        0.46947156278589064,
+        -2.7755575615628914e-17,
+        -0.882947592858927,
+        0,
+        -0.4414737964294638,
+        0.8660254037844385,
+        -0.2347357813929455,
+        0,
+        0.7646550456261503,
+        0.5000000000000003,
+        0.40657429972696235,
+        0,
+        87.98271551289105,
+        117.13999862670906,
+        -6155.764738092833,
+        1
+      ],
+      "projection": [
+        2.572277007985155,
+        0,
+        0,
+        0,
+        0,
+        5.14455401597031,
+        0,
+        0,
+        0,
+        0,
+        -1.0011117287381879,
+        -1,
+        0,
+        0,
+        -40.02223457476376,
+        0
+      ],
+      "viewport": [
+        1440,
+        720,
+        1
+      ],
+      "renderer": {
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+        "pixelRatio": 1,
+        "drawingBuffer": [
+          1440,
+          720
+        ],
+        "calls": 52,
+        "triangles": 781727,
+        "points": 0,
+        "lines": 0,
+        "programs": 61,
+        "programKinds": {
+          "?": 56,
+          "Ink": 1,
+          "AoBlend": 1,
+          "TiltShift": 1,
+          "GlassBlur": 1,
+          "Grade": 1
+        },
+        "shadowMap": {
+          "enabled": true,
+          "autoUpdate": false
+        }
+      },
+      "areas": [
+        "downtown",
+        "north-band",
+        "north-corner",
+        "midtown-south",
+        "midtown-central",
+        "midtown-upper",
+        "brookwood-south",
+        "brookwood-station",
+        "r16"
+      ],
+      "quality": "high"
+    },
+    "after-valley": {
+      "clock": "2026-11-25T18:30:00.000Z",
+      "eye": [
+        36.008980222259794,
+        119.8577547896924,
+        -6500.836542281643
+      ],
+      "camera": [
+        -0.6819983600624986,
+        2.7755575615628914e-17,
+        -0.7313537016191702,
+        0,
+        -0.3766750025602795,
+        0.8571673007021123,
+        0.3512551224584033,
+        0,
+        0.6268924782754022,
+        0.5150380749100542,
+        -0.584586693378039,
+        0,
+        36.008980222259794,
+        119.8577547896924,
+        -6500.836542281643,
+        1
+      ],
+      "projection": [
+        2.572277007985155,
+        0,
+        0,
+        0,
+        0,
+        5.14455401597031,
+        0,
+        0,
+        0,
+        0,
+        -1.0011117287381879,
+        -1,
+        0,
+        0,
+        -40.02223457476376,
+        0
+      ],
+      "viewport": [
+        1440,
+        720,
+        1
+      ],
+      "renderer": {
+        "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+        "pixelRatio": 1,
+        "drawingBuffer": [
+          1440,
+          720
+        ],
+        "calls": 63,
+        "triangles": 1241156,
+        "points": 0,
+        "lines": 0,
+        "programs": 61,
+        "programKinds": {
+          "?": 56,
+          "Ink": 1,
+          "AoBlend": 1,
+          "TiltShift": 1,
+          "GlassBlur": 1,
+          "Grade": 1
+        },
+        "shadowMap": {
+          "enabled": true,
+          "autoUpdate": false
+        }
+      },
+      "areas": [
+        "downtown",
+        "north-band",
+        "north-corner",
+        "midtown-south",
+        "midtown-central",
+        "midtown-upper",
+        "brookwood-south",
+        "brookwood-station",
+        "r16"
+      ],
+      "quality": "high"
+    }
+  },
+  "contact": {
+    "high": {
+      "samples": 42,
+      "minBridgeClearance": 5.159999275207525,
+      "maxBridgeClearance": 10.870001029968265,
+      "mainGrade": -47.24000091552735,
+      "towerGrade": -50.73999938964843,
+      "groups": [
+        {
+          "name": "Shepherd Center main hospital",
+          "replaced": [
+            "osm:way:269196399"
+          ]
+        },
+        {
+          "name": "Shepherd Marcus Center for Advanced Rehabilitation",
+          "replaced": [
+            "osm:way:1423358852"
+          ]
+        },
+        {
+          "name": "Piedmont Atlanta Hospital",
+          "replaced": [
+            "osm:way:887724919"
+          ]
+        }
+      ],
+      "groundAuditR16": [
+        {
+          "layer": "building \u00b7 generic",
+          "board": "r16",
+          "triangles": 1297,
+          "samples": 30869,
+          "penetrating": 3537,
+          "sites": 188,
+          "histogram": [
+            85,
+            220,
+            1598,
+            1634
+          ],
+          "coplanar": 69,
+          "worst": {
+            "layer": "building \u00b7 generic",
+            "board": "r16",
+            "x": -455.5967248122657,
+            "y": -60.99333190917969,
+            "z": -6168.226868212542,
+            "depth": 2.499379768696933,
+            "path": ""
+          }
+        },
+        {
+          "layer": "landmark \u00b7 Inferred ramp lining, soffit and headers",
+          "board": "r16",
+          "triangles": 3,
+          "samples": 144,
+          "penetrating": 31,
+          "sites": 3,
+          "histogram": [
+            4,
+            3,
+            11,
+            13
+          ],
+          "coplanar": 5,
+          "worst": {
+            "layer": "landmark \u00b7 Inferred ramp lining, soffit and headers",
+            "board": "r16",
+            "x": 955.8465680380925,
+            "y": -64.29431719915509,
+            "z": -5800.579470950334,
+            "depth": 1.45271925002897,
+            "path": "Inferred ramp lining, soffit and headers"
+          }
+        },
+        {
+          "layer": "landmark \u00b7 Inferred North Line extension",
+          "board": "r16",
+          "triangles": 8650,
+          "samples": 39447,
+          "penetrating": 1122,
+          "sites": 110,
+          "histogram": [
+            735,
+            372,
+            15,
+            0
+          ],
+          "coplanar": 2998,
+          "worst": {
+            "layer": "landmark \u00b7 Inferred North Line extension",
+            "board": "r16",
+            "x": 1132.7053495836092,
+            "y": -54.797188187234454,
+            "z": -6029.715296048157,
+            "depth": 0.33639261962308353,
+            "path": "Inferred North Line extension"
+          }
+        },
+        {
+          "layer": "landscape primitives",
+          "board": "r16",
+          "triangles": 18357,
+          "samples": 67383,
+          "penetrating": 91,
+          "sites": 23,
+          "histogram": [
+            73,
+            18,
+            0,
+            0
+          ],
+          "coplanar": 1511,
+          "worst": {
+            "layer": "landscape primitives",
+            "board": "r16",
+            "x": -679.384009511024,
+            "y": -69.93592926778219,
+            "z": -6339.927284055441,
+            "depth": 0.16193656306019477,
+            "path": "yards / landscape"
+          }
+        },
+        {
+          "layer": "unnamed MeshLambertMaterial+vc [position,color,normal]",
+          "board": "r16",
+          "triangles": 22,
+          "samples": 60,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 North Line guideway",
+          "board": "r16",
+          "triangles": 10,
+          "samples": 25,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landscape primitives:mulch",
+          "board": "r16",
+          "triangles": 857,
+          "samples": 2571,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Atlanta Hospital",
+          "board": "r16",
+          "triangles": 2,
+          "samples": 132,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "ground cover",
+          "board": "r16",
+          "triangles": 17237,
+          "samples": 51711,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Peachtree plaza:tread",
+          "board": "r16",
+          "triangles": 88,
+          "samples": 456,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Peachtree plaza",
+          "board": "r16",
+          "triangles": 7852,
+          "samples": 31023,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:highway",
+          "board": "r16",
+          "triangles": 2379,
+          "samples": 13091,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:asphalt",
+          "board": "r16",
+          "triangles": 198,
+          "samples": 3978,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:sidewalk",
+          "board": "r16",
+          "triangles": 155,
+          "samples": 1064,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:centreline",
+          "board": "r16",
+          "triangles": 257,
+          "samples": 1508,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:marking",
+          "board": "r16",
+          "triangles": 137,
+          "samples": 570,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread",
+          "board": "r16",
+          "triangles": 28,
+          "samples": 84,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 84,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread:highway",
+          "board": "r16",
+          "triangles": 60,
+          "samples": 180,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 180,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread:marking",
+          "board": "r16",
+          "triangles": 8,
+          "samples": 24,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 24,
+          "worst": null
+        }
+      ]
+    },
+    "low": {
+      "samples": 42,
+      "minBridgeClearance": 5.159999275207525,
+      "maxBridgeClearance": 10.870001029968265,
+      "mainGrade": -47.24000091552735,
+      "towerGrade": -50.73999938964843,
+      "groups": [
+        {
+          "name": "Shepherd Center main hospital",
+          "replaced": [
+            "osm:way:269196399"
+          ]
+        },
+        {
+          "name": "Shepherd Marcus Center for Advanced Rehabilitation",
+          "replaced": [
+            "osm:way:1423358852"
+          ]
+        },
+        {
+          "name": "Piedmont Atlanta Hospital",
+          "replaced": [
+            "osm:way:887724919"
+          ]
+        }
+      ],
+      "groundAuditR16": [
+        {
+          "layer": "building \u00b7 generic",
+          "board": "r16",
+          "triangles": 1288,
+          "samples": 30690,
+          "penetrating": 3549,
+          "sites": 188,
+          "histogram": [
+            82,
+            222,
+            1631,
+            1614
+          ],
+          "coplanar": 72,
+          "worst": {
+            "layer": "building \u00b7 generic",
+            "board": "r16",
+            "x": -455.5967248122657,
+            "y": -60.99333190917969,
+            "z": -6168.226868212542,
+            "depth": 2.499379768696933,
+            "path": ""
+          }
+        },
+        {
+          "layer": "landmark \u00b7 Inferred ramp lining, soffit and headers",
+          "board": "r16",
+          "triangles": 3,
+          "samples": 144,
+          "penetrating": 31,
+          "sites": 3,
+          "histogram": [
+            4,
+            3,
+            11,
+            13
+          ],
+          "coplanar": 5,
+          "worst": {
+            "layer": "landmark \u00b7 Inferred ramp lining, soffit and headers",
+            "board": "r16",
+            "x": 955.8465680380925,
+            "y": -64.29431719915509,
+            "z": -5800.579470950334,
+            "depth": 1.45271925002897,
+            "path": "Inferred ramp lining, soffit and headers"
+          }
+        },
+        {
+          "layer": "landmark \u00b7 Inferred North Line extension",
+          "board": "r16",
+          "triangles": 8650,
+          "samples": 39447,
+          "penetrating": 1121,
+          "sites": 110,
+          "histogram": [
+            734,
+            372,
+            15,
+            0
+          ],
+          "coplanar": 2987,
+          "worst": {
+            "layer": "landmark \u00b7 Inferred North Line extension",
+            "board": "r16",
+            "x": 1132.7053495836092,
+            "y": -54.797188187234454,
+            "z": -6029.715296048157,
+            "depth": 0.33639261962308353,
+            "path": "Inferred North Line extension"
+          }
+        },
+        {
+          "layer": "landscape primitives",
+          "board": "r16",
+          "triangles": 10018,
+          "samples": 42366,
+          "penetrating": 91,
+          "sites": 23,
+          "histogram": [
+            73,
+            18,
+            0,
+            0
+          ],
+          "coplanar": 1524,
+          "worst": {
+            "layer": "landscape primitives",
+            "board": "r16",
+            "x": -679.384009511024,
+            "y": -69.93592926778219,
+            "z": -6339.927284055441,
+            "depth": 0.16193656306019477,
+            "path": "yards / landscape"
+          }
+        },
+        {
+          "layer": "unnamed MeshLambertMaterial+vc [position,color,normal]",
+          "board": "r16",
+          "triangles": 22,
+          "samples": 60,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 North Line guideway",
+          "board": "r16",
+          "triangles": 10,
+          "samples": 25,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Atlanta Hospital",
+          "board": "r16",
+          "triangles": 2,
+          "samples": 132,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Peachtree plaza:tread",
+          "board": "r16",
+          "triangles": 88,
+          "samples": 456,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 Piedmont Peachtree plaza",
+          "board": "r16",
+          "triangles": 7173,
+          "samples": 29076,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:highway",
+          "board": "r16",
+          "triangles": 2379,
+          "samples": 13091,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:asphalt",
+          "board": "r16",
+          "triangles": 198,
+          "samples": 3978,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:sidewalk",
+          "board": "r16",
+          "triangles": 155,
+          "samples": 1064,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:centreline",
+          "board": "r16",
+          "triangles": 259,
+          "samples": 1520,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "streets:marking",
+          "board": "r16",
+          "triangles": 137,
+          "samples": 570,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 0,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread",
+          "board": "r16",
+          "triangles": 28,
+          "samples": 84,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 84,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread:highway",
+          "board": "r16",
+          "triangles": 60,
+          "samples": 180,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 180,
+          "worst": null
+        },
+        {
+          "layer": "landmark \u00b7 GA 13 to I-85 southbound ramp tread:marking",
+          "board": "r16",
+          "triangles": 8,
+          "samples": 24,
+          "penetrating": 0,
+          "sites": 0,
+          "histogram": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "coplanar": 24,
+          "worst": null
+        }
+      ]
+    }
+  }
+}
