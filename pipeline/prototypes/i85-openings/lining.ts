@@ -1,4 +1,4 @@
-import { east,west,lowerAxis,lowerEdges,lowerPoint } from '../i85-cohesion/lower';
+import { east,west,lowerAxis,lowerStations,lowerEdges,lowerPoint } from '../i85-cohesion/lower';
 
 type Ground=(x:number,z:number)=>number|null;
 type V=[number,number,number];
@@ -19,18 +19,29 @@ export function rampSection(s:number,exposed:Ground) {
 
 export function rampLining(exposed:Ground,quad:Emit) {
   const lo=east-15,hi=west+25;
-  const stations=new Set([lo,hi,east-12,east,west,west+12,...lowerAxis.cum.filter(v=>v>lo&&v<hi)]);
-  for(let s=lo+1;s<hi;s++)stations.add(s);
+  const stations=new Set([lo,hi,...lowerStations().filter(s=>s>lo && s<hi),east-12,east,west,west+12,...lowerAxis.cum.filter(v=>v>lo&&v<hi)]);
   const levels=[...stations].sort((a,b)=>a-b);
   const lift=(p:V,h:number):V=>[p[0],p[1]+h,p[2]];
   const rows=levels.map(s=>rampSection(s,exposed));
   const cap=(p:V)=>lift(p,height+slab);
   for(let i=1;i<rows.length;i++) {
     const a=rows[i-1],b=rows[i],s=(levels[i-1]+levels[i])/2;
+    // Each unmarked margin laps 5 cm below the paved shoulder. At the
+    // daylight tie the outer 5 cm rests against the original ground.
+    const marginEdge=(row:typeof a,side:'l'|'r',outer:boolean):V=>{
+      const base=side==='l'?row.left:row.right;
+      const root=outer?row[side]:base;
+      const dx=row.right[0]-row.left[0],dz=row.right[2]-row.left[2],w=Math.hypot(dx,dz);
+      const offset=(side==='l'?-1:1)*(outer?.05*(1-row.wing):-.05);
+      return [root[0]+dx/w*offset,root[1]-(outer?0:.003),root[2]+dz/w*offset];
+    };
+    for(const side of ['l','r'] as const) {
+      const outerA=marginEdge(a,side,true),outerB=marginEdge(b,side,true);
+      const innerA=marginEdge(a,side,false),innerB=marginEdge(b,side,false);
+      if(side==='l')quad(outerA,outerB,innerB,innerA,'#777574');
+      else quad(innerA,innerB,outerB,outerA,'#777574');
+    }
     if(!a.wing && !b.wing)continue;
-    // Margins close the floor all the way to the lining. No paint or wheels use them.
-    quad(a.l,b.l,b.left,a.left,'#777574');
-    quad(a.right,b.right,b.r,a.r,'#777574');
     const inside=s>east && s<west;
     for(const side of ['l','r'] as const) {
       const start=a[side],end=b[side];
