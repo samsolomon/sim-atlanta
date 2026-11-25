@@ -3,10 +3,17 @@ import { Builder, Line, type P2 } from '../vignette/geom';
 import { brookwoodBedNavd88M } from './brookwood';
 import fixture from './fixtures/norcross-north-study.json';
 
+// Main 2 carries the illustrative freight. Its source way joins the station row
+// at the first vertex and leaves the private board at the last one.
+const main2 = fixture.rail.find(run => run.id === 'osm:way:874902949')!;
+export const northFreightMain = new Line(main2.pts as P2[]);
+const RAIL_STEP = 1.5;
+
 /** The Brookwood mains and siding continue on the same three OSM ways. Vehicle
  * service is separate. Sample the mounted terrain so both tiers carry the bed. */
 export function norcrossNorthRails(groundAt: (x: number, z: number) => number | null, zero: number) {
   const geometry = new Builder();
+  let freightHeights: number[] = [];
   for (const run of fixture.rail) {
     const line = new Line(run.pts as P2[]);
     const bed = (s: number) => {
@@ -20,6 +27,12 @@ export function norcrossNorthRails(groundAt: (x: number, z: number) => number | 
       if (!Number.isFinite(crest)) throw Error('NS continuation outside mounted ground: ' + run.id);
       return THREE.MathUtils.lerp(edge, crest, Math.min(1, s / 8));
     };
+    // Use the same longitudinal stations as the running-rail strip. The truck
+    // sampler interpolates the rendered heights between those vertices.
+    if (run === main2) {
+      freightHeights = Array.from({ length: Math.ceil(line.length / RAIL_STEP) + 1 },
+        (_, i) => bed(Math.min(i * RAIL_STEP, line.length)) + 0.32);
+    }
     const station = (s: number, width: number, offset: number, lift: number) => {
       const p = line.at(s), y = bed(s) + lift;
       return [-width / 2, width / 2].map(side => {
@@ -36,7 +49,7 @@ export function norcrossNorthRails(groundAt: (x: number, z: number) => number | 
     const strip = (start: number, end: number, width: number, offset: number, lift: number, colour: string) => {
       let prev = station(start,width,offset,lift);
       for (let s = start; s < end;) {
-        s = Math.min(end, s + 1.5);
+        s = Math.min(end, s + RAIL_STEP);
         const next = station(s,width,offset,lift);
         geometry.quad(prev[0],prev[1],next[1],next[0],colour);
         prev = next;
@@ -51,5 +64,13 @@ export function norcrossNorthRails(groundAt: (x: number, z: number) => number | 
   mesh.name = 'NS Norcross mains and siding north of Brookwood';
   mesh.userData.ways = fixture.rail.map(run => run.id);
   mesh.receiveShadow = true;
-  return mesh;
+  return {
+    mesh,
+    freightRailhead(distance: number) {
+      const s = THREE.MathUtils.clamp(distance, 0, northFreightMain.length);
+      const i = Math.min(Math.floor(s / RAIL_STEP), freightHeights.length - 2);
+      const end = Math.min((i + 1) * RAIL_STEP, northFreightMain.length);
+      return THREE.MathUtils.lerp(freightHeights[i], freightHeights[i + 1], (s - i * RAIL_STEP) / (end - i * RAIL_STEP));
+    },
+  };
 }
