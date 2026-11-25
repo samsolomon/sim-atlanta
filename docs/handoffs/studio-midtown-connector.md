@@ -1,3 +1,22 @@
+# Studio Midtown Connector handoff · 2026-11-25
+
+**Paused at Air’s request.** The assembled checkout tested was `50caf703c2db956c8d9757eb3e55021464982f28`. The production traffic and rail contribution is `48cb1bb78a6ee6dc1a72c8fe619b1aa05e38f910` on `codex/clean-expansion-traffic-rail`.
+
+Fresh `pnpm data` completed. All nine context, ground metadata and terrain files for Brookwood South, Brookwood Station and R16 matched the accepted SHA-256 manifest. Data generation started on `d4577b25`. The four changes through `50caf703` affect tests only.
+
+On `50caf703`, Rust passed 20 tests and two Python groups passed 11 and 7. Air stopped verification during the web suite. Its partial log records six failures across four files:
+
+- `skin-footprint.test.ts` — one landmark footprint assertion.
+- `midtown-foundations.test.ts` — both tier-specific roof-to-ground assertions.
+- `midtown-connector.test.ts` — both mounted surface checks.
+- `ground-map.test.ts` — the ground texture budget assertion.
+
+The worker suite was still queued when the process group stopped. The fresh checkout is under `/tmp/connector-fresh-verify.G7thU79j/final`. Its parent directory retains `final-data.log`, `final-test.log`, `final-hashes.json` and `accepted-hashes.json`.
+
+**Next step on release from pause:** reproduce the six failures in the retained checkout, collect assertion details, then rerun the complete suite. Phone owns performance and City smoke. Fifth Street remains paused.
+
+---
+
 # Handoff: studio-midtown-connector (Claude → Codex, 2026-11-23)
 
 ## Codex continuation — 2026-11-23
