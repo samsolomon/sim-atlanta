@@ -99,6 +99,7 @@ function offstage(lane: TrafficCourse) {
 export interface TrafficCourse {
   /** Frozen allocation basis for matched private corridor comparisons. */
   allocationLengthM?: number;
+  retimedFromM?: number;
   line: Line;
   /** One original source road per segment. The callback selects ground, deck or a hole. */
   roads: VRoad[];
@@ -127,6 +128,17 @@ interface Slot {
   threshold: number;
   kind: Kind;
   color: THREE.Color;
+}
+
+// Retain the incoming trip clock through a refitted lane join. Redistribute
+// the small path-length difference only downstream of the first revised piece.
+function tripLength(course: TrafficCourse) {
+  return course.retimedFromM===undefined ? course.line.length : course.allocationLengthM ?? course.line.length;
+}
+function pathStation(s:number, course:TrafficCourse) {
+  const from=course.retimedFromM;
+  if(from===undefined || s<=from) return s;
+  return from+(s-from)*(course.line.length-from)/(tripLength(course)-from);
 }
 
 // A monotone distance map concentrates existing cars at a bottleneck. Value and
@@ -322,7 +334,7 @@ export class RoadTraffic {
       return [{
         course, slots, queue, bounds,
         timed: !course.closed && (!!course.signals?.length || !!queue),
-        period: course.line.length + offstage(course),
+        period: tripLength(course) + offstage(course),
         active: [], brakes: [], trips: slots.map(() => ({ start: 0, length: 0 })),
         heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
         vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
@@ -466,7 +478,7 @@ export class RoadTraffic {
         const timed = positions ? positions[i] : undefined;
         if (timed === null) continue;
         const free = THREE.MathUtils.euclideanModulo(seconds * v + slot.phase, period);
-        const s = timed ?? rushDistance(free, course, rushHour);
+        const s = timed ?? rushDistance(pathStation(free,course), course, rushHour);
         const length = LENGTH[slot.kind], half = length / 2;
         if (!course.closed && (s < half || s > line.length - half)) continue;
         if (view) {
@@ -602,8 +614,8 @@ export class RoadTraffic {
       const { line, roads } = slot.lane;
       const timed = signalled.get(slot);
       if (timed === null) continue;
-      const free = THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
-      const s = timed ?? rushDistance(free, slot.lane, rushHour);
+      const free = THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, tripLength(slot.lane) + offstage(slot.lane));
+      const s = timed ?? rushDistance(pathStation(free,slot.lane), slot.lane, rushHour);
       const length = LENGTH[slot.kind], half = length / 2;
       if (!slot.lane.closed && (s < half || s > line.length - half)) continue;
       const axle = (at: number) => {

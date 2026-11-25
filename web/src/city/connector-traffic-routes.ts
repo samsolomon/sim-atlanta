@@ -18,6 +18,7 @@ export interface TrafficLane {
   line: Line;
   roads: VRoad[];
   allocationLengthM?: number;
+  retimedFromM?: number;
   direction: ConnectorDirection;
   crossing: boolean;
   lane: number;
@@ -130,11 +131,15 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
     const points = [chain[0].pts[0]],
       roads: VRoad[] = [];
     let allocationLengthM = 0;
+    let retimedFromM: number | undefined;
     const northMounted = boxes.some(b => b.minZ <= -6500 && b.maxZ >= -5700);
     for (const p of chain) {
-      allocationLengthM += new Line(p.pts).length;
+
       const replacement = northMounted && p.startsWay && p.endsWay
         ? variablePiece(p.ribbon,p.lane,p.pts,p.owner) : undefined;
+      if (replacement && p.ribbon.direction==='southbound' && retimedFromM===undefined)
+        retimedFromM=allocationLengthM;
+      allocationLengthM += new Line(p.pts).length;
       const samples = replacement?.pts ?? p.pts;
       for (let i=1;i<samples.length;i++) {
         const pt=samples[i];
@@ -151,7 +156,7 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
     // concave corner. Dissolve over the final car lengths before that cutoff.
     result.push({
       line,
-      allocationLengthM,
+      allocationLengthM, retimedFromM,
       roads,
       crossing: !!crossing,
       direction: main.ribbon.direction,
