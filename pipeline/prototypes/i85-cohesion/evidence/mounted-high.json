@@ -1,0 +1,33 @@
+{
+  "wheelAndCentre": 5325,
+  "hits": 5325,
+  "shoulders": {
+    "-2.375": {
+      "total": 1775,
+      "hit": 1775,
+      "missStations": []
+    },
+    "2.575": {
+      "total": 1775,
+      "hit": 1775,
+      "missStations": []
+    }
+  },
+  "interior": 3807,
+  "pairedSoffit": 3807,
+  "minHeadroom": 5.6499913230855014,
+  "maxHeadroom": 5.654654565828153,
+  "terrainIntrusions": 0,
+  "firstIntrusions": [],
+  "wallFacets": 1408,
+  "seamX": [
+    860.224365234375
+  ],
+  "seamY": [
+    -70.00055694580078,
+    -67.70470428466797,
+    -65.40885162353516,
+    -63.11300277709961,
+    -60.81715393066406
+  ]
+}

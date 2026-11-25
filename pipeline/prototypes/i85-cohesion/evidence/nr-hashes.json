@@ -1,0 +1,52 @@
+{
+  "nr-low-controls.json": {
+    "prior": "50bb38412ca45724e6603bca3a3f290f1f4ce9a4724154eaec85a46a0a76428a",
+    "current": "50bb38412ca45724e6603bca3a3f290f1f4ce9a4724154eaec85a46a0a76428a",
+    "equal": true
+  },
+  "nr-low-board-strip.json": {
+    "prior": "507d4d13f860e9935fbaae2ff5dd4f54efa3a56f268cb1aa1f7c041e8dfdb751",
+    "current": "507d4d13f860e9935fbaae2ff5dd4f54efa3a56f268cb1aa1f7c041e8dfdb751",
+    "equal": true
+  },
+  "nr-low-rail-samples.json": {
+    "prior": "623d23f630c1b8409160b2ddf42171d28d521afb8832bb6cafb34eac54c4a4a3",
+    "current": "623d23f630c1b8409160b2ddf42171d28d521afb8832bb6cafb34eac54c4a4a3",
+    "equal": true
+  },
+  "nr-low-occluders.json": {
+    "prior": "d0f7a984df05be95dc9363d228fbd21983ea014a7f789f473f17af0ae8543a4f",
+    "current": "d0f7a984df05be95dc9363d228fbd21983ea014a7f789f473f17af0ae8543a4f",
+    "equal": true
+  },
+  "nr-low-paint.json": {
+    "prior": "58b70d8673cd6a4cbbb1fb2b86956c275ddc2a62e849271c1e4784281afb5ad3",
+    "current": "58b70d8673cd6a4cbbb1fb2b86956c275ddc2a62e849271c1e4784281afb5ad3",
+    "equal": true
+  },
+  "nr-high-controls.json": {
+    "prior": "e4109f96b71d0e3df303f0b638269c8bd7dc53d02136d7af9cbe0fcf4d6c9814",
+    "current": "e4109f96b71d0e3df303f0b638269c8bd7dc53d02136d7af9cbe0fcf4d6c9814",
+    "equal": true
+  },
+  "nr-high-board-strip.json": {
+    "prior": "935e0514c59e164a96e4d2e0bc6b3fa33ba83128f26dbe53769bed50fd7d40f4",
+    "current": "935e0514c59e164a96e4d2e0bc6b3fa33ba83128f26dbe53769bed50fd7d40f4",
+    "equal": true
+  },
+  "nr-high-rail-samples.json": {
+    "prior": "02ca67638067db45521405338eaf10d1942a96819c5186dbb1f3a4a442598b5b",
+    "current": "02ca67638067db45521405338eaf10d1942a96819c5186dbb1f3a4a442598b5b",
+    "equal": true
+  },
+  "nr-high-occluders.json": {
+    "prior": "703dcd795afa8c78e688666f427b4c269bf9879ccae6f383f1698f6211b0c879",
+    "current": "703dcd795afa8c78e688666f427b4c269bf9879ccae6f383f1698f6211b0c879",
+    "equal": true
+  },
+  "nr-high-paint.json": {
+    "prior": "c6d3a1a592957deb7bf97ff3ed6ee5295eb73da8fdb1a33e4dd2a802132f28ef",
+    "current": "c6d3a1a592957deb7bf97ff3ed6ee5295eb73da8fdb1a33e4dd2a802132f28ef",
+    "equal": true
+  }
+}
