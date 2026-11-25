@@ -40,33 +40,80 @@ export function createPiedmontHospital(
     return sum + x * v - z * u;
   }, 0);
   if (signed < 0) ring.reverse();
-  prism(ring, base, roof, '#88726a', '#a6aaa9');
-  for (const [i, a] of ring.entries()) {
-    const b = ring[(i + 1) % ring.length];
+  // On Collier the west box stops below the glass prow. Register the split to
+  // the short south wall and its turn back into the west wall.
+  const at = ([x, z]: P2) => ring.findIndex(([u, v]) => Math.hypot(u + origin[0] - x, v + origin[1] - z) < 0.12);
+  const clayCorner = at([-269.67, -5920.03]), prow = at([-248.02, -5920.19]);
+  const clayReturn = at([-269.97, -5928.62]);
+  if (prow < 0 || clayCorner < 0 || clayReturn < 0) return null;
+  const mix = (a: P2, b: P2, t: number): P2 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const split = mix(ring[prow], ring[clayCorner], 9.4 / 21.65);
+  const lobbyRing = ring.map((p, i): P2 => {
+    if (i === prow) return [p[0] - 2.2, p[1] - 2.8];
+    if (i === clayCorner) return [p[0] + 0.5, p[1] - 1.5];
+    const x = p[0] + origin[0], z = p[1] + origin[1];
+    return x > -250 && z >= -6020 && z <= -5945 ? [p[0] - 1.05, p[1]] : p;
+  });
+  const clayTop = roof - 5.2;
+  const afterClay = (clayReturn + 1) % ring.length;
+  const stepReturn = mix(ring[clayReturn], ring[afterClay], 0.10);
+  const roofRing = ring.map((p, i) => i === clayCorner ? split : i === clayReturn ? stepReturn : p);
+  const face = (a: P2, b: P2) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
-    const outX = dz / length, outZ = -dx / length;
     const point = (u: number, y: number, depth: number) =>
-      [a[0] + dx * u + outX * depth, y, a[1] + dz * u + outZ * depth];
-    const strip = (lo: number, hi: number, depth: number, colour: string, batch = body) =>
-      batch.quad(point(0, lo, depth), point(0, hi, depth), point(1, hi, depth), point(1, lo, depth), colour);
+      [a[0] + dx * u + dz / length * depth, y, a[1] + dz * u - dx / length * depth];
+    const strip = (lo: number, hi: number, depth: number, colour: string, batch = body, start = 0, end = 1) =>
+      batch.quad(point(start, lo, depth), point(start, hi, depth), point(end, hi, depth), point(end, lo, depth), colour);
+    return { outwardEast: dz / length, strip };
+  };
+  const glass = (a: P2, b: P2, top: number) => {
+    const { strip } = face(a, b);
+    paint(towerGlass, () => {
+      strip(9.2, 35.1, 0.045, '#618198');
+      strip(36.6, top - 0.55, 0.045, '#7090a3');
+    });
+    strip(35.1, 36.6, 0.16, '#aa8b72');
+    // Dusk evidence supports the accent and general occupancy pattern.
+    strip(35.34, 35.61, 0.18, '#c9a57d', lights);
+    facade(a, b, 11, 34.4, 6, 3.25, 0.72, 0.42, ['#819ba3', '#7193a2'], 0.25);
+    facade(a, b, 37, top - 1, 5, 3.25, 0.72, 0.42, ['#7796a8', '#7291a2'], 0.035);
+    strip(top - 0.55, top, 0.13, '#a2afb1');
+  };
 
-    if (outX > 0.55) {
-      paint(lobbyGlass, () => strip(0, 8.1, 0.065, '#557279'));
-      strip(8.1, 9.2, 0.16, '#906754');
-      paint(towerGlass, () => {
-        strip(9.2, 35.1, 0.045, '#618198');
-        strip(36.6, roof - 0.55, 0.045, '#7090a3');
-      });
-      strip(35.1, 36.6, 0.16, '#aa8b72');
-      // The contractor's dusk photograph shows a continuous warm line and occupied
-      // floors mostly below it. Individual rooms are an illustrative pattern.
-      strip(35.34, 35.61, 0.18, '#c9a57d', lights);
-      facade(a, b, 11, 34.4, 6, 3.25, 0.72, 0.42, ['#819ba3', '#7193a2'], 0.25);
-      facade(a, b, 37, roof - 1, 5, 3.25, 0.72, 0.42, ['#7796a8', '#7291a2'], 0.035);
-      strip(roof - 0.55, roof, 0.13, '#a2afb1');
+  prism(lobbyRing, base, 8.1, '#655c53', '#6f685d');
+  prism(ring, 8.1, clayTop, '#88726a', '#96948b');
+  prism(roofRing, clayTop, roof, '#88726a', '#a6aaa9');
+  paint(clayPanels, () => face(stepReturn, ring[afterClay]).strip(clayTop, roof - 0.02, 0.045, '#aa7564'));
+  // The overhang carries the timber soffit across the Collier prow and around
+  // the first Peachtree bay, above a continuous recessed glazed ground floor.
+  for (const [i, a] of ring.entries()) {
+    const j = (i + 1) % ring.length, b = ring[j];
+    const { outwardEast, strip } = face(a, b);
+    if (i === prow && j === clayCorner) {
+      glass(a, split, roof);
+      const returnFace = face(split, b);
+      paint(clayPanels, () => returnFace.strip(9.2, clayTop, 0.045, '#a57565'));
+      for (let y = 13; y < clayTop - 2; y += 5.2)
+        returnFace.strip(y, y + 1.23, 0.18, '#766d66', body, 0.19, 0.89);
+      returnFace.strip(31.6, 32.25, 0.18, '#716963');
+    } else if (outwardEast > 0.55) {
+      glass(a, b, roof);
     } else {
-      paint(clayPanels, () => strip(base, roof - 0.55, 0.065, '#aa7564'));
-      facade(a, b, 9.2, roof - 2, 12, 7, 0.62, 0.3, ['#616d77', '#737b82'], 0);
+      const top = i === clayCorner || i === clayReturn ? clayTop : roof;
+      paint(clayPanels, () => strip(9.2, top - 0.02, 0.045, '#aa7564'));
+      facade(a, b, 9.5, top - 2, 12, 7, 0.62, 0.3, ['#616d77', '#737b82'], 0);
+    }
+    if (outwardEast > 0.55 || (i === prow && j === clayCorner)) {
+      const la = lobbyRing[i], lb = lobbyRing[j];
+      if (a !== la || b !== lb) {
+        body.quad([a[0], 8.09, a[1]], [b[0], 8.09, b[1]],
+          [lb[0], 8.09, lb[1]], [la[0], 8.09, la[1]], '#a16c45');
+        strip(8.1, 8.26, 0.14, '#b8b8ab');
+      }
+      const lobby = face(la, lb);
+      paint(lobbyGlass, () => lobby.strip(base, 7.9, 0.055, '#527877'));
+      lobby.strip(5.75, 6.08, 0.07, '#74837d');
+      strip(8.21, 9.2, 0.10, '#677073');
     }
   }
 

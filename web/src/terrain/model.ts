@@ -79,6 +79,7 @@ import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
+import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
@@ -448,7 +449,10 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
   // Carve before anything else samples the ground inside their footprints.
   const winn = winnPark(city, groundAt, options.quality);
-  const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
+  const hasPiedmont = city.buildings.some(b => b.id === piedmontHospitalId) &&
+    !sceneryCity.buildings.some(b => b.id === piedmontHospitalId);
+  const piedmont = hasPiedmont ? piedmontGarden(Object.assign((x: number, z: number) => groundAt(x, z), { triangles: mesh }), options.quality) : null;
+  const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
   if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
@@ -499,6 +503,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
+  if (piedmont) named.push(...piedmontGardenTrees);
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
   const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
@@ -565,6 +570,12 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const park = piedmontPark(city, groundAt, options.quality);
   if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
   if (winn) { winn.group.userData.perf = 'landscape'; scenery.group.add(winn.group); }
+  const piedmontLandscape = piedmont?.finish();
+  if (piedmontLandscape) {
+    piedmontLandscape.mesh.name = 'Piedmont Peachtree plaza';
+    piedmontLandscape.mesh.userData.perf = 'landscape';
+    scenery.group.add(piedmontLandscape.mesh);
+  }
   yield 'parks and batches';
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
@@ -694,6 +705,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       oval?.dispose();
       park?.dispose();
       winn?.dispose();
+      piedmontLandscape?.dispose();
       houses.dispose();
       scenery.dispose();
       group.clear();

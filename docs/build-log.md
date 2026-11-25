@@ -3863,3 +3863,7 @@ The last two metres of the eastbound Ellis deck climbed 15% before dropping 12 c
 ### 2026-11-25 — Piedmont’s two outlines
 
 A 16-story hospital tower was already hiding in the North board’s data. The 9,954 m² outline at Peachtree and Collier carried four floors, but its two mapped parts gave us the smaller, curved 4,159 m² Marcus Tower and its lower podium. The curve reads from 475 m, with a terracotta end and a warm band across the blue glass. At the north end of the plaza, the terrain almost hid the doors. Sampling the sidewalk gave us a landing roughly 2.2 m above the bare-earth grade at the wall. A cut beneath the paving left 7 cm of clearance across 540 samples on each graphics tier. [Private campus views and sources](log/ui/piedmont-hospital/README.md)
+
+### 2026-11-25 — The view from 3 Collier
+
+The first model treated the short Collier wall as terracotta. Sam’s July 2022 sidewalk frame put the missing glass right in front of us. The 21.65 m wall now turns 9.4 m of glass around the prow, beside a clay bay that steps down 5.2 m at the roof. From Peachtree, nine small elms mark the paved court in front of the recessed lobby and leave the entrance landing open. The plaza’s two walks follow the drawn slope, with a stair cut joining them. City’s audit found no ground showing through the court on either graphics tier. [Street views, matched campus captures and sources](log/ui/piedmont-hospital/second-pass/README.md)
