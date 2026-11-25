@@ -56,6 +56,7 @@ if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceS
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { piedmontCampusMassing, piedmontNorthLink } from '../city/piedmont-campus';
+import { shepherdCampusMassing } from '../city/shepherd-center';
 import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
@@ -205,7 +206,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       const city = id in rowBounds ? northFreeway(midtownConnectorDecks(contextWithDecks)) : contextWithDecks;
       const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
       const edgeRow = !trackedOnly && (id === 'r16' || id === 'brookwood-station') ? id : undefined;
-      const rowBuildings = id === 'r16' ? piedmontCampusMassing(city.buildings) : city.buildings;
+      const rowBuildings = id === 'r16' ? shepherdCampusMassing(piedmontCampusMassing(city.buildings)) : city.buildings;
       const scenery = edgeRow ? {...city, buildings: rowBuildings.filter(b => !sharedIds.has(b.id))} : city;
       const area = yield* buildDowntownTerrain(grid, scenery, neighborhoodTrees(canopy, quality), {
         boardRoads: edgeRow ? joinedPaint(edgeRow, city) : undefined,
