@@ -3689,3 +3689,13 @@ Light glass on a north face, or in a neighbour's shadow, used to drop to a near-
 On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene wasn't the difference. Chrome traces showed why. With any CSS `backdrop-filter` over the WebGL canvas, the display compositor ran two full-screen render passes every frame and blurred the canvas behind each panel. Without one, it ran none and handed the canvas straight to macOS as a CALayer overlay. The dock, place card and camera buttons cover 7.5% of the desktop screen, but the cost scales with the whole screen. On a Galaxy A16 the blur put 26.9 ms per frame on Android's compositor GPU thread. Without it, 3.9 ms.
 
 On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)
+
+## 2026-11-24: The printing plant and the roof deck
+
+Two adjoining map footprints now read as the former AJC printing plant and its parking deck. The
+2019 lidar puts the deck slab at 36.5 m above the Gulch-side grade and the adjacent plant's raised
+roof block at 359.5 m NAVD88. Their walls have different jobs. The plant's dark vertical drains
+come from the street photograph. Extending that pattern onto the parking deck made its shaded
+wall read like rows of windows from a shallow angle, so the deck uses plain precast above the
+tile base. The two roofs are still distinct from across the Gulch, where panel joints are too
+small to read. [Day and night comparisons, close-up and sources](log/ui/ajc-plant/README.md)
