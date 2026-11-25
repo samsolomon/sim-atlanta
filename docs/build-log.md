@@ -3867,3 +3867,7 @@ At the pedestrian tunnel exit, two rail formations crossed the sky with no visib
 ### 2026-11-25 — Two forks on the same southbound road
 
 The two Brookwood screenshots came from opposite ends of the same 245 m stretch of I-75. At Deering, the third donor lane can feed either branch. Farther south at Exit 250, the old drawing started two solid stripes at the mapped fork. The 2024 Fulton aerial places their common gore about 52 m downstream. A second defect appeared during the traffic replay: one exit car straddled a 0.919 m elevation change across a 2 m sample. Fitting the road to the 2018 pavement returns brought the modeled crossfall at that station to +2.31%. The narrow outside bank uses an inferred transition where the survey is occluded. [Exit 250 from the registered camera](log/ui/brookwood-four-highways/exit-250.jpg)
+
+### 2026-11-25 — Ansley’s clubhouse faces two grades
+
+The mapped clubhouse covers about 2,005 m² on the Brookwood row. At the drive it reads as white gables above four portico supports. The grade falls about six metres to the pool and the two course-side verandas. The valet apron follows the drawn grade, and the mapped drive remains open. The course-side shutters carry a few warm panes at 23:30. Their occupancy is illustrative. [Private captures and references](log/ui/ansley-clubhouse/README.md)
