@@ -86,6 +86,7 @@ import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
+import { createShepherdCenter, shepherdCenterIds, shepherdMainId } from '../city/shepherd-center';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
@@ -365,6 +366,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
     { triangles: options.quality === 'high' ? mesh : undefined, raisedEnds: approaches?.groundAt.raisedEnds }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
+  const hasShepherdMain = city.buildings.some(b => b.id === shepherdMainId);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
@@ -381,6 +383,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === gazeboId ? createClaraMeer : null;
     const landmark = site.id === piedmontHospitalId
       ? createPiedmontHospital(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : shepherdCenterIds.has(site.id) ? createShepherdCenter(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt, hasShepherdMain)
       : site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
