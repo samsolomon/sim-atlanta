@@ -1,5 +1,5 @@
 // Offline clock selection. The live witness must also match the mounted matrix.
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { ConnectorTraffic } from '../../../web/src/city/connector-traffic';
 import { Line } from '../../../web/src/vignette/geom';
 import { alongOn, stripePoint,ribbons } from '../../../web/src/terrain/connector-corridor';
@@ -20,10 +20,6 @@ const bounds = [
 ];
 const hourly = JSON.parse(readFileSync('web/public/data/scene/downtown/traffic.json','utf8')).hourly;
 const owner = ribbons.find(r=>r.id===1257642775)!;
-const centerLines = Array.from({length:owner.lanes},(_,lane)=>{
-  const pts = owner.rows.map(row=>stripePoint(row,(lane+.5)/owner.lanes));
-  return {pts,line:new Line(pts)};
-});
 const epoch = Date.parse('2026-11-20T08:08:00-05:00');
 for (const quality of ['low','high'] as const) {
   const nr = board(homedir()+'/orca/artifacts/sim-atlanta-ground/r16/results/fixture/r16',quality);
@@ -55,6 +51,29 @@ for (const quality of ['low','high'] as const) {
           const d=alongOn({pts:line.pts,line},pos);
           if(d.distance>.12 || Math.abs(d.s-anchor)>5)continue;
           console.log(JSON.stringify({quality,movement,slots:slots.length,dt,kind:slot.kind,color:slot.color.getHexString(),phase:slot.phase,pos,s:d.s}));
+          if(process.env.REPLAY_OUT) {
+            const series=[];
+            const frames=movement==='drop'?72:48;
+            for(let j=0;j<=frames;j++){
+              const seconds=dt-(movement==='drop'?7:3)+j/5;
+              traffic.update(epoch+seconds*1000,0);
+              let best=Infinity,position:number[]|null=null;
+              for(const obj of traffic.group.children){
+                const mesh=obj as InstancedMesh;
+                if(!mesh.isInstancedMesh||!mesh.instanceColor)continue;
+                for(let n=0;n<mesh.count;n++){
+                  const rgb=mesh.instanceColor.array;
+                  if(Math.abs(slot.color.r-rgb[3*n])>1e-6 || Math.abs(slot.color.g-rgb[3*n+1])>1e-6 || Math.abs(slot.color.b-rgb[3*n+2])>1e-6)continue;
+                  const mat=mesh.instanceMatrix.array, x=mat[n*16+12],z=mat[n*16+14];
+                  const expected=line.at(d.s+(seconds-dt)*18);
+                  const error=Math.hypot(x-expected.x,z-expected.z);
+                  if(error<best){best=error;position=[x,mat[n*16+13],z];}
+                }
+              }
+              series.push({seconds,position});
+            }
+            writeFileSync(process.env.REPLAY_OUT+'/'+movement+'-'+quality+'.json',JSON.stringify(series));
+          }
           found=true;break;
         }
         if(found)break;
