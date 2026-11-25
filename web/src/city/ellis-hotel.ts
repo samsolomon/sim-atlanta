@@ -54,13 +54,21 @@ export function createEllisHotel(buildings: VBuilding[], grid: GroundGrid, quali
 
     if (street) {
       for (const y of [shaftBase, crownBase]) band(y - 0.24, y + 0.16, 0.1, trim);
-      const bays = peachtree ? 5 : 6;
+      const bays = 6;
       const pitch = length / bays;
+      const sashBottom = shaftBase + 0.35;
+      const sashTop = crownBase - 0.3;
+      const floorPitch = (sashTop - sashBottom) / 10;
       for (let i = 0; i < bays; i++) {
         const start = i * pitch;
         const left = along(start + pitch * 0.16);
         const right = along(start + pitch * 0.84);
-        litFacade(shell, seed, face * 16 + i, left, right, shaftBase + 0.35, crownBase - 0.3,
+        for (let floor = 0; floor < 10; floor++) {
+          const y = sashBottom + floorPitch * (floor + 0.17);
+          panel(start + pitch * 0.16, start + pitch * 0.84,
+            y - 0.07, y + floorPitch * 0.66 + 0.07, 0.04, '#d8c6ad');
+        }
+        litFacade(shell, seed, face * 16 + i, left, right, sashBottom, sashTop,
           10, (pitch * 0.68) / 2, 0.86, 0.66, glass, 0.38);
         litFacade(shell, seed, 80 + face * 16 + i, left, right, crownBase + 0.5, corniceBase - 0.5,
           2, pitch * 0.68, 0.62, 0.64, glass, 0.43);
