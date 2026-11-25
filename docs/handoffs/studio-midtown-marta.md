@@ -2,7 +2,7 @@
 
 ## Brookwood freight at the north row · 2026-11-25
 
-Downtown rail owns private source `49e10e6287f1f68c418bfb3631d37b1935a09dbc` off `955f5f56e7386575d58381649134d28d723c30b5`. The illustrative consist now follows Main 2 on the same mapped way for another 1,069.6 m. At 08:26:19.250 EST the old north clip removed half the marked well car and the route retained four poses. The candidate retains all 15. Half-second Low and High pose checks cover the 15-unit northeast and 11-unit southwest passages. Next, verify the matched City replay on each tier and the final outer-edge exit in the combined highway mount. Browser captures and mounted replay are pending. [Main 2 way history](https://www.openstreetmap.org/way/874902949/history/10)
+Downtown rail owns private source `49e10e6287f1f68c418bfb3631d37b1935a09dbc` off `955f5f56e7386575d58381649134d28d723c30b5`. The illustrative consist now follows Main 2 on the same mapped way for another 1,069.6 m. At 08:26:19.250 EST the old north clip removed half the marked well car and the route retained four poses. The candidate retains all 15. Half-second Low and High pose checks cover the 15-unit northeast and 11-unit southwest passages. Combined City `3b36f99585e3c2320e7ac9172b3e2cba75a82b6d` passes the registered warehouse view and both full head-to-tail passages on Low and High. Each passage has 125 matched half-second frames per tier. All 15 car centres cross the internal seam once and leave through the actual northern edge in consist order. The private replay is ready for the combined highway review. [Main 2 way history](https://www.openstreetmap.org/way/874902949/history/10)
 
 ## Brookwood two-span comparison · 2026-11-25
 
