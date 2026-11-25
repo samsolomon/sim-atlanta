@@ -13,9 +13,9 @@ const staged = existsSync('public/data/scene/square-board/brookwood-station/grou
 // Use an isolated localhost origin so Web Crypto can verify the real row assets.
 // The second case withholds the northmost row: canopy must stop at the mounted edge, not the finished one.
 it.skipIf(!chrome || !staged).each([
-  { name: 'all twelve areas', withhold: undefined, north: -5700, ready: "label === 'Frame the full board'" },
+  { name: 'all thirteen areas', withhold: undefined, north: -6500, ready: "label === 'Frame the full board'" },
   { name: 'brookwood-station withheld', withhold: '/square-board/brookwood-station/', north: -4900,
-    ready: "label?.includes('(11/12 areas loaded)')" },
+    ready: "label?.includes('(11/13 areas loaded)')" },
 ])('keeps City scenery and shadows inside the plinth in the morning render with $name', async ({ withhold, north, ready }) => {
   const dir = mkdtempSync(join(tmpdir(), 'city-exterior-'));
   let report: (value: string) => void;
@@ -31,6 +31,10 @@ it.skipIf(!chrome || !staged).each([
           async function check() {
             let result;
             try {
+              let button;
+              while (!(button = document.querySelector('#city-info button:last-child')))
+                await new Promise(resolve => setTimeout(resolve, 100));
+              button.click();
               for (let label; label = document.querySelector('#city-info button:last-child')?.textContent, !(${ready});)
                 await new Promise(resolve => setTimeout(resolve, 100));
               await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
