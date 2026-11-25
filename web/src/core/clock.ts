@@ -7,7 +7,7 @@ const params = new URLSearchParams(location.search);
 export const clock = {
   baseSim: params.get('t') ? new Date(params.get('t')!).getTime() : Date.now(),
   baseReal: performance.now(),
-  speed: Number(params.get('speed') ?? 1),
+  speed: params.has('northReplay') ? 0 : Number(params.get('speed') ?? 1),
   offsetMin: 0,
   pinned: params.has('t'),
   now() {

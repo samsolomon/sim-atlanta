@@ -1,3 +1,4 @@
+import { studyRails } from './north-profile-study';
 import { mountMayson } from './mayson-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
@@ -1045,10 +1046,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       if (added.has('r16')) performance.mark('r16:attach-start');
       const pilot = added.get('r16');
-      if (pilot) pilot.group.add(mountMayson());
+      if (pilot) { pilot.group.add(mountMayson(), studyRails()); northLine?.extend(); }
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
+      if (atl && query.has('northReplay')) queueMicrotask(() => approachMosaic(731, -5701, true));
       if (atl) {
         const line = createNorthLine(atl, rf, manifest.origin, trains.group);
         northLine = line;
@@ -1990,7 +1992,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       // An area that finishes loading must not pull the camera back to a remembered point.
       cancelPendingTarget();
       if (frameFromPreset) {
-        setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
+        if (query.has('northReplay')) setView(-125, 62, 205, focus.x, focus.z);
+        else setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
       } else {
         // Translate the orbit with the vehicle, including changes in ground height.
         const t = controls.target;

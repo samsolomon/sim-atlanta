@@ -1,3 +1,5 @@
+import { extensions } from './north-profile-study';
+import axes from './fixtures/north-axes-study.json';
 import * as THREE from 'three';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
@@ -210,7 +212,7 @@ export function createNorthLine(
   const rows = railRows['brookwood-station'] as TransportRun[];
   const lines = northLineTracks(rows, -5700);
   if (lines.length !== 2) return;
-  const paths = northLinePaths(rf, origin, lines);
+  let paths = northLinePaths(rf, origin, lines);
   const roads = area.connectorBoard?.city.roads ?? [];
   const lanes = (x: number, z: number) => inConnectorLanes(x, z, 1);
   // Piers depend only on where the spans run, so place them first, size each girder
@@ -225,7 +227,24 @@ export function createNorthLine(
   area.group.add(guideway);
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
-  const height = (line: Line, along: number) => profile.at(line, along);
+  let height = (line: Line, along: number) => profile.at(line, along);
+  function extend() {
+    const continuation = northLineTracks(axes as TransportRun[], -6500);
+    const joined = lines.map((line, i) => new Line([...line.pts, ...continuation[i].pts.slice(1)]));
+    const nextPaths = northLinePaths(rf, origin, joined);
+    if (!nextPaths.has('marta:path:155235')) throw Error('North extension missing timed Red path');
+    joined.forEach((line, i) => {
+      const clip = planes.get(lines[i])!;
+      clip[1].constant = 6500;
+      planes.set(line, clip);
+    });
+    paths = nextPaths;
+    height = (line, s) => {
+      const i = joined.indexOf(line);
+      const seam = lines[i].length;
+      return s <= seam ? profile.at(lines[i], s) : extensions[i].at(s - seam);
+    };
+  }
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
   let portalParts!: ReturnType<typeof portal>;
@@ -341,5 +360,5 @@ export function createNorthLine(
     }
     pools.clear();
   }
-  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown, dispose });
+  return Object.assign(update, { extend, bounds: planes.size ? bounds : null, cars: shown, dispose });
 }

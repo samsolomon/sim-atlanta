@@ -1305,6 +1305,18 @@ const shellOptions: ShellOptions = {
   },
 };
 // The A2c interface (docs/ui-controls-brief.md).
+if (params.has('northReplay')) {
+  const start = () => {
+    if (follow?.vehicle?.id !== params.get('train') || !performance.getEntriesByName('r16:attached').length) {
+      requestAnimationFrame(start);
+      return;
+    }
+    clock.baseReal = performance.now() + 0;
+    clock.speed = 1;
+    performance.mark('north:replay-start');
+  };
+  requestAnimationFrame(start);
+}
 Object.assign(window, { __northSelection: () => ({ selectedTrain, followed: follow?.vehicle, phase: follow?.phase, time: clock.now().toISOString() }) });
 const shell = createShellNext(shellOptions);
 addEventListener('popstate', () => {
