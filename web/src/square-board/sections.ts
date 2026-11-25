@@ -60,6 +60,7 @@ export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
+import { ansleyClubhouseId, ansleyClubPool } from '../city/ansley-clubhouse';
 import { piedmontCampusMassing, piedmontNorthLink } from '../city/piedmont-campus';
 import { shepherdCampusMassing } from '../city/shepherd-center';
 import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
@@ -239,6 +240,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       if (flags) area.board.add(flags);
       const markers = teeMarkers(city.points?.golfMarkers,area.terrainAt);
       if (markers) area.board.add(markers);
+      const pool = id === 'brookwood-station' && city.buildings.some(b => b.id === ansleyClubhouseId) ? ansleyClubPool(area.groundAt) : null;
+      if (pool) area.group.add(pool.mesh);
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       const data = city.terrainTransport!;
       const hospitalLink = id === 'r16' ? piedmontNorthLink(rowBuildings, data.roads, area.groundAt) : null;
@@ -299,6 +302,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           } },
           dispose() {
             hospitalLink?.dispose();
+            pool?.dispose();
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();
             (piers?.mesh.material as { dispose(): void } | undefined)?.dispose();
@@ -307,7 +311,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             area.dispose();
           },
         });
-      } catch (error) { hospitalLink?.dispose(); for (const t of transports) t.dispose(); area.dispose(); throw error; }
+      } catch (error) { pool?.dispose(); hospitalLink?.dispose(); for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }
     return added;
   } catch (error) {
