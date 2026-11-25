@@ -5,6 +5,10 @@ const deering = new Set([358758245,29013401,9238120]);
 const exit250 = new Set([9238120,73954042,27609107]);
 const east = new Set([38982156,38983378,369529892,369529886,38983384,38981774,187141934,1020867018]);
 const owners = new Map(ribbons.map(r=>[r.pts,r.id]));
+export function usesExit250(course: { roads: { pts: P2[] }[] }) {
+  return course.roads.some(road => owners.get(road.pts) === 27609107);
+}
+
 export function onStudyTread(axis: P2[], x: number, z: number) {
   const id=owners.get(axis);
   return id!==undefined && (deering.has(id) && Math.hypot(x+397,z+4917)<190 ||
