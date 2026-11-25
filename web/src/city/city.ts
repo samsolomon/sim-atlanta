@@ -1504,6 +1504,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     camera.position.copy(controls.target).add(off);
   };
   const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  // Observe wheels for tap cancellation before the map gesture handler can consume them.
+  const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
+      camera, trains.group, buses.positions, edges, scenery, freight?.poses, brookwood?.cars, brookwood?.freightPoses, streetcar.group));
+  });
   const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera, { legacy: legacyCamera, easeWheel: directCamera, motionPreference }) : undefined;
   // Maps-style input zooms on double-click instead of gliding to the clicked point.
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
@@ -1540,11 +1546,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       frameFullBoard();
     };
   }
-  const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
-    const r = renderer.domElement.getBoundingClientRect();
-    options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.poses, brookwood?.cars, brookwood?.freightPoses, streetcar.group));
-  });
 
   // ---- sun, sky, weather --------------------------------------------------------------
   const C = (x: string) => new THREE.Color(x);
