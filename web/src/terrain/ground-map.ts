@@ -1,3 +1,5 @@
+import { roadsidePoint } from '../../../pipeline/prototypes/paired-span-walls/walls';
+import { paintNorthboundWallShoulder } from '../../../pipeline/prototypes/paired-span-walls/shoulder';
 import { paintI85Corridor } from '../../../pipeline/prototypes/i85-cohesion/pavement';
 import { streetProfile, parallelPath } from './street-profile';
 import type { Underpass } from './underpass';
@@ -260,6 +262,8 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
   paintStreetBridgeApproaches(ctx, data);
   paintJunctionApproaches(ctx, data);
+  if ((data as TerrainCity & { name?: string }).name === 'brookwood-station')
+    paintNorthboundWallShoulder(ctx, roadsidePoint);
   paintConnector(ctx, data, texelM);
   paintI85Corridor(ctx, (data as TerrainCity & { name?: string }).name ?? '');
   ctx.setLineDash(zebraPattern);
