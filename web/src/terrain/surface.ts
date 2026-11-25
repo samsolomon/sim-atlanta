@@ -69,6 +69,8 @@ export class GroundSurface {
     // skipped (the stair still draws, uncarved) rather than failing the whole board.
     const inside = yields.filter(y => {
       const { minX, maxX, minZ, maxZ } = yieldPlanes(y);
+      // A row-clipped design grade shares its datum and edge weights with its neighbour.
+      if (y.grade) return minX >= bounds.minX && maxX <= bounds.maxX && minZ >= bounds.minZ && maxZ <= bounds.maxZ;
       const ok = minX > bounds.minX + stepM && maxX < bounds.maxX - stepM && minZ > bounds.minZ + stepM && maxZ < bounds.maxZ - stepM;
       if (!ok) console.warn('Ground yield skipped: within a cell of the board edge', y.ring);
       return ok;

@@ -1,4 +1,4 @@
-import { golfBowlYields } from './golf';
+import { golfBowlYields, golfTeeGrades } from './golf';
 import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { buildResidential } from '../city/residential';
@@ -456,7 +456,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const hasPiedmont = city.buildings.some(b => b.id === piedmontHospitalId) &&
     !sceneryCity.buildings.some(b => b.id === piedmontHospitalId);
   const piedmont = hasPiedmont ? piedmontGarden(Object.assign((x: number, z: number) => groundAt(x, z), { triangles: mesh }), options.quality) : null;
-  const yields = [...golfBowlYields(city), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
+  const yields = [...golfBowlYields(city), ...golfTeeGrades(city, bare), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
   if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
