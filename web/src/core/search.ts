@@ -12,7 +12,6 @@ export interface StagedView { id: string; name: string; cam: string; at?: string
 
 /** First set, all inside City's board (Sam, 2026-11-24). Framed in the review build. */
 export const VIEWS: StagedView[] = [
-  {id:'north-mayson',name:'Mayson Street beneath the North Line',cam:'1292,-6202,125,62,205'},
   // MARTA's two lines cross underground here: trains show where they surface north and west.
   { id: 'five-points', name: 'Five Points from above, trains crossing', cam: '-60,60,30,30,700' },
   { id: 'gulch', name: 'The Gulch rail yards, looking north', cam: '-330,150,10,62,900' },
