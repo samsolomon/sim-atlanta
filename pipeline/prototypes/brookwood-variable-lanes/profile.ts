@@ -30,8 +30,7 @@ function linear(table: number[][], s: number) {
 }
 
 export type Movement = 'gain' | 'drop';
-export function sections(m: Movement, s: number) {
-  if (m === 'gain') {
+function entranceSections(s: number) {
     const t = clamp(1+s/sb.line.length);
     const joined = sectionAt(receiving, Math.max(0,s));
     const oldMain = s<0 ? sectionAt(sb,t*sb.line.length) : part(joined,0,5/6);
@@ -43,6 +42,39 @@ export function sections(m: Movement, s: number) {
     const f = clamp((s+84)/14)*clamp((75-s)/30);
     return { main:blend(oldMain,edges(axis,a,divider-5*width,divider),f),
       ramp:blend(oldRamp,edges(axis,a,divider+gap,divider+gap+width),f), solid:s < -18 };
+}
+
+// The approach joins the incoming source sections to the aerial-fitted taper.
+// Match each physical edge and its tangent at the ties; the two source axes
+// reach the same normalized station at different longitudinal positions.
+const gainStart = -sb.line.length;
+const gainTie = -40;
+const gainSpan = gainTie - gainStart;
+const startRow = entranceSections(gainStart);
+const startNext = entranceSections(gainStart + 1);
+const endRow = entranceSections(gainTie);
+const endNext = entranceSections(gainTie + 1);
+
+function approachRow(s: number, which: 'ramp' | 'main'): Section {
+  const t = (s-gainStart)/gainSpan, u = 1-t;
+  function point(edge: 'inner' | 'outer'): P2 {
+    const a = startRow[which][edge], b = endRow[which][edge];
+    const c = startNext[which][edge], d = endNext[which][edge];
+    const at = (i:number) => u*u*(1+2*t)*a[i] + t*t*(3-2*t)*b[i]
+      + gainSpan*t*u*(u*(c[i]-a[i])-t*(d[i]-b[i]));
+    return [at(0),at(1)];
+  }
+  return {s,inner:point('inner'),outer:point('outer')};
+}
+
+export function entranceShoulderTie(s:number) {
+  const t=clamp((s-gainStart)/(gainTie-gainStart));
+  return t*t*(3-2*t);
+}
+export function sections(m: Movement, s: number) {
+  if (m === 'gain') {
+    if(s>=gainStart && s<gainTie) return {main:approachRow(s,'main'),ramp:approachRow(s,'ramp'),solid:true};
+    return entranceSections(s);
   }
   const end = ribbon(369529900);
   const old = sectionAt(end,end.line.length);
