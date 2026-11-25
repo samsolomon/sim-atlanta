@@ -28,7 +28,8 @@ import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { hideEmptyMeshes } from './empty-draws';
-import { coastTau, frameFraction, releaseCoast } from './camera-damping';
+import { frameFraction } from './camera-damping';
+import { bindDirectDrag } from './direct-drag';
 import { CityGlass } from './glass';
 import { canvasGlassAllowed, glassSource, setCanvasGlass } from '../ui/glass';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -929,13 +930,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.dampingFactor = DAMPING_PER_60HZ_FRAME;
   // `?camera=legacy` keeps the per-frame (frame-rate dependent) smoothing, for one release.
   const legacyCamera = new URLSearchParams(location.search).get('camera') === 'legacy';
-  // `?camera=direct` (held for Sam): drags track the pointer 1:1 and inertia starts on release from
+  // `?camera=direct`: drags track the pointer 1:1 and inertia starts on release from
   // the pointer's last velocity, as map apps do; mouse-wheel zoom steps ease in (city/map-gestures.ts).
   const directCamera = !legacyCamera && new URLSearchParams(location.search).get('camera') === 'direct';
   const orbitInternals = controls as unknown as { state: number; _panOffset: THREE.Vector3; _sphericalDelta: THREE.Spherical };
-  /** What each recent drag frame applied, for the release velocity (direct mode). */
-  const dragTrail: { t: number; pan: THREE.Vector3; theta: number; phi: number }[] = [];
-  let wasDragging = false;
+  const directDrag = directCamera ? bindDirectDrag(controls, DAMPING_PER_60HZ_FRAME) : undefined;
   // OrbitControls calls update() from its own pointer and wheel handlers too, and each call took
   // a damping step: the smoothing then depended on how often input arrived. Outside the frame
   // loop an update still applies everything immediate (zoom, a set view) but advances no damping;
@@ -1229,29 +1228,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
   const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
-  /**
-   * Direct manipulation (?camera=direct): while a pointer is down the frame applies everything the
-   * pointer moved (no trailing); on release, inertia continues at the pointer's average velocity
-   * over its last 50 ms and decays with the usual time constant (0.05 per 60 Hz frame, ~325 ms).
-   * Holding still before letting go leaves no inertia.
-   */
-  function directDrag(dragging: boolean, step: number, now: number) {
-    const pan = orbitInternals._panOffset, sph = orbitInternals._sphericalDelta;
-    if (dragging) {
-      controls.dampingFactor = 1;
-      dragTrail.push({ t: now, pan: pan.clone(), theta: sph.theta, phi: sph.phi });
-      while (dragTrail.length && now - dragTrail[0].t > 120) dragTrail.shift();
-    } else if (wasDragging) {
-      const tau = coastTau(DAMPING_PER_60HZ_FRAME);
-      const coast = (pick: (d: typeof dragTrail[number]) => number) => releaseCoast(dragTrail.map(d => ({ t: d.t, amount: pick(d) })), now, tau);
-      pan.set(coast(d => d.pan.x), coast(d => d.pan.y), coast(d => d.pan.z));
-      sph.theta = coast(d => d.theta);
-      sph.phi = coast(d => d.phi);
-      dragTrail.length = 0;
-      controls.dampingFactor = step;
-    }
-    wasDragging = dragging;
-  }
   const clampTarget = () => {
     if (drive) return;
     const t = controls.target;
@@ -1915,7 +1891,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const dragging = orbitInternals.state !== -1;
     const step = frameFraction(DAMPING_PER_60HZ_FRAME, frameMs);
     controls.dampingFactor = legacyCamera || !dragging ? step : 1 - (1 - step) * (1 - step);
-    if (directCamera) directDrag(dragging, step, ts);
+    directDrag?.frame(ts);
     stopGestures?.tick?.(frameMs);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -2331,6 +2307,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
+      directDrag?.dispose();
       squareButton?.remove();
       cancelAnimationFrame(raf);
       showGlass(false);
