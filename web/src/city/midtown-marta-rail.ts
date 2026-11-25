@@ -225,7 +225,7 @@ export function createNorthLine(
   const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
   const depths = northLineDepths(draft, piers);
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
-  Object.assign(window, { __northTie: lines.map(line => ({ x: line.pts.at(-1)![0], end: profile.at(line, line.length), clamp: profile.at(line, line.length - 2) })) });
+  if (typeof window !== 'undefined') Object.assign(window, { __northTie: lines.map(line => ({ x: line.pts.at(-1)![0], end: profile.at(line, line.length), clamp: profile.at(line, line.length - 2) })) });
   const guideway = northLineGuideway(lines, profile, area.groundAt);
   area.group.add(guideway);
   const walls = new THREE.Group();
