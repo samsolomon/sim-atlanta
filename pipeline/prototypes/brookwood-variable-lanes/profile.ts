@@ -84,7 +84,7 @@ const tails=[nbTail(false),nbTail(true)];
 export function paintVariable(ctx: CanvasRenderingContext2D) {
   ctx.save();
   ctx.lineCap='butt';
-  function strip(rows: Section[], lanes:number, ramp:boolean, sharedEdge:(s:number)=>boolean,phase:number) {
+  function strip(rows: Section[], lanes:number, ramp:boolean, sharedEdge:(s:number)=>boolean,phase:number,gainJoin=false) {
     function fill(a:number,b:number,color:string) {
       ctx.beginPath();ctx.moveTo(...stripePoint(rows[0],a));
       for(const r of rows.slice(1)) ctx.lineTo(...stripePoint(r,a));
@@ -92,7 +92,17 @@ export function paintVariable(ctx: CanvasRenderingContext2D) {
       ctx.closePath();ctx.fillStyle=color;ctx.fill();
     }
     // The facing shoulders grow only into the available gap, below the travel surface.
-    fill(ramp?0:-1.8/(lanes*width),ramp?1+1.8/width:1,'#66666c');
+    ctx.beginPath();
+    for (const [i,row] of rows.entries()) {
+      const tie=gainJoin ? clamp((row.s-45)/30) : 0;
+      const p=stripePoint(row,ramp?0:-(1.8+.4*tie)/(lanes*width));
+      if(i===0)ctx.moveTo(...p);else ctx.lineTo(...p);
+    }
+    for(const row of [...rows].reverse()){
+      const tie=gainJoin ? clamp((row.s-45)/30) : 0;
+      ctx.lineTo(...stripePoint(row,ramp?1+(1.8+tie)/width:1));
+    }
+    ctx.closePath();ctx.fillStyle='#66666c';ctx.fill();
     fill(0,1,PAL.asphaltHwy);
     for(let i=0;i<=lanes;i++){
       ctx.beginPath();
@@ -118,7 +128,7 @@ export function paintVariable(ctx: CanvasRenderingContext2D) {
     }
     for(const r of [...active].reverse())ctx.lineTo(...r.ramp.inner);
     ctx.closePath();ctx.fillStyle='#66666c';ctx.fill();
-    for(const branch of [false,true]) strip(active.map(r=>({...(branch ? r.ramp : r.main),s:r.s})),branch?1:5,branch,solid,0);
+    for(const branch of [false,true]) strip(active.map(r=>({...(branch ? r.ramp : r.main),s:r.s})),branch?1:5,branch,solid,0,isGain);
   }
   tails.forEach((rows,i)=>strip(rows,i?1:5,!!i,()=>true,i?330-exitAt330:0));
   ctx.restore();
