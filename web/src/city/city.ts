@@ -28,6 +28,7 @@ import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { hideEmptyMeshes } from './empty-draws';
+import { frameFraction } from './camera-damping';
 import { CityGlass } from './glass';
 import { canvasGlassAllowed, glassSource, setCanvasGlass } from '../ui/glass';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -135,6 +136,9 @@ import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
 /** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
 const INK_FADE_END_M = 4300;
+/** OrbitControls' default damping, and City's glide-to step, as fractions per 60 Hz frame. */
+const DAMPING_PER_60HZ_FRAME = 0.05;
+const GLIDE_PER_60HZ_FRAME = 0.12;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -922,6 +926,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const camera = new THREE.PerspectiveCamera(drive ? 66 : 22, 1, drive ? 0.18 : 20, midtown ? 40000 : 20000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.dampingFactor = DAMPING_PER_60HZ_FRAME;
+  // `?camera=legacy` keeps the per-frame (frame-rate dependent) smoothing, for one release.
+  const legacyCamera = new URLSearchParams(location.search).get('camera') === 'legacy';
+  // OrbitControls calls update() from its own pointer and wheel handlers too, and each call took
+  // a damping step: the smoothing then depended on how often input arrived. Outside the frame
+  // loop an update still applies everything immediate (zoom, a set view) but advances no damping;
+  // the frame loop advances it once per frame, by the time that elapsed.
+  let cameraFrame = false;
+  if (!legacyCamera) {
+    const update = controls.update.bind(controls);
+    controls.update = (deltaTime?: number | null) => {
+      if (cameraFrame) return update(deltaTime);
+      const factor = controls.dampingFactor;
+      controls.dampingFactor = 0;
+      try { return update(deltaTime); } finally { controls.dampingFactor = factor; }
+    };
+  }
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(72);
   controls.minDistance = minOrbitDistance(query, import.meta.env.DEV);
@@ -1474,7 +1495,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
     camera.position.copy(controls.target).add(off);
   };
-  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera) : undefined;
+  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera, { legacy: legacyCamera }) : undefined;
   // Maps-style input zooms on double-click instead of gliding to the clicked point.
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
@@ -1854,13 +1875,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       freezeStatic(rolloutBatch.group);
     }
     options.beforeFrame?.(ts);
+    // Camera smoothing is tuned per 60 Hz frame; scale it by the real frame time so a drag coasts
+    // the same at 30, 60 and 120 fps (city/camera-damping.ts). `?camera=legacy` keeps it per frame.
+    const frameMs = legacyCamera ? 1000 / 60 : ts - lastFrame;
+    // While a pointer is down, the old controls also took a damping step from each (frame-aligned)
+    // pointer event: two per 60 Hz frame. Keep that feel, now by time instead of event count.
+    const dragging = (controls as unknown as { state: number }).state !== -1;
+    const step = frameFraction(DAMPING_PER_60HZ_FRAME, frameMs);
+    controls.dampingFactor = legacyCamera || !dragging ? step : 1 - (1 - step) * (1 - step);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
     if (glideTo) {
-      const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : 0.12);
+      const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : frameFraction(GLIDE_PER_60HZ_FRAME, frameMs));
       controls.target.add(step);
       camera.position.add(step);
-      if (step.length() < 0.05) glideTo = null;
+      // Done within a fixed distance, the same at any frame rate (0.05 m of a 60 Hz step).
+      if (glideTo.distanceTo(controls.target) < 0.05 / GLIDE_PER_60HZ_FRAME) glideTo = null;
     }
     if (drive) {
       controls.enabled = false;
@@ -1884,7 +1914,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.target.set(ahead.x,floor(ahead)+1.65,ahead.z);
       camera.lookAt(controls.target);
       if (scene.fog instanceof THREE.Fog) { scene.fog.near=110; scene.fog.far=800; }
-    } else controls.update();
+    } else {
+      cameraFrame = true;
+      controls.update();
+      cameraFrame = false;
+    }
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
