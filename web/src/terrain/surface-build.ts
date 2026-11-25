@@ -186,6 +186,12 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       let faces = [[ia, ib, ic]];
       for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
       for (const y of blockYields ?? []) {
+        // splitConvex can allocate temporary intersections before rejecting a face.
+        // Keep a tee's extended clip lines off the neighbouring board rim.
+        if (y.grade && (
+          [ia,ib,ic].every(i => pos[3*i] < y.minX) || [ia,ib,ic].every(i => pos[3*i] > y.maxX) ||
+          [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
+        )) continue;
         faces = faces.flatMap(f => {
           const { inside, outside } = splitConvex(f, y.planes, pos, add);
           if (!inside) return outside;
