@@ -1,4 +1,5 @@
 // Development-only Brookwood carriageways. XY and lane ordinals follow City's directed ribbons.
+import { intakeTread } from '../brookwood-variable-lanes/intake';
 import observations from './sections.json';
 import { alongOn, matchRibbon, sectionAt, stripePoint, ribbons } from '../../../web/src/terrain/connector-corridor';
 import type { TerrainCity, TransportRun } from '../../../web/src/terrain/transport-data';
@@ -178,5 +179,5 @@ export function northFreeway(city: TerrainCity): TerrainCity {
       upperPaint.add(road.pts);
     }
   }
-  return {...city,roads:city.roads.map(road=>upperPaint.has(road.pts)?{...road,bridge:true}:road),terrainTransport:{...transport,roads:[...additions,...transport.roads.filter(r=>!r.sourceAxis||!replaced.has(r.sourceAxis))]}};
+  return {...city,roads:city.roads.map(road=>upperPaint.has(road.pts)?{...road,bridge:true}:road),terrainTransport:{...transport,roads:[...additions,...transport.roads.filter(r=>!r.sourceAxis||!replaced.has(r.sourceAxis)).map(intakeTread)]}};
 }

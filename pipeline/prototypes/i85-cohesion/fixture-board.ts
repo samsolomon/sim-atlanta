@@ -17,5 +17,5 @@ export function board(path:string,tier:'low'|'high'='low') {
  const ground=new GroundSurface(grid,tier,undefined,[{z:-5700,minX:-1000,maxX:1800}]);
  const banks=bridgeApproaches(seventeenthPortals(city),323.8,ground.sampleScene.bind(ground),city.bounds,city.roads);
  const deck=createSurfaceTransport(city,grid,banks.groundAt);
- return {deck:deck.deckAt,ground:banks.groundAt,road:cityRoadHeight(city,banks.groundAt,deck.deckAt)};
+ return {city,deck:deck.deckAt,ground:banks.groundAt,road:cityRoadHeight(city,banks.groundAt,deck.deckAt)};
 }
