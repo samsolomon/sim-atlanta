@@ -28,16 +28,18 @@ export function norcrossPassage(slot: number) {
 
 /** The head position (metres along Main 2 from the west edge) for a passage in this
  * slot, or null once its tail has left the board. */
-export function freightPass(clockMs: number, lineLength: number): FreightPass | null {
-  const slot = Math.floor(clockMs / FREIGHT_SLOT_MS);
+export function freightPass(clockMs: number, lineLength: number, edgeAllowance = 0): FreightPass | null {
+  // At a diagonal board edge one corner of the end car crosses before the
+  // coupler centre. Let the clip plane reveal and hide those last vertices.
+  const slot = Math.floor((clockMs + edgeAllowance / FREIGHT_SPEED_MPS * 1000) / FREIGHT_SLOT_MS);
   const passage = norcrossPassage(slot);
   const travelled = ((clockMs - slot * FREIGHT_SLOT_MS) / 1000) * FREIGHT_SPEED_MPS;
-  if (travelled > lineLength + passage.lengthM) return null;
+  if (travelled > lineLength + passage.lengthM + edgeAllowance) return null;
   const dir = slot % 2 ? -1 : 1;
   return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled, passage };
 }
 
-export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance: number) => number, planes: THREE.Plane[], highTier = true) {
+export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance: number) => number, planes: THREE.Plane[], highTier = true, edgeAllowance = 0) {
   const line = new Line(pts);
   const batches = new FreightBatches(!highTier);
   const material = freightMaterial(planes);
@@ -61,7 +63,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
   // slow timetable cannot put a freight beside the Crescent's approach or berth.
   let visibleCars = 0, draws = 0;
   function update(clockMs: number, crescentOnCorridor: boolean, mountedLength = line.length) {
-    const pass = crescentOnCorridor ? null : freightPass(clockMs, line.length);
+    const pass = crescentOnCorridor ? null : freightPass(clockMs, line.length, edgeAllowance);
     visibleCars = 0;
     let front = pass?.head ?? 0;
     batches.begin();

@@ -612,7 +612,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true, north
   let northernHeight: ((s: number) => number) | undefined;
   const freight = createNorcrossFreight(route, (x, s) =>
     s > seam && northernHeight ? northernHeight(s - seam) : bed(x) + 0.32,
-    [freightEdge, westEdge, ...neverClip(2)], instanceFreight);
+    [freightEdge, westEdge, ...neverClip(2)], instanceFreight, northFreight ? 3 : 0);
   group.add(freight.group);
   let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
