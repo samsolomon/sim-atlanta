@@ -1,3 +1,4 @@
+import { variablePiece } from '../../../pipeline/prototypes/brookwood-variable-lanes/routes';
 import { Line, type P2 } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import {
@@ -16,6 +17,7 @@ type Box = TerrainCity['bounds'];
 export interface TrafficLane {
   line: Line;
   roads: VRoad[];
+  allocationLengthM?: number;
   direction: ConnectorDirection;
   crossing: boolean;
   lane: number;
@@ -127,12 +129,20 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
   function finish(chain: Piece[], share: number) {
     const points = [chain[0].pts[0]],
       roads: VRoad[] = [];
-    for (const p of chain)
-      for (const pt of p.pts.slice(1)) {
+    let allocationLengthM = 0;
+    const northMounted = boxes.some(b => b.minZ <= -6500 && b.maxZ >= -5700);
+    for (const p of chain) {
+      allocationLengthM += new Line(p.pts).length;
+      const replacement = northMounted && p.startsWay && p.endsWay
+        ? variablePiece(p.ribbon,p.lane,p.pts,p.owner) : undefined;
+      const samples = replacement?.pts ?? p.pts;
+      for (let i=1;i<samples.length;i++) {
+        const pt=samples[i];
         if (distance(points.at(-1)!, pt) < 0.00001) continue;
-        roads.push(p.owner);
+        roads.push(replacement?.owners[i-1] ?? p.owner);
         points.push(pt);
       }
+    }
     const line = new Line(points);
     if (line.length < 12) return;
     const crossing = chain.find((p) => p.ribbon.id === 119686423 || p.ribbon.id === 316454382);
@@ -141,6 +151,7 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
     // concave corner. Dissolve over the final car lengths before that cutoff.
     result.push({
       line,
+      allocationLengthM,
       roads,
       crossing: !!crossing,
       direction: main.ribbon.direction,
