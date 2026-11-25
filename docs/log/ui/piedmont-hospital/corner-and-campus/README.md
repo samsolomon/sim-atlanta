@@ -24,3 +24,7 @@ Private board, high graphics, clear, paused at `2026-11-25T13:30:00-05:00`.
 The revised screenshot harness skipped City’s opening white-model animation at serve time. The regular app ran the ground audit. The saved 999 × 496 viewport, 22° vertical FOV, and 20–36,000 m depth range matched across the pairs. Projection matrices match exactly. The largest difference between a baseline reconstructed world matrix and its recorded candidate matrix is below `3 × 10⁻¹⁴`. The Collier road edge, opposite roofs, and the surrounding blocks line up at each saved pose. [Reconstructed baseline and recorded candidate matrices](camera-matrices.json)
 
 The revised entrance photo shows an open landing under the canopy. The full-board audit at 2 m resolution found zero penetrations and zero coplanar samples for the hospital, plaza, and plaza treads on both tiers. It checked 132 hospital and 456 tread samples per tier, plus 31,023 plaza samples on High and 29,076 on Low.
+
+## Studio checkpoint
+
+Paused on `study/piedmont-atlanta-hospital`. Accepted geometry is `98cf2e1d` and the original handoff is `b357096c`. Phone owns the integrated copy. Combined campus captures for `7d57f34c` are in this worktree at `dist/combined-7d57f34c/`. If work resumes, start from the approved model and coordinate verification with Phone. Promotion closed before the queued `74e0f9f0` capture started.
