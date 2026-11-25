@@ -2,7 +2,7 @@ import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
 import { bedFlags, cuttingYields, type BallastQuad } from './cutting';
-import { drapeTriangle, type DrapeGround } from './drape';
+import { drapeTriangle, type DrapeGround, type TriangleSource } from './drape';
 import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
 import { keepColumns } from './bridge-approaches';
@@ -20,7 +20,7 @@ import { drawSeventeenthStreet } from '../city/seventeenth-street';
 import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
-type GroundAt = ((x: number, z: number, run?: TransportRun) => number | null) & { raisedEnds?: WeakMap<P2, number> };
+type GroundAt = ((x: number, z: number, run?: TransportRun) => number | null) & { footingTerrain?: TriangleSource; raisedEnds?: WeakMap<P2, number> };
 /** Road tread over its support, and the widest band of a deck that lands on the board. */
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
 /** A deck that must arrive this far above the board gets a landing approach. */
@@ -591,12 +591,17 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   drawSeventeenthStreet(city, sceneZero, (x,z) => {
     const h = grid.sample(x,z);
     return h === null ? null : h-sceneZero;
-  }, seventeenth, roadTreads, bridgeRuns);
+  }, seventeenth, roadTreads, bridgeRuns, terrainGround.footingTerrain);
   yield 'transport 17th street';
   for(const [owner,parts] of landWalks) for(const pts of parts) { draw({...owner,pts,kind:"ground"},"road",owner); yield 'transport walk'; }
   for (const road of data.roads) {
     if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
+    if (road.drawTread) {
+      roadTreads.set(road, road.drawTread(structures, sceneZero, terrainGround));
+      yield 'source-fitted road';
+      continue;
+    }
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
     let from = 0;

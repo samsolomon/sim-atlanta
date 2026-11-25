@@ -26,6 +26,10 @@ export class GroundGrid {
     this.data = new DataView(binary);
   }
 
+  copyBytes(): ArrayBuffer {
+    return (this.data.buffer as ArrayBuffer).slice(0);
+  }
+
   node(row: number, col: number): number | null {
     const m = this.manifest;
     const raw = this.data.getInt16(2 * (row * m.cols + col), true);

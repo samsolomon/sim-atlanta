@@ -1,3 +1,5 @@
+import { deeringBranch, deeringDonor, deeringThrough, deeringSection, deeringStations } from '../../../pipeline/prototypes/highway-four/deering';
+import eastWays from '../../../pipeline/prototypes/highway-four/east-ways.json';
 import midtownWays from '../city/fixtures/midtown-connector/ways.json';
 import downtownWays from '../../../pipeline/prototypes/connector-footprint/ways.json';
 import { Line, type P2 } from '../vignette/geom';
@@ -25,7 +27,7 @@ type End = { ribbon: Ribbon; start: boolean; offset: number };
 type Joint = { incoming: End[]; outgoing: End[] };
 export const mix = (a: P2, b: P2, f: number): P2 => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
 export const stripePoint = (row: Section, fraction: number) => mix(row.inner, row.outer, fraction);
-const rawWays = { ...downtownWays, ...midtownWays };
+const rawWays = { ...downtownWays, ...midtownWays, ...eastWays };
 const joints = new Map<string, Joint>();
 const sourceEnds = new Set(
   Object.values(rawWays).flatMap((w) => [w.pts[0].join(','), w.pts.at(-1)!.join(',')]),
@@ -202,6 +204,10 @@ for (const joint of joints.values()) {
               ? Math.min(1, total - e.ribbon.lanes)
               : 0;
       if (trunk.ribbon.link || side.filter(branch => !branch.ribbon.link).length > 1) e.offset = Math.min(assigned, total - e.ribbon.lanes);
+      if (trunk.ribbon.id === deeringDonor && !trunk.start && e.start) {
+        if (e.ribbon.id === deeringBranch) e.offset = 0;
+        if (e.ribbon.id === deeringThrough) e.offset = 2;
+      }
       assigned += e.ribbon.lanes;
       const s = e.start ? 0 : e.ribbon.line.length;
       pins.get(e.ribbon)!.push({
@@ -223,7 +229,7 @@ for (const joint of joints.values()) {
     }
 }
 
-export function alongOn(r: Ribbon, p: P2) {
+export function alongOn(r: Pick<Ribbon, "pts" | "line">, p: P2) {
   let best = Infinity,
     along = 0;
   for (let i = 1; i < r.pts.length; i++) {
@@ -290,7 +296,7 @@ for (const r of ribbons) {
     }
   }
   anchors.sort((a, b) => a.s - b.s);
-  const stations = new Set([...r.line.cum, ...anchors.map((a) => a.s)]);
+  const stations = new Set([...r.line.cum, ...anchors.map((a) => a.s), ...deeringStations(r.id).filter(s=>s>0 && s<r.line.length)]);
   for (const p of anchors)
     for (const delta of [-50, 50]) {
       const s = p.s + delta;
@@ -327,7 +333,7 @@ for (const r of ribbons) {
       for (const k of ['inner', 'outer'] as const)
         for (const j of [0, 1]) row[k][j] += (anchor[k][j] - base[k][j]) * w;
     }
-    r.rows.push(row);
+    r.rows.push(deeringSection(r.id,row));
   }
   index.add(r, r.pts, 32);
 }

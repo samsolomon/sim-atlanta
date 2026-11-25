@@ -1,3 +1,4 @@
+import { outerAxles, wheelPlane } from '../../../pipeline/prototypes/highway-four/contact';
 import * as THREE from 'three';
 import { MovingQueue, MOVING_QUEUE_WAIT_S, type MovingBlocks } from './traffic-queues';
 import { rng, type Line } from '../vignette/geom';
@@ -81,6 +82,9 @@ type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
   city: TerrainCity;
   quality: 'low' | 'high';
+  /** Give an eligible movement one existing slot when rounding omitted its course. */
+  reserveMovement?: (course: TrafficCourse) => boolean;
+  fitWheelPlane?: (road: VRoad, x: number, z: number) => boolean;
   hourly: TrafficData['hourly'];
   roadHeight: RoadHeight;
   /** All distances in City metres. Heading is atan2(dx,dz), zero toward +z. */
@@ -102,6 +106,8 @@ export interface TrafficCourse {
   roads: VRoad[];
   speedMps: number;
   dailyFlow: number;
+  /** Relative share of the capped illustrative fleet. Source volume stays in dailyFlow. */
+  sampleWeight?: number;
   truckShare: number;
   /** High tier: share of trucks drawn as tractor-trailers instead of box trucks (default 0.15). */
   semiShare?: number;
@@ -156,8 +162,8 @@ function visibleLength(lane: TrafficCourse) {
 
 export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number, quality: 'low' | 'high' = 'low') {
   const random = rng(seed);
-  const demand = routes.map(r => r.dailyFlow * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
-  const visible = routes.map(r => r.dailyFlow * peak / 3600 * visibleLength(r) / r.speedMps);
+  const demand = routes.map(r => r.dailyFlow * (r.sampleWeight ?? 1) * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
+  const visible = routes.map(r => r.dailyFlow * (r.sampleWeight ?? 1) * peak / 3600 * visibleLength(r) / r.speedMps);
   const total = visible.reduce((sum, n) => sum + n, 0);
   const factor = Math.min(1, cap / total);
   let cumulative = 0;
@@ -187,6 +193,26 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
   return slots;
 }
 
+function coverMovement(slots: Slot[], courses: TrafficCourse[], matches: (course: TrafficCourse) => boolean) {
+  if (slots.some(slot => matches(slot.lane))) return;
+  const target = courses.find(matches);
+  if (!target) return;
+  const counts = new Map<TrafficCourse, number>();
+  let spare: Slot | undefined;
+  let largest = 1;
+  for (const slot of slots) {
+    const count = (counts.get(slot.lane) ?? 0) + 1;
+    counts.set(slot.lane, count);
+    if (count > largest) {
+      largest = count;
+      spare = slot;
+    }
+  }
+  if (!spare) return;
+  spare.phase *= (target.line.length + offstage(target)) / (spare.lane.line.length + offstage(spare.lane));
+  spare.lane = target;
+}
+
 /** A clock-seekable, illustrative layer. Source volumes describe typical demand.
  * A null road-surface sample or an observed bus has priority over a model car.
  */
@@ -198,6 +224,7 @@ export class RoadTraffic {
    * frame. A queue should never need it; opposing lanes pinching at a node are not counted. */
   signalOverlaps = 0;
   private readonly material = vehicleMaterial(this.night, true);
+  private readonly contactAxles = new Map<Kind, ReturnType<typeof outerAxles>>();
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
   private readonly movingQueues = new Map<TrafficCourse, MovingQueue>();
@@ -231,6 +258,7 @@ export class RoadTraffic {
       return queued;
     });
     this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed, opts.quality) : [];
+    if (opts.reserveMovement) coverMovement(this.slots, courses, opts.reserveMovement);
     this.lanes = this.buildLanes(courses);
     if (this.heads) this.headPhases = new Uint8Array(this.heads.signals.length).fill(255);
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
@@ -253,6 +281,7 @@ export class RoadTraffic {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      if (opts.fitWheelPlane) this.contactAxles.set(kind, outerAxles(mesh.geometry.getAttribute('position')));
       mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
@@ -500,8 +529,22 @@ export class RoadTraffic {
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
         const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
-        dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
-          x, (front.y + rear.y) * .5 + .03, z) || dirty;
+        const owner = this.opts.fitWheelPlane && course.roads[Math.min(course.roads.length - 1, Math.floor(line.vertexAt(s)))];
+        const plane = owner && this.opts.fitWheelPlane?.(owner, x, z) ? wheelPlane(this.contactAxles.get(slot.kind)!,
+          (at, px, pz) => this.exactHeight(lane, at, px, pz), s, x, z, ux, uz) : undefined;
+        if (plane) {
+          // Forward and lateral tangents share the fitted plane. Orthonormalize
+          // before writing the matrix so crossfall does not shear the body.
+          const forwardNorm=Math.hypot(1,plane.grade), upNorm=Math.hypot(1,plane.grade,plane.roll);
+          const fx=ux/forwardNorm, fy=plane.grade/forwardNorm, fz=uz/forwardNorm;
+          const upX=(-ux*plane.grade-uz*plane.roll)/upNorm, upY=1/upNorm;
+          const upZ=(-uz*plane.grade+ux*plane.roll)/upNorm;
+          dirty=write(m,o,upY*fz-upZ*fy,upZ*fx-upX*fz,upX*fy-upY*fx,
+            upX,upY,upZ,fx,fy,fz,x,plane.y,z)||dirty;
+        } else {
+          dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
+            x, (front.y + rear.y) * .5 + .03, z) || dirty;
+        }
         const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
         if (opacity) {
           const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;

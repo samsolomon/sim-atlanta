@@ -1,3 +1,4 @@
+import { drapeTriangle, type TriangleSource } from '../terrain/drape';
 import { runSync } from '../core/slice';
 import landuse from '../../../pipeline/prototypes/residential/landuse.json';
 import { pradoYieldSigns } from '../terrain/ansley-street-edge';
@@ -578,7 +579,8 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
  */
 /** Yard landscaping as a build that yields once per house (core/slice.ts). */
 function* yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
-  street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
+  street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[],
+  yardSurface?: (x: number, z: number) => TriangleSource | undefined) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
   if (high) pradoYieldSigns(b,city.bounds,ground);
   const yields: GroundYield[] = [], terraceSites: { id:string; at:P2; triangles:number }[] = [];
@@ -623,7 +625,16 @@ function* yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, 
         clearance = Math.min(clearance, ys[0]! - (startHeight + ramp*t0), ys[3]! - (startHeight + ramp*t0),
           ys[1]! - (startHeight + ramp*t1), ys[2]! - (startHeight + ramp*t1));
       }
-      b.quad([p0[0] + nx, ys[0]!, p0[1] + nz], [p1[0] + nx, ys[1]!, p1[1] + nz], [p1[0] - nx, ys[2]!, p1[1] - nz], [p0[0] - nx, ys[3]!, p0[1] - nz], color);
+      const startRight = [p0[0] + nx, ys[0]!, p0[1] + nz], endLeft = [p1[0] - nx, ys[2]!, p1[1] - nz];
+      const right = [p1[0] + nx, ys[1]!, p1[1] + nz], left = [p0[0] - nx, ys[3]!, p0[1] - nz];
+      const src = endHeight === undefined && yardSurface?.(p0[0], p0[1]);
+      if (src) {
+        const emit = (p: number[], q: number[], r: number[]) => b.tri(p.slice(0,3), q.slice(0,3), r.slice(0,3), color);
+        drapeTriangle(src, startRight, right, endLeft, .04, emit);
+        drapeTriangle(src, startRight, endLeft, left, .04, emit);
+      } else {
+        b.quad(startRight, right, endLeft, left, color);
+      }
     }
     if (endHeight !== undefined) {
       // One plane below every walk vertex also clears the interiors of all walk triangles.
@@ -746,7 +757,8 @@ export function residential(...args: Parameters<typeof buildResidential>) {
 /** residential() as a build that yields every few houses (core/slice.ts). */
 export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
-  force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
+  force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = [],
+  yardSurface?: (x: number, z: number) => TriangleSource | undefined) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
   const toHouse = (b: (typeof city.buildings)[number]) => {
@@ -878,7 +890,7 @@ export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) =
   function* buildYards() {
       if (!ground || !plans.size) return null;
       // Every footprint blocks yards, including landmark sites already removed from `city`.
-      const { b, cover, yields, terraceSites } = yield* yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
+      const { b, cover, yields, terraceSites } = yield* yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks, yardSurface);
       yield;
       const group = new THREE.Group();
       group.name = 'yards';

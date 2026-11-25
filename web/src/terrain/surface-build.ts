@@ -1,3 +1,5 @@
+import { seatLandingEdges } from '../../../pipeline/prototypes/highway-four-ground/landing';
+import { gradeSouthboundBoard } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import { runSync, type Build } from '../core/slice';
 /**
  * The ground surface's geometry as pure functions over typed arrays: no DOM, no three.js objects,
@@ -5,6 +7,7 @@ import { runSync, type Build } from '../core/slice';
  * GroundSurface (surface.ts) calls the same code, so both paths draw the same triangles.
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
+import { conformCutEdges } from './conform-cut-edges';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
@@ -20,8 +23,9 @@ export type TerrainQuality = 'low' | 'high';
  * vertices too, at both tiers.
  */
 export interface GroundYield {
+  conformEdges?: boolean;
   ring: readonly (readonly [number, number])[];
-  floor(x: number, z: number): number;
+  floor(x: number, z: number, originalY?: number): number;
 }
 
 /** The plain numbers of a ground manifest the mesh needs. */
@@ -45,7 +49,7 @@ export function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
 
@@ -156,7 +160,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
       let f = Infinity;
-      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z));
+      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z, y));
       if (!(y > f)) return i;
       let j = lowered.get(i);
       if (j === undefined) lowered.set(i, j = add(x, f, z));
@@ -236,8 +240,21 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       }
     }
     starts[detail.length] = indices.length;
-    starts[detail.length] = indices.length;
-    return { pos, uv, indices, starts, blockCols };
+    const result = { pos, uv, indices, starts, blockCols };
+    if (yieldList.some(y=>y.conformEdges)) {
+      const blocks = new Set<number>();
+      for (const [k,ys] of yieldBlocks) if (ys.some(y=>y.conformEdges)) blocks.add(k);
+      conformCutEdges(result, blocks, (x,z)=>{
+        let floor=Infinity;
+        for (const y of nearYields(x,z)) if (y.conformEdges && contains(y,x,z,1e-6)) {
+          floor=Math.min(floor,y.floor(x,z));
+        }
+        return floor;
+      });
+    }
+    const graded = gradeSouthboundBoard(result, spec.bounds);
+    seatLandingEdges(graded.pos, yieldList);
+    return graded;
 }
 
 /**
@@ -373,7 +390,7 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
     if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return { pos, uv, indices };
+    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds, {settled: lower});
 }
 
 /**
