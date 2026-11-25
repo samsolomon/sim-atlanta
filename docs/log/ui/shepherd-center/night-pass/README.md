@@ -1,6 +1,6 @@
 # Shepherd Center after hours
 
-Lighting revision `198e71e6` follows the accepted daytime candidate `0e3b54f6`. The frozen r16 board includes approved Piedmont. [Private comparison gallery](review.html)
+**Sam approved Shepherd Center in daylight and at night for 5250 on November 25, 2026.** Approval covers model revision `198e71e6`, matched capture evidence `70e6d96c`, and the verified combined North board `7d57f34c`. The combined captures show Shepherd alongside approved Piedmont on High and Low. [Private comparison gallery](review.html)
 
 The Marcus Center’s large curtain-wall panels now have small warm rectangles for sparse room occupancy. The recessed lobby and the old hospital’s entrance fascia light up, and the enclosed bridge has a more continuous warm interior. A few rooms glow in the older wings. Shepherd’s peak emissive intensity is 0.49, compared with 0.54 for Piedmont. City sets the same illustrative 23:30 clock on both grades. The 2018 owner publication gives an evening precedent for the older campus. Completed Marcus Center lighting and the occupancy of individual rooms are illustrative. [Exterior evidence and mapped dimensions](../README.md)
 
