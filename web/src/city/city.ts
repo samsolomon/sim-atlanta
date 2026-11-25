@@ -1056,6 +1056,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // camera) loads now, since the view it opens on needs that area.
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
+  // R16 bare earth spans -87.6 to -34.7 m in scene coordinates.
+  const northBoundsBox = square?.bounds.r16 && new THREE.Box3(
+    new THREE.Vector3(square.bounds.r16.minX, -88, square.bounds.r16.minZ),
+    new THREE.Vector3(square.bounds.r16.maxX, -34, square.bounds.r16.maxZ));
+  const northFrustum = new THREE.Frustum();
+  const viewProjection = new THREE.Matrix4();
+  const northVisible = () => {
+    if (!northBoundsBox) return false;
+    camera.updateMatrixWorld();
+    viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    return northFrustum.setFromProjectionMatrix(viewProjection).intersectsBox(northBoundsBox);
+  };
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
@@ -1124,7 +1136,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
       if (added.has('r16')) performance.mark('r16:attached');
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`), northVisible);
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1627,10 +1639,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
     document.getElementById('city-info')?.append(squareButton);
-    const loadFullBoard = () => {
+    const loadFullBoard = (includeNorth = true) => {
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      mosaic.requestFullBoard();
+      mosaic.requestFullBoard(includeNorth);
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
       approachMosaic(400, -1500);
@@ -1646,7 +1658,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-15, 35, Math.min(controls.maxDistance, distance), 400, centerZ);
     };
     if (rectangle || !midtown) {
-      loadFullBoard();
+      loadFullBoard(false);
       if (!drive && !brookwoodStudy && !Object.hasOwn(profileCameras, profile)) frameFullBoard();
     }
     squareButton.onclick = () => {
