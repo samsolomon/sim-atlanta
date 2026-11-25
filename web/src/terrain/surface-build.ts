@@ -1,3 +1,4 @@
+import { seatLandingEdges } from '../../../pipeline/prototypes/highway-four-ground/landing';
 import { gradeSouthboundBoard } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import { runSync, type Build } from '../core/slice';
 /**
@@ -251,7 +252,9 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
         return floor;
       });
     }
-    return gradeSouthboundBoard(result, spec.bounds);
+    const graded = gradeSouthboundBoard(result, spec.bounds);
+    seatLandingEdges(graded.pos, yieldList);
+    return graded;
 }
 
 /**
