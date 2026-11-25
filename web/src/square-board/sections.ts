@@ -15,7 +15,7 @@ import { brookwoodCorridorRail } from '../city/brookwood-corridor';
 import { midtownLights } from '../city/midtown-night';
 import { northLineRail } from '../city/midtown-marta-guideway';
 import { northLinePortalSlots } from '../city/midtown-marta-rail';
-import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
+import trackedRows from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
 import { northConnectorGround, northConnectorTransport } from './connector-ground';
@@ -54,8 +54,10 @@ import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
 export type Patch = `${Direction}-${'band' | 'corner'}`;
+const rowBounds = { ...trackedRows, r16: { minZ: -6500, maxZ: -5700 } };
+const trackedOnly = typeof location !== 'undefined' && new URLSearchParams(location.search).has('baseline');
 export type MidtownRow = keyof typeof rowBounds;
-export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).sort((a, b) => rowBounds[b].maxZ - rowBounds[a].maxZ);
+export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).filter(id => id !== 'r16' || !trackedOnly).sort((a, b) => rowBounds[b].maxZ - rowBounds[a].maxZ);
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
@@ -187,7 +189,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   try {
     for (const [patchIndex, { id, grid, context }] of patches.entries()) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
-        context.terrainTransport = { version: 1, roads: [], rail: northLineRail(id, brookwoodCorridorRail(railRows[id as MidtownRow] as TransportRun[], grid)) };
+        context.terrainTransport = { version: 1, roads: [], rail: northLineRail(id, brookwoodCorridorRail(railRows[id as keyof typeof railRows] as TransportRun[], grid)) };
       }
       const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
@@ -260,6 +262,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   }
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
+  if (direction === 'r16') performance.mark('r16:build-start');
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
   try {
     signal.throwIfAborted();
@@ -270,5 +273,6 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     throw error;
   }
   for (const area of built.values()) area.commitTrees();
+  if (direction === 'r16') performance.mark('r16:built');
   return built;
 }

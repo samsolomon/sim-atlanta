@@ -111,7 +111,7 @@ export class SquareMosaic {
     if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
     if (lastRow >= 0 && this.areas.has('north-band')) {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
-      if (next) requested.push(next);
+      if (next && (next !== 'r16' || inside(bounds.r16, target.x, target.z, 100))) requested.push(next);
     }
     for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
     for (const direction of requested) {

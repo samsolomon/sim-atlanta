@@ -1042,6 +1042,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+      if (added.has('r16')) performance.mark('r16:attach-start');
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -1066,6 +1067,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
+      if (added.has('r16')) performance.mark('r16:attached');
     }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
   }
   function approachNorth(x: number, z: number) {
@@ -1415,6 +1417,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setPixelRatio(pr);
     resize();
   };
+  Object.assign(window, { __northStudy: {
+    go(x: number, z: number) {
+      manualCamera();
+      mosaic?.remember(x, z);
+      approachMosaic(x, z, true);
+      setView(-40, 55, 300, x, z);
+    },
+    state: () => ({ x: controls.target.x, z: controls.target.z,
+      rows: [...(mosaic?.areas.keys() ?? [])], allocations: { ...renderer.info.memory },
+      cars: trains.group.children.filter(c => c.visible && c.userData.trainId === 'marta:trip:25-27300-20261120').map(c => c.position.toArray()) }),
+  } });
   const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
