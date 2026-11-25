@@ -39,6 +39,8 @@ export interface ShellOptions {
   centerCity?(): void;
   getTilt?(): number;
   getMaxTilt?(): number;
+  getEyeHeight?(): number | undefined;
+  setEyeHeight?(metres: number): void;
   setTilt?(degrees: number): void;
   /** Back to the real present at 1× (A2c "Now"). */
   onNow?(): void;

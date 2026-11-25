@@ -823,7 +823,7 @@ function watchAutoGraphics(quality: 'low' | 'high', load: number) {
     void applyGraphics();
   }, { belowFps: (import.meta.env.DEV && Number(params.get('slowfps'))) || 20 }); // dev: ?slowfps= to test
 }
-let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number } | null = null;
+let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number; eyeHeightM?: number } | null = null;
 async function setGraphics(g: Graphics) {
   // A manual choice ends the watch; picking Auto again re-arms it on the next City open.
   stopWatchSlow?.();
@@ -853,7 +853,7 @@ async function applyGraphics() {
   if (diorama !== city || mapExitActive || city.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
   const t = diorama.target(), c = diorama.camera();
-  keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
+  keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance(), eyeHeightM: diorama.eyeHeight() };
   // A follow carries through the rebuild (Auto can step down to Low seconds after a follow starts);
   // openCity resumes it. Other selections close.
   const followed = follow?.vehicle ?? pendingFollow ?? undefined;
@@ -1227,13 +1227,15 @@ const shellOptions: ShellOptions = {
     return x < -1000 || x > 1800 || z < -5700 || z > 1100;
   },
   centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
+  getEyeHeight: () => diorama?.eyeHeight(),
+  setEyeHeight: metres => diorama?.setEyeHeight(metres),
   getMaxTilt: () => diorama?.maxTilt() ?? 70,
   getTilt: () => diorama?.camera().tilt ?? cityTilt,
   setTilt(degrees) {
     cityTilt = degrees;
     if (!diorama) return;
     const t = diorama.target();
-    diorama.lookAt(t.x, t.z, { bearing: diorama.camera().bearing, tilt: degrees, distanceM: diorama.distance() });
+    diorama.lookAt(t.x, t.z, { bearing: diorama.camera().bearing, tilt: degrees, distanceM: diorama.distance(), eyeHeightM: diorama.eyeHeight() });
   },
   north() {
     if (inModels()) return;
@@ -1297,7 +1299,7 @@ const shellOptions: ShellOptions = {
       : selectedBus ? { kind: 'bus', id: selectedBus } : selectedFreight ? { kind: 'freight', id: selectedFreight } : undefined;
     if (diorama) {
       const t = diorama.target(), c = diorama.camera();
-      return { view: 'city' as const, selection, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
+      return { view: 'city' as const, selection, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance(), eyeHeightM: diorama.eyeHeight() }) };
     }
     if (!map) return null;
     const c = map.getCenter();

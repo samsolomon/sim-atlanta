@@ -18,7 +18,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
-import type { GroundCamera } from '../core/camera';
+import { MAX_EYE_HEIGHT, PEDESTRIAN_HEIGHT, type GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
@@ -164,13 +164,15 @@ export interface CityView {
   hasPeople: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
-  lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
+  lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number; eyeHeightM?: number }): void;
   target(): { x: number; z: number };
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
   camera(): GroundCamera & { tilt: number };
   maxTilt(): number;
+  eyeHeight(): number;
+  setEyeHeight(metres: number): void;
   /** Orbit distance in metres, the last field of a `cam` link. */
   distance(): number;
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
@@ -1231,6 +1233,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
   const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const streetControls = !!options.mapGestures && !drive;
+  let eyeHeightM = PEDESTRIAN_HEIGHT;
   const orbitMinimum = controls.minDistance;
   function orbitLimits(distance: number, tilt: number) {
     if (!streetControls) return;
@@ -1276,7 +1279,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       // Translate eye and pivot together: picking, camera snapshots, all render
       // passes and Follow then see exactly the same upward-looking camera.
       const eyeOffset = camera.position.y - t.y;
-      const eyeFloor = streetFloor(camera.position.x + dx, camera.position.z + dz) + 1.7;
+      const eyeFloor = streetFloor(camera.position.x + dx, camera.position.z + dz) + eyeHeightM;
       pivotY = Math.max(eyeFloor, THREE.MathUtils.lerp(pivotY + eyeOffset, eyeFloor, blend)) - eyeOffset;
     }
     const dy = pivotY - t.y;
@@ -2270,6 +2273,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     quality,
     lookAt(x, z, view) {
       glideTo = null;
+      if (view) eyeHeightM = view.eyeHeightM ?? PEDESTRIAN_HEIGHT;
       pendingEastTarget = previewEast && !east && x > b.maxX && x <= eastBounds.maxX &&
         z >= eastBounds.minZ && z <= eastBounds.maxZ ? { x, z } : undefined;
       pendingNorthTarget = previewNorth && !north && x > b.maxX && x <= northBounds.maxX &&
@@ -2297,6 +2301,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
     distance: () => camera.position.distanceTo(controls.target),
+    eyeHeight: () => eyeHeightM,
+    setEyeHeight(metres) {
+      if (!Number.isFinite(metres)) return;
+      eyeHeightM = THREE.MathUtils.clamp(metres, PEDESTRIAN_HEIGHT, MAX_EYE_HEIGHT);
+      clampTarget();
+      camera.updateMatrixWorld();
+    },
     maxTilt: () => THREE.MathUtils.radToDeg(controls.maxPolarAngle),
     onBoard(x, z, eventually = false) {
       if (eventually && mosaic) {
