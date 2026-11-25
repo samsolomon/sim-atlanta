@@ -81,10 +81,20 @@ export class MidtownArterialTraffic extends RoadTraffic {
     const { corridors, heights, bounds } = midtownArterialCorridors(boards, northStudy);
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
     const signals = northStudy ? [...signalPoints, ...northBake.signals] : signalPoints;
+    const courses = bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signals as [number, number][]) : [];
+    if (northStudy) {
+      // Reserve a larger share for the two continuous US 19 paths on the
+      // northern rows. The fixed fleet still uses the published directional flow.
+      const northernRoads = new Set(corridors.find(c => c.id === 'Peachtree Street')?.runs
+        .filter(run => run.road.pts.some(p => p[1] < -5700)).map(run => run.road));
+      for (const course of courses) {
+        if (course.roads.some(road => northernRoads.has(road))) course.sampleWeight = 2;
+      }
+    }
     super({ ...opts, city,
       fitWheelPlane: northStudy ? (_road, _x, z) => z <= -4900 : undefined,
       roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
-      bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signals as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
+      courses, ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
       'Illustrative Midtown arterial traffic');
   }
 }
