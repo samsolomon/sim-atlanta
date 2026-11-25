@@ -18,7 +18,7 @@ type Height = (x: number, z: number) => number | null;
 // Both mapped mains reach the north board boundary. Chain from that known edge
 // back to the end of the open track. Only the two contiguous North Line chains
 // can carry passenger trains, irrespective of neighboring freight geometry.
-export function northLineTracks(runs: readonly TransportRun[], northEdge: number) {
+export function northLineTracks(runs: readonly Pick<TransportRun, 'name' | 'pts'>[], northEdge: number) {
   const parts = runs.filter((r) => r.name === 'MARTA North Line').map((r) => r.pts);
   const tracks: Line[] = [];
   function same(a: P2, b: P2) {
@@ -229,7 +229,7 @@ export function createNorthLine(
   area.group.add(spans.mesh, spans.lamps);
   let height = (line: Line, along: number) => profile.at(line, along);
   function extend() {
-    const continuation = northLineTracks(axes as TransportRun[], -6500);
+    const continuation = northLineTracks(axes.map(run => ({ name: run.name, pts: run.pts.map(([x, z]): P2 => [x, z]) })), -6500);
     const joined = lines.map((line, i) => new Line([...line.pts, ...continuation[i].pts.slice(1)]));
     const nextPaths = northLinePaths(rf, origin, joined);
     if (!nextPaths.has('marta:path:155235')) throw Error('North extension missing timed Red path');
