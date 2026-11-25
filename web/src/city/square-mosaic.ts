@@ -1,3 +1,4 @@
+import { deferStation } from './neighbor-study';
 import * as THREE from 'three';
 import { addSection, bounds, midtownRows, connect, joins, type Area, type Board, type BrookwoodGrid, type Direction, type Section, type TrafficArea } from '../square-board/sections';
 import type { TerrainQuality } from '../terrain/surface';
@@ -111,7 +112,8 @@ export class SquareMosaic {
     if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
     if (lastRow >= 0 && this.areas.has('north-band')) {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
-      if (next) requested.push(next);
+      if (next && (next !== 'brookwood-station' || !deferStation ||
+        inside(bounds[next], target.x, target.z, 100))) requested.push(next);
     }
     for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
     for (const direction of requested) {

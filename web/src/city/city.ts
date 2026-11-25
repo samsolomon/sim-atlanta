@@ -1,3 +1,4 @@
+import { neighborMark, neighborStudy } from './neighbor-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
  * vignette (ink lines, colour grade, tilt-shift) and built by the same engine (`vignette/world`).
@@ -324,7 +325,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     await new Promise((resolve) => setTimeout(resolve, 0));
     options.signal?.throwIfAborted();
     const start = performance.now();
+    neighborMark(name + ":build-start");
     fn();
+    neighborMark(name + ":build-end");
     stages[name] = Math.round(performance.now() - start);
     perf.phase(`stage:${name}`);
   };
@@ -1042,6 +1045,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+      const label = [...added.keys()].join("+");
+      neighborMark(label + ":attach-start");
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -1066,6 +1071,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
+      neighborMark(label + ":attach-end");
     }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
   }
   function approachNorth(x: number, z: number) {
@@ -1415,6 +1421,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setPixelRatio(pr);
     resize();
   };
+  let leg = 'initial';
+  let pendingUsable = true;
+  const framesRecorded: number[][] = [];
+  if (neighborStudy) Object.assign(window, { __neighbor: {
+    go(destination: 'station' | 'south') {
+      if (destination !== 'south' && destination !== 'station') throw Error('Unknown study destination');
+      leg = destination;
+      pendingUsable = true;
+      neighborMark(destination + ':request');
+      const z = destination === 'station' ? -5054 : -4600;
+      manualCamera();
+      mosaic?.remember(-92, z);
+      approachMosaic(-92, z, true);
+      setView(-40, 58, 420, -92, z);
+    },
+    frames: framesRecorded,
+    areas: () => [...(mosaic?.areas.keys() ?? [])],
+    pose: () => [controls.target.x, controls.target.z],
+    allocations: () => ({ ...renderer.info.memory }),
+  } });
   const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
@@ -2057,6 +2083,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (glass) showGlass(!!glassRects && glass.drew());
     whiteModel?.after();
     const renderEnd = performance.now();
+    if (neighborStudy) {
+      framesRecorded.push([ts, renderStart - frameStart, renderEnd - renderStart]);
+      const z = leg === 'station' ? -5054 : -4600;
+      const row = leg === 'station' ? 'brookwood-station' : 'brookwood-south';
+      if (pendingUsable && composed && !gl.isContextLost() && mosaic?.areas.has(row) &&
+        document.getElementById('city-loading')?.hidden && Math.abs(controls.target.x + 92) < 1 &&
+        Math.abs(controls.target.z - z) < 1) {
+        neighborMark(leg + ':usable');
+        pendingUsable = false;
+      }
+    }
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
     if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {

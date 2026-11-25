@@ -1,3 +1,4 @@
+import { neighborMark } from '../city/neighbor-study';
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
@@ -164,6 +165,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
+  neighborMark(direction + ':fetch-start');
   const [patches] = await Promise.all([
     Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood))),
     // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).
@@ -172,6 +174,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   signal.throwIfAborted();
   // ?worker=1: every patch's ground surface is built in a Worker, in parallel, before the
   // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
+  neighborMark(direction + ':fetch-ready');
   const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid }) => prebuildSurface(grid, quality,
     terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
     joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
@@ -260,9 +263,11 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   }
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
+  neighborMark(direction + ':build-start');
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
   try {
     signal.throwIfAborted();
+  neighborMark(direction + ':connect-start');
     connect(mounted, built);
   } catch (error) {
     // Aborted, or a seam failed validation: nothing of this section survives.
@@ -270,5 +275,6 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     throw error;
   }
   for (const area of built.values()) area.commitTrees();
+  neighborMark(direction + ':build-ready');
   return built;
 }
