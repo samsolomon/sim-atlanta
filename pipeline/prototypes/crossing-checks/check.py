@@ -205,22 +205,24 @@ def main():
     p.add_argument('exports',type=Path)
     p.add_argument('--tier',choices=['low','high'],action='append')
     p.add_argument('--out',type=Path,required=True)
-    p.add_argument('--expect',choices=['baseline','peachtree','combined'],required=True)
+    p.add_argument('--expect',choices=['baseline','peachtree','combined','repaired'],required=True)
     args=p.parse_args();results={}
     mismatches=[]
     for tier in args.tier or ['low','high']:
         for site in ['seventeenth','peachtree','capitol']:
             face=args.exports/tier/f'faces-{site}-{tier}.json'
             wide=face.with_name(f'faces-{site}-wide-{tier}.json')
-            if wide.is_file():face=wide
+            if site=='peachtree':
+                if not wide.is_file():raise FileNotFoundError(f'Full outer landing requires {wide}')
+                face=wide
             scene=Scene(face)
             results[f'{site}-{tier}']=capitol(scene) if site=='capitol' else reference(scene,site)
             row=results[f'{site}-{tier}']
             if site=='capitol':
                 failed=[]
-                if row['firstUnsupported']:failed.append('walk support')
+                if row['firstUnsupported'] or row['missingWalkSamples']:failed.append('walk support')
                 if any(j['outside'] for j in row['joints']):failed.append('joint grade')
-                wanted=['walk support','joint grade']
+                wanted=[] if args.expect=='repaired' else ['walk support','joint grade']
             else:
                 failed=[]
                 joins=[v[k] for v in row['fullWidth'] for k in ['joint','groundLanding'] if k in v]
@@ -242,7 +244,7 @@ def main():
                 if seam and (seam['maxOpenWidthM']>.001 or max(abs(seam[k][0]) for k in ['minStep','maxStep'])>.002):
                     failed.append('tile seam')
                 wanted=[]
-                if site=='seventeenth' and args.expect!='combined':wanted=['pier seating']
+                if site=='seventeenth' and args.expect in ['baseline','peachtree']:wanted=['pier seating']
                 if site=='peachtree' and args.expect=='baseline':wanted=['landing']
             row['failures']=failed
             if failed!=wanted:mismatches.append((site,tier,failed,wanted))
