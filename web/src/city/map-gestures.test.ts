@@ -40,7 +40,9 @@ describe('direct wheel zoom', () => {
     { unit: 'pixels', deltaMode: 0, deltaY: 120, expected: 120 },
     { unit: 'lines', deltaMode: 1, deltaY: 3, expected: 48 },
     { unit: 'pages', deltaMode: 2, deltaY: -1, expected: -100 },
-  ])('preserves the OrbitControls zoom for $unit across eased steps', ({ deltaMode, deltaY, expected }) => {
+    { unit: 'pixels during a drag', deltaMode: 0, deltaY: 120, expected: 0, state: 2 },
+    { unit: 'pixels with reduced motion', deltaMode: 0, deltaY: 120, expected: 0, reduced: true },
+  ])('preserves the OrbitControls zoom for $unit across eased steps', ({ deltaMode, deltaY, expected, state = -1, reduced = false }) => {
     class TestWheelEvent extends Event {
       constructor(type: string, init: WheelEventInit) {
         super(type, init);
@@ -50,14 +52,25 @@ describe('direct wheel zoom', () => {
     }
     vi.stubGlobal('WheelEvent', TestWheelEvent);
     const el = new EventTarget() as HTMLElement;
-    const stop = mapGestures({ maxPolarAngle: Math.PI } as OrbitControls, el, () => {}, () => {}, { easeWheel: true });
+    const controls = { maxPolarAngle: Math.PI, enabled: true, enableZoom: true, state };
+    const zoom = vi.fn();
+    const stop = mapGestures(controls as unknown as OrbitControls, el, () => {}, zoom, {
+      easeWheel: true, motionPreference: { matches: reduced } as MediaQueryList,
+    });
     const steps: number[] = [];
     el.addEventListener('wheel', e => { if (!e.isTrusted) steps.push(e.deltaY); });
     try {
       const input = new WheelEvent('wheel', { deltaMode, deltaY, clientX: 50, clientY: 40, cancelable: true });
       Object.defineProperty(input, 'isTrusted', { value: true });
       el.dispatchEvent(input);
+      controls.state = -1; // Releasing the button must never replay a rejected notch.
       for (let i = 0; i < 60; i++) stop.tick(1000 / 60);
+      if (expected === 0) {
+        expect(input.defaultPrevented).toBe(false); // Native wheel rules own this event.
+        expect(zoom).not.toHaveBeenCalled();
+        expect(steps).toEqual([]);
+        return;
+      }
       expect(steps.length).toBeGreaterThan(1);
       expect(steps.reduce((sum, delta) => sum + delta, 0)).toBeCloseTo(expected, 9);
     } finally {

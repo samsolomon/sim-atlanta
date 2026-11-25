@@ -1503,7 +1503,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
     camera.position.copy(controls.target).add(off);
   };
-  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera, { legacy: legacyCamera, easeWheel: directCamera }) : undefined;
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera, { legacy: legacyCamera, easeWheel: directCamera, motionPreference }) : undefined;
   // Maps-style input zooms on double-click instead of gliding to the clicked point.
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
@@ -1565,7 +1566,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   let atm: Atmosphere = { sunElev: 40, sunAz: 180, dark: 0, cloud: 0, rain: 0, snow: 0, fog: 0 };
   const wx = { cloud: 0, rain: 0, snow: 0, fog: 0 }; // eased toward the atmosphere's weather
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion = motionPreference.matches;
   const shadowTarget = new THREE.Vector3(Infinity, 0, Infinity);
   // The shadow camera moves in grid steps (80 m on low, 60 m on high), so a pan redraws the
   // map a few times instead of every frame (each redraw re-renders every caster in the box).
@@ -1834,7 +1835,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fps = 0;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
-  const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
   const driveStart = performance.now();
   // A car counts as drawn only when it is visible and inside its own clipping planes, so
   // follow never frames a consist that a board edge or tunnel mouth has cut away.

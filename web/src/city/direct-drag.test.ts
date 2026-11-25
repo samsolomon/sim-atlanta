@@ -25,12 +25,12 @@ it.each(['pan', 'rotate'] as const)('arrests a %s coast on re-grab and spends th
     input(0.05);
     frame();
     expect(position()).toBeCloseTo(0.05, 9);
-    input(0.02);
+    input(-0.10);
     lift();
-    expect(position()).toBeCloseTo(0.07, 9);
+    expect(position()).toBeCloseTo(-0.05, 9);
     frame();
     const coasting = position();
-    expect(coasting).toBeGreaterThan(0.07);
+    expect(coasting).toBeLessThan(-0.05);
     press();
     frame();
     expect(position()).toBeCloseTo(coasting, 9);

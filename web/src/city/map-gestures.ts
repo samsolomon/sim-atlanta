@@ -27,7 +27,7 @@ export function mapGestures(
   /** Turn the view by degrees, as City's rotate() does (positive turns the bearing down). */
   rotate: (degrees: number) => void,
   onZoom: () => void,
-  o: { legacy?: boolean; easeWheel?: boolean } = {},
+  o: { legacy?: boolean; easeWheel?: boolean; motionPreference?: MediaQueryList } = {},
 ) {
   // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
   // r180's middle-drag dolly reads the cursor's y from its x, which zoomToCursor would expose.
@@ -42,7 +42,7 @@ export function mapGestures(
   // Two fingers: their midpoint moving up or down tilts (OrbitControls), the twist turns (below).
   // Sideways midpoint motion must not turn the map as well, so drop OrbitControls' azimuth share
   // while two touches are down. `_rotateLeft` is OrbitControls' private API (three 0.180).
-  const inner = controls as unknown as { _rotateLeft?: (angle: number) => void };
+  const inner = controls as unknown as { state: number; _rotateLeft?: (angle: number) => void };
   const rotateLeft = inner._rotateLeft?.bind(controls);
   if (rotateLeft) inner._rotateLeft = (angle: number) => { if (touches.size < 2) rotateLeft(angle); };
 
@@ -54,6 +54,8 @@ export function mapGestures(
   // retain OrbitControls' zoom-to-cursor behaviour.
   let lastWheel = -Infinity;
   let wheelPending = 0;
+  // OrbitControls r180 ignores wheel zoom while another pointer gesture is active.
+  const acceptsWheel = () => controls.enabled && controls.enableZoom && inner.state === -1;
   let wheelAt = { x: 0, y: 0 };
   let trackpad = false;
   el.addEventListener('wheel', e => {
@@ -70,6 +72,7 @@ export function mapGestures(
     // ?camera=direct: a notched mouse wheel's step eases in over ~120 ms (tick, below) instead of
     // jumping in one frame. Split deltas multiply to the same zoom, at the same cursor.
     if (o.easeWheel && !trackpad && !e.ctrlKey && e.deltaY) {
+      if (!acceptsWheel() || o.motionPreference?.matches) return;
       e.stopImmediatePropagation();
       e.preventDefault();
       onZoom();
@@ -169,7 +172,11 @@ export function mapGestures(
   /** Each frame (City's loop): feed the eased share of pending wheel zoom to OrbitControls. */
   const tick = (frameMs: number) => {
     if (!wheelPending) return;
-    const share = wheelShare(frameMs, WHEEL_EASE_MS);
+    if (!acceptsWheel()) {
+      wheelPending = 0;
+      return;
+    }
+    const share = o.motionPreference?.matches ? 1 : wheelShare(frameMs, WHEEL_EASE_MS);
     let d = wheelPending * share;
     if (Math.abs(wheelPending - d) < 0.5) d = wheelPending;
     wheelPending -= d;
