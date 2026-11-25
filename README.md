@@ -98,7 +98,27 @@ choose a tier yourself.
 
 - [pipeline/](pipeline/) downloads open data and builds the static files for Map and City.
   Run `pnpm data:city` to refresh City alone or `pnpm data:midtown` to add missing
-  Midtown rows to an older checkout.
+  Midtown and Brookwood rows to an older checkout. For a fresh checkout run the full
+  `pnpm data` command before building or testing. City loads the r16 terrain as the
+  camera approaches it or when a user chooses Show full board.
+- [Northern source manifest](pipeline/prototypes/combined-canopy/provenance.json) records
+  the pinned course, canopy, rail and terrain inputs. Staging checks the source hash,
+  decompressed context bytes and both ground files for each of the three northern rows.
+  The expected [row hashes](pipeline/prototypes/combined-canopy/rows.sha256.json) include
+  the 635,106-byte Brookwood Station context (SHA-256 beginning `ce24d47b`).
+  To rebake the northern packets, download the two TIFFs linked in the
+  [r16 ground manifest](pipeline/prototypes/square-board/r16/ground.json) as
+  `x74y374.tif` and `x74y375.tif`. Extract `UTCMosaic2023.tif` from the Georgia Tech
+  archive linked in the source manifest. Run
+  `.venv/bin/python pipeline/prototypes/combined-canopy/rebuild.py DEM_DIRECTORY UTCMosaic2023.tif NEW_OUTPUT_DIRECTORY`.
+- The highway section tables use the USGS Georgia Statewide B2 2018 point cloud,
+  with class 2 ground and class 17 deck returns. The east bridge profiles sample
+  1.7 m neighborhoods at the centerline and 7 m either side. Individual LAZ filenames
+  and digests are in the [east section source manifest](pipeline/prototypes/highway-four/east-source-hashes.json).
+  Each tile is under `ept-data/` relative to the
+  [USGS point-cloud index](https://usgs-lidar-public.s3.amazonaws.com/GA_Statewide_B2_2018/ept.json).
+  The renderer uses the checked-in fitted sections. Their inferred shoulders and
+  structural depths are documented in the [road and rail profiles](docs/road-rail-profiles.md).
 - [web/](web/) contains the Three.js city and MapLibre map. The browser computes
   scheduled train positions from the timetables.
 - [worker/](worker/) serves the built site and proxies live data. The browser uses the
