@@ -1067,7 +1067,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         pilot.group.add(sides);
         pilot.dispose = () => { sides.geometry.dispose(); sides.material.dispose(); restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
         const rails = studyRails(pilot);
-        const supports = maysonSupports(extensions, pilot.terrainAt);
+        const supports = maysonSupports(extensions, (x, z) => {
+          const y = pilot.terrainAt(x, z);
+          if (y === null) throw Error("Missing terrain under Mayson support");
+          return y;
+        });
         pilot.group.add(supports);
         const disposeSupportedArea = pilot.dispose.bind(pilot);
         pilot.dispose = () => {
