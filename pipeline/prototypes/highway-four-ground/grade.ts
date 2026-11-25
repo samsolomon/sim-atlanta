@@ -49,7 +49,7 @@ registerRows(median.filter(row=>row[0]>=32 && row[0]<=78).map(([s,ax,az,bx,bz,y,
 registerRows(exitSections.map(([s,x,z,nx,nz,y,slope]): Point[] => {
   const blend = Math.max(0,Math.min(1,(s-174)/12,(364.245932-s)/12));
   const along = blend*blend*(3-2*blend);
-  return [[-6,0],[-4.15,1],[0.40,1],[2.8,0]].map(([offset,weight]) =>
+  return [[-6,0],[-4.15,1],[0.40,1],[1.9,.85],[3.8,.42],[5.2,.1],[6.5,0]].map(([offset,weight]) =>
     [x+offset*nx,z+offset*nz,y+offset*slope,along*weight]);
 }));
 function blended(f:Face,x:number,z:number,y:number){
@@ -85,6 +85,27 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
     }
   }
   // starts[] indexes the same original per-block face ranges as GroundSurface.sampleScene.
+  // Tessellate the original board on a common barycentric lattice across
+  // the exit shoulder. Both sides of an old board edge share its split
+  // positions and the same sampled height, including in the curved feather.
+  function exitFace(abc: number[]) {
+    const [a,b,c]=abc.map(i => pos.slice(3*i,3*i+3));
+    const n=4;
+    let previous: number[]=[];
+    for(let j=0;j<=n;j++) {
+      const row: number[]=[];
+      for(let k=0;k<=n-j;k++) {
+        const at=(axis:number) => ((n-j-k)*a[axis]+j*b[axis]+k*c[axis])/n;
+        const x=at(0), z=at(2), y=at(1);
+        row.push(add(x,sbTrialHeight(x,z,y),z));
+      }
+      if(j>0)for(let k=0;k<row.length;k++) {
+        next.push(previous[k],row[k],previous[k+1]);
+        if(k+1<row.length)next.push(row[k],row[k+1],previous[k+1]);
+      }
+      previous=row;
+    }
+  }
   const starts=mesh.starts,oldStarts=starts?.slice(),blocks=oldStarts?oldStarts.length-1:1;
   for(let block=0;block<blocks;block++){
     if(starts)starts[block]=next.length;
@@ -95,6 +116,11 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
       const box={minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)};
       if(Math.abs(planArea(abc[0],abc[1],abc[2]))<1e-10||box.maxX<window[0]||box.minX>window[1]||box.maxZ<window[2]||box.minZ>window[3]){next.push(...abc);continue;}
       const nearby=new Set<Face>();binRange(box,k=>{for(const f of bins.get(k)??[])nearby.add(f);});
+      if(deering && box.minZ > -4820 && [...nearby].some(({bounds:b}) =>
+        b.maxX>=box.minX && b.minX<=box.maxX && b.maxZ>=box.minZ && b.minZ<=box.maxZ)) {
+        exitFace(abc);
+        continue;
+      }
       let pieces=[abc];
       for(const f of nearby){
         const b=f.bounds;if(box.maxX<b.minX||box.minX>b.maxX||box.maxZ<b.minZ||box.minZ>b.maxZ)continue;
