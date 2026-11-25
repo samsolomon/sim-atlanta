@@ -1,3 +1,4 @@
+import { mountMayson } from './mayson-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
  * vignette (ink lines, colour grade, tilt-shift) and built by the same engine (`vignette/world`).
@@ -1043,6 +1044,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       if (added.has('r16')) performance.mark('r16:attach-start');
+      const pilot = added.get('r16');
+      if (pilot) pilot.group.add(mountMayson());
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');

@@ -57,7 +57,7 @@ export type Patch = `${Direction}-${'band' | 'corner'}`;
 const rowBounds = { ...trackedRows, r16: { minZ: -6500, maxZ: -5700 } };
 const trackedOnly = typeof location !== 'undefined' && new URLSearchParams(location.search).has('baseline');
 export type MidtownRow = keyof typeof rowBounds;
-export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).filter(id => id !== 'r16' || !trackedOnly).sort((a, b) => rowBounds[b].maxZ - rowBounds[a].maxZ);
+export const midtownRows = (Object.keys(trackedOnly || typeof location === 'undefined' ? trackedRows : rowBounds) as MidtownRow[]).filter(id => id !== 'r16' || !trackedOnly).sort((a, b) => rowBounds[b].maxZ - rowBounds[a].maxZ);
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
