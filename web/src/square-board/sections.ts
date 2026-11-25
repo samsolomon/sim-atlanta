@@ -1,4 +1,5 @@
-import { eastHighwayApproaches } from '../../../pipeline/prototypes/highway-four/east';
+import { eastLandingYields } from '../../../pipeline/prototypes/highway-four-ground/landing';
+import { eastHighwayApproaches, eastLandingTriangles } from '../../../pipeline/prototypes/highway-four/east';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
@@ -237,6 +238,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
         const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
         const decks = yield* buildSurfaceTransport(base, grid, area.groundAt);
+        if (id === 'r16') decks.cutting.push(...eastLandingYields(eastLandingTriangles(city)));
         transports.push(decks);
         yield* area.carveSteps(trail ? [...decks.cutting, ...trail.yields] : decks.cutting);
         area.group.add(decks.group);
