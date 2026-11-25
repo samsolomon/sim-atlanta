@@ -1,4 +1,4 @@
-import { trailDriveAxis, trailDrivePoint } from '../../../pipeline/prototypes/northeast-trail/access';
+import { trailDriveAxis } from '../../../pipeline/prototypes/northeast-trail/access';
 import { trailAxis, trailPoint, trailBore, trailBridge } from '../../../pipeline/prototypes/northeast-trail/path';
 import { freewaySides } from './i85-ramp-study';
 import { joinGroundMaps } from './north-seam-texture';
@@ -1066,7 +1066,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         pilot.group.add(sides);
         pilot.dispose = () => { sides.geometry.dispose(); sides.material.dispose(); restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
         const rails = studyRails(pilot);
-        pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
+        if (!pilot.trailWalk) pilot.group.add(mountMayson());
+        pilot.group.add(rails, norcrossNorthRails(pilot.groundAt, 323.8));
         northLine?.extend(rails);
       }
       for (const area of added.values()) addArea(area);
@@ -1456,8 +1457,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     point: trailPoint,
     walk(s: number) {
       const area = mosaic?.areas.get('r16');
-      if (!area) throw Error('Northeast Trail row is loading');
-      return trailDrivePoint(s, area.terrainAt);
+      if (!area?.trailWalk) throw Error('Northeast Trail row is loading');
+      return area.trailWalk(s);
     },
   } });
   if (query.has('railWitness')) Object.assign(window, { __burial: { scene, camera, areas: () => mosaic?.areas,

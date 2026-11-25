@@ -1,3 +1,5 @@
+import { mountMayson } from '../city/mayson-study';
+import { trailDrivePoint } from '../../../pipeline/prototypes/northeast-trail/access';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
@@ -69,7 +71,7 @@ export const midtownRows = (Object.keys(trackedOnly || typeof location === 'unde
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
-export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null };
+export type TrafficArea = Area & { trailWalk?: (s:number)=>[number,number,number]; connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -262,7 +264,13 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         if (ramp) area.group.add(ramp.surface, ramp.lining);
-        if (trail) area.group.add(trail.mountTread(area.terrainAt), trail.lining);
+        let trailWalk: TrafficArea['trailWalk'];
+        if (trail) {
+          const carriers = mountMayson();
+          const accessHeight = trail.receivingHeight(carriers, area.terrainAt);
+          area.group.add(carriers, trail.mountTread(accessHeight), trail.lining);
+          trailWalk = s => trailDrivePoint(s, accessHeight);
+        }
         const stockRoadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
         if (ramp) for (const road of city.roads) {
           if (road.cls === 'motorway' && road.sub === 'link') ramp.register(road.pts);
@@ -271,7 +279,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           ? (x,z,road) => ramp.roadHeight(x,z,road.pts) ?? stockRoadHeight(x,z,road) : stockRoadHeight;
         yield 'piers and road heights';
         added.set(id, {
-          ...area, northTread, orbitGround: ramp?.originalHeight,
+          ...area, northTread, trailWalk, orbitGround: ramp?.originalHeight,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: id !== 'midtown-south' ? roadHeight : (x, z, road) => {
             if (road.name === northAvenue.roadName) {
