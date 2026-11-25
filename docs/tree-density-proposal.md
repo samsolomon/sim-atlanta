@@ -72,7 +72,7 @@ Drawn canopy %. Variants were measured one at a time.
 
 ## Cost
 
-Counts only. **Frame time has not been measured**; that needs the performance window and an A16 run.
+**Frame time, Studio only.** One run each of the default view, with other agents' processes on the machine. With A, CPU update/render p50 went from 1.3/2.2 to 1.3/2.1 ms on Low and from 2.6/2.4 to 2.8/2.4 ms on High. Both builds held 60 fps (p95 16.7 ms; 16.8 ms on High with A), which is the display cap, so this says nothing about GPU headroom or phones. An A16 run on a frozen candidate build is the check to do; B and C have not been timed at all.
 
 | Option | Added crowns | Triangles and draws |
 | --- | --- | --- |
