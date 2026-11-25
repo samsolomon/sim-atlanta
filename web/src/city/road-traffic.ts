@@ -256,7 +256,7 @@ export class RoadTraffic {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
-      if(opts.fitWheelPlane) this.contactAxles.set(kind,outerAxles(mesh.geometry));
+      if(opts.fitWheelPlane) this.contactAxles.set(kind,outerAxles(mesh.geometry.getAttribute('position')));
       mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
