@@ -311,6 +311,24 @@ export function orientedBox(body: Builder, x: number, z: number, dx: number, dz:
   }
 }
 
+/** Drawn underside facets in a plan crop. The North Line guideway is built in scene coordinates. */
+export function undersideFaces(mesh: THREE.Mesh, minX: number, maxX: number, minZ: number, maxZ: number) {
+  const g = mesh.geometry;
+  const pos = g.getAttribute('position');
+  const isUnderside = colourDrop(g, [SOFFIT, GIRDER]);
+  type Point = [number, number, number];
+  const faces: [Point, Point, Point][] = [];
+  const point = (i: number): Point => [pos.getX(i), pos.getY(i), pos.getZ(i)];
+  for (let i = 0; i < pos.count; i += 3) {
+    if (!isUnderside(i / 3)) continue;
+    const a = point(i), b = point(i + 1), c = point(i + 2);
+    if (Math.max(a[0], b[0], c[0]) < minX || Math.min(a[0], b[0], c[0]) > maxX ||
+        Math.max(a[2], b[2], c[2]) < minZ || Math.min(a[2], b[2], c[2]) > maxZ) continue;
+    faces.push([a, b, c]);
+  }
+  return faces;
+}
+
 function soffitEdge(profile: NorthLineProfile, station: number, side: number) {
   const p = profile.centre[station];
   const offset = side * (p.half - 2.1 + 2.6 - 2.4);
