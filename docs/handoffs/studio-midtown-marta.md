@@ -1,5 +1,9 @@
 # Studio Midtown MARTA handoff (Claude Opus → Codex)
 
+## Brookwood freight at the north row · 2026-11-25
+
+Downtown rail owns private source `49e10e6287f1f68c418bfb3631d37b1935a09dbc` off `955f5f56e7386575d58381649134d28d723c30b5`. The illustrative consist now follows Main 2 on the same mapped way for another 1,069.6 m. At 08:26:19.250 EST the old north clip removed half the marked well car and the route retained four poses. The candidate retains all 15. Half-second Low and High pose checks cover the 15-unit northeast and 11-unit southwest passages. Next, verify the matched City replay on each tier and the final outer-edge exit in the combined highway mount. Browser captures and mounted replay are pending. [Main 2 way history](https://www.openstreetmap.org/way/874902949/history/10)
+
 ## Brookwood two-span comparison · 2026-11-25
 
 The private comparison uses the approved Mayson baseline `21341f85a658f9230c22592a59733981cae2297f`. Downtown rail owns portable geometry. Brookwood source `5657605d054a642921351da0b4b45b1a1c4c00aa` mounted as `955f5f56e7386575d58381649134d28d723c30b5` and Sam accepted its design. The southwest boarding island and two NS mains (38978865 and 874902950) cross I-75 on a shared flanged steel deck. The adjacent Peachtree Street road bridge is separate. Both full-width closures and nine legs meet drawn earth on Low and High. Each tier repeats 31 illustrative freight and 41 scheduled Crescent frames at identical car poses. The Crescent retains its baseline wheel-height residual. [November 2026 freight underside](https://www.google.com/maps/@?api=1&map_action=pano&pano=D3jzz_wMUQeJhwtuEW6hpw)
