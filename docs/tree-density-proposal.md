@@ -32,6 +32,18 @@
 
 The staged percentage uses the source radius, so rows where City enlarges crowns can draw more than they stage.
 
+**At today's date it is thinner still.** The table above is full summer leaf. Rerun for November 25, leaf drop takes a further 14–20% off the drawn canopy everywhere:
+
+| Area | High summer → Nov 25 | Low summer → Nov 25 |
+| --- | ---: | ---: |
+| Ansley Park | 21.1 → 17.5 | 6.5 → 5.2 |
+| Midtown | 5.0 → 4.1 | 1.7 → 1.4 |
+| brookwood-station | 15.0 → 12.4 | 4.5 → 3.7 |
+| R16 today | 0.6 → 0.5 | 0.2 → 0.2 |
+| R16 with option A | 16.9 → 14.1 | 4.8 → 3.9 |
+
+The option table below is also in summer leaf. The screenshots show November.
+
 ## Why
 
 1. **R16 uses a fallback bake** (`pipeline/prototypes/combined-canopy/bake_fallback.py`). It proposes one point per 20 m cell, caps the radius at 5.4 m, and drops every residential, commercial and industrial parcel and anything within 15 m of a building. Of 5,600 proposals, 4,420 failed the canopy-interior test, 646 fell on a parcel and 317 survived. R16 also skips the tree rollout.
