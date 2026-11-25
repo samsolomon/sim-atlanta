@@ -50,6 +50,26 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[],
     minX: Math.min(u.minX, b.minX), maxX: Math.max(u.maxX, b.maxX),
     minZ: Math.min(u.minZ, b.minZ), maxZ: Math.max(u.maxZ, b.maxZ) } : { ...b }, null);
   if (drifted) console.warn(`Midtown arterial traffic: ${drifted} baked runs no longer match their drawn roads`);
+  if (northStudy) {
+    // The offset lane and its axles reach the cut at different stations from
+    // the source axis. Resolve these two pieces by the actual sample Z.
+    const seamZ = -5700;
+    const pieces = ['brookwood-station', 'r16'].map(row => {
+      const board = boards.find(b => b.row === row);
+      const road = board?.city.roads.find(r => heights.has(r) && r.name === 'Peachtree Road Northeast'
+        && [r.pts[0], r.pts.at(-1)!].some(([x,z]) => Math.abs(x + 197.1) < .05 && z === seamZ));
+      return board && road ? { road, sample: board.roadHeight } : undefined;
+    });
+    const [south, north] = pieces;
+    if (south && north) {
+      const across: MidtownTrafficBoard['roadHeight'] = (x,z) => {
+        const side = z < seamZ ? north : south;
+        return side.sample(x,z,side.road);
+      };
+      heights.set(north.road, across);
+      heights.set(south.road, across);
+    }
+  }
   return { corridors: [...corridors.values()], heights, bounds, skipped, drifted };
 }
 
