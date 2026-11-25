@@ -2,7 +2,7 @@
 // height isolates horizontal timing. Mounted road ownership must be checked separately.
 import { readFileSync } from 'node:fs';
 import { ConnectorTraffic } from '../../../web/src/city/connector-traffic';
-import { ribbons } from '../../../web/src/terrain/connector-corridor';
+import { ribbons, sectionAt, stripePoint } from '../../../web/src/terrain/connector-corridor';
 import rows from '../square-board/midtown-rows.json';
 import type { TerrainCity } from '../../../web/src/terrain/transport-data';
 import type { InstancedMesh } from 'three';
@@ -16,13 +16,18 @@ const bounds = [
 const hourly = JSON.parse(readFileSync(process.argv[2],'utf8')).hourly;
 const epoch = Date.parse('2026-11-20T08:08:00-05:00');
 const targets = [[29013401,30],[9238120,30],[38983384,270],[38982156,1145],
-  [38983378,215],[369529892,25],[187141934,-10],[38981774,-10],[1020867018,20]];
+  [38983378,215],[369529892,25],[187141934,-10],[38981774,-10],[1020867018,20],[73954042,24],[27609107,24]];
 for (const quality of ['low','high'] as const) {
   const boards=bounds.map(([minX,maxX,minZ,maxZ])=>({city:{bounds:{minX,maxX,minZ,maxZ}} as TerrainCity,roadHeight:()=>0}));
   const traffic=new ConnectorTraffic({...boards[0],neighbors:boards.slice(1),quality,hourly});
   const remaining=new Map(targets.map(([id,s])=>{
     const r=ribbons.find(w=>w.id===id)!;
-    return [id,{r,p:r.line.at(s<0?r.line.length+s:s)}] as const;
+    const station=s<0?r.line.length+s:s;
+    const p=r.line.at(station);
+    if (id===73954042 || id===27609107) {
+      [p.x,p.z]=stripePoint(sectionAt(r,station),.5);
+    }
+    return [id,{r,p}] as const;
   }));
   for (let seconds=0; seconds<1800 && remaining.size; seconds+=.5) {
     traffic.update(epoch+seconds*1000,0);

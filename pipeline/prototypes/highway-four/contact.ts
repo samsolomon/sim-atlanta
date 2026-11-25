@@ -2,11 +2,13 @@ import type { P2 } from '../../../web/src/vignette/geom';
 import { ribbons } from '../../../web/src/terrain/connector-corridor';
 
 const deering = new Set([358758245,29013401,9238120]);
+const exit250 = new Set([9238120,73954042,27609107]);
 const east = new Set([38982156,38983378,369529892,369529886,38983384,38981774,187141934,1020867018]);
 const owners = new Map(ribbons.map(r=>[r.pts,r.id]));
 export function onStudyTread(axis: P2[], x: number, z: number) {
   const id=owners.get(axis);
   return id!==undefined && (deering.has(id) && Math.hypot(x+397,z+4917)<190 ||
+    exit250.has(id) && Math.hypot(x+292.293,z+4695.613)<160 ||
     east.has(id) && z < -5900 && x>1100);
 }
 
