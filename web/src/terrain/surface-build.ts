@@ -25,7 +25,7 @@ export type TerrainQuality = 'low' | 'high';
 export interface GroundYield {
   conformEdges?: boolean;
   ring: readonly (readonly [number, number])[];
-  floor(x: number, z: number): number;
+  floor(x: number, z: number, originalY?: number): number;
 }
 
 /** The plain numbers of a ground manifest the mesh needs. */
@@ -160,7 +160,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
       let f = Infinity;
-      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z));
+      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z, y));
       if (!(y > f)) return i;
       let j = lowered.get(i);
       if (j === undefined) lowered.set(i, j = add(x, f, z));
