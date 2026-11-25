@@ -23,3 +23,7 @@ The five pairs have exactly matching recorded world and projection matrices. The
 | High Peachtree in daylight | 52 → 52 | 781,727 → 782,039 | 63 → 63 |
 
 These are static render counters from the two matched camera distances. TypeScript and eight landmark-batch tests passed. [Recorded controls](verification.json)
+
+## Studio checkpoint
+
+Paused on `study/shepherd-center`. Product source is `198e71e6`, matched evidence is `70e6d96c`, and Sam’s approval is recorded in `6bcbe742`. Phone owns the integrated copy. If work resumes, use accepted combined witness `7d57f34c` and coordinate any future capture with Phone. The private gallery and raw captures remain in `dist/shepherd-night/`.
