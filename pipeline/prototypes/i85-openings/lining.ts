@@ -40,6 +40,15 @@ export function rampLining(exposed:Ground,quad:Emit) {
         return inside?lift(p,height):[p[0],Math.max(p[1],p[1]+(height+slab)*w,ground),p[2]];
       };
       const upperA=top(start,a.wing),upperB=top(end,b.wing);
+      const outer=(p:V,row:typeof a):V=>{
+        const dx=row.r[0]-row.l[0],dz=row.r[2]-row.l[2],length=Math.hypot(dx,dz);
+        const out=(side==='l'?-1:1)*.16*row.wing;
+        return [p[0]+out*dx/length,p[1],p[2]+out*dz/length];
+      };
+      const crownA=inside?cap(start):upperA,crownB=inside?cap(end):upperB;
+      const oa=outer(crownA,a),ob=outer(crownB,b);
+      quad(crownA,crownB,ob,oa,'#aaa18d');
+      quad(outer(start,a),outer(end,b),ob,oa,'#a39985');
       if(side==='l')quad(start,end,upperB,upperA,'#a39985');
       else quad(end,start,upperA,upperB,'#a39985');
     }
