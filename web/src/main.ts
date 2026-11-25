@@ -1227,6 +1227,7 @@ const shellOptions: ShellOptions = {
     return x < -1000 || x > 1800 || z < -5700 || z > 1100;
   },
   centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
+  getMaxTilt: () => diorama?.maxTilt() ?? 70,
   getTilt: () => diorama?.camera().tilt ?? cityTilt,
   setTilt(degrees) {
     cityTilt = degrees;

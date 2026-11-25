@@ -62,19 +62,22 @@ export function streetcarLines(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
 }
 
 /** Road surface height under a point: the nearest mapped road's own height, or ground. */
-export function roadSurface(roads: readonly RoadLike[], roadHeight: (x: number, z: number, road: never) => number | null, ground: Height): Height {
+export function roadSurface(roads: readonly RoadLike[], roadHeight: (x: number, z: number, road: never) => number | null, ground: Height, includeStreetDecks = false): Height {
   const index = new PlacementIndex<{ road: RoadLike; a: P2; b: P2 }>(16);
   for (const road of roads) {
     // The streetcar runs only on surface streets: it passes under the Connector viaduct
     // and runs on no bridge, so neither can set its height.
-    if (road.tunnel || road.bridge || road.cls === 'motorway' || ['footway', 'path', 'steps', 'pedestrian', 'cycleway'].includes(road.cls)) continue;
+    if (road.tunnel || (road.bridge && !includeStreetDecks) || road.cls === 'motorway' || ['footway', 'path', 'steps', 'pedestrian', 'cycleway'].includes(road.cls)) continue;
     for (let i = 1; i < road.pts.length; i++) index.add({ road, a: road.pts[i - 1], b: road.pts[i] }, [road.pts[i - 1], road.pts[i]], 8);
   }
   return (x, z) => {
     let best: { road: RoadLike; d: number } | null = null;
     for (const { road, a, b } of index.at(x, z)) {
       const d = segDist(x, z, a, b);
-      if (d < roadWidth(road) / 2 + 1 && (!best || d < best.d)) best = { road, d };
+      if (d >= roadWidth(road) / 2 + 1) continue;
+      // Where streets cross on two levels, retain the pedestrian path below.
+      if (!best || (best.road.bridge && !road.bridge) ||
+          (Boolean(road.bridge) === Boolean(best.road.bridge) && d < best.d)) best = { road, d };
     }
     const h = best ? roadHeight(x, z, best.road as never) : null;
     return h ?? ground(x, z);

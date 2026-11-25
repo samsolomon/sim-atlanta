@@ -541,6 +541,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
   let labelTimer = 0;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
+    const limit = String(view === 'city' ? Math.round(o.getMaxTilt?.() ?? 70) : 70);
+    if (tilt.max !== limit) tilt.max = limit;
     const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
     if (tilt.value !== tiltNow && !tilt.matches(':active, :focus-visible')) tilt.value = tiltNow;
     const show = view !== 'models';

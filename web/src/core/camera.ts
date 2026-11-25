@@ -28,6 +28,9 @@ export function parseCityCamera(value: string | null) {
 
 /** The `cam` query value parseCityCamera reads: whole metres and degrees (#166's format). */
 export function formatCityCamera(c: { x: number; z: number; bearing: number; tilt: number; distanceM: number }): string {
+  if (c.tilt > 70) {
+    return [c.x, c.z, c.bearing, c.tilt, c.distanceM].map(n => Number(n.toFixed(4))).join(',');
+  }
   const bearing = ((Math.round(c.bearing) % 360) + 540) % 360 - 180; // −180…180, as MapLibre shows it
   return [Math.round(c.x), Math.round(c.z), bearing, Math.round(c.tilt), Math.max(1, Math.round(c.distanceM))].join(',');
 }
