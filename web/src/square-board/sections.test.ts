@@ -14,8 +14,6 @@ import { alignment } from '../vignette/alignment';
 
 const source = new URL('../../../pipeline/prototypes/', import.meta.url);
 function file(id: Board, name: string) {
-  if (id === 'brookwood-south' || id === 'brookwood-station' || id === 'r16')
-    return readFileSync(new URL(`../../public/data/scene/square-board/${id}/${name}`, import.meta.url));
   const path = id === 'downtown' ? 'downtown-ground' : id === 'king' ? 'king-memorial/ground' : id === 'auburn' ? 'sweet-auburn/ground' : 'square-board/' + id;
   return readFileSync(new URL(path + '/' + name, source));
 }
@@ -47,7 +45,7 @@ it('follows both carriageways across seven boards with open northern underpasses
   }
 });
 
-it('rejects a mismatched interior node on the generated R16 to Brookwood Station seam', () => {
+it('rejects a mismatched interior node on the committed R16 to Brookwood Station seam', () => {
   const north = grid('r16'), station = grid('brookwood-station');
   const edge = seam('r16', 'brookwood-station');
   expect(edge).toEqual({ minX: -1000, maxX: 1800, z: -5700 });
