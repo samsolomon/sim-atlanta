@@ -1,3 +1,4 @@
+import { eastHighwayApproaches } from '../../../pipeline/prototypes/highway-four/east';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
@@ -207,7 +208,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
-      const city = id in rowBounds ? northFreeway(midtownConnectorDecks(contextWithDecks)) : contextWithDecks;
+      const freeway = id in rowBounds ? northFreeway(midtownConnectorDecks(contextWithDecks)) : contextWithDecks;
+      const city = id === "r16" ? eastHighwayApproaches(freeway) : freeway;
       const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
       const edgeRow = !trackedOnly && (id === 'r16' || id === 'brookwood-station') ? id : undefined;
       const scenery = edgeRow ? {...city, buildings: city.buildings.filter(b => !sharedIds.has(b.id))} : city;
