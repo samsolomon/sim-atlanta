@@ -5,6 +5,7 @@ import { GroundGrid } from '../../../web/src/terrain/grid';
 import { GroundSurface, type TerrainQuality } from '../../../web/src/terrain/surface';
 import { east, west, lowerStrips } from '../i85-cohesion/lower';
 import { rampLining, rampSection } from './lining';
+import { eastPortalBank } from './rear-bank';
 import { rampMouthSlots } from './mouths';
 
 const [source, output] = process.argv.slice(2);
@@ -31,13 +32,14 @@ function hit(face:Face,x:number,z:number) {
   return u>=-1e-7 && v>=-1e-7 && u+v<=1+1e-7 ? a[1]+u*(b[1]-a[1])+v*(c[1]-a[1]) : null;
 }
 const records=[['tier','station_from_east_m','offset_right_m','x','z','uncut_ground','before_ground','after_ground',
-  'drawn_pavement','lining_floor','drawn_soffit','roof_or_wing_crown','after_minus_crown','after_minus_soffit'].join(',')];
+  'graded_ground','drawn_pavement','lining_floor','drawn_soffit','roof_or_wing_crown','after_minus_crown','after_minus_soffit'].join(',')];
 for(const tier of ['low','high'] as TerrainQuality[]) {
   const original=new GroundSurface(grid,tier);
   const ground=original.sampleScene.bind(original);
   const slots=rampMouthSlots(ground);
   const baseline=new GroundSurface(grid,tier,slots.map(slot=>({...slot,cutHeightM:undefined})));
-  const candidate=new GroundSurface(grid,tier,slots);
+  const adjusted=new GroundSurface(eastPortalBank(grid),tier);
+  const candidate=new GroundSurface(eastPortalBank(grid),tier,slots);
   const byCell=new Map<string,Face[]>();
   function add(vertices:Vertex[],material:string) {
     const rounded=vertices.map(p=>p.map(Math.fround)),xs=rounded.map(p=>p[0]),zs=rounded.map(p=>p[2]);
@@ -54,34 +56,34 @@ for(const tier of ['low','high'] as TerrainQuality[]) {
     const row=rampSection(east+s,ground);
     const dx=(row.right[0]-row.left[0])/4.95,dz=(row.right[2]-row.left[2])/4.95;
     const leftEdge=-2.375-1.525*row.wing,rightEdge=2.575+1.525*row.wing;
-    const offsets=[-7,leftEdge-.30,leftEdge-.08,leftEdge+.03,-2,-.79,0,.79,2,rightEdge-.03,rightEdge+.08,rightEdge+.30,7];
+    const offsets=[-7,leftEdge-.30,leftEdge-.08,leftEdge+.03,-2,-.79,0,.79,2,rightEdge-.03,rightEdge+.08,rightEdge+.30,7,-20,20];
     for(const offset of offsets) {
       const x=row.left[0]+(offset+2.375)*dx,z=row.left[2]+(offset+2.375)*dz;
-      const old=baseline.sampleScene(x,z),next=candidate.sampleScene(x,z),bare=ground(x,z);
+      const old=baseline.sampleScene(x,z),next=candidate.sampleScene(x,z),bare=ground(x,z), graded=adjusted.sampleScene(x,z);
       const tops=new Map<string,number>();
       for(const f of byCell.get(Math.floor(x/5)+','+Math.floor(z/5))??[]) {
         const y=hit(f,x,z); if(y!==null)tops.set(f.material,Math.max(y,tops.get(f.material)??-Infinity));
       }
       const crown=tops.get('#aaa18d'),ceiling=tops.get('#969182');
-      if(s>0 && s<40 && crown!==undefined && bare!==null && bare>crown+.01 &&
-        Math.abs(offset)<3 && (next===null || Math.abs(next-bare)>.001))
+      if(s>0 && s<40 && crown!==undefined && graded!==null && graded>crown+.01 &&
+        Math.abs(offset)<3 && (next===null || Math.abs(next-graded)>.001))
         throw new Error('Original cover missing at '+[tier,s,offset]);
       if(s>0 && s<40 && ceiling!==undefined && next!==null) {
         if(next<ceiling-.002)throw new Error('Terrain obstructs bore at '+[tier,s,offset]);
         covered++;
-        if(old===null && crown!==undefined && next>=crown && bare!==null) {
-          restored++;worstChange=Math.max(worstChange,Math.abs(next-bare));
+        if(old===null && crown!==undefined && next>=crown && graded!==null) {
+          restored++;worstChange=Math.max(worstChange,Math.abs(next-graded));
         }
       }
-      if((s<0 || s>40 || Math.abs(offset)>=7) &&
+      if((s<0 || s>45 || Math.abs(offset)>=20) &&
         ((old===null)!==(next===null) || (old!==null && next!==null && Math.abs(old-next)>.001)))
         throw new Error('Outside control changed at '+[tier,s,offset]);
-      records.push([tier,s,offset,x,z,bare,old,next,tops.get('pavement'),tops.get('#777574'),ceiling,crown,
+      records.push([tier,s,offset,x,z,bare,old,next,graded,tops.get('pavement'),tops.get('#777574'),ceiling,crown,
         next!=null && crown!==undefined? next-crown:null,next!=null && ceiling!==undefined? next-ceiling:null].join(','));
     }
   }
   if(!restored)throw new Error('The capped excavation failed to restore any bank');
-  console.log({tier,restoredAboveCrown:restored,probedCover:covered,maxErrorVsOriginalM:worstChange});
-  for(const surface of [original,baseline,candidate])surface.geometry.dispose();
+  console.log({tier,restoredAboveCrown:restored,probedCover:covered,maxErrorVsGradedM:worstChange});
+  for(const surface of [original,baseline,adjusted,candidate])surface.geometry.dispose();
 }
 writeFileSync(output,records.join('\n')+'\n');
