@@ -3867,3 +3867,7 @@ At the pedestrian tunnel exit, two rail formations crossed the sky with no visib
 ### 2026-11-25 · The bearings beneath the MARTA flyover at I-85
 
 The freeway-side photograph shows pale concrete on round columns. Four round shafts in the private pilot stood securely on terrain, but a flat seat left up to 212 mm of daylight below a sloping girder. Cutting the bearing tops against the actual girder triangles reduced the largest mismatch to 0.087 mm. The modeled opening above the raised ramp is 4.646861 m across its full paved width. All 676 on-bridge Red Line wheel centres hit their rails per detail tier. Two shafts still overlapped generic outside-shoulder paint; the physical shoulders and protection are being registered independently. [Road-eye and reverse pairs](log/rail-crossing-pilots/marta-full.jpg)
+
+### 2026-11-25 · Registering the shaft behind the I-85 shoulder
+
+Six bearings to the exposed northbound shaft provide a much stronger location than the edge of the painted shoulder. Moving it to the nearest sampled girder section put its 3 m² base 2.868 m outside the modeled pavement edge. The raised ramp has 3.334 m of horizontal clearance from the new shaft. The southbound photos locate a ribbed wall corner through vegetation, while the footing stays hidden. Its inferred position and 1.665 m² shoulder overlap remain on the private comparison. [Matched reference and City road-eye views](log/rail-crossing-pilots/shoulders.jpg)
