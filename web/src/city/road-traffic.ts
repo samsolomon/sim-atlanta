@@ -106,6 +106,8 @@ export interface TrafficCourse {
   roads: VRoad[];
   speedMps: number;
   dailyFlow: number;
+  /** Relative share of the capped illustrative fleet. Source volume stays in dailyFlow. */
+  sampleWeight?: number;
   truckShare: number;
   /** High tier: share of trucks drawn as tractor-trailers instead of box trucks (default 0.15). */
   semiShare?: number;
@@ -160,8 +162,8 @@ function visibleLength(lane: TrafficCourse) {
 
 export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number, quality: 'low' | 'high' = 'low') {
   const random = rng(seed);
-  const demand = routes.map(r => r.dailyFlow * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
-  const visible = routes.map(r => r.dailyFlow * peak / 3600 * visibleLength(r) / r.speedMps);
+  const demand = routes.map(r => r.dailyFlow * (r.sampleWeight ?? 1) * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
+  const visible = routes.map(r => r.dailyFlow * (r.sampleWeight ?? 1) * peak / 3600 * visibleLength(r) / r.speedMps);
   const total = visible.reduce((sum, n) => sum + n, 0);
   const factor = Math.min(1, cap / total);
   let cumulative = 0;
