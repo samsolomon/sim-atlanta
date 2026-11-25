@@ -1,2 +1,2 @@
-{"tier":"low","wallQuads":1380,"across":0,"seam":{"edge":[860.2243597835688,-5700],"top":-60.8171548071296,"toe":-70.0005539119351},"faces":28,"lowerTriangles":6902,"misses":0,"maxWheelResidualM":0.0016227372223909242}
-{"tier":"high","wallQuads":1380,"across":0,"seam":{"edge":[860.2243597835688,-5700],"top":-60.8171548071296,"toe":-70.0005539119351},"faces":28,"lowerTriangles":6902,"misses":0,"maxWheelResidualM":0.0016227372223909242}
+{"tier":"low","wallQuads":1380,"across":0,"seam":{"edge":[860.2243597835688,-5700],"top":-60.8171548071296,"toe":-70.0005539119351},"faces":28,"lowerTriangles":6990,"misses":0,"maxWheelResidualM":0.0013868099526206379}
+{"tier":"high","wallQuads":1380,"across":0,"seam":{"edge":[860.2243597835688,-5700],"top":-60.8171548071296,"toe":-70.0005539119351},"faces":28,"lowerTriangles":6990,"misses":0,"maxWheelResidualM":0.0013868099526206379}
