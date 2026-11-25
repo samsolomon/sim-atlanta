@@ -87,6 +87,7 @@ import { piedmontPark } from '../city/piedmont-park';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
+import { landingPortals } from './transport';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
@@ -344,7 +345,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   yield 'board';
-  const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
+  const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
     const top = new THREE.Mesh(approaches.geometry, board.material);
@@ -358,7 +359,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Forward the optional road: unconnected motorways must keep sampling bare earth.
   type Road = Parameters<NonNullable<typeof approaches>['groundAt']>[2];
   const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
-    { triangles: options.quality === 'high' ? mesh : undefined }) satisfies DrapeGround;
+    { triangles: options.quality === 'high' ? mesh : undefined, raisedEnds: approaches?.groundAt.raisedEnds }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
