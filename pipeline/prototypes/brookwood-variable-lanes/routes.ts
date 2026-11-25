@@ -19,7 +19,9 @@ export function variablePiece(r:Ribbon,lane:number,legacy:P2[],owner:VRoad) {
     const continuation=drop.slice(1).map(row=>stripePoint(row[side(branch)],ordinal(branch)));
     for(const row of tails[Number(branch)].slice(1)) continuation.push(stripePoint(row,ordinal(branch)));
     return {pts:legacy.concat(continuation),owners:[
-      ...legacy.slice(1).map(()=>owner),...continuation.map(()=>owners[Number(branch)])]};
+      ...legacy.slice(1).map(()=>owner),// The six-lane landing carries both destinations to its ground tie.
+      ...drop.slice(1).map(row=>owners[Number(branch && row.s>40)]),
+      ...tails[Number(branch)].slice(1).map(()=>owners[Number(branch)])]};
   }
   if(r.id===484857195||r.id===1257642775||r.id===369529905) {
     const downstream=r.id===369529905;
