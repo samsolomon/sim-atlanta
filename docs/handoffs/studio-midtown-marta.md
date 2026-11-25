@@ -17,6 +17,12 @@ Downtown rail owns the three-track Norfolk Southern continuation. Private fixtur
 
 The Armour reference diagram distinguishes the NS siding-to-yard switches, MARTA yard lead and CSX crossing. The archived wider OSM extract has SHA-256 `368924db35efb0b0e04b126dade9d4ba3f4ba490ae57a0bd57ebeaf6dd7acb85`. BTS/FRA NARN corroborates the two railroad corridors. Sam's separate fork observation has no saved camera. The three-track fixture ends at the R16 edge for the mains and at the mapped yard node for the siding. Yard routing and operating status remain unverified.
 
+### Northbound Red track visibility
+
+Downtown rail traced scheduled trip `marta:trip:25-27300-20261120` on the NR guideway over 08:00:45–08:01:15 EST. The original contact-corrected clip at `d0251f98` and the combined mount at `9c2e854a` share the same local terrain overlap. Continuous triangle intersections on Low found the left railhead 50.7 mm below ground near chainage 637 m, the right railhead 32.3 mm below near 559 m and the outer tie top 99.0 mm below near 638 m. Chainage starts at the north edge of Brookwood. The two worst sections pass the lead car around 08:01:05 and 08:01:07. The R16 board paints pavement directly on its terrain triangles. The separate Mayson carriers clear the sampled track tops. The extension stays fully drawn through the replay.
+
+The bounded formation cut at `22f278978cb413ec42c0981991179689c13e329e` restores visible rail and ties at both measured sections in normal and low-oblique views. Low and High samples clear all terrain surfaces hit. The 85-timestamp wheel rerun matches the original across 4,080 tread centres and 21,466 lateral hits. All 244 road contacts repeat. A narrower taper at `50167c22034c01801f1e768c05b627b6afc6d2e5` is being checked to protect the adjacent track.
+
 ## Rail references for expansion
 
 Grant Street remains the rail-over-road control for the current first-bake pilot. For future yard expansion, use Norfolk Southern Inman Yard as the reference for a shared graded track bed carrying parallel tracks. Verify each switch connection against source geometry or imagery before representing it as connected.
