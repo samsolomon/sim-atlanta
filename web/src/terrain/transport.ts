@@ -597,6 +597,11 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   for (const road of data.roads) {
     if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
+    if (road.drawTread) {
+      roadTreads.set(road, road.drawTread(structures, sceneZero));
+      yield 'source-fitted road';
+      continue;
+    }
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
     let from = 0;

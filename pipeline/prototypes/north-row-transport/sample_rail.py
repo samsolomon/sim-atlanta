@@ -12,13 +12,16 @@ from shapely.geometry import LineString
 DIR = Path(__file__).resolve().parent
 BASE = "https://usgs-lidar-public.s3.amazonaws.com/GA_Statewide_B2_2018/"
 CACHE = Path(sys.argv[1])
-axes = json.loads((DIR / "north-line-axes.json").read_text())
-stations = []
-for w in axes:
-    line = LineString(w["pts"])
-    for s in sorted({*range(0, math.ceil(line.length), 5), line.length}):
-        x, z = line.interpolate(s).coords[0]
-        stations.append((w["way"], s, x, z))
+if len(sys.argv) > 2:
+    stations = json.loads(Path(sys.argv[2]).read_text())
+else:
+    axes = json.loads((DIR / "north-line-axes.json").read_text())
+    stations = []
+    for w in axes:
+        line = LineString(w["pts"])
+        for s in sorted({*range(0, math.ceil(line.length), 5), line.length}):
+            x, z = line.interpolate(s).coords[0]
+            stations.append((w["way"], s, x, z))
 
 
 def read(path):
