@@ -1,3 +1,4 @@
+import { outerAxles, wheelPlane } from '../../../pipeline/prototypes/highway-four/contact';
 import * as THREE from 'three';
 import { MovingQueue, MOVING_QUEUE_WAIT_S, type MovingBlocks } from './traffic-queues';
 import { rng, type Line } from '../vignette/geom';
@@ -81,6 +82,7 @@ type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
   city: TerrainCity;
   quality: 'low' | 'high';
+  fitWheelPlane?: (road:VRoad,x:number,z:number)=>boolean;
   hourly: TrafficData['hourly'];
   roadHeight: RoadHeight;
   /** All distances in City metres. Heading is atan2(dx,dz), zero toward +z. */
@@ -198,6 +200,7 @@ export class RoadTraffic {
    * frame. A queue should never need it; opposing lanes pinching at a node are not counted. */
   signalOverlaps = 0;
   private readonly material = vehicleMaterial(this.night, true);
+  private readonly contactAxles = new Map<Kind, ReturnType<typeof outerAxles>>();
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
   private readonly movingQueues = new Map<TrafficCourse, MovingQueue>();
@@ -253,6 +256,7 @@ export class RoadTraffic {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      if(opts.fitWheelPlane) this.contactAxles.set(kind,outerAxles(mesh.geometry));
       mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
@@ -500,8 +504,22 @@ export class RoadTraffic {
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
         const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
-        dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
-          x, (front.y + rear.y) * .5 + .03, z) || dirty;
+        const owner=course.roads[Math.min(course.roads.length-1,Math.floor(line.vertexAt(s)))];
+        const plane=this.opts.fitWheelPlane?.(owner,x,z) ? wheelPlane(this.contactAxles.get(slot.kind)!,
+          (at,px,pz)=>this.exactHeight(lane,at,px,pz),s,x,z,ux,uz) : undefined;
+        if(plane) {
+          // Forward and lateral tangents share the fitted plane. Orthonormalize
+          // before writing the matrix so crossfall does not shear the body.
+          const forwardNorm=Math.hypot(1,plane.grade), upNorm=Math.hypot(1,plane.grade,plane.roll);
+          const fx=ux/forwardNorm, fy=plane.grade/forwardNorm, fz=uz/forwardNorm;
+          const upX=(-ux*plane.grade-uz*plane.roll)/upNorm, upY=1/upNorm;
+          const upZ=(-uz*plane.grade+ux*plane.roll)/upNorm;
+          dirty=write(m,o,upY*fz-upZ*fy,upZ*fx-upX*fz,upX*fy-upY*fx,
+            upX,upY,upZ,fx,fy,fz,x,plane.y,z)||dirty;
+        } else {
+          dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
+            x, (front.y + rear.y) * .5 + .03, z) || dirty;
+        }
         const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
         if (opacity) {
           const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
