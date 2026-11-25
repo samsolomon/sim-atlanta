@@ -45,7 +45,7 @@ export function slotPlanes({ start, end, halfWidthM, crossAxis, footprint, cutHe
       if (!Number.isFinite(scale) || !scale) throw new Error('Degenerate portal strip');
       return (xx,_yy,zz) => scale*(ex*(zz-pz)-ez*(xx-px));
     });
-    return { planes:[...edges,...planes.slice(4)], minX:Math.min(...footprint.map(p=>p[0])),
+    return { planes:[...planes.slice(5),...edges,planes[4]], minX:Math.min(...footprint.map(p=>p[0])),
       maxX:Math.max(...footprint.map(p=>p[0])), minZ:Math.min(...footprint.map(p=>p[1])),
       maxZ:Math.max(...footprint.map(p=>p[1])) };
   }
