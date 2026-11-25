@@ -1,6 +1,6 @@
 import { eastLandingYields } from '../../../pipeline/prototypes/highway-four-ground/landing';
 import { eastHighwayApproaches, eastLandingTriangles } from '../../../pipeline/prototypes/highway-four/east';
-import { golfFlags } from '../terrain/golf';
+import { golfFlags, teeMarkers } from '../terrain/golf';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
@@ -234,6 +234,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       });
       const flags = golfFlags(city.points?.golfFlags,area.terrainAt);
       if (flags) area.board.add(flags);
+      const markers = teeMarkers(city.points?.golfMarkers,area.terrainAt);
+      if (markers) area.board.add(markers);
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
         const stationRoad = id === 'brookwood-station' && city.roads.find(road => road.id === 'osm:way:38978515');

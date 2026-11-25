@@ -1,3 +1,4 @@
+import { golfBowlYields } from './golf';
 import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { buildResidential } from '../city/residential';
@@ -445,7 +446,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
   // Carve before anything else samples the ground inside their footprints.
   const winn = winnPark(city, groundAt, options.quality);
-  const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
+  const yields = [...golfBowlYields(city), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
   if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
