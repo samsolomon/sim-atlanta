@@ -1,0 +1,1 @@
+https://gismaps.fultoncountyga.gov/arcgispub2/rest/services/Imagery/Pictometry2024_NAIP/MapServer/export?bbox=-9393833.914595818%2C4002296.3666067333%2C-9393165.64455185%2C4002874.6716321255&bboxSR=3857&imageSR=3857&size=1400%2C1211&f=image&format=jpg&layers=show%3A3
