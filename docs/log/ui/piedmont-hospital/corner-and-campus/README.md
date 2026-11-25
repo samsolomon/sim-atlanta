@@ -2,6 +2,8 @@
 
 Private North r16 comparison against the accepted `f8222b9a` model, using the same board context and terrain in both views.
 
+**Accepted by Sam on November 25, 2026.** Approval covers private revision `98cf2e1d` and the matched corner and campus views below.
+
 ## What changed
 
 - **Peachtree and Collier.** The lower walk now follows the grade around a curved planting bed and joins the inside edge of the mapped sidewalk. The low curb follows the bed perimeter. The pavement stops short of the crossing spur, and the bed stays roughly 9.5 m inside the sidewalk centerline at its closest point. The bed outline and curb reveal are photo-derived estimates. The planting abstracts the low grasses and shrubs visible in Sam’s October 2025 Street View and the architect’s corner photograph. [HKS corner photograph](https://www.hksinc.com/wp-content/uploads/2020/05/caseStudy-Piedmont2-b1.jpg) · [HGOR landscape plan and photographs](https://www.hgor.com/project/piedmont-atlanta-hospital/)
