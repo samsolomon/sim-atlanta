@@ -1063,11 +1063,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     new THREE.Vector3(square.northStudyBounds.maxX, -34, square.northStudyBounds.maxZ));
   const northFrustum = new THREE.Frustum();
   const viewProjection = new THREE.Matrix4();
+  const clipCorners = [-1, 1].flatMap(z => [-1, 1].flatMap(y => [-1, 1].map(x => new THREE.Vector3(x, y, z))));
+  const worldCorners = clipCorners.map(() => new THREE.Vector3());
+  const frustumFaces = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5], [0, 1, 5, 4], [2, 3, 7, 6]];
+  const faceTriangle = new THREE.Triangle();
   const northVisible = () => {
     if (!northBoundsBox) return false;
     camera.updateMatrixWorld();
     viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    return northFrustum.setFromProjectionMatrix(viewProjection).intersectsBox(northBoundsBox);
+    northFrustum.setFromProjectionMatrix(viewProjection);
+    if (!northFrustum.intersectsBox(northBoundsBox)) return false;
+    if (northFrustum.containsPoint(northBoundsBox.min)) return true;
+    // The plane-only rejection above can admit a wide row entirely outside a close view.
+    // For the remaining cases, a frustum face must meet the row box.
+    for (let i = 0; i < worldCorners.length; i++) worldCorners[i].copy(clipCorners[i]).unproject(camera);
+    return frustumFaces.some(([a, b, c, d]) =>
+      northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[b], worldCorners[c])) ||
+      northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[c], worldCorners[d])));
   };
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
