@@ -82,10 +82,17 @@ export function roadsideWalls(ground: Surface, soffit: Surface) {
       body.quad(a.backBottom,b.backBottom,b.backTop,a.backTop,'#a6a195');
     }
     for (const i of [0, rows.length-1]) {
-      const r = rows[i], top = capped ? r.capTop : r.frontTop;
-      const polygon = [r.frontBottom, r.backBottom, r.backTop, top];
-      if (i !== 0) polygon.reverse();
-      body.quad(polygon[0],polygon[1],polygon[2],polygon[3],'#ada99e');
+      const r = rows[i];
+      const endQuad = (a: Vertex,b: Vertex,c: Vertex,d: Vertex) => {
+        if (i === 0) body.quad(a,b,c,d,'#ada99e');
+        else body.quad(d,c,b,a,'#ada99e');
+      };
+      if (capped) {
+        const backAt = (y: number): Vertex => [r.backTop[0],y,r.backTop[2]];
+        endQuad(r.frontBottom,r.backBottom,backAt(r.stemToe[1]),r.stemToe);
+        endQuad(r.stemToe,backAt(r.stemToe[1]),backAt(r.frontTop[1]),r.frontTop);
+        endQuad(r.capBottom,backAt(r.frontTop[1]),r.backTop,r.capTop);
+      } else endQuad(r.frontBottom,r.backBottom,r.backTop,r.frontTop);
     }
     return {name: spec.name, geometry: body.geometry()};
   });
