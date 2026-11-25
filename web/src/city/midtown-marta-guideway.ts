@@ -460,7 +460,16 @@ export function northLineStructure(profile: NorthLineProfile, piers: number[], g
   const body = new Builder(),
     lights = new Builder();
   const c = profile.centre;
-  for (const i of piers) {
+  for (const planned of piers) {
+    let i = planned;
+    // The shaft beside northbound I-85 is visible behind the raised wall in six
+    // September 2026 panoramas. Fit its centre to the nearest drawn soffit
+    // section. Keep the original span-depth controls for the accepted girder.
+    if (Math.hypot(c[i].x - 378.54, c[i].z + 5289.06) < 1) {
+      const distance = (j: number) => Math.hypot(c[j].x - 376.56, c[j].z + 5284.05);
+      for (let j = Math.max(0, planned - 4); j <= Math.min(c.length - 1, planned + 4); j++)
+        if (distance(j) < distance(i)) i = j;
+    }
     const p = c[i];
     const corners = [-1.1, 1.1].flatMap((u) => [-1, 1].map((v) => ground(p.x + p.nz * u + p.nx * v, p.z - p.nx * u + p.nz * v)));
     if (corners.some((g) => g === null)) continue;
