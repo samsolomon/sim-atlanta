@@ -12,7 +12,7 @@ import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePat
 import { junctionMarkings, markedCrossing } from './junction-markings';
 import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
-import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
+import { eastGroundRoad, isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
 import { paintActiveOval } from '../city/active-oval';
 import { paintWinnPark } from '../city/winn-park';
 
@@ -163,7 +163,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
 
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
-    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
+    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !eastGroundRoad(data,r) && (!isConnectorCity(data) || !surveyedRoad(r)));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
   // A separately mapped sidewalk can continue above an OSM tunnel endpoint.
