@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
+import { addSection, bounds, midtownRows, connect, joins, seam, verifySeam, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
@@ -14,6 +14,8 @@ import { alignment } from '../vignette/alignment';
 
 const source = new URL('../../../pipeline/prototypes/', import.meta.url);
 function file(id: Board, name: string) {
+  if (id === 'brookwood-south' || id === 'brookwood-station' || id === 'r16')
+    return readFileSync(new URL(`../../public/data/scene/square-board/${id}/${name}`, import.meta.url));
   const path = id === 'downtown' ? 'downtown-ground' : id === 'king' ? 'king-memorial/ground' : id === 'auburn' ? 'sweet-auburn/ground' : 'square-board/' + id;
   return readFileSync(new URL(path + '/' + name, source));
 }
@@ -43,6 +45,21 @@ it('follows both carriageways across seven boards with open northern underpasses
     expect(through.some(route => route.roads.some(road => road.tunnel &&
       road.pts.some(([, z]) => z > 815 && z < 842)))).toBe(true);
   }
+});
+
+it('rejects a mismatched interior node on the generated R16 to Brookwood Station seam', () => {
+  const north = grid('r16'), station = grid('brookwood-station');
+  const edge = seam('r16', 'brookwood-station');
+  expect(edge).toEqual({ minX: -1000, maxX: 1800, z: -5700 });
+  verifySeam(north, station, edge);
+
+  const bytes = Uint8Array.from(file('r16', 'ground.i16')).buffer;
+  const cells = new DataView(bytes);
+  const { rows, cols, bounds, stepM } = north.manifest;
+  const x = 400;
+  const offset = 2 * ((rows - 1) * cols + (x - bounds.minX) / stepM);
+  cells.setInt16(offset, cells.getInt16(offset, true) + 1, true);
+  expect(() => verifySeam(new GroundGrid(north.manifest, bytes), station, edge)).toThrow(/400,-5700/);
 });
 
 it.each(['high', 'low'] as const)('preserves all exterior and internal seam nodes and midpoints on %s', async quality => {
@@ -150,6 +167,8 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       const heights = new Int16Array(Uint8Array.from(file(id, 'ground.i16')).buffer);
       expect(heights.reduce((min, h) => Math.min(min, h), Infinity) * 0.1).toBeGreaterThan(midtownBaseNavd88M);
     }
+    expect(mounted.size).toBe(13);
+    expect(mounted.get('r16')!.bounds).toEqual({ minX: -1000, maxX: 1800, minZ: -6500, maxZ: -5700 });
     const station = mounted.get('brookwood-station')!;
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
       const fallback = station.group.getObjectByName(id)!;
@@ -157,12 +176,12 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       expect(fallback.children.length).toBeGreaterThan(0);
     }
   } finally { for (const area of mounted.values()) area.dispose(); }
-// A deliberate twelve-board integration test. It takes about 0.9 s alone; with three
+// A deliberate thirteen-board integration test. It takes about 0.9 s alone; with three
 // full suites running at once it reached 5.3 s, so it gets a measured budget rather
 // than the 5 s default.
 }, 20_000);
 
-it('stops a direct Brookwood camera at a failed predecessor and resumes the pending target on retry', async () => {
+it('stops a direct R16 camera at a failed predecessor and resumes the pending target on retry', async () => {
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   const requested: string[] = [];
@@ -186,7 +205,7 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
   }, [], { quality: 'low', join: joins('downtown') });
   mosaic.areas.set('downtown', downtown);
   const signal = new AbortController().signal;
-  const target = { x: -81, z: -5065 };
+  const target = { x: -81, z: -6100 };
   let reached: typeof target | undefined;
   const errors: string[] = [];
   const advance = () => mosaic.approach(0, 0, 'low', signal, (_, point) => { if (point) reached = point; }, d => errors.push(d));
@@ -203,7 +222,9 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
     expect(mosaic.point(target.x, target.z).z).toBe(-3300);
     expect(reached).toBeUndefined();
     available = true;
-    mosaic.requestFullBoard();
+    mosaic.cancelTarget();
+    advance();
+    mosaic.remember(target.x, target.z);
     advance();
     await mosaic.idle();
     expect(reached).toEqual(target);
