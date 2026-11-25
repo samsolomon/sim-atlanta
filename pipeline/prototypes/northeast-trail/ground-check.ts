@@ -45,6 +45,9 @@ for(const tier of ['low','high'] as const) {
     maxStep=Math.max(maxStep,Math.abs(trailDrivePoint(s,ground)[1]-trailDrivePoint(s-.02,ground)[1]));
   assert.ok(maxStep<.01);
   const entry=trailDrivePoint(accessStation,ground),end=trailDrivePoint(trailDriveAxis.length,ground);
+  // Independent baseline column from Ground's terrain and carrying-road raycasts.
+  assert.ok(Math.abs(end[1]+64.5006762)<.0001);
+  assert.ok(Math.abs((end[1]-ground(end[0],end[2])!)-.076682)<.0001);
   assert.ok(Math.hypot(end[0]-1321.7182639,end[2]+6194.7557564)<.00001);
   console.log(JSON.stringify({tier,n,maxStep,highest,lowest,accessStation,driveLength:trailDriveAxis.length,entry,end}));
   assert.ok(highest<.02,'Terrain intrudes on the exposed tread');
