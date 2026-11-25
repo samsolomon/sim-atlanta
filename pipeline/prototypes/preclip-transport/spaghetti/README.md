@@ -32,3 +32,13 @@ node "$fixture/drive.mjs" < /tmp/spaghetti-bake.json
 ```
 
 The [full results](results.json) include the signed height difference at each crossing. To reproduce the lidar windows, run sample_lidar.py with a local cache directory. Overlapping deck returns, absence of a soffit measurement, and the 2018–19 lidar versus later OSM dates bound the physical claims.
+
+## Handoff for the first City/WebGL run
+
+Sam accepted the ramp geometry at `cfaeddf085be50fc71a2ad42a67fc58e861a20db`. The first City/WebGL visibility check is pending. Stations below are metres from the departure gore in the direction of travel.
+
+| Station (m) | Observation and City/WebGL check |
+|---|---|
+| 899, 905, 983.2, 989.2 | In the offline canvas preview, the road paint drew over the car at each station. Check all four frames and verify that the car body remains visible above its own tread and markings. |
+| 985.204 | The car was visible normally at the virtual cut in the offline preview. Use this as the visibility control. |
+| 741.592 (about 742) | The selected ramp passes beneath way 41051928. Verify that the upper deck occludes the car where it blocks the camera’s line of sight and that the car reappears as it clears the deck. |
