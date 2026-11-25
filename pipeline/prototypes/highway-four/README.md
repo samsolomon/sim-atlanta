@@ -1,0 +1,9 @@
+# Private four-site highway study
+
+Frozen City 955f5f56e7386575d58381649134d28d723c30b5. The prior I-85 Exit 86 study 82a8ba76 shares ancestor 234d62a3. Its signed lane movement and stock replay concern different ways from the I-75 split at Deering. PR #153 introduced the highway model, #223 the Midtown traffic work and #675 the integrated traffic behavior. They provide shared consumers. None documents these four original views.
+
+## 01. I-75 southbound at Deering
+
+The road and adjacent Norfolk Southern bridges independently locate the split. Travel is southeast. Donor 358758245 v15 has six lanes. Median-side 29013401 v21 takes three and outer through way 9238120 v26 takes four. The reported destinations permit the third donor lane to choose either branch. Destination and maneuver tags do not provide stripe endpoints. Left-to-right receiving ordinals are inferred from the aerial. The existing generic right-link offset assigns the three-lane branch to donor lanes 4–6, crossing the through carriageway. It paints both edges and interior dividers for both resulting rectangles.
+
+[2024 county orthophoto export](deering-source.txt) and [signed station strip](deering-register.png). The strip uses concatenated 358758245 → 9238120 axis station zero at their shared node (−397.32, −4917.12). Across-track ordinate increases to the driver's right at 0.25 m per pixel, from −55 m at row 20. Deering Road 38978854 crosses the receiving ways near +91/+93 m, the NS 38978865 axis near +121/+126 m. The aligned image shows one paved approach well beyond the OSM node, an opening separator around +20 to +55 m, distinct edges before the first overpass, and physically separate branches beyond the rail bridge. The overpasses obscure paint beneath them. Shoulder widths, intermediate sections, exact divider tips and construction elevations are inferred.
