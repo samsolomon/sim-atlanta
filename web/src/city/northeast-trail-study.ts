@@ -18,6 +18,17 @@ export function northeastTrailStudy(
   lining.name = 'Northeast Trail pedestrian tunnel lining';
   return {
     lining, slots, yields: trailYields(),
+    receivingHeight(carriers: THREE.Group, ground: Parameters<typeof drawAccessApron>[1]) {
+      const road = carriers.getObjectByName('Carrier 9270932');
+      if (!road) throw Error('Missing Mayson Road tread');
+      road.updateWorldMatrix(true, false);
+      const ray = new THREE.Raycaster();
+      ray.ray.direction.set(0, -1, 0);
+      return (x: number, z: number) => {
+        ray.ray.origin.set(x, 250, z);
+        return ray.intersectObject(road, false)[0]?.point.y ?? ground(x, z);
+      };
+    },
     mountTread(ground: Parameters<typeof drawAccessApron>[1]) {
       drawAccessApron(paved, ground);
       tread = new THREE.Mesh(paved.geometry(), material);
