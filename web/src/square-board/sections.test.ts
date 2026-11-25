@@ -208,7 +208,7 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
     await mosaic.idle();
     expect(reached).toEqual(target);
     expect(requested.filter(id => midtownRows.some(row => row === id))).toEqual([
-      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station',
+      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station', 'r16',
     ]);
   } finally { mosaic.dispose(); downtown.dispose(); }
 });
