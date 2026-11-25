@@ -1,0 +1,1511 @@
+{
+ "service": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/HPMS_National_Current/FeatureServer/0/query",
+ "meta": {
+  "name": "HPMS_National_2024_FullJoin",
+  "dataLastEditDate": 1793741352086
+ },
+ "hpmsSha256": "d17f21bd08ddc03ee5bdca3367befc00bdb173638a11f7d6919b4415af98b87a",
+ "osmArchiveHashes": {
+  "brookwood-station": "5e134e2d8e241cdbb10625e442ea3a59903ce9cb6175ff5050c3223ed0c6e9b3",
+  "r16": "0beff2c98963cb9b89b44946ad69b026a6715893d78f860ea22efcf8b44c407f"
+ },
+ "runs": [
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -69.0,
+    -5105.52
+   ],
+   "b": [
+    -84.01,
+    -5145.41
+   ],
+   "osm": 38978512,
+   "version": 25,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -0.9,
+    -4999.99
+   ],
+   "b": [
+    -63.1,
+    -5094.24
+   ],
+   "osm": 38978515,
+   "version": 17,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    87.43,
+    -4920.66
+   ],
+   "b": [
+    52.2,
+    -4948.66
+   ],
+   "osm": 88171803,
+   "version": 17,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "PEACHTREE STREET;ROSWELL ROAD;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -107.79,
+    -5291.38
+   ],
+   "b": [
+    -110.37,
+    -5360.86
+   ],
+   "osm": 767948515,
+   "version": 11,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -92.79,
+    -5172.55
+   ],
+   "b": [
+    -101.71,
+    -5214.37
+   ],
+   "osm": 767948516,
+   "version": 6,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    47.37,
+    -4953.07
+   ],
+   "b": [
+    32.25,
+    -4966.97
+   ],
+   "osm": 830701782,
+   "version": 6,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    52.2,
+    -4948.66
+   ],
+   "b": [
+    50.6,
+    -4950.12
+   ],
+   "osm": 830701783,
+   "version": 7,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    111.34,
+    -4900.0
+   ],
+   "b": [
+    97.3,
+    -4911.99
+   ],
+   "osm": 1046429281,
+   "version": 4,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "PEACHTREE STREET;ROSWELL ROAD;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 30800
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -145.22,
+    -5529.24
+   ],
+   "b": [
+    -173.39,
+    -5618.47
+   ],
+   "osm": 1135617326,
+   "version": 5,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -141.15,
+    -5516.0
+   ],
+   "b": [
+    -145.22,
+    -5529.24
+   ],
+   "osm": 1135617327,
+   "version": 4,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -134.54,
+    -5494.48
+   ],
+   "b": [
+    -141.15,
+    -5516.0
+   ],
+   "osm": 1138725172,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -187.2,
+    -5662.67
+   ],
+   "b": [
+    -197.1,
+    -5700.0
+   ],
+   "osm": 1216255471,
+   "version": 5,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -63.1,
+    -5094.24
+   ],
+   "b": [
+    -69.0,
+    -5105.52
+   ],
+   "osm": 1314993420,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -89.71,
+    -5161.54
+   ],
+   "b": [
+    -92.79,
+    -5172.55
+   ],
+   "osm": 1314993421,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -84.01,
+    -5145.41
+   ],
+   "b": [
+    -89.71,
+    -5161.54
+   ],
+   "osm": 1314993422,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -101.71,
+    -5214.37
+   ],
+   "b": [
+    -107.79,
+    -5291.38
+   ],
+   "osm": 1314995926,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -120.56,
+    -5421.56
+   ],
+   "b": [
+    -130.28,
+    -5474.55
+   ],
+   "osm": 1315000572,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -130.28,
+    -5474.55
+   ],
+   "b": [
+    -134.54,
+    -5494.48
+   ],
+   "osm": 1315000573,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -116.13,
+    -5395.3
+   ],
+   "b": [
+    -120.56,
+    -5421.56
+   ],
+   "osm": 1315000574,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    -110.37,
+    -5360.86
+   ],
+   "b": [
+    -116.13,
+    -5395.3
+   ],
+   "osm": 1315000575,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -173.39,
+    -5618.47
+   ],
+   "b": [
+    -187.2,
+    -5662.67
+   ],
+   "osm": 1315004766,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    97.3,
+    -4911.99
+   ],
+   "b": [
+    87.43,
+    -4920.66
+   ],
+   "osm": 1320564103,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ROSWELL ROAD;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    50.6,
+    -4950.12
+   ],
+   "b": [
+    47.37,
+    -4953.07
+   ],
+   "osm": 1475958482,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Street Northeast",
+   "a": [
+    32.25,
+    -4966.97
+   ],
+   "b": [
+    -0.9,
+    -4999.99
+   ],
+   "osm": 1475958483,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 4,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -64.99,
+    -6407.08
+   ],
+   "b": [
+    -61.34,
+    -6429.91
+   ],
+   "osm": 39450663,
+   "version": 16,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -180.79,
+    -6056.05
+   ],
+   "b": [
+    -161.17,
+    -6115.93
+   ],
+   "osm": 211766415,
+   "version": 23,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -117.07,
+    -6243.69
+   ],
+   "b": [
+    -82.36,
+    -6346.24
+   ],
+   "osm": 949335183,
+   "version": 12,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -197.1,
+    -5700.0
+   ],
+   "b": [
+    -204.32,
+    -5723.07
+   ],
+   "osm": 1216255471,
+   "version": 5,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -211.29,
+    -5752.48
+   ],
+   "b": [
+    -216.98,
+    -5822.61
+   ],
+   "osm": 1314782085,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -212.25,
+    -5871.06
+   ],
+   "b": [
+    -204.06,
+    -5933.12
+   ],
+   "osm": 1314782086,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -216.98,
+    -5822.61
+   ],
+   "b": [
+    -212.25,
+    -5871.06
+   ],
+   "osm": 1314782087,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -204.32,
+    -5723.07
+   ],
+   "b": [
+    -211.29,
+    -5752.48
+   ],
+   "osm": 1314792747,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 42300
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -204.06,
+    -5933.12
+   ],
+   "b": [
+    -191.36,
+    -6017.36
+   ],
+   "osm": 1314799617,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -188.73,
+    -6031.27
+   ],
+   "b": [
+    -180.79,
+    -6056.05
+   ],
+   "osm": 1314799618,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -191.36,
+    -6017.36
+   ],
+   "b": [
+    -188.73,
+    -6031.27
+   ],
+   "osm": 1314799619,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -143.77,
+    -6165.66
+   ],
+   "b": [
+    -133.88,
+    -6193.35
+   ],
+   "osm": 1314844842,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -133.88,
+    -6193.35
+   ],
+   "b": [
+    -117.07,
+    -6243.69
+   ],
+   "osm": 1314844843,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -61.34,
+    -6429.91
+   ],
+   "b": [
+    -60.32,
+    -6445.77
+   ],
+   "osm": 1314847600,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -60.32,
+    -6445.77
+   ],
+   "b": [
+    -61.77,
+    -6490.63
+   ],
+   "osm": 1314847602,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -61.77,
+    -6490.63
+   ],
+   "b": [
+    -64.18,
+    -6500.0
+   ],
+   "osm": 1314847603,
+   "version": 3,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -82.36,
+    -6346.24
+   ],
+   "b": [
+    -68.45,
+    -6392.38
+   ],
+   "osm": 1314857224,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -68.45,
+    -6392.38
+   ],
+   "b": [
+    -64.99,
+    -6407.08
+   ],
+   "osm": 1314857225,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -161.17,
+    -6115.93
+   ],
+   "b": [
+    -155.6,
+    -6132.52
+   ],
+   "osm": 1321781470,
+   "version": 1,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  },
+  {
+   "row": "r16",
+   "name": "Peachtree Road Northeast",
+   "a": [
+    -155.6,
+    -6132.52
+   ],
+   "b": [
+    -143.77,
+    -6165.66
+   ],
+   "osm": 1323808287,
+   "version": 2,
+   "osmRef": "US 19;GA 9",
+   "oneway": null,
+   "hpmsRoute": "1000100000900INC",
+   "hpmsName": "ALPHARETTA HIGHWAY;PEACHTREE ROAD;PEACHTREE STREET;",
+   "fSystem": 3,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 38000
+  }
+ ],
+ "excluded": [
+  {
+   "row": "brookwood-station",
+   "name": "Monroe Drive Northeast",
+   "a": [
+    1783.94,
+    -5330.69
+   ],
+   "b": [
+    1585.68,
+    -5700.0
+   ],
+   "osm": 290277128,
+   "version": 26,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200052003INC",
+   "hpmsName": "Monroe Dr NE;",
+   "fSystem": 6,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 4870,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    146.5,
+    -5002.3
+   ],
+   "b": [
+    87.43,
+    -4920.66
+   ],
+   "osm": 1158458239,
+   "version": 6,
+   "osmRef": null,
+   "oneway": "yes",
+   "hpmsRoute": "21211085403F0INC",
+   "hpmsName": null,
+   "fSystem": 2,
+   "facility": 4,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 6230,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    161.21,
+    -5036.17
+   ],
+   "b": [
+    146.5,
+    -5002.3
+   ],
+   "osm": 1314845247,
+   "version": 4,
+   "osmRef": null,
+   "oneway": "yes",
+   "hpmsRoute": "21211085403F0INC",
+   "hpmsName": null,
+   "fSystem": 2,
+   "facility": 4,
+   "coverage": 0.561,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 6230,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    97.3,
+    -4911.99
+   ],
+   "b": [
+    183.89,
+    -5015.18
+   ],
+   "osm": 1320158881,
+   "version": 3,
+   "osmRef": null,
+   "oneway": "yes",
+   "hpmsRoute": "21211085403B0INC",
+   "hpmsName": null,
+   "fSystem": 2,
+   "facility": 4,
+   "coverage": 0.7502,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 10900,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    161.21,
+    -5036.17
+   ],
+   "b": [
+    183.89,
+    -5015.18
+   ],
+   "reason": "no matching HPMS geometry"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    183.89,
+    -5015.18
+   ],
+   "b": [
+    198.75,
+    -5031.01
+   ],
+   "osm": 1320158884,
+   "version": 4,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "21211085403B0INC",
+   "hpmsName": null,
+   "fSystem": 2,
+   "facility": 4,
+   "coverage": 0.5804,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 10900,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    176.1,
+    -5052.26
+   ],
+   "b": [
+    161.21,
+    -5036.17
+   ],
+   "reason": "no matching HPMS geometry"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Peachtree Connector",
+   "a": [
+    198.75,
+    -5031.01
+   ],
+   "b": [
+    176.1,
+    -5052.26
+   ],
+   "reason": "no matching HPMS geometry"
+  },
+  {
+   "row": "brookwood-station",
+   "name": "Monroe Drive Northeast",
+   "a": [
+    1800.0,
+    -5297.15
+   ],
+   "b": [
+    1783.94,
+    -5330.69
+   ],
+   "osm": 1382917361,
+   "version": 1,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200052003INC",
+   "hpmsName": "Monroe Dr NE;",
+   "fSystem": 6,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 4870,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Collier Road Northwest",
+   "a": [
+    -305.56,
+    -5928.21
+   ],
+   "b": [
+    -630.77,
+    -6081.1
+   ],
+   "osm": 9244449,
+   "version": 18,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200005303INC",
+   "hpmsName": "Collier Rd NW;",
+   "fSystem": 5,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 8570,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Armour Drive Northeast",
+   "a": [
+    1323.67,
+    -6500.0
+   ],
+   "b": [
+    578.65,
+    -5996.97
+   ],
+   "osm": 9246939,
+   "version": 10,
+   "osmRef": null,
+   "oneway": "no",
+   "hpmsRoute": "1121200051903INC",
+   "hpmsName": "NE Ottley Dr;",
+   "fSystem": 7,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 2250,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Clayton Road Northeast",
+   "a": [
+    578.65,
+    -5996.97
+   ],
+   "b": [
+    669.81,
+    -5842.97
+   ],
+   "osm": 9268212,
+   "version": 9,
+   "osmRef": null,
+   "oneway": "no",
+   "hpmsRoute": "1121200051903INC",
+   "hpmsName": "NE Ottley Dr;",
+   "fSystem": 7,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 2250,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Ottley Drive Northeast",
+   "a": [
+    669.81,
+    -5842.97
+   ],
+   "b": [
+    1326.84,
+    -6500.0
+   ],
+   "osm": 9278479,
+   "version": 9,
+   "osmRef": null,
+   "oneway": "no",
+   "hpmsRoute": "1121200051903INC",
+   "hpmsName": "NE Ottley Dr;",
+   "fSystem": 7,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 2250,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Collier Road Northwest",
+   "a": [
+    -630.77,
+    -6081.1
+   ],
+   "b": [
+    -655.85,
+    -6090.04
+   ],
+   "osm": 68281261,
+   "version": 5,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200005303INC",
+   "hpmsName": "Collier Rd NW;",
+   "fSystem": 5,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 8570,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Collier Road Northwest",
+   "a": [
+    -655.85,
+    -6090.04
+   ],
+   "b": [
+    -1000.0,
+    -6261.65
+   ],
+   "osm": 68281276,
+   "version": 5,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200005303INC",
+   "hpmsName": "Collier Rd NW;",
+   "fSystem": 5,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 8570,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Monroe Drive Northeast",
+   "a": [
+    1585.68,
+    -5700.0
+   ],
+   "b": [
+    1542.18,
+    -6143.08
+   ],
+   "osm": 290277128,
+   "version": 26,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200052003INC",
+   "hpmsName": "Monroe Dr NE;",
+   "fSystem": 6,
+   "facility": 2,
+   "coverage": 0.4099,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 4870,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Monroe Drive Northeast",
+   "a": [
+    1542.18,
+    -6143.08
+   ],
+   "b": [
+    1800.0,
+    -6289.55
+   ],
+   "osm": 1388854704,
+   "version": 2,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200052004INC",
+   "hpmsName": "Monroe Dr NE;",
+   "fSystem": 6,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 12900,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Collier Road Northwest",
+   "a": [
+    -212.25,
+    -5871.06
+   ],
+   "b": [
+    -305.56,
+    -5928.21
+   ],
+   "osm": 1442126778,
+   "version": 1,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200005303INC",
+   "hpmsName": "Collier Rd NW;",
+   "fSystem": 5,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 8570,
+   "reason": "functional class, identity, coverage or direction"
+  },
+  {
+   "row": "r16",
+   "name": "Armour Drive Northeast",
+   "a": [
+    1746.87,
+    -6500.0
+   ],
+   "b": [
+    1800.0,
+    -6466.57
+   ],
+   "osm": 1443624632,
+   "version": 1,
+   "osmRef": null,
+   "oneway": null,
+   "hpmsRoute": "1121200051903INC",
+   "hpmsName": "NE Armour Dr;",
+   "fSystem": 7,
+   "facility": 2,
+   "coverage": 1.0,
+   "year": 2024,
+   "volumeDate": "2024-01-01",
+   "aadt": 2250,
+   "reason": "functional class, identity, coverage or direction"
+  }
+ ]
+}
