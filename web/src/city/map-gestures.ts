@@ -60,10 +60,11 @@ export function mapGestures(
     // Our own synthetic wheels (double-click zoom, eased steps) go straight to OrbitControls and
     // must not reclassify the device.
     if (!e.isTrusted) return;
+    const mode = e.deltaMode;
     if (e.timeStamp - lastWheel > 140) {
       const wheelNotch = Math.abs(e.deltaY) / 4.000244140625; // MapLibre's macOS wheel increment
       const notched = wheelNotch > 0 && Math.abs(wheelNotch - Math.round(wheelNotch)) < 1e-6;
-      trackpad = !notched && e.deltaMode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
+      trackpad = !notched && mode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
     }
     lastWheel = e.timeStamp;
     // ?camera=direct: a notched mouse wheel's step eases in over ~120 ms (tick, below) instead of
@@ -72,7 +73,10 @@ export function mapGestures(
       e.stopImmediatePropagation();
       e.preventDefault();
       onZoom();
-      wheelPending += e.deltaY;
+      // OrbitControls r180 converts line and page units before zooming. Our synthetic
+      // steps use pixels, so accumulate the equivalent delta even across mixed units.
+      const unit = mode === 1 ? 16 : mode === 2 ? 100 : 1;
+      wheelPending += e.deltaY * unit;
       wheelAt = { x: e.clientX, y: e.clientY };
       return;
     }

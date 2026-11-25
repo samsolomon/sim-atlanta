@@ -34,3 +34,35 @@ describe('two-finger zoom intent', () => {
     dispose();
   });
 });
+
+describe('direct wheel zoom', () => {
+  it.each([
+    { unit: 'pixels', deltaMode: 0, deltaY: 120, expected: 120 },
+    { unit: 'lines', deltaMode: 1, deltaY: 3, expected: 48 },
+    { unit: 'pages', deltaMode: 2, deltaY: -1, expected: -100 },
+  ])('preserves the OrbitControls zoom for $unit across eased steps', ({ deltaMode, deltaY, expected }) => {
+    class TestWheelEvent extends Event {
+      constructor(type: string, init: WheelEventInit) {
+        super(type, init);
+        const { deltaMode = 0, deltaY = 0, deltaX = 0, ctrlKey = false, clientX, clientY } = init;
+        Object.assign(this, { deltaMode, deltaY, deltaX, ctrlKey, clientX, clientY });
+      }
+    }
+    vi.stubGlobal('WheelEvent', TestWheelEvent);
+    const el = new EventTarget() as HTMLElement;
+    const stop = mapGestures({ maxPolarAngle: Math.PI } as OrbitControls, el, () => {}, () => {}, { easeWheel: true });
+    const steps: number[] = [];
+    el.addEventListener('wheel', e => { if (!e.isTrusted) steps.push(e.deltaY); });
+    try {
+      const input = new WheelEvent('wheel', { deltaMode, deltaY, clientX: 50, clientY: 40, cancelable: true });
+      Object.defineProperty(input, 'isTrusted', { value: true });
+      el.dispatchEvent(input);
+      for (let i = 0; i < 60; i++) stop.tick(1000 / 60);
+      expect(steps.length).toBeGreaterThan(1);
+      expect(steps.reduce((sum, delta) => sum + delta, 0)).toBeCloseTo(expected, 9);
+    } finally {
+      stop();
+      vi.unstubAllGlobals();
+    }
+  });
+});
