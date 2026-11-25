@@ -1,4 +1,5 @@
 // Private R16 southbound I-85 trial. Heights in scene metres, station follows OSM 38983384.
+import { conformCutEdges } from '../../../web/src/terrain/conform-cut-edges';
 import sections from './sb-sections.json';
 import median from './deering-sections.json';
 import exitSections from './exit-sections.json';
@@ -64,13 +65,25 @@ export function sbTrialHeight(x:number,z:number,ground:number){
   return f?blended(f,x,z,ground):ground;
 }
 /** Replace only existing board faces, after slots and rail/trail cuts; retain UVs and block ownership. */
-export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
+export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds,far?: {settled: boolean}):T{
   if(bounds.minX!==-1000 || bounds.maxX!==1800)return mesh;
   const east=bounds.minZ===-6500 && bounds.maxZ===-5700;
   const deering=bounds.minZ===-4900 && bounds.maxZ===-4100;
   if(!east && !deering)return mesh;
   const window=east ? [1080,1540,-6300,-5870] : [-400,-240,-4900,-4575];
   const {pos,uv,indices}=mesh, next:number[]=[], cache=new Map<string,number>();
+  // The distant quadtree already stitches neighbouring leaves. Sample its
+  // shared vertices; a settled level must also stay below its original cap.
+  if (deering && far) {
+    for (let v = 0; v < pos.length; v += 3) {
+      const x = pos[v], z = pos[v+2];
+      if (x < window[0] || x > window[1] || z < window[2] || z > window[3]) continue;
+      const height = sbTrialHeight(x, z, pos[v+1]);
+      pos[v+1] = far.settled ? Math.min(pos[v+1], height) : height;
+    }
+    return mesh;
+  }
+  const stitchBlocks = new Set<number>();
   const add=(x:number,y:number,z:number)=>{
     const key=[x,y,z].map(n=>Math.round(n*1e7)).join(',');
     const previous=cache.get(key);if(previous!==undefined)return previous;
@@ -114,6 +127,9 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
       const abc=indices.slice(j,j+3);
       const xs=abc.map(i=>pos[3*i]),zs=abc.map(i=>pos[3*i+2]);
       const box={minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)};
+      // Include the ungraded triangle on the other side of a split edge.
+      if (deering && starts && box.maxX >= window[0] && box.minX <= window[1] &&
+          box.maxZ >= window[2] && box.minZ <= window[3]) stitchBlocks.add(block);
       if(Math.abs(planArea(abc[0],abc[1],abc[2]))<1e-10||box.maxX<window[0]||box.minX>window[1]||box.maxZ<window[2]||box.minZ>window[3]){next.push(...abc);continue;}
       const nearby=new Set<Face>();binRange(box,k=>{for(const f of bins.get(k)??[])nearby.add(f);});
       if(deering && box.minZ > -4820 && [...nearby].some(({bounds:b}) =>
@@ -135,7 +151,13 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds):T{
     }
   }
   if(starts)starts[blocks]=next.length;
-  mesh.indices=next;return mesh;
+  mesh.indices=next;
+  if (starts && stitchBlocks.size) {
+    const fitted = {pos, uv, indices: next, starts};
+    conformCutEdges(fitted, stitchBlocks);
+    mesh.indices = fitted.indices;
+  }
+  return mesh;
 }
 
 // Blend lighting across the resampled grass only. The original coarse board

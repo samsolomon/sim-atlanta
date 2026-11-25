@@ -1,7 +1,7 @@
 // Split a long terrain edge at the existing vertices of its neighbours while
 // positions are still doubles. Both sides then round to the same Float32 chain.
 type Mesh = { pos:number[]; uv:number[]; indices:number[]; starts:Uint32Array };
-export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, formationFloor: (x:number,z:number)=>number) {
+export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, formationFloor?: (x:number,z:number)=>number) {
   const {pos,uv,indices,starts}=mesh;
   const cells=new Map<string,number[]>(), seen=new Set<string>();
   const key=(x:number,z:number)=>Math.floor(x)+','+Math.floor(z);
@@ -34,7 +34,9 @@ export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, format
       if((t-last)*len<1e-7) continue;
       last=t;
       const y=pos[a*3+1]+t*(pos[b*3+1]-pos[a*3+1]);
-      if(Math.abs(y-pos[v*3+1])<1e-8) chain.push(v);
+      // A single-valued graded shoulder shares the sampled vertex height.
+      // Cuts with a floor can carry separate upper and lower surfaces.
+      if(!formationFloor || Math.abs(y-pos[v*3+1])<1e-8) chain.push(v);
       else {
         chain.push(pos.length/3);
         pos.push(pos[v*3],y,pos[v*3+2]);
@@ -55,7 +57,7 @@ export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, format
       if(touched.has(block)) {
         const [a,b,c]=original.map(v=>3*v);
         const area=(pos[b]-pos[a])*(pos[c+2]-pos[a+2])-(pos[c]-pos[a])*(pos[b+2]-pos[a+2]);
-        if(Math.abs(area)<1e-8) {
+        if(Math.abs(area)<1e-8 && formationFloor) {
           // A zero-width clip remnant can acquire projected area after the Float32 cast.
           // Keep its plan boundary, with the same floor as the adjacent formation.
           for(const v of original) {
