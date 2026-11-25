@@ -53,7 +53,6 @@ for (const [index, mode] of arms.entries()) {
     await until("performance.getEntriesByName('neighbor:initial:usable').length");
     await snapshot('initial-usable-observed');
     await until('__neighbor.areas().length === '+(mode==='stock'?12:11));
-    await call('Network.setCacheDisabled',{cacheDisabled:false});
     await sleep(1000);
     await snapshot('initial-settled');
     for(const leg of ['station','south','station']){
@@ -62,6 +61,7 @@ for (const [index, mode] of arms.entries()) {
       await evaluate('__neighbor.go('+JSON.stringify(leg)+')');
       await until(marks+'>'+before);
       await snapshot(leg);
+      if (leg === 'station') await call('Network.setCacheDisabled',{cacheDisabled:false});
       await sleep(1000);
     }
     const [x,y] = await evaluate('[innerWidth*.49,innerHeight*.54]');
