@@ -58,3 +58,21 @@ it('builds signalised turns on the actual Midtown junction graph', async () => {
     expect(c.signals!.some(s => s.key === c.turnSignal!.key)).toBe(true);
   }
 });
+
+it('carries both directions of Peachtree through its name change and the R16 cut', () => {
+  const station = board('brookwood-station');
+  const r16: MidtownTrafficBoard = {
+    row: 'r16', roadHeight: () => 0,
+    city: {
+      ...station.city, bounds: { ...station.city.bounds, minZ: -6500, maxZ: -5700 },
+      roads: [{ cls: 'trunk', name: 'Peachtree Road Northeast', bridge: false, tunnel: false,
+        pts: [[-197.1, -5700], [-204.32, -5723.07]] }],
+    },
+  };
+  const { corridors, bounds } = midtownArterialCorridors([station, r16], true);
+  const courses = arterialTrafficRoutes(corridors, bounds!);
+  const crossing = courses.filter(c => c.roads.includes(r16.city.roads[0])
+    && c.roads.some(r => r.name === 'Peachtree Street Northeast'));
+  expect(crossing).toHaveLength(2);
+  expect(crossing.map(c => Math.sign(c.line.pts.at(-1)![1] - c.line.pts[0][1])).sort()).toEqual([-1, 1]);
+});
