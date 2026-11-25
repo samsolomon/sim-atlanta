@@ -526,7 +526,7 @@ function drawNorcrossSpan(b: Builder, deck: Line, bed: (x: number) => number, sc
   // The northeast fascia ended in open air on the accepted board. Close both
   // transverse ends through the terrain over their full width.
   member(287, 287.75, -6.5, 6.5, 0.04, 2.4, concrete);
-  member(409.25, 410, -6.5, 6.5, 0.04, 5.4, concrete);
+  member(409.25, 410, -6.5, 6.5, 0.04, 5.45, concrete);
 }
 
 /** Attach to the City mosaic at its existing vertical datum. */
