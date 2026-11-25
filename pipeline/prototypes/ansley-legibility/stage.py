@@ -7,7 +7,7 @@ import struct
 from pathlib import Path
 
 from shapely import constrained_delaunay_triangles, get_parts, union_all
-from shapely.geometry import Point, Polygon, box
+from shapely.geometry import LineString, Point, Polygon, box
 
 p = argparse.ArgumentParser(description=__doc__)
 for arg in ('source', 'destination', 'pilot', 'osm'):
@@ -27,7 +27,11 @@ starts = []
 for hole in (e for e in elements if e.get('tags', {}).get('golf') == 'hole'):
     origin = point(hole['nodes'][0])
     onward = next(p for ref in hole['nodes'][1:] if (p := point(ref)).distance(origin) > 5)
-    starts.append((origin, onward, int(hole['tags']['ref'])))
+    axis = LineString([point(ref) for ref in hole['nodes']])
+    distance = origin.distance(onward)
+    back = (origin.x-30*(onward.x-origin.x)/distance, origin.y-30*(onward.y-origin.y)/distance)
+    corridor = LineString([back, origin, axis.interpolate(120)])
+    starts.append((origin, onward, int(hole['tags']['ref']), corridor))
 rows = {}
 for row in ['brookwood-south', 'brookwood-station', 'r16']:
     rel = Path('scene/square-board') / row
@@ -48,7 +52,7 @@ for f in tees:
     footprint = footprint.simplify(.04, preserve_topology=True)
     inner = footprint.buffer(-.8, join_style='mitre').simplify(.04)
     center = inner.representative_point()
-    start, onward, hole = min(starts, key=lambda s: s[0].distance(center))
+    start, onward, hole, _ = min(starts, key=lambda s: (s[3].distance(center),s[0].distance(center)))
     dx, dz = onward.x-start.x, onward.y-start.y
     length = math.hypot(dx,dz)
     side = min(2.4, center.distance(inner.boundary)*.72)
@@ -78,6 +82,6 @@ for f in tees:
 for d,tile,_,source,rel in rows.values():
     dest=args.destination/rel/'context.json'
     assert dest.resolve()!=(source/'context.json').resolve()
-    d['golfPresentation']='Illustrative level tees, raised 0.45 m at their reference point; graded edges, enlarged markers and 4.8 m flagsticks. Marker axes inferred from nearest mapped hole starts.'
+    d['golfPresentation']='Illustrative level tees, raised 0.45 m at their reference point; graded edges, enlarged markers and 4.8 m flagsticks. Marker axes inferred from mapped opening lines of play.'
     dest.write_text(json.dumps(d,separators=(',',':'))+'\n')
     print(d['name'],len(d['golfTees']),len(d['points']['golfMarkers']),sum(len(t['faces']) for t in d['golfTees']))
