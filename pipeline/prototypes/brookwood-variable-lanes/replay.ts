@@ -29,6 +29,29 @@ for (const quality of ['low','high'] as const) {
     roadHeight:minZ===-6500 ? nr.road : minZ===-5700 ? sw.road : ()=>0,
   }));
   const traffic = new ConnectorTraffic({...boards[0],neighbors:boards.slice(1),quality,hourly});
+  if(process.env.CONTROL_DIR){
+    const old=JSON.parse(readFileSync(process.env.CONTROL_DIR+'/f4772f58-'+quality+'.json','utf8'));
+    const rgb=quality==='low'?[.194618,.028426,.035601]:[.049707,.147027,.068478];
+    let count=0, delta=0;
+    for(const f of old.log){
+      const expected=f.cars.find((c:{color:number[]})=>rgb.every((v,i)=>Math.abs(v-c.color[i])<.00001));
+      if(!expected)throw Error('Missing frozen control');
+      traffic.update(epoch+f.secs*1000,0);
+      let nearest=Infinity;
+      for(const obj of traffic.group.children){
+        const m=obj as InstancedMesh;
+        if(!m.isInstancedMesh || !m.instanceColor)continue;
+        for(let i=0;i<m.count;i++){
+          if(!rgb.every((v,k)=>Math.abs(v-m.instanceColor!.array[i*3+k])<.00001))continue;
+          const mat=m.instanceMatrix.array.subarray(16*i,16*i+16);
+          nearest=Math.min(nearest,Math.hypot(mat[12]-expected.m[12],mat[14]-expected.m[14]));
+        }
+      }
+      delta=Math.max(delta,nearest);count++;
+    }
+    if(delta>.001)throw Error('Control XY residual '+delta);
+    console.log(JSON.stringify({quality,controlFrames:count,maxCenterPlanDeltaM:delta}));
+  }
   for (const [movement, profile, tagged] of [
     ['drop',drop,axes['9238434'].pts],
     ['gain',gain,owner.pts],
