@@ -1253,7 +1253,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   function patchY(x: number, z: number) {
     if (mosaic) for (const a of mosaic.patches.values()) {
-      const y = a.groundAt(x, z);
+      const y = a.groundAt(x, z) ?? a.orbitGround?.(x,z) ?? null;
       if (y !== null) return y;
     }
     return null;

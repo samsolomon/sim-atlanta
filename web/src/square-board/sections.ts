@@ -67,7 +67,7 @@ export const midtownRows = (Object.keys(trackedOnly || typeof location === 'unde
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
-export type TrafficArea = Area & { connectorBoard: ConnectorBoard; northTread?: (x:number,z:number)=>number|null };
+export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -264,7 +264,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           ? (x,z,road) => ramp.roadHeight(x,z,road.pts) ?? stockRoadHeight(x,z,road) : stockRoadHeight;
         yield 'piers and road heights';
         added.set(id, {
-          ...area, northTread,
+          ...area, northTread, orbitGround: ramp?.originalHeight,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: id !== 'midtown-south' ? roadHeight : (x, z, road) => {
             if (road.name === northAvenue.roadName) {
