@@ -20,7 +20,9 @@ export function mountedWheelCheck(cars: THREE.Mesh[], group: THREE.Scene) {
     index: car.userData.consistIndex, origin: car.position.toArray(), quaternion: car.quaternion.toArray(),
     treads: [-8.8,-6.7,5.95,8.05].flatMap(z => [-1,1].map(side => {
       const samples = [-.065,-.04875,-.0325,-.01625,0,.01625,.0325,.04875,.065].map(dx=>{
-        const point=car.localToWorld(new THREE.Vector3(side*.74+dx,0,z));
+        const axle=car.getObjectByName('axle:'+z);
+        const point=axle ? axle.localToWorld(new THREE.Vector3(side*.74+dx,0,0)) :
+          car.localToWorld(new THREE.Vector3(side*.74+dx,0,z));
         const top = railTop(point,south,north);
         return {dx,xyz:point.toArray(),gap:top===undefined?null:point.y-top};
       });

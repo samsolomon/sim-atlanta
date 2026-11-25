@@ -1047,7 +1047,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       if (added.has('r16')) performance.mark('r16:attach-start');
       const pilot = added.get('r16');
-      if (pilot) { pilot.group.add(mountMayson(), studyRails()); northLine?.extend(); }
+      if (pilot) { const rails=studyRails(); pilot.group.add(mountMayson(),rails); northLine?.extend(rails); }
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');

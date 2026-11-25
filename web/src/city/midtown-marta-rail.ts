@@ -1,3 +1,4 @@
+import { articulate, RailTops } from './north-running-gear';
 import { extensions } from './north-profile-study';
 import axes from './fixtures/north-axes-study.json';
 import * as THREE from 'three';
@@ -248,7 +249,11 @@ export function createNorthLine(
     }
     return witnesses;
   }
-  function extend() {
+  let tops: RailTops | undefined;
+  function extend(addedRails: THREE.Mesh) {
+    tops=new RailTops();
+    tops.add(guideway,'#a69b8c');
+    tops.add(addedRails,'#c0b7a9');
     const continuation = northLineTracks(axes.map(run => ({ name: run.name, pts: run.pts.map(([x, z]): P2 => [x, z]) })), -6500);
     const joined = lines.map((line, i) => new Line([...line.pts, ...continuation[i].pts.slice(1)]));
     const nextPaths = northLinePaths(rf, origin, joined);
@@ -322,11 +327,11 @@ export function createNorthLine(
           front = height(run.line, clamp(place.along + run.dir * 2)),
           rear = height(run.line, clamp(place.along - run.dir * 2));
         const role = i === 0 ? 1 : i === n - 1 ? -1 : 0,
-          key = [t.routeId, run.dir, role].join('/');
+          key = [t.routeId, run.dir, role, !!tops].join('/');
         let pool = pools.get(key);
         if (!pool) {
           pool = {
-            geometry: cq400Geometry({ cab: role !== 0, u0: 0, u1: 1 }, color),
+            geometry: cq400Geometry({ cab: role !== 0, u0: 0, u1: 1 }, color, !!tops),
             material: cq400Material(color, { value: role }, darkness, planes.get(run.line)),
             meshes: [],
             count: 0,
@@ -349,6 +354,7 @@ export function createNorthLine(
           'YXZ',
         );
         if (i >= n / 2) car.rotateY(Math.PI);
+        if (tops) articulate(car,run.line,place.along,run.dir*(i>=n/2?-1:1),tops,s=>height(run.line,s));
         car.userData.consistIndex = i;
         car.userData.trainId = t.id;
         car.userData.inferredTrack = true;
