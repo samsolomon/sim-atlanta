@@ -1,0 +1,56 @@
+{
+ "source": "2025 Georgia FHWA NBI https://www.fhwa.dot.gov/bridge/nbi/2025/delimited/GA25.txt",
+ "inventory": [
+  {
+   "STRUCTURE_NUMBER_008": "000000008902090",
+   "FACILITY_CARRIED_007": "NORTHCREST ROAD",
+   "FEATURES_DESC_006A": "I85- 3 I85 RMP- 2 I285 R",
+   "LAT_016": "33534971",
+   "LONG_017": "084150258",
+   "ROADWAY_WIDTH_MT_051": "24.4",
+   "STRUCTURE_LEN_MT_049": "127.4",
+   "VERT_CLR_UND_054B": "4.87"
+  },
+  {
+   "STRUCTURE_NUMBER_008": "000000008902690",
+   "FACILITY_CARRIED_007": "RMP I-85N TO I-285",
+   "FEATURES_DESC_006A": "I-85- I-285- 4 RAMPS",
+   "LAT_016": "33532911",
+   "LONG_017": "084153628",
+   "ROADWAY_WIDTH_MT_051": "12.8",
+   "STRUCTURE_LEN_MT_049": "528.5",
+   "VERT_CLR_UND_054B": "9.09"
+  },
+  {
+   "STRUCTURE_NUMBER_008": "000000008902720",
+   "FACILITY_CARRIED_007": "I-85 SBL ON RAMP F",
+   "FEATURES_DESC_006A": "3 I-85 RMPS-2 I-285 RMPS",
+   "LAT_016": "33533538",
+   "LONG_017": "084153842",
+   "ROADWAY_WIDTH_MT_051": "9.1",
+   "STRUCTURE_LEN_MT_049": "501.7",
+   "VERT_CLR_UND_054B": "8.28"
+  },
+  {
+   "STRUCTURE_NUMBER_008": "000000008902760",
+   "FACILITY_CARRIED_007": "RMP I-285 TO I-85",
+   "FEATURES_DESC_006A": "2 I-85 RMPS-4 I-285 RMPS",
+   "LAT_016": "33533227",
+   "LONG_017": "084153326",
+   "ROADWAY_WIDTH_MT_051": "12.8",
+   "STRUCTURE_LEN_MT_049": "723.3",
+   "VERT_CLR_UND_054B": "8.89"
+  },
+  {
+   "STRUCTURE_NUMBER_008": "000000008902790",
+   "FACILITY_CARRIED_007": "RMP I-285 CCBL-OFF",
+   "FEATURES_DESC_006A": "I-85- 2 I-85 RAMP",
+   "LAT_016": "33533486",
+   "LONG_017": "084153472",
+   "ROADWAY_WIDTH_MT_051": "9.1",
+   "STRUCTURE_LEN_MT_049": "338.3",
+   "VERT_CLR_UND_054B": "8.33"
+  }
+ ],
+ "observationRule": "Reserve lidar windows at 10+20k m along route for independent station replay. Omit from fitting. Same acquisition, spatial holdout; inventory is the independent source."
+}

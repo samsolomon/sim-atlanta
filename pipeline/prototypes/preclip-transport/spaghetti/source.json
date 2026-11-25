@@ -1,0 +1,1098 @@
+{
+ "source": "OpenStreetMap contributors, ODbL. https://api.openstreetmap.org/api/0.6/map.json?bbox=-84.275,33.881,-84.242,33.905",
+ "projection": "x east, z south, metres; lon0 -84.26, lat0 33.89, 111195 m/degree and cos(lat0) longitude scale",
+ "route": [
+  {
+   "id": 9165657,
+   "version": 12,
+   "timestamp": "2023-01-24T13:07:12Z",
+   "tags": {
+    "destination": "Greenville",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "junction:ref": "33B",
+    "lanes": "2",
+    "maxspeed": "65 mph",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "nodes": [
+    68158745,
+    1119816768,
+    1119816778,
+    68158751,
+    68158753,
+    68158755
+   ],
+   "xz": [
+    [
+     -627.409,
+     -843.6698
+    ],
+    [
+     -558.7348,
+     -767.5012
+    ],
+    [
+     -422.3833,
+     -635.7574
+    ],
+    [
+     -320.0181,
+     -526.5973
+    ],
+    [
+     -295.6221,
+     -498.6651
+    ],
+    [
+     -268.4109,
+     -462.182
+    ]
+   ]
+  },
+  {
+   "id": 41108082,
+   "version": 6,
+   "timestamp": "2022-06-21T20:29:27Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "layer": "3",
+    "maxheight": "default",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "nodes": [
+    68158755,
+    68158757,
+    68158760,
+    68158761,
+    68154838
+   ],
+   "xz": [
+    [
+     -268.4109,
+     -462.182
+    ],
+    [
+     -216.6283,
+     -381.4878
+    ],
+    [
+     -196.0353,
+     -350.3198
+    ],
+    [
+     -169.5256,
+     -318.1734
+    ],
+    [
+     -126.9457,
+     -281.5235
+    ]
+   ]
+  },
+  {
+   "id": 41107890,
+   "version": 7,
+   "timestamp": "2022-05-10T23:35:10Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "3",
+    "layer": "3",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "nodes": [
+    68154838,
+    500260460,
+    68154835,
+    68154833,
+    1119816753,
+    9731263915,
+    1119816787,
+    68148333
+   ],
+   "xz": [
+    [
+     -126.9457,
+     -281.5235
+    ],
+    [
+     -106.5373,
+     -271.0156
+    ],
+    [
+     -81.1906,
+     -260.7745
+    ],
+    [
+     -62.5821,
+     -255.5595
+    ],
+    [
+     -36.054,
+     -251.512
+    ],
+    [
+     -15.9778,
+     -250.6558
+    ],
+    [
+     2.0307,
+     -251.4786
+    ],
+    [
+     141.6867,
+     -262.398
+    ]
+   ]
+  },
+  {
+   "id": 883783875,
+   "version": 2,
+   "timestamp": "2024-07-09T22:00:18Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "layer": "3",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "nodes": [
+    68148333,
+    12044717481,
+    1119816762,
+    12044717480,
+    68148336,
+    68147892,
+    68148341,
+    68148343,
+    68148347
+   ],
+   "xz": [
+    [
+     141.6867,
+     -262.398
+    ],
+    [
+     168.8241,
+     -265.3113
+    ],
+    [
+     195.8322,
+     -269.5033
+    ],
+    [
+     222.785,
+     -275.9415
+    ],
+    [
+     248.6117,
+     -284.3923
+    ],
+    [
+     268.1894,
+     -292.176
+    ],
+    [
+     294.6991,
+     -306.2755
+    ],
+    [
+     321.1719,
+     -323.4774
+    ],
+    [
+     337.1682,
+     -335.8534
+    ]
+   ]
+  },
+  {
+   "id": 41107889,
+   "version": 9,
+   "timestamp": "2021-07-13T09:51:18Z",
+   "tags": {
+    "highway": "motorway_link",
+    "lanes": "2",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "nodes": [
+    68148347,
+    68148349,
+    1119816791,
+    1832367507,
+    68146091
+   ],
+   "xz": [
+    [
+     337.1682,
+     -335.8534
+    ],
+    [
+     377.2558,
+     -373.2371
+    ],
+    [
+     426.0385,
+     -419.2274
+    ],
+    [
+     464.4555,
+     -451.2071
+    ],
+    [
+     509.5737,
+     -485.6664
+    ]
+   ]
+  },
+  {
+   "id": 957406490,
+   "version": 1,
+   "timestamp": "2021-06-23T06:18:49Z",
+   "tags": {
+    "destination:lanes": "Greenville|Greenville|Pleasantdale Road;Northcrest Road|Northcrest Road",
+    "highway": "motorway_link",
+    "lanes": "4",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "turn:lanes": "none|none|through;slight_right|slight_right"
+   },
+   "nodes": [
+    68146091,
+    68147912
+   ],
+   "xz": [
+    [
+     509.5737,
+     -485.6664
+    ],
+    [
+     585.9091,
+     -542.4759
+    ]
+   ]
+  },
+  {
+   "id": 537071431,
+   "version": 3,
+   "timestamp": "2021-06-17T06:38:06Z",
+   "tags": {
+    "destination": "Greenville;Pleasantdale Road",
+    "destination:lanes": "Greenville|Greenville|Pleasantdale Road",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "3",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no",
+    "turn:lanes": "none|none|slight_right"
+   },
+   "nodes": [
+    68147912,
+    330630047
+   ],
+   "xz": [
+    [
+     585.9091,
+     -542.4759
+    ],
+    [
+     713.1318,
+     -639.2267
+    ]
+   ]
+  },
+  {
+   "id": 9164544,
+   "version": 10,
+   "timestamp": "2022-06-21T20:29:32Z",
+   "tags": {
+    "destination": "Greenville",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "maxheight": "default",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "nodes": [
+    330630047,
+    68147915,
+    68147919,
+    9126510798
+   ],
+   "xz": [
+    [
+     713.1318,
+     -639.2267
+    ],
+    [
+     778.9538,
+     -689.2978
+    ],
+    [
+     980.2689,
+     -842.8581
+    ],
+    [
+     1037.9405,
+     -891.7728
+    ]
+   ]
+  },
+  {
+   "id": 987373712,
+   "version": 1,
+   "timestamp": "2021-09-27T12:04:32Z",
+   "tags": {
+    "destination": "Greenville",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "nodes": [
+    9126510798,
+    68147920
+   ],
+   "xz": [
+    [
+     1037.9405,
+     -891.7728
+    ],
+    [
+     1054.9613,
+     -917.5255
+    ]
+   ]
+  }
+ ],
+ "crossings": [
+  {
+   "station": 585.573,
+   "routeWay": 41108082,
+   "crossingWay": 9164430,
+   "version": 19,
+   "timestamp": "2024-07-09T22:00:18Z",
+   "tags": {
+    "destination": "Chamblee-Tucker Road",
+    "destination:lanes": "Augusta;Macon|Chamblee-Tucker Road",
+    "destination:ref": "I 285 South",
+    "destination:ref:lanes": "I 285 South|",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "turn:lanes": "none|slight_right"
+   },
+   "crossXZ": [
+    -235.37496230489418,
+    -410.7011746977643
+   ],
+   "xz": [
+    [
+     -274.94485707273526,
+     -432.0139712377974
+    ],
+    [
+     -250.85468651755482,
+     -420.28374150028975
+    ],
+    [
+     -222.24043445867017,
+     -402.57037800029275
+    ],
+    [
+     -198.27335658226167,
+     -385.2808253745788
+    ]
+   ],
+   "sourceStationStart": 417.23950464989343,
+   "upper": 41108082
+  },
+  {
+   "station": 741.592,
+   "routeWay": 41108082,
+   "crossingWay": 41051928,
+   "version": 6,
+   "timestamp": "2013-05-07T17:30:08Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "layer": "4",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    -137.47811152156652,
+    -290.58905354237237
+   ],
+   "xz": [
+    [
+     -105.65948746956141,
+     -322.37882518312335
+    ],
+    [
+     -107.10037633516004,
+     -321.26459399983116
+    ],
+    [
+     -136.97919372666703,
+     -291.2419439997826
+    ],
+    [
+     -161.15362151439285,
+     -259.6069664998544
+    ],
+    [
+     -164.35722096752087,
+     -254.5250058983854
+    ]
+   ],
+   "sourceStationStart": 325.1499626369502,
+   "upper": 41051928
+  },
+  {
+   "station": 837.6,
+   "routeWay": 41107890,
+   "crossingWay": 9164596,
+   "version": 10,
+   "timestamp": "2017-10-31T05:24:18Z",
+   "tags": {
+    "destination": "Chamblee-Tucker Road",
+    "highway": "motorway_link",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA",
+    "tiger:reviewed": "no"
+   },
+   "crossXZ": [
+    -50.23123850025035,
+    -253.67504819431744
+   ],
+   "xz": [
+    [
+     -79.4800316905471,
+     -287.87311939035635
+    ],
+    [
+     -75.27394372305915,
+     -282.95791650015553
+    ],
+    [
+     -20.983950908978294,
+     -219.47568901094348
+    ]
+   ],
+   "sourceStationStart": 111.54933649652881,
+   "upper": 41107890
+  },
+  {
+   "station": 878.43,
+   "routeWay": 41107890,
+   "crossingWay": 537053322,
+   "version": 4,
+   "timestamp": "2022-05-10T23:35:10Z",
+   "tags": {
+    "destination": "Augusta;Macon",
+    "destination:ref": "I 285 South",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    -9.590381545651121,
+    -250.94762347355174
+   ],
+   "xz": [
+    [
+     -44.539553619003534,
+     -279.2939869180216
+    ],
+    [
+     -42.10910254504129,
+     -277.387046999841
+    ],
+    [
+     8.575045213667536,
+     -236.17818000022385
+    ],
+    [
+     25.58032760634327,
+     -222.87913981300804
+    ]
+   ],
+   "sourceStationStart": 144.53323669262448,
+   "upper": 41107890
+  },
+  {
+   "station": 886.871,
+   "routeWay": 41107890,
+   "crossingWay": 41051934,
+   "version": 6,
+   "timestamp": "2022-05-10T23:35:10Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "layer": "2",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    -1.1578890495867333,
+    -251.33291988836703
+   ],
+   "xz": [
+    [
+     -3.3068747663731077,
+     -206.38782418715803
+    ],
+    [
+     -1.4491734099561682,
+     -240.1144829996087
+    ],
+    [
+     -0.8215059459718487,
+     -264.28827600004456
+    ],
+    [
+     -0.7384323106469477,
+     -276.93114750004395
+    ],
+    [
+     -1.855311181926951,
+     -289.76305049988207
+    ],
+    [
+     -2.660278799004367,
+     -296.22985889733366
+    ]
+   ],
+   "sourceStationStart": 236.22305689120492,
+   "upper": 41107890
+  },
+  {
+   "station": 896.944,
+   "routeWay": 41107890,
+   "crossingWay": 124550348,
+   "version": 14,
+   "timestamp": "2026-07-09T02:50:13Z",
+   "tags": {
+    "bicycle": "no",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "designated",
+    "hgv:national_network": "yes",
+    "highway": "motorway",
+    "lanes": "3",
+    "loc_name": "The Perimeter",
+    "maxheight": "default",
+    "maxspeed": "65 mph",
+    "maxspeed:variable": "peak_traffic",
+    "minspeed": "40 mph",
+    "name": "Atlanta Bypass / The Perimeter",
+    "name:en": "Atlanta Bypass;The Perimeter",
+    "official_name": "Atlanta Bypass",
+    "oneway": "yes",
+    "ref": "I 285",
+    "source:hgv:national_network": "https://www.ecfr.gov/current/title-23/chapter-I/subchapter-G/part-658;https://hepgis-usdot.hub.arcgis.com/apps/usdot::national-network-conventional-combination-trucks-map",
+    "start_date": "1968",
+    "unsigned_ref": "SR 407"
+   },
+   "crossXZ": [
+    8.890469528487762,
+    -252.01496083830432
+   ],
+   "xz": [
+    [
+     -23.85007723505791,
+     -282.88657559399985
+    ],
+    [
+     38.39848018249911,
+     -224.19135899999026
+    ]
+   ],
+   "sourceStationStart": 823.8799650284152,
+   "upper": 41107890
+  },
+  {
+   "station": 922.207,
+   "routeWay": 41107890,
+   "crossingWay": 41050344,
+   "version": 18,
+   "timestamp": "2026-10-22T14:00:29Z",
+   "tags": {
+    "bicycle": "no",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "designated",
+    "hgv:national_network": "yes",
+    "highway": "motorway",
+    "lanes": "3",
+    "loc_name": "The Perimeter",
+    "maxheight": "default",
+    "maxspeed": "65 mph",
+    "maxspeed:variable": "peak_traffic",
+    "minspeed": "40 mph",
+    "name": "Atlanta Bypass / The Perimeter",
+    "name:en": "Atlanta Bypass;The Perimeter",
+    "official_name": "Atlanta Bypass",
+    "oneway": "yes",
+    "ref": "I 285",
+    "source:hgv:national_network": "https://www.ecfr.gov/current/title-23/chapter-I/subchapter-G/part-658;https://hepgis-usdot.hub.arcgis.com/apps/usdot::national-network-conventional-combination-trucks-map",
+    "start_date": "1968",
+    "unsigned_ref": "SR 407"
+   },
+   "crossXZ": [
+    34.07683878947376,
+    -253.98421912033757
+   ],
+   "xz": [
+    [
+     54.72706466386233,
+     -234.94391550002172
+    ],
+    [
+     16.799335080663184,
+     -269.9147430002187
+    ],
+    [
+     0.9956699151382171,
+     -284.4905505187271
+    ]
+   ],
+   "sourceStationStart": 0,
+   "upper": 41107890
+  },
+  {
+   "station": 985.204,
+   "routeWay": 41107890,
+   "crossingWay": 41050323,
+   "version": 5,
+   "timestamp": "2022-05-10T23:35:10Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "layer": "1",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    96.88258036278506,
+    -258.8948406343351
+   ],
+   "xz": [
+    [
+     125.89393434997864,
+     -224.49511185880914
+    ],
+    [
+     85.1412454819985,
+     -272.8169325001602
+    ],
+    [
+     67.85404089731628,
+     -293.2800635164184
+    ]
+   ],
+   "sourceStationStart": 35.2058658379072,
+   "upper": 41107890
+  },
+  {
+   "station": 1024.744,
+   "routeWay": 41107890,
+   "crossingWay": 119686468,
+   "version": 24,
+   "timestamp": "2025-07-22T09:32:21Z",
+   "tags": {
+    "bicycle": "no",
+    "change:lanes": "no|not_left|yes|yes|yes",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "destination",
+    "hgv:minaxles": "4",
+    "highway": "motorway",
+    "hov:lanes": "designated|yes|yes|yes|yes",
+    "hov:minimum": "3",
+    "lanes": "5",
+    "lit": "yes",
+    "maxheight": "default",
+    "maxspeed": "65 mph",
+    "minspeed": "40 mph",
+    "name": "Northeast Expressway",
+    "oneway": "yes",
+    "ref": "I 85",
+    "start_date": "1956",
+    "surface": "asphalt",
+    "toll:hov": "no",
+    "toll:lanes": "yes|no|no|no|no",
+    "unsigned_ref": "SR 403"
+   },
+   "crossXZ": [
+    136.30192137023357,
+    -261.9769388497161
+   ],
+   "xz": [
+    [
+     172.33982443544934,
+     -288.9263273893863
+    ],
+    [
+     102.26364469799583,
+     -236.52288450030167
+    ],
+    [
+     100.25104399760681,
+     -235.04505891085057
+    ]
+   ],
+   "sourceStationStart": 585.0806443549538,
+   "upper": 41107890
+  },
+  {
+   "station": 1059.829,
+   "routeWay": 883783875,
+   "crossingWay": 41050992,
+   "version": 5,
+   "timestamp": "2020-12-14T10:41:40Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "layer": "2",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    171.18684883338534,
+    -265.6780042764998
+   ],
+   "xz": [
+    [
+     180.32232773900654,
+     -309.56635697155224
+    ],
+    [
+     177.8052701337137,
+     -302.3392049998919
+    ],
+    [
+     173.24545061123848,
+     -284.50352700004566
+    ],
+    [
+     170.3101821753347,
+     -257.6610540000268
+    ],
+    [
+     169.14029124781578,
+     -220.7443265711634
+    ]
+   ],
+   "sourceStationStart": 170.61246952352585,
+   "upper": 883783875
+  },
+  {
+   "station": 1065.959,
+   "routeWay": 883783875,
+   "crossingWay": 41050997,
+   "version": 7,
+   "timestamp": "2024-07-09T22:00:18Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "layer": "2",
+    "maxheight": "default",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    177.24427552216633,
+    -266.61820320010486
+   ],
+   "xz": [
+    [
+     189.62853961342304,
+     -309.79319489348484
+    ],
+    [
+     183.48196852615717,
+     -292.7208374996832
+    ],
+    [
+     178.3590943670268,
+     -273.0615614998586
+    ],
+    [
+     174.98076654316083,
+     -253.53571950001313
+    ],
+    [
+     171.02092327464393,
+     -223.2684405002662
+    ],
+    [
+     170.9147602781023,
+     -222.0752194598407
+    ]
+   ],
+   "sourceStationStart": 158.76923726969963,
+   "upper": 883783875
+  },
+  {
+   "station": 1071.952,
+   "routeWay": 883783875,
+   "crossingWay": 119686435,
+   "version": 18,
+   "timestamp": "2025-07-21T14:17:01Z",
+   "tags": {
+    "bicycle": "no",
+    "change:lanes": "no|not_left|yes|yes|yes",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "destination",
+    "hgv:minaxles": "4",
+    "highway": "motorway",
+    "hov:lanes": "designated|yes|yes|yes|yes",
+    "hov:minimum": "3",
+    "lanes": "5",
+    "lit": "yes",
+    "maxheight": "default",
+    "maxspeed": "65 mph",
+    "minspeed": "40 mph",
+    "name": "Northeast Expressway",
+    "oneway": "yes",
+    "ref": "I 85",
+    "start_date": "1956",
+    "surface": "asphalt",
+    "toll:hov": "no",
+    "toll:lanes": "yes|no|no|no|no",
+    "unsigned_ref": "SR 403"
+   },
+   "crossXZ": [
+    183.16595130837882,
+    -267.5373316495579
+   ],
+   "xz": [
+    [
+     147.19302370412873,
+     -240.50127277295056
+    ],
+    [
+     219.1388789126289,
+     -294.5733905261653
+    ]
+   ],
+   "sourceStationStart": 494.29081944717007,
+   "upper": 883783875
+  },
+  {
+   "station": 1172.291,
+   "routeWay": 883783875,
+   "crossingWay": 532932671,
+   "version": 6,
+   "timestamp": "2022-06-21T20:29:28Z",
+   "tags": {
+    "destination": "Greenville",
+    "destination:ref": "I 85 North",
+    "highway": "motorway_link",
+    "lanes": "2",
+    "maxheight": "default",
+    "maxspeed": "40 mph",
+    "oneway": "yes",
+    "tiger:cfcc": "A63",
+    "tiger:county": "DeKalb, GA"
+   },
+   "crossXZ": [
+    278.40221254713026,
+    -297.6078020017323
+   ],
+   "xz": [
+    [
+     264.5687366304739,
+     -254.8580655296911
+    ],
+    [
+     271.4754088087346,
+     -280.15580249980337
+    ],
+    [
+     280.761195123023,
+     -303.55123049983416
+    ],
+    [
+     287.8132236947515,
+     -317.2949325000565
+    ],
+    [
+     301.6540867026682,
+     -335.861904507345
+    ]
+   ],
+   "sourceStationStart": 387.21426900512563,
+   "upper": 883783875
+  },
+  {
+   "station": 1902.856,
+   "routeWay": 9164544,
+   "crossingWay": 67968161,
+   "version": 8,
+   "timestamp": "2025-05-29T23:50:14Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "secondary",
+    "lanes": "3",
+    "layer": "1",
+    "name": "Northcrest Road",
+    "oneway": "yes",
+    "surface": "concrete",
+    "tiger:cfcc": "A41",
+    "tiger:county": "DeKalb, GA",
+    "tiger:name_base": "Northcrest",
+    "tiger:name_type": "Rd",
+    "tiger:reviewed": "no",
+    "turn:lanes": "left|through|none"
+   },
+   "crossXZ": [
+    853.6974863836671,
+    -746.31123539248
+   ],
+   "xz": [
+    [
+     848.7997580931308,
+     -791.0439108947577
+    ],
+    [
+     856.2399560485602,
+     -723.0899655001086
+    ]
+   ],
+   "sourceStationStart": 68.69022594202279,
+   "upper": 67968161
+  },
+  {
+   "station": 1915.865,
+   "routeWay": 9164544,
+   "crossingWay": 172322577,
+   "version": 5,
+   "timestamp": "2025-05-29T23:50:14Z",
+   "tags": {
+    "bridge": "yes",
+    "highway": "secondary",
+    "lanes": "3",
+    "layer": "1",
+    "name": "Northcrest Road",
+    "oneway": "yes",
+    "tiger:cfcc": "A41",
+    "tiger:county": "DeKalb, GA",
+    "tiger:name_base": "Northcrest",
+    "tiger:name_type": "Rd",
+    "tiger:reviewed": "no",
+    "turn:lanes": "left|none|none"
+   },
+   "crossXZ": [
+    864.040819225918,
+    -754.2009822261098
+   ],
+   "xz": [
+    [
+     866.7903076941593,
+     -730.70682299984
+    ],
+    [
+     858.8102288779074,
+     -798.8959587291945
+    ]
+   ],
+   "sourceStationStart": 0,
+   "upper": 172322577
+  }
+ ],
+ "bookends": [
+  {
+   "id": 878209332,
+   "version": 8,
+   "tags": {
+    "bicycle": "no",
+    "destination:lanes": "Augusta;Macon|Augusta;Macon|Augusta;Macon|Greenville|Greenville",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "designated",
+    "hgv:national_network": "yes",
+    "highway": "motorway",
+    "lanes": "5",
+    "loc_name": "The Perimeter",
+    "maxspeed": "65 mph",
+    "maxspeed:variable": "peak_traffic",
+    "minspeed": "40 mph",
+    "name": "Atlanta Bypass / The Perimeter",
+    "name:en": "Atlanta Bypass;The Perimeter",
+    "official_name": "Atlanta Bypass",
+    "oneway": "yes",
+    "ref": "I 285",
+    "source:hgv:national_network": "https://www.ecfr.gov/current/title-23/chapter-I/subchapter-G/part-658;https://hepgis-usdot.hub.arcgis.com/apps/usdot::national-network-conventional-combination-trucks-map",
+    "start_date": "1962",
+    "turn:lanes": "through|through|through|slight_right|slight_right",
+    "unsigned_ref": "SR 407"
+   },
+   "joint": 68158745
+  },
+  {
+   "id": 119686461,
+   "version": 24,
+   "tags": {
+    "bicycle": "no",
+    "change:lanes": "no|not_left|yes|yes|yes|yes|yes",
+    "HFCS": "Principal Arterial - Interstate",
+    "hgv": "designated",
+    "hgv:national_network": "yes",
+    "highway": "motorway",
+    "hov:lanes": "designated|yes|yes|yes|yes|yes|yes",
+    "hov:minimum": "3",
+    "lanes": "7",
+    "lit": "yes",
+    "maxheight": "default",
+    "maxspeed": "65 mph",
+    "minspeed": "40 mph",
+    "name": "Northeast Expressway",
+    "oneway": "yes",
+    "ref": "I 85",
+    "source:hgv:national_network": "https://www.ecfr.gov/current/title-23/chapter-I/subchapter-G/part-658;https://hepgis-usdot.hub.arcgis.com/apps/usdot::national-network-conventional-combination-trucks-map",
+    "start_date": "1957",
+    "surface": "asphalt",
+    "toll:hov": "no",
+    "toll:lanes": "yes|no|no|no|no|no|no",
+    "unsigned_ref": "SR 403"
+   },
+   "joint": 68147920
+  }
+ ]
+}
