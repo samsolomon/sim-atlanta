@@ -5,12 +5,14 @@ export interface OpenSlot {
   halfWidthM: number;
   /** Exact convex mouth strip when its two road sections have different orientations. */
   footprint?: readonly (readonly [number, number])[];
+  /** Cut stops at this height above the slot bed inside a covered structure. */
+  cutHeightM?: number;
   crossAxis?: readonly [number, number];
 }
 
 type Plane = (x: number, y: number, z: number) => number;
 
-export function slotPlanes({ start, end, halfWidthM, crossAxis, footprint }: OpenSlot) {
+export function slotPlanes({ start, end, halfWidthM, crossAxis, footprint, cutHeightM }: OpenSlot) {
   const [x, y, z] = start;
   const dx = end[0] - x, dy = end[1] - y, dz = end[2] - z;
   const length = Math.hypot(dx, dz);
@@ -28,6 +30,10 @@ export function slotPlanes({ start, end, halfWidthM, crossAxis, footprint }: Ope
     (px, _y, pz) => halfWidthM - across(px, pz), (px, _y, pz) => halfWidthM + across(px, pz),
     (px, py, pz) => py - (y + along(px, pz) * dy / length) - 1e-6,
   ];
+  if (cutHeightM !== undefined) {
+    if (!(cutHeightM > 0 && Number.isFinite(cutHeightM))) throw new Error('Invalid covered slot height');
+    planes.push((px, py, pz) => y + along(px, pz) * dy / length + cutHeightM - py);
+  }
   if (footprint) {
     if (footprint.length !== 4 || !footprint.every(p => p.every(Number.isFinite)))
       throw new Error('Invalid portal strip footprint');
@@ -39,7 +45,7 @@ export function slotPlanes({ start, end, halfWidthM, crossAxis, footprint }: Ope
       if (!Number.isFinite(scale) || !scale) throw new Error('Degenerate portal strip');
       return (xx,_yy,zz) => scale*(ex*(zz-pz)-ez*(xx-px));
     });
-    return { planes:[...edges,planes[4]], minX:Math.min(...footprint.map(p=>p[0])),
+    return { planes:[...edges,...planes.slice(4)], minX:Math.min(...footprint.map(p=>p[0])),
       maxX:Math.max(...footprint.map(p=>p[0])), minZ:Math.min(...footprint.map(p=>p[1])),
       maxZ:Math.max(...footprint.map(p=>p[1])) };
   }
