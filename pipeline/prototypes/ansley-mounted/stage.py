@@ -7,7 +7,7 @@ import math
 from collections import defaultdict
 from pathlib import Path
 
-from shapely import make_valid, union_all
+from shapely import constrained_delaunay_triangles, make_valid, union_all
 from shapely.geometry import Polygon, LineString, Point, box
 
 parser = argparse.ArgumentParser()
@@ -37,7 +37,8 @@ course = zones['course']
 blocked = union_all([zones[k] for k in ('wood','water','building','stream','road','path','cartpath')])
 turf = course.difference(blocked)
 play = union_all([zones[k] for k in ('green','fairway','tee','bunker')])
-cuts = {'fringe':zones['green'].buffer(2.2).union(zones['fairway'].buffer(2.8)),
+cuts = {'fringe':zones['fairway'].buffer(2.8),
+        'collar':zones['green'].buffer(1.05), 'lip':zones['bunker'].buffer(.45),
         **{k:zones[k] for k in ('fairway','tee','green','bunker')}}
 pins = {}
 for hole in (e for e in osm if e.get('tags',{}).get('golf')=='hole'):
@@ -58,6 +59,42 @@ def polygons(geom):
         for part in geom.geoms:
             yield from polygons(part)
 
+def node_xy(ref):
+    n = nodes[ref]
+    return Point((n['lon']+84.3916)*scale*math.cos(math.radians(33.7539)), (33.7539-n['lat'])*scale)
+
+# An inferred transverse pair. Nearby mapped hole starts supply the playing axis.
+starts = []
+for h in (e for e in osm if e.get('tags',{}).get('golf')=='hole'):
+    origin = node_xy(h['nodes'][0])
+    onward = next(p for ref in h['nodes'][1:] if (p:=node_xy(ref)).distance(origin)>5)
+    starts.append((origin,onward))
+markers = []
+for tee in groups['tee']:
+    centre = tee.representative_point()
+    start,target = min(starts,key=lambda pair:pair[0].distance(centre))
+    if start.distance(centre) <= 55:
+        dx,dz = target.x-start.x,target.y-start.y
+    else:
+        rect = list(tee.minimum_rotated_rectangle.exterior.coords)
+        dx,dz = max(((b[0]-a[0],b[1]-a[1]) for a,b in zip(rect,rect[1:])),key=lambda d:math.hypot(*d))
+    length = math.hypot(dx,dz)
+    nx,nz = -dz/length,dx/length
+    width = min(2.0,centre.distance(tee.boundary)*.72)
+    pair=[(round(centre.x+side*nx*width,2),round(centre.y+side*nz*width,2)) for side in [-1,1]]
+    assert all(tee.contains(Point(*p)) and turf.contains(Point(*p)) for p in pair)
+    markers.append(pair)
+
+def bowl_faces(pg):
+    edge=pg.simplify(.28,preserve_topology=True)
+    core=edge.buffer(-1.4,quad_segs=2).simplify(.2,preserve_topology=True).intersection(edge)
+    for layer in [edge.difference(core),core]:
+        for tri in constrained_delaunay_triangles(layer).geoms:
+            face=[[round(x,3),round(z,3),round(min(.48,edge.boundary.distance(Point(x,z))*.34),3)]
+                  for x,z in list(tri.exterior.coords)[:3]]
+            if max(v[2] for v in face)>0 and Polygon([v[:2] for v in face]).area>1e-5:
+                yield face
+
 crowns = load(pack/'midtown-landscape/crowns.json')
 report = {'holes':{h:[g,round(p.x,2),round(p.y,2)] for h,(p,g) in pins.items()},'rows':{}}
 proof = load(a.proof)
@@ -73,7 +110,7 @@ for row,which in [('brookwood-south',None),('brookwood-station','baseline'),('r1
     stats = dict(courseSqM=round(tile.intersection(course).area),originalTrees=len(data['trees']))
     for k,g in cuts.items():
         for pg in polygons(g.intersection(turf).intersection(tile).simplify(.12,preserve_topology=True)):
-            data['ground'].append(dict(kind='golf_'+k,sub='inferred' if k=='fringe' else 'reported',name=None,
+            data['ground'].append(dict(kind='golf_'+k,sub='inferred' if k in ('fringe','collar','lip') else 'reported',name=None,
                 rings=[[[round(x,2),round(z,2)] for x,z in ring.coords[:-1]] for ring in [pg.exterior,*pg.interiors]]))
     # Paths and creek follow surveyed centerlines. Widths and paint are inferred.
     for k in ['cartpath','stream']:
@@ -81,6 +118,8 @@ for row,which in [('brookwood-south',None),('brookwood-station','baseline'),('r1
             data['ground'].append(dict(kind='golf_'+k,sub='inferred',name=None,
                 rings=[[[round(x,2),round(z,2)] for x,z in ring.coords[:-1]] for ring in [pg.exterior,*pg.interiors]]))
     data.setdefault('points',{})['golfFlags']=[[round(p.x,2),round(p.y,2)] for p,g in pins.values() if tile.contains(p)]
+    data['points']['golfMarkers']=[p for pair in markers for p in pair if tile.contains(Point(*p))]
+    data['golfBowls']=[face for bunker in groups['bunker'] for pg in polygons(bunker.intersection(turf).intersection(tile)) for face in bowl_faces(pg)]
     if row in crowns:
         source=crowns[row]
         protected=play.union(zones['cartpath']).union(zones['stream']).union(zones['path']).intersection(course)
