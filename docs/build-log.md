@@ -3859,3 +3859,7 @@ The moving sedan takes its silhouette from the July 2017 Camry G Leather Package
 ### November 24 — Ellis Street’s last two metres
 
 The last two metres of the eastbound Ellis deck climbed 15% before dropping 12 cm onto the approach. Both wheel tracks reproduced the step. The old check subtracted the tread lift even though the approach mesh already included it. The deck and its approach now use one structural elevation through the landing. The final two metres are level and the first metre on the street descends about 0.84%. The underlying ramp retains its 6.120 m road-top separation. These grades are inferred. Sam accepted the matched normal and low views and the controlled sedan pass. [Ellis landing](log/deck-approach-joints/ellis-normal-side.jpg) · [Vehicle pass](log/deck-approach-joints/ellis-vehicle-pass.jpg)
+
+### 2026-11-25 — Piedmont’s two outlines
+
+A 16-story hospital tower was already hiding in the North board’s data. The 9,954 m² outline at Peachtree and Collier carried four floors, but its two mapped parts gave us the smaller, curved 4,159 m² Marcus Tower and its lower podium. The curve reads from 475 m, with a terracotta end and a warm band across the blue glass. At the north end of the plaza, the terrain almost hid the doors. Sampling the sidewalk gave us a landing roughly 2.2 m above the bare-earth grade at the wall. A cut beneath the paving left 7 cm of clearance across 540 samples on each graphics tier. [Private campus views and sources](log/ui/piedmont-hospital/README.md)

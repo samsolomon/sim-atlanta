@@ -79,6 +79,7 @@ import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
+import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
@@ -377,7 +378,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
       : site.id === gazeboId ? createClaraMeer : null;
-    const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
+    const landmark = site.id === piedmontHospitalId
+      ? createPiedmontHospital(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === windsorOverPeachtreeId ? createWindsorOverPeachtree(sceneryCity.buildings, grid, options.quality)
