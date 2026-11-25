@@ -1,3 +1,4 @@
+import { deeringEdgeStart } from '../../../pipeline/prototypes/highway-four/deering';
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
@@ -205,7 +206,10 @@ export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity,
   for (const { rows } of visible) fill(rows, 0, 1, PAL.asphaltHwy);
   for (const { r, rows } of visible)
     for (let i = 0; i <= r.lanes; i++) {
-      stroke(rows, i, r.lanes, i === 0 || i === r.lanes, i === 0 && !r.link ? '#dfba6d' : PAL.lineWhite);
+      const start = deeringEdgeStart(r.id,i,r.lanes);
+      const painted = start ? rows.filter(row=>row.s>=start) : rows;
+      if (painted.length<2) continue;
+      stroke(painted, i, r.lanes, i === 0 || i === r.lanes, i === 0 && !r.link ? '#dfba6d' : PAL.lineWhite);
     }
   // Through the rail crossing two branches temporarily occupy adjoining lanes.
   // Redraw this measured continuous surface and the narrow concrete divider over
