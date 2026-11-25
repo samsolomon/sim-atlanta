@@ -1,4 +1,3 @@
-import type { BufferGeometry } from 'three';
 import type { P2 } from '../../../web/src/vignette/geom';
 import { ribbons } from '../../../web/src/terrain/connector-corridor';
 
@@ -12,8 +11,7 @@ export function onStudyTread(axis: P2[], x: number, z: number) {
 }
 
 interface Shoe { z:number; halfTrack:number; bottom:number }
-export function outerAxles(geometry:BufferGeometry): Shoe[] {
-  const pos=geometry.getAttribute('position');
+export function outerAxles(pos: {count:number; getX(i:number):number; getY(i:number):number; getZ(i:number):number}): Shoe[] {
   const stations=new Map<number,{sum:number;n:number;bottom:number}>();
   for(let i=0;i<pos.count;i++) {
     const x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
