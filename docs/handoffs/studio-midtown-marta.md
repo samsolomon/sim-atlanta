@@ -1,5 +1,11 @@
 # Studio Midtown MARTA handoff (Claude Opus → Codex)
 
+## Brookwood two-span comparison · 2026-11-25
+
+The rail maintainer owns private source `039a9207f3dfb5a593b6a4c283a772e429f41d0c` on `codex/private-brookwood-two-spans`, based on the approved Mayson mount `21341f85a658f9230c22592a59733981cae2297f`. The southwest boarding island and two NS mains (38978865 and 874902950) cross I-75 on a shared deck in the Brookwood south row. The Peachtree Street highway bridge is separate. Five flanged webs, diaphragms and concrete bents use inferred sizes and locations. The independent MARTA North Line crossing over I-85 (54044472 and 319512643) has round shafts and retains the accepted girder, approach walls and rail profile. [November 2026 freight underside](https://www.google.com/maps/@?api=1&map_action=pano&pano=D3jzz_wMUQeJhwtuEW6hpw) · [September 2026 MARTA side view](https://www.google.com/maps/@?api=1&map_action=pano&pano=FrevD96lkGA44vPuE4TTVw)
+
+Next, compare mounted Low and High board, side and reverse images, full-width freight ends, all column footprints, the raised service road 623091409, and actual MARTA soffit clearance over ramp 38980983. Train controls for 20 November are the 08:00:38 scheduled Red, 08:03:30 illustrative freight and 09:17:20 scheduled Crescent (EST). Source diff check passed. Mounted checks, screenshots and formal review pending.
+
 ## Current handoff · 2026-11-24
 
 The downtown rail maintainer owns integration of the freight portals, Five Points cut faces and CQ400 seating. Ground-contact owns the separate Capitol road/ramp investigation. The rail branches do not edit the Capitol ramp or its deck grade.
