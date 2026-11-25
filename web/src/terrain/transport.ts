@@ -598,7 +598,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
     if (road.drawTread) {
-      roadTreads.set(road, road.drawTread(structures, sceneZero));
+      roadTreads.set(road, road.drawTread(structures, sceneZero, terrainGround));
       yield 'source-fitted road';
       continue;
     }

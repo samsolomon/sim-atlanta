@@ -4,7 +4,7 @@ import type { VData } from '../vignette/world';
 
 export interface TransportRun {
   /** Optional source-fitted pavement. Returns top triangles in the shared structural mesh. */
-  drawTread?: (builder: import('../vignette/geom').Builder, sceneZero: number) => number[];
+  drawTread?: (builder: import('../vignette/geom').Builder, sceneZero: number, ground: (x:number,z:number)=>number|null) => number[];
   kind: 'bridge' | 'ground';
   cls: string;
   name?: string | null;
