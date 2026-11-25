@@ -262,7 +262,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         if (ramp) area.group.add(ramp.surface, ramp.lining);
-        if (trail) area.group.add(trail.tread, trail.lining);
+        if (trail) area.group.add(trail.mountTread(area.terrainAt), trail.lining);
         const stockRoadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
         if (ramp) for (const road of city.roads) {
           if (road.cls === 'motorway' && road.sub === 'link') ramp.register(road.pts);
