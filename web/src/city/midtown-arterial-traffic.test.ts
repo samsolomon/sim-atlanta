@@ -69,7 +69,12 @@ it('carries both directions of Peachtree through its name change and the R16 cut
         pts: [[-197.1, -5700], [-204.32, -5723.07]] }],
     },
   };
-  const { corridors, bounds } = midtownArterialCorridors([station, r16], true);
+  station.roadHeight = (_x,z) => z >= -5700 ? 11 : null;
+  r16.roadHeight = (_x,z) => z < -5700 ? 12 : null;
+  const { corridors, bounds, heights } = midtownArterialCorridors([station, r16], true);
+  const northRoad = r16.city.roads[0];
+  expect(heights.get(northRoad)!(-197, -5699.8, northRoad)).toBe(11);
+  expect(heights.get(northRoad)!(-197, -5700.2, northRoad)).toBe(12);
   const courses = arterialTrafficRoutes(corridors, bounds!);
   const crossing = courses.filter(c => c.roads.includes(r16.city.roads[0])
     && c.roads.some(r => r.name === 'Peachtree Street Northeast'));
