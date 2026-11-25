@@ -1,3 +1,4 @@
+import highwayCameras from '../../../pipeline/prototypes/highway-four/registered-cameras.json';
 import { trailDriveAxis, trailDrivePoint } from '../../../pipeline/prototypes/northeast-trail/access';
 import { trailAxis, trailPoint, trailBore, trailBridge } from '../../../pipeline/prototypes/northeast-trail/path';
 import { freewaySides } from './i85-ramp-study';
@@ -289,6 +290,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
+  const highwayMark = query.get('highwayMark');
+  let registeredCamera = Object.entries(highwayCameras).find(([mark]) => mark === highwayMark)?.[1];
   // A/B for phone measurements: ?ground=old draws the near ground at every distance.
   GroundSurface.farLow = query.get('ground') !== 'old';
   const board = query.get('board');
@@ -2104,6 +2107,29 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    if (registeredCamera && mosaic?.areas.has('r16')) {
+      const { position, matrixWorldInverse: view, projectionMatrix: projection } = registeredCamera;
+      registeredCamera = undefined;
+      manualCamera();
+      const direction = new THREE.Vector3(-view[2], -view[6], -view[10]);
+      const eye = new THREE.Vector3().fromArray(position);
+      // Place the orbit pivot on the terrain along the registered optical axis.
+      let near = 0, far = 5000;
+      for (let i = 0; i < 32; i++) {
+        const d = (near + far) / 2;
+        const point = eye.clone().addScaledVector(direction, d);
+        if (point.y > targetY(point.x, point.z)) near = d;
+        else far = d;
+      }
+      controls.minDistance = 5;
+      controls.maxPolarAngle = Math.max(controls.maxPolarAngle, Math.acos(-direction.y));
+      controls.target.copy(eye).addScaledVector(direction, far);
+      camera.position.copy(eye);
+      camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(1 / projection[5]));
+      const width = container.clientWidth, height = container.clientHeight;
+      camera.setViewOffset(width, height, projection[8] * width / 2, -projection[9] * height / 2, width, height);
+      controls.update();
+    }
     const northEdge = mosaic?.areas.get('r16'), southEdge = mosaic?.areas.get('brookwood-station');
     if (northEdge && southEdge) seamNormals.sync(northEdge.board.geometry, southEdge.board.geometry);
     rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
