@@ -1,0 +1,93 @@
+{
+  "checks": [
+    {
+      "way": 9270932,
+      "wheelSamples": 276,
+      "missing": 0,
+      "widthM": 6.2,
+      "peakGradePct": 10.347719165392277,
+      "maxChangePpOverHalfMetre": 6.416219111775945,
+      "seamM": 0
+    },
+    {
+      "way": 429349499,
+      "wheelSamples": 260,
+      "missing": 0,
+      "widthM": 5,
+      "peakGradePct": 6.244229314464178,
+      "maxChangePpOverHalfMetre": 4.251867213906735,
+      "seamM": null
+    },
+    {
+      "way": 144485857,
+      "wheelSamples": 248,
+      "missing": 0,
+      "widthM": 1.435,
+      "peakGradePct": 4.742342328927407,
+      "maxChangePpOverHalfMetre": 2.664421932621508,
+      "seamM": 1.4210854715202004e-14
+    },
+    {
+      "way": 81137860,
+      "wheelSamples": 328,
+      "missing": 0,
+      "widthM": 3.2,
+      "peakGradePct": 1.8005616098221822,
+      "maxChangePpOverHalfMetre": 0.8008835045941964,
+      "seamM": 7.105427357601002e-15
+    },
+    {
+      "way": 319512612,
+      "wheelSamples": 288,
+      "missing": 0,
+      "widthM": 3.2,
+      "peakGradePct": 2.6016094853417826,
+      "maxChangePpOverHalfMetre": 1.0990917303857373,
+      "seamM": 7.105427357601002e-15
+    }
+  ],
+  "contacts": [
+    {
+      "a": 81137860,
+      "b": 9270932,
+      "xz": [
+        1291.8113215941328,
+        -6202.190225695402
+      ],
+      "endpointInsetM": 0,
+      "topProxyNavd88": 268.1050003051758,
+      "roadNavd88": 258.2158401489258,
+      "treadDifferenceM": 9.88916015625,
+      "physicalClearanceM": null,
+      "heldOutUpperDifferenceM": 0.005000305175769881
+    },
+    {
+      "a": 319512612,
+      "b": 429349499,
+      "xz": [
+        1287.325618126144,
+        -6203.252516741575
+      ],
+      "endpointInsetM": 0,
+      "topProxyNavd88": 268.15499619571773,
+      "roadNavd88": 258.2497453493645,
+      "treadDifferenceM": 9.905250846353212,
+      "physicalClearanceM": null,
+      "heldOutUpperDifferenceM": -0.0350038042822689
+    },
+    {
+      "a": 144485857,
+      "b": 9270932,
+      "xz": [
+        1288.722457390563,
+        -6202.995311811348
+      ],
+      "endpointInsetM": 0.02,
+      "topProxyNavd88": 258.23507092237764,
+      "roadNavd88": 258.2352640790203,
+      "treadDifferenceM": -0.00019315664266628119,
+      "physicalClearanceM": null,
+      "heldOutUpperDifferenceM": null
+    }
+  ]
+}
