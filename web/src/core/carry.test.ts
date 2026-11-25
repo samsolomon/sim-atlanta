@@ -29,6 +29,9 @@ describe('the card’s follow button', () => {
     expect(followLabel('map', false, false)).toBeNull();
     expect(inCityArea(0, 0)).toBe(true); // Five Points
     expect(inCityArea(565, -3965)).toBe(true); // Midtown
+    expect(inCityArea(-1000, -6500)).toBe(true);
+    expect(inCityArea(1800, -6500)).toBe(true);
+    expect(inCityArea(0, -6501)).toBe(false);
     expect(inCityArea(5000, 0)).toBe(false);
   });
 });

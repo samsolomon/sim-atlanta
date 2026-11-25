@@ -1,14 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import rows from '../../../pipeline/prototypes/square-board/midtown-rows.json';
+import { bounds, midtownRows } from '../square-board/sections';
 import { World } from '../vignette/world';
 import { createTrees } from './render';
 import { TREE_SITES, replacedBy, treeSitesIn } from './sites';
 
-const BOARD = { minX: -1000, maxX: 1800, minZ: -5700, maxZ: 1100 };
-const row = (name: keyof typeof rows) => ({ minX: -1000, maxX: 1800, ...rows[name] });
-const rowOf = (z: number) => (Object.keys(rows) as (keyof typeof rows)[]).filter(r => z >= rows[r].minZ && z < rows[r].maxZ);
+const BOARD = { minX: -1000, maxX: 1800, minZ: -6500, maxZ: 1100 };
+const rowOf = (z: number) => midtownRows.filter(r => z >= bounds[r].minZ && z < bounds[r].maxZ);
 
 describe('named tree sites', () => {
   it('have unique ids, stand on the board, and carry a tier per attribute and a source', () => {
@@ -26,13 +25,16 @@ describe('named tree sites', () => {
 
   it('builds each Midtown site in exactly one row, even on a seam', () => {
     for (const s of TREE_SITES) {
-      if (s.z < -5700 || s.z >= -1700) continue;
-      const hits = (Object.keys(rows) as (keyof typeof rows)[]).filter(r => treeSitesIn(row(r)).some(p => p.x === s.x && p.z === s.z));
+      if (s.z < BOARD.minZ || s.z >= -1700) continue;
+      const hits = midtownRows.filter(r => treeSitesIn(bounds[r]).some(p => p.x === s.x && p.z === s.z));
       expect(hits).toEqual(rowOf(s.z));
     }
-    const seam = [{ ...TREE_SITES[0], z: rows['midtown-upper'].minZ }];
-    expect(treeSitesIn(row('midtown-upper'), seam)).toHaveLength(1);
-    expect(treeSitesIn(row('brookwood-south'), seam)).toHaveLength(0);
+    const seam = [{ ...TREE_SITES[0], z: bounds['midtown-upper'].minZ }];
+    expect(treeSitesIn(bounds['midtown-upper'], seam)).toHaveLength(1);
+    expect(treeSitesIn(bounds['brookwood-south'], seam)).toHaveLength(0);
+    const northSeam = [{ ...TREE_SITES[0], z: -5700 }];
+    expect(treeSitesIn(bounds['brookwood-station'], northSeam)).toHaveLength(1);
+    expect(treeSitesIn(bounds.r16, northSeam)).toHaveLength(0);
   });
 
   const scene = new URL('../../public/data/scene/square-board/', import.meta.url);
@@ -59,7 +61,7 @@ describe('named tree sites', () => {
       return p.distanceTo(a.clone().add(ab.multiplyScalar(t))) - half;
     };
     for (const q of ['high', 'low'] as const) {
-      const trees = createTrees(treeSitesIn(row('midtown-upper')).filter(p => p.x === site.x), q, () => 0)!;
+      const trees = createTrees(treeSitesIn(bounds['midtown-upper']).filter(p => p.x === site.x), q, () => 0)!;
       trees.setSeason(182);
       const leaves = trees.group.getObjectByName('clump leaves') as THREE.InstancedMesh;
       const m = new THREE.Matrix4(), v = new THREE.Vector3();

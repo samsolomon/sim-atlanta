@@ -28,8 +28,9 @@ it('clips canopy to the mounted rows, so a missing north row leaves no crowns pa
   const lip = 8;
   const full = Object.values(bounds);
   // Brookwood station failed to load: the board, and its canopy, end at brookwood-south.
-  const partial = full.filter(r => r !== bounds['brookwood-station']);
-  for (const [rects, north] of [[full, -5700], [partial, -4900]] as const) {
+  const station = full.filter(r => r !== bounds.r16);
+  const partial = station.filter(r => r !== bounds['brookwood-station']);
+  for (const [rects, north] of [[full, -6500], [station, -5700], [partial, -4900]] as const) {
     const clip = mountedBounds([...rects]);
     expect(clip).toEqual({ minX: -1000, maxX: 1800, minZ: north, maxZ: 1100 });
     const base = mosaicPlinth([...rects], -48);
