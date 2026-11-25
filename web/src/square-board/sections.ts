@@ -1,3 +1,4 @@
+import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
 import { rampStudy } from '../city/i85-ramp-study';
 import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
@@ -166,7 +167,9 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
   const ramp = !trackedOnly && id === 'r16' ? rampStudy(grid, quality, joins(id)) : undefined;
-  return { id, grid, context, ramp };
+  // The orbit and the lower road still use the original exposed surface.
+  const drawnGrid=ramp ? eastPortalBank(grid) : grid;
+  return { id, grid:drawnGrid, context, ramp };
 }
 
 export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {
