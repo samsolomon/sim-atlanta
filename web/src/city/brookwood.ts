@@ -527,7 +527,7 @@ function peachtreeLandings(floor: number, ground: (x: number,z: number) => numbe
   ] as const) {
     const terminal = bridge.at(start ? 0 : bridge.length);
     const line = new Line([[terminal.x,terminal.z], [...mid], [...end]]);
-    const dir = start ? 1 : -1;
+    const dir = start ? -1 : 1;
     const last = line.at(line.length);
     function vertex(s: number, offset: number, curb: number) {
       const p = line.at(s);
