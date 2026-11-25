@@ -1,4 +1,5 @@
 // Private Brookwood fixture. All offsets are outwards from the painted outer stripe.
+import { clippedWallCap, type Underside } from './soffit-cap';
 import { ribbons, sectionAt } from '../../../web/src/terrain/connector-corridor';
 import { Builder, Line, type P2 } from '../../../web/src/vignette/geom';
 
@@ -22,9 +23,8 @@ export const protections = [
 type Surface = (x: number, z: number) => number | null;
 type Vertex = [number, number, number];
 
-// Pass the original drawn road/board and guideway underside triangle samplers
-// (scene metres; null outside the soffit). Each named builder is independently probeable.
-export function roadsideWalls(ground: Surface, soffit: Surface) {
+// Use actual board elevations and guideway underside facets in world-space scene metres.
+export function roadsideWalls(ground: Surface, underside: Underside) {
   return protections.map(spec => {
     const body = new Builder();
     const ribbed = spec.name === 'SB ribbed face';
@@ -36,16 +36,20 @@ export function roadsideWalls(ground: Surface, soffit: Surface) {
       for (const ds of [0, .10, .20]) if (s + ds < spec.end) stations.add(s + ds);
     }
     const ordered = [...stations].sort((a,b) => a-b).filter((s,i,a) => !i || s-a[i-1] > 1e-7);
+    const atToe = (s:number) => ground(...roadsidePoint(spec.id,s,spec.offset));
+    const ends = [atToe(spec.start),atToe(spec.end)] as const;
+    if (ends[0] === null || ends[1] === null) throw Error('Missing wall endpoint');
+    const [startY,endY] = ends;
     const rows = ordered.map(s => {
       const edge = roadsidePoint(spec.id, s, spec.offset);
       const base = ground(...edge);
       if (base === null || !Number.isFinite(base)) throw Error('Missing wall ground at ' + s);
-      function vertex(offset: number, y: number, fit = false): Vertex {
+      function vertex(offset: number, y: number): Vertex {
         const [x,z] = roadsidePoint(spec.id, s, spec.offset + offset);
-        const roof = fit && ribbed ? soffit(x,z) : null;
-        return [x, roof ?? y, z];
+        return [x, y, z];
       }
-      const top = base + spec.height;
+      const datum = capped ? startY + (endY-startY)*(s-spec.start)/(spec.end-spec.start) : base;
+      const top = datum + spec.height;
       const phase = (s - spec.start) / .4;
       const ribOffset = ribbed ? .055 * Math.min(1, Math.abs(phase - Math.floor(phase) - .25) * 4) : 0;
       const lip = capped ? .17 : 0;
@@ -55,12 +59,21 @@ export function roadsideWalls(ground: Surface, soffit: Surface) {
       if (rearBase === null || !Number.isFinite(rearBase)) throw Error('Missing back of wall at ' + s);
       // The cap projects landward only. The complete paved shoulder stays available.
       const frontBottom = vertex(ribbed ? ribOffset : 0, base - .15);
-      const frontTop = vertex(inset, top - lip, !capped);
+      const frontTop = vertex(inset, top - lip);
       const capBottom = vertex(0, top - lip);
       const capTop = vertex(0, top);
       return {frontBottom, frontTop, capBottom, capTop, stemToe: vertex(inset, base + .35),
-        backTop: vertex(spec.depth, top, true), backBottom: vertex(spec.depth, rearBase - .15)};
+        backTop: vertex(spec.depth, top), backBottom: vertex(spec.depth, rearBase - .15)};
     });
+    if (ribbed) {
+      const cap = clippedWallCap(underside);
+      for(let i=1;i<rows.length;i++){
+        const a=rows[i-1], b=rows[i];
+        cap(body,[a.frontBottom,a.backBottom,b.backBottom,b.frontBottom],
+          [i===1?'#ada99e':null,'#a6a195',i===rows.length-1?'#ada99e':null,'#b5b1a7']);
+      }
+      return {name:spec.name,geometry:body.geometry()};
+    }
     const xyz = (p: Vertex): P2 => [p[0], p[2]];
     for (let i = 1; i < rows.length; i++) {
       const a = rows[i-1], b = rows[i];
@@ -75,7 +88,7 @@ export function roadsideWalls(ground: Surface, soffit: Surface) {
         body.quad(b.capBottom,a.capBottom,a.capTop,b.capTop,'#bfb8a9');
       } else {
         body.quad(b.frontBottom,a.frontBottom,a.frontTop,b.frontTop,
-          ribbed ? '#b5b1a7' : '#aaa69a');
+          '#aaa69a');
       }
       const at = capped ? a.capTop : a.frontTop, bt = capped ? b.capTop : b.frontTop;
       body.quad(at, a.backTop, b.backTop, bt, '#c4beb1');
