@@ -52,3 +52,13 @@ The three baseline frames use high tier and a paused Atlanta clock of 14:12:45 o
   Verify the stack's coordinates against the City board before modelling it.
   [Georgia Tech Facilities' plant history](https://facilities.gatech.edu/index.php/2016-04/hidden-georgia-tech-holland-plant).
 - When the board grows east past x = 1905, build the CSX rail-over at Boulevard SE (FRA 717928R), including its separated pedestrian passage. [Crossing evidence, lidar and Street View](king-freight-crossings.md).
+
+## Road joins still to smooth (from PR #418, 2026-11-24)
+
+PR #418 closed the approach and landing joints that a probe could measure. These three remain for Sam to prioritise. Open each in the dev build with the camera below, at 14:00 on 20 November (`/?view=city&q=high&dev&speed=0&t=2026-11-20T14:00:00-05:00&cam=…`).
+
+| Join | What's wrong | Why it's open | Camera |
+|---|---|---|---|
+| Whitehall Street landing, Castleberry Hill | The deck meets the board flush but climbs about 40% over its first metres. | Deck height is inferred: from the board it rises at 15% or steeper to clear what lies below. Two attempts to cap the landing grade made other decks worse or broke tests, so it needs a design pass in `transport.ts`. | `cam=-613,836,60,60,160` |
+| Ralph David Abernathy Freeway landings | Same as Whitehall: 31–39% over the first metres. | Same inference. | `cam=-552,964,-103,60,160` |
+| Peachtree Street at Brookwood | The deck's end sits about 5.8 m above the board. | An inferred approach that tall would be an invented causeway, so landing approaches are capped at 2.5 m. It needs surveyed deck heights. | `cam=10,-4985,-39,58,220` |
