@@ -3,27 +3,8 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { PerspectiveCamera, Vector3 } from '../../../web/node_modules/three';
 import { Line, type P2 } from '../../../web/src/vignette/geom';
-import { brookwoodGrid } from '../../../web/src/city/brookwood';
-import { midtownConnectorGround } from '../../../web/src/terrain/midtown-connector-ground';
-import { midtownConnectorDecks } from '../../../web/src/terrain/midtown-connector-decks';
-import { auburnTransport } from '../../../web/src/city/sweet-auburn-transport';
-import { GroundSurface } from '../../../web/src/terrain/surface';
-import { createSurfaceTransport } from '../../../web/src/terrain/transport';
-import { cityRoadHeight } from '../../../web/src/city/road-height';
-import { bridgeApproaches } from '../../../web/src/terrain/bridge-approaches';
-import { seventeenthPortals } from '../../../web/src/city/seventeenth-street';
-import { northFreeway } from '../north-freeway/carrier';
 
-function board(path:string) {
- const read=(file:string)=>readFileSync(path+'/'+file);
- const m=JSON.parse(read('ground.json').toString());
- const grid=brookwoodGrid(m,midtownConnectorGround(m,Uint8Array.from(read('ground.i16')).buffer));
- const city=northFreeway(midtownConnectorDecks(auburnTransport(JSON.parse(read('context.json').toString()))));
- const ground=new GroundSurface(grid,'low');
- const banks=bridgeApproaches(seventeenthPortals(city),323.8,ground.sampleScene.bind(ground),city.bounds,city.roads);
- const deck=createSurfaceTransport(city,grid,banks.groundAt);
- return {ground:banks.groundAt,road:cityRoadHeight(city,banks.groundAt,deck.deckAt)};
-}
+import { board } from './fixture-board';
 const root='pipeline/prototypes/north-row-transport';
 const north=board(root),south=board('pipeline/prototypes/square-board/brookwood-station');
 const target=new Vector3(799,south.ground(799,-5660)!,-5660);

@@ -41,17 +41,23 @@ export function lowerStrips(exposed: Ground, emit: (
   const lo=east-15, hi=west+25;
   const stations=new Set([lo,hi,east,west,west+5,west+10,...lowerAxis.cum.filter(s=>s>lo && s<hi)]);
   for(let s=lo+1;s<hi;s++) stations.add(s);
+  for(const [from,to] of [[lo,east],[west+10,hi]])
+    for(let s=from;s<to;s+=.25)stations.add(s);
   const rows=[...stations].sort((a,b)=>a-b);
   const strips: [number,number,string,boolean][] = [
     [lowerEdges[0],-1.775, '#66666c',true],[-1.775,1.775,PAL.asphaltHwy,true],
     [1.775,lowerEdges[1],'#66666c',true],[-1.875,-1.675,PAL.lineWhite,false],[1.675,1.875,PAL.lineWhite,false],
   ];
-  for (let i=1;i<rows.length;i++) for(const [a,b,color,tread] of strips) {
+  for (let i=1;i<rows.length;i++) for(const [left,right,color,tread] of strips) {
+    const n=tread && (rows[i]<=east || rows[i-1]>=west+10)?Math.ceil((right-left)/.25):1;
+    for(let k=0;k<n;k++){
+    const a=left+(right-left)*k/n,b=left+(right-left)*(k+1)/n;
     const quad=[lowerPoint(rows[i-1],a,exposed),lowerPoint(rows[i],a,exposed),
       lowerPoint(rows[i],b,exposed),lowerPoint(rows[i-1],b,exposed)];
     if(quad.some(p=>!p)) continue;
     const vs=quad.map(p=>p!);
     if(!tread) for(const p of vs) p[1]+=.012;
     emit([vs[0],vs[2],vs[1],vs[0],vs[3],vs[2]],color,tread);
+    }
   }
 }
