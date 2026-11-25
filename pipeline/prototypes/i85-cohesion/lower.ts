@@ -35,9 +35,7 @@ export function lowerPoint(station: number, offset: number, exposed: Ground) {
   return [x,y,z] as [number, number, number];
 }
 
-export function lowerStrips(exposed: Ground, emit: (
-  vertices: [number,number,number][], color: string, tread: boolean
-) => void) {
+export function lowerStations() {
   // Carry the floor one ground-tied section beyond the aperture cuts. Float32
   // vertices can shift a shared boundary a fraction of a millimetre at this Z.
   const lo=east-15.25, hi=west+25.25;
@@ -45,7 +43,13 @@ export function lowerStrips(exposed: Ground, emit: (
   for(let s=lo+1;s<hi;s++) stations.add(s);
   for(const [from,to] of [[lo,east],[west+10,hi]])
     for(let s=from;s<to;s+=.25)stations.add(s);
-  const rows=[...stations].sort((a,b)=>a-b);
+  return [...stations].sort((a,b)=>a-b);
+}
+
+export function lowerStrips(exposed: Ground, emit: (
+  vertices: [number,number,number][], color: string, tread: boolean
+) => void) {
+  const rows=lowerStations();
   const strips: [number,number,string,boolean][] = [
     [lowerEdges[0],-1.775, '#66666c',true],[-1.775,1.775,PAL.asphaltHwy,true],
     [1.775,lowerEdges[1],'#66666c',true],[-1.875,-1.675,PAL.lineWhite,false],[1.675,1.875,PAL.lineWhite,false],
