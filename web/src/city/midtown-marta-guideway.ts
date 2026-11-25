@@ -422,6 +422,18 @@ export function northLineStructure(profile: NorthLineProfile, piers: number[], g
     const g = Math.min(...(corners as number[]));
     const soffit = profile.height[i] - DECK - profile.depth[i];
     if (g >= soffit - 1.5) continue;
+    // September 2026 I-85 side view (FrevD96lkGA44vPuE4TTVw) shows round
+    // shafts on the Brookwood flyover. Retain the road-tested support stations
+    // and deck profile. Column diameter and the short bearing seat are inferred.
+    if (p.z < -5188 && p.z > -5407 && p.x > 349 && p.x < 437) {
+      const radius = 1.0;
+      const seat = soffit - 0.32;
+      const shaft = new THREE.CylinderGeometry(radius, radius, seat - g + 0.4, 12);
+      shaft.translate(p.x, (seat + g - 0.4) / 2, p.z);
+      body.addGeometry(shaft, '#a7a399');
+      orientedBox(body, p.x, p.z, p.nz, -p.nx, seat, soffit + 0.05, 1.05, 1.4, PIER);
+      continue;
+    }
     // Plain rectangular column with a flared cap under the girder (from the photographs).
     orientedBox(body, p.x, p.z, p.nz, -p.nx, g - 0.4, soffit - 1.1, 1.1, 1.0, PIER);
     orientedBox(body, p.x, p.z, p.nz, -p.nx, soffit - 1.1, soffit - 0.5, 1.1, 1.6, PIER);
