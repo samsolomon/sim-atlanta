@@ -72,6 +72,15 @@ export function surveyedRoad(road: Road) {
   );
 }
 
+// Dedicated mesh owners draw the two bridge chains. On the private r16 row only
+// these adjacent ground ways use the same signed sections as ConnectorTraffic.
+const eastGround = new Set([369529886, 187141934, 38981774, 1020867018, 38983363, 306143022, 9238434, 38981773]);
+
+export function eastGroundRoad(city: TerrainCity, road: Road) {
+  return 'name' in city && city.name === 'r16' && road.cls === 'motorway' && road.pts.length > 1 &&
+    eastGround.has(matchRibbon(road.pts[0], road.pts[1], road.sub==='link')?.id ?? -1);
+}
+
 function groundStrips(city: TerrainCity) {
   const covered = new Map<Ribbon, [number, number][]>();
   for (const part of city.terrainTransport?.roads ?? []) {
@@ -171,9 +180,10 @@ export function connectorMedians(city: TerrainCity, strips = groundStrips(city))
 }
 
 export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity, texelM: number) {
-  if (!isConnectorCity(city)) return;
+  const east = 'name' in city && city.name === 'r16';
+  if (!isConnectorCity(city) && !east) return;
   const box = city.bounds;
-  const visible = groundStrips(city);
+  const visible = groundStrips(city).filter(({r}) => !east || eastGround.has(r.id));
   function fill(rows: Section[], left: number, right: number, color: string) {
     path(ctx, [
       ...rows.map((r) => stripePoint(r, left)),
@@ -191,6 +201,7 @@ export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity,
     ctx.strokeStyle = color;
     ctx.lineWidth = Math.max(edge ? 0.35 : 0.24, texelM * (edge ? 0.85 : 0.65));
     ctx.setLineDash(edge ? [] : [3, 9]);
+    if (east) ctx.lineDashOffset = rows[0].s;
     ctx.stroke();
   }
   ctx.save();
