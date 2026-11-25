@@ -32,11 +32,15 @@ function strips(mesh:THREE.Mesh, colour:string) {
   return cached;
 }
 function railTop(point: THREE.Vector3, south: THREE.Mesh, north: THREE.Mesh) {
-  const mesh=point.z<=-5700?north:south;
-  const strip=strips(mesh,mesh===north?'#c0b7a9':'#a69b8c').get(Math.floor(point.z/16));
-  if(!strip)return;
+  // The rendered cut runs perpendicular to the track. At this oblique crossing
+  // a wheel can already be over the next mesh while its world Z is still south.
+  const meshes=Math.abs(point.z+5700)<2 ? [south,north] : [point.z<=-5700?north:south];
   ray.set(new THREE.Vector3(point.x,250,point.z),new THREE.Vector3(0,-1,0));
-  return ray.intersectObject(strip,false)[0]?.point.y;
+  const heights=meshes.flatMap(mesh=>{
+    const strip=strips(mesh,mesh===north?'#c0b7a9':'#a69b8c').get(Math.floor(point.z/16));
+    return strip?ray.intersectObject(strip,false).map(hit=>hit.point.y):[];
+  });
+  return heights.length?Math.max(...heights):undefined;
 }
 export function mountedWheelCheck(cars: THREE.Mesh[], group: THREE.Scene) {
   const south = group.getObjectByName('North Line guideway') as THREE.Mesh;
