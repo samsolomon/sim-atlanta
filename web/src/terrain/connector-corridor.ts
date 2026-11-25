@@ -1,4 +1,5 @@
 import { deeringBranch, deeringDonor, deeringThrough, deeringSection, deeringStations } from '../../../pipeline/prototypes/highway-four/deering';
+import eastWays from '../../../pipeline/prototypes/highway-four/east-ways.json';
 import midtownWays from '../city/fixtures/midtown-connector/ways.json';
 import downtownWays from '../../../pipeline/prototypes/connector-footprint/ways.json';
 import { Line, type P2 } from '../vignette/geom';
@@ -26,7 +27,7 @@ type End = { ribbon: Ribbon; start: boolean; offset: number };
 type Joint = { incoming: End[]; outgoing: End[] };
 export const mix = (a: P2, b: P2, f: number): P2 => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
 export const stripePoint = (row: Section, fraction: number) => mix(row.inner, row.outer, fraction);
-const rawWays = { ...downtownWays, ...midtownWays };
+const rawWays = { ...downtownWays, ...midtownWays, ...eastWays };
 const joints = new Map<string, Joint>();
 const sourceEnds = new Set(
   Object.values(rawWays).flatMap((w) => [w.pts[0].join(','), w.pts.at(-1)!.join(',')]),
