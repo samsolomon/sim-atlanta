@@ -3867,3 +3867,11 @@ At the pedestrian tunnel exit, two rail formations crossed the sky with no visib
 ### 2026-11-25 · The bearings beneath the MARTA flyover at I-85
 
 The freeway-side photograph shows pale concrete on round columns. Four round shafts in the private pilot stood securely on terrain, but a flat seat left up to 212 mm of daylight below a sloping girder. Cutting the bearing tops against the actual girder triangles reduced the largest mismatch to 0.087 mm. The modeled opening above the raised ramp is 4.646861 m across its full paved width. All 676 on-bridge Red Line wheel centres hit their rails per detail tier. Two shafts still overlapped generic outside-shoulder paint; the physical shoulders and protection are being registered independently. [Road-eye and reverse pairs](log/rail-crossing-pilots/marta-full.jpg)
+
+### 2026-11-25 · Two roadside walls beneath the North Line
+
+At I-85 the northbound shaft stands behind a capped retaining wall. On the other carriageway a low barrier runs in front of a ribbed concrete face. September photo pairs gave each structure a different outline. The private Brookwood station board carries the northbound shoulder paint to the retaining wall at 3.60 m outside the stripe and grades its cap over 25 m. Two reconstructed road eyes show the shaft above that cap.
+
+A metre-spaced first pass at the southbound crown missed a break in the girder and left as much as 0.690 m of daylight. On private City revision `3458f147`, splitting the wall geometry along the actual soffit and web triangles brings the 6.4697 m² contact area within 0.217 mm on both detail tiers. The inferred southbound shaft projects in front of the barrier, with 0.873 m² of overlap in plan. The photographs hide its footing. The board retains this visible discrepancy in the review.
+
+[Northbound matched views](log/rail-crossing-pilots/nb-high-sheet.jpg) · [Southbound matched views](log/rail-crossing-pilots/sb-high-sheet.jpg)
