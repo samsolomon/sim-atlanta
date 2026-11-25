@@ -35,8 +35,9 @@ export function parseCityCamera(value: string | null) {
 /** The `cam` query value parseCityCamera reads: whole metres and degrees (#166's format). */
 export function formatCityCamera(c: { x: number; z: number; bearing: number; tilt: number; distanceM: number; eyeHeightM?: number }): string {
   if (c.tilt > 70) {
-    const fields = [c.x, c.z, c.bearing, c.tilt, c.distanceM];
-    if (c.eyeHeightM !== undefined && c.eyeHeightM !== PEDESTRIAN_HEIGHT) fields.push(c.eyeHeightM);
+    const tilt = Number(c.tilt.toFixed(4));
+    const fields = [c.x, c.z, c.bearing, tilt, c.distanceM];
+    if (tilt > 70 && c.eyeHeightM !== undefined && c.eyeHeightM !== PEDESTRIAN_HEIGHT) fields.push(c.eyeHeightM);
     return fields.map(n => Number(n.toFixed(4))).join(',');
   }
   const bearing = ((Math.round(c.bearing) % 360) + 540) % 360 - 180; // −180…180, as MapLibre shows it

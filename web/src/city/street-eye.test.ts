@@ -29,3 +29,11 @@ it('retains a raised sightline without changing default-height links', () => {
   expect(parseCityCamera(formatCityCamera(pose) + ',Infinity')).toBeNull();
   expect(parseCityCamera(formatCityCamera(pose) + ',-1')).toBeNull();
 });
+
+it('reopens a raised view as an ordinary orbit when its encoded tilt rounds to 70 degrees', () => {
+  const view = { x: -380, z: -4752, bearing: 125.5, tilt: 70.00001, distanceM: 250 };
+  const link = formatCityCamera({ ...view, eyeHeightM: 14 });
+  expect(parseCityCamera(link)).toEqual({ ...view, tilt: 70 });
+  const raised = { ...view, tilt: 70.0001, eyeHeightM: 14 };
+  expect(parseCityCamera(formatCityCamera(raised))).toEqual(raised);
+});
