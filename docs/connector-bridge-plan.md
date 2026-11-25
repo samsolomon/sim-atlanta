@@ -39,6 +39,8 @@ Run these on the assembled render triangles on both tiers, after ground carving,
 
 The crop matches Memorial Drive SE at Capitol Avenue SE, City (357.91, 777.21). The scalloped roof of the Nathan Deal Judicial Center (way 755543618) faces the garage (385738282) across the diagonal freeway. Their positions, the triangular slip and the two cover mouths match the screenshot. The large visible upper crossing is one mapped bridge outline spanning the tile seam at z=700. MLK is a separate span to the northeast. [Camera](http://127.0.0.1:5250/?view=city&cam=357,777,-22,56,470) · [Deck footprint](https://www.openstreetmap.org/way/1451206624)
 
+The mounted 955f5f56 comparison aligns 157 image features with a median residual of 2.80 pixels in the original screenshot. The fit is two-dimensional and parallax varies with elevation. [Matched City camera](http://127.0.0.1:5250/?view=city&cam=350,789,0,53,460) · [Original and mounted comparison](http://127.0.0.1:5218/study/connector-plan-registration/comparison.jpg) · [Registration data](http://127.0.0.1:5218/study/connector-plan-registration/register.json)
+
 | Level and movement | Source ways | Elevation evidence in metres NAVD88 |
 |---|---|---|
 | Upper, Capitol Avenue | 9271969, 563545714 | Upper roadway midpoint samples 310.7 and 309.3. The first way records 2 forward / 3 backward lanes. Count on the second is unresolved. |
