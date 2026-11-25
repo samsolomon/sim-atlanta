@@ -1,6 +1,7 @@
 // Private physical trail, northbound chainage. Elevations in the register are NAVD88 metres.
 import { Builder, Line, type P2 } from '../../../web/src/vignette/geom';
 import source from './axis.json';
+import type { GroundYield } from '../../../web/src/terrain/surface';
 
 type Vertex = [number, number, number];
 type Bounds = { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -8,6 +9,7 @@ const points = source.ways.flatMap((w, i) => i ? w.axis.slice(1) : w.axis) as P2
 export const trailAxis = new Line(points);
 export const trailBridge = [source.starts[1], source.ends[1]] as const;
 export const trailBore = [source.starts[3], source.ends[3]] as const;
+export const portalLimits = [trailBore[0]-6, trailBore[1]+6] as const;
 export const trailHalfWidth = 2.1336;
 const knots = [
   [0,257.49], [36,257.72], [60,257.95], [96,258.41], [130.91112583425772,258.92],
@@ -15,7 +17,7 @@ const knots = [
   [trailBore[0],259.07], [324,258.47], [332,258.30], [348,257.85],
   [368,259.21], [388,259.48], [trailAxis.length,259.77],
 ];
-const register = [...new Set([...trailAxis.cum,...source.starts,...source.ends,...knots.map(k=>k[0]),
+const register = [...new Set([...trailAxis.cum,...source.starts,...source.ends,...portalLimits,...knots.map(k=>k[0]),
   ...Array.from({length:Math.ceil(trailAxis.length/2)},(_,i)=>i*2)])].sort((a,b)=>a-b)
   .filter((s,i,ss)=>i===0 || s-ss[i-1]>1e-7);
 
@@ -71,4 +73,26 @@ export function drawTrail(builder: Builder, bounds: Bounds) {
     for(const side of [-width,width])
       face([at(s-.045,side),at(s+.045,side),at(s+.045,side,1.185),at(s-.045,side,1.185)],'#51554f');
   }
+}
+
+// Solve the ground against the exact two triangles emitted for each exposed
+// section. The 15 mm bedding allowance keeps coplanar terrain out of the tread.
+export function trailYields(): GroundYield[] {
+  const result: GroundYield[] = [];
+  for(let i=1;i<register.length;i++) {
+    const s=register[i-1], t=register[i], mid=(s+t)/2;
+    if((mid>=trailBridge[0] && mid<=trailBridge[1]) ||
+       (mid>=portalLimits[0] && mid<=portalLimits[1]))continue;
+    const a=trailPoint(s,-trailHalfWidth), b=trailPoint(s,trailHalfWidth);
+    const c=trailPoint(t,trailHalfWidth), d=trailPoint(t,-trailHalfWidth);
+    for(const [p,q,r] of [[a,b,c],[a,c,d]]) {
+      const x1=q[0]-p[0], z1=q[2]-p[2], x2=r[0]-p[0], z2=r[2]-p[2];
+      const det=x1*z2-x2*z1;
+      if(Math.abs(det)<1e-9)continue;
+      const dy1=q[1]-p[1],dy2=r[1]-p[1];
+      result.push({ring:[p,q,r].map(v=>[v[0],v[2]] as P2),conformEdges:true,
+        floor:(x,z)=>p[1]+((dy1*z2-dy2*z1)*(x-p[0])+(dy2*x1-dy1*x2)*(z-p[2]))/det-.015});
+    }
+  }
+  return result;
 }
