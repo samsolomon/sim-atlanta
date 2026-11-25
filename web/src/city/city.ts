@@ -1,3 +1,8 @@
+import { joinGroundMaps } from './north-seam-texture';
+import { rowJoinNormals } from './north-seam-ground';
+import { mountSeamBuildings } from './north-seam-neighborhood';
+import type { TrafficArea as SeamArea } from '../square-board/sections';
+import { norcrossNorthRails } from './norcross-north-study';
 import { mountedWheelCheck, roadControl } from './north-contact-study';
 import { studyRails } from './north-profile-study';
 import { mountMayson } from './mayson-study';
@@ -312,6 +317,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }) : undefined;
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
+  const seamNormals = rowJoinNormals();
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
@@ -377,6 +383,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     streetcarDowntown?.dispose();
     stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
+    seamNormals.reset();
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -1047,7 +1054,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       if (added.has('r16')) performance.mark('r16:attach-start');
       const pilot = added.get('r16');
-      if (pilot) { const rails=studyRails(); pilot.group.add(mountMayson(),rails); northLine?.extend(rails); }
+      if (pilot) {
+        const station = mosaic!.areas.get('brookwood-station') as SeamArea;
+        const disposeBuildings = mountSeamBuildings(pilot, station, quality);
+        const restoreMaps = joinGroundMaps(pilot.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
+        const dispose = pilot.dispose.bind(pilot);
+        pilot.dispose = () => { restoreMaps(); disposeBuildings(); seamNormals.reset(); dispose(); };
+        const rails = studyRails();
+        pilot.group.add(mountMayson(), rails, norcrossNorthRails(pilot.groundAt, 323.8));
+        northLine?.extend(rails);
+      }
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -1435,6 +1451,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-40, 55, 300, x, z);
     },
     frames: northFrames,
+    seamGeometry: () => {
+      const a = mosaic?.areas.get('r16'), b = mosaic?.areas.get('brookwood-station');
+      if (!a || !b) return null;
+      const freight = a.group.getObjectByName('NS Norcross mains and siding north of Brookwood') as THREE.Mesh;
+      const pos = freight.geometry.getAttribute('position');
+      let closest = Infinity, vertex: number[] = [];
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = pos.getZ(i), d = Math.hypot(x-706.49,z+5700);
+        if (d < closest) { closest = d; vertex = [x,pos.getY(i),z]; }
+      }
+      return { owners: [a,b].map(v => v.group.children.find(c => c.name.startsWith('Shared seam buildings'))?.userData.sourceIds),
+        ways: freight.userData.ways, ballastCorner: vertex, terrain: [a,b].map(area => area.terrainAt(vertex[0],vertex[2])) };
+    },
     roadCheck: () => roadControl(scene),
     contact: () => mountedWheelCheck(northLine?.cars().filter(car=>car.userData.trainId==='marta:trip:25-27300-20261120') ?? [], scene),
     wheelWitness: () => northLine?.cars().filter(c=>c.userData.trainId==='marta:trip:25-27300-20261120').map(car=>({
@@ -2026,6 +2055,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    const northEdge = mosaic?.areas.get('r16'), southEdge = mosaic?.areas.get('brookwood-station');
+    if (northEdge && southEdge) seamNormals.sync(northEdge.board.geometry, southEdge.board.geometry);
     rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).

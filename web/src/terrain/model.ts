@@ -194,7 +194,7 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
 }
 
 // Sample long footprint edges too: their endpoints can both be on the banks of a cut.
-function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | null, step: number) {
+export function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | null, step: number) {
   let base = Infinity;
   for (const ring of rings) {
     for (let i = 0; i < ring.length; i++) {

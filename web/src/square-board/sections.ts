@@ -1,3 +1,5 @@
+import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
+import { sharedIds, joinedPaint } from '../city/north-seam-neighborhood';
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
@@ -196,9 +198,12 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
-      const city = id in rowBounds ? midtownConnectorDecks(contextWithDecks) : contextWithDecks;
+      const city = id in rowBounds ? northFreeway(midtownConnectorDecks(contextWithDecks)) : contextWithDecks;
       const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
-      const area = yield* buildDowntownTerrain(grid, city, neighborhoodTrees(canopy, quality), {
+      const edgeRow = !trackedOnly && (id === 'r16' || id === 'brookwood-station') ? id : undefined;
+      const scenery = edgeRow ? {...city, buildings: city.buildings.filter(b => !sharedIds.has(b.id))} : city;
+      const area = yield* buildDowntownTerrain(grid, scenery, neighborhoodTrees(canopy, quality), {
+        boardRoads: edgeRow ? joinedPaint(edgeRow, city) : undefined,
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
