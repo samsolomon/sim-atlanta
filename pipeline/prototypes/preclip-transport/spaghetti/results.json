@@ -1,0 +1,110 @@
+{
+  "distanceM": 2168.537293033642,
+  "wheels": 17320,
+  "wayCount": 9,
+  "maxContactM": 2.2737367544323206e-13,
+  "seamStepM": 0,
+  "drawnWidthAtCutM": 10.64999999999997,
+  "nominalWheelEdgeMarginM": 0.9749999999999996,
+  "grade": {
+    "peakPercent": 7.543791087360319,
+    "changePp": 0.4344673282275835,
+    "transitionM": 2,
+    "ratePpPerM": 0.21723366411379175,
+    "screen": "ramp design speed and ramp-specific criterion unresolved",
+    "transitionCriterion": "unverified; design speed and applicable vertical curve length unavailable"
+  },
+  "order": [
+    {
+      "stationM": 585.573,
+      "crossingWay": 9164430,
+      "routeMinusOtherM": 12.449
+    },
+    {
+      "stationM": 741.592,
+      "crossingWay": 41051928,
+      "routeMinusOtherM": -8.806
+    },
+    {
+      "stationM": 837.6,
+      "crossingWay": 9164596,
+      "routeMinusOtherM": 18.42
+    },
+    {
+      "stationM": 878.43,
+      "crossingWay": 537053322,
+      "routeMinusOtherM": 19.11
+    },
+    {
+      "stationM": 886.871,
+      "crossingWay": 41051934,
+      "routeMinusOtherM": 8.119
+    },
+    {
+      "stationM": 896.944,
+      "crossingWay": 124550348,
+      "routeMinusOtherM": 19.05
+    },
+    {
+      "stationM": 922.207,
+      "crossingWay": 41050344,
+      "routeMinusOtherM": 19.293
+    },
+    {
+      "stationM": 985.204,
+      "crossingWay": 41050323,
+      "routeMinusOtherM": 13.683
+    },
+    {
+      "stationM": 1024.744,
+      "crossingWay": 119686468,
+      "routeMinusOtherM": 25.265
+    },
+    {
+      "stationM": 1059.829,
+      "crossingWay": 41050992,
+      "routeMinusOtherM": 8.453
+    },
+    {
+      "stationM": 1065.959,
+      "crossingWay": 41050997,
+      "routeMinusOtherM": 8.384
+    },
+    {
+      "stationM": 1071.952,
+      "crossingWay": 119686435,
+      "routeMinusOtherM": 22.248
+    },
+    {
+      "stationM": 1172.291,
+      "crossingWay": 532932671,
+      "routeMinusOtherM": 17.897
+    },
+    {
+      "stationM": 1902.856,
+      "crossingWay": 67968161,
+      "routeMinusOtherM": -7.737
+    },
+    {
+      "stationM": 1915.865,
+      "crossingWay": 172322577,
+      "routeMinusOtherM": -7.711
+    }
+  ],
+  "heldOut": {
+    "stations": 108,
+    "comparable": 102,
+    "medianAbsM": 0.008154225146029148,
+    "p95AbsM": 0.39885531152941667,
+    "worst": {
+      "s": 910,
+      "d": -0.7742088404868355
+    }
+  },
+  "inventory": {
+    "mappedBridgeLengthM": 718.141174390026,
+    "reportedStructureLengthM": 723.3,
+    "modeledTravelWidthAtCutM": 10.649999999999999,
+    "reportedRoadwayWidthM": 12.8
+  }
+}

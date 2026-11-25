@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tom Moreland Interchange · ramp drive</title>
+<style>*{box-sizing:border-box}body{max-width:1100px;margin:2rem auto;padding:0 1rem;background:#f5f3ea;color:#183a35;font:16px system-ui,sans-serif}h1{font-size:clamp(22px,4vw,34px);margin:.3em 0}canvas{width:100%;aspect-ratio:2.1;display:block;background:#d8e7e8}footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}input{flex:1;min-width:8rem}button{padding:7px 12px;color:inherit}output{font-variant-numeric:tabular-nums}small{display:block;margin:12px 0}</style>
+<h1>I-285 eastbound → I-85 northbound</h1><p>Tom Moreland Interchange · traveling view of the selected ramp</p>
+<canvas width="1000" height="475" aria-label="Low traveling view with a gold car on the green ramp"></canvas>
+<footer><button id="play">Play</button><input type="range" id="slide" min="2" step=".1" aria-label="Distance along ramp"><button id="cut">Tile cut</button><output id="status"></output></footer>
+<small>Green is the selected carrier. Gray sections show the crossing roads. Heights follow lidar samples; lane widths and car are inferred or illustrative. Playback is 25 m/s.</small>
+<script>
+const roads=/*ROADS*/, ends=/*ENDS*/, ids=/*IDS*/;
+const rows=roads[0],ctx=document.querySelector('canvas').getContext('2d');
+const middle=(a,b)=>a.map((v,i)=>(v+b[i])/2);
+const ctr=rows.map(([a,b])=>middle(a,b));
+const max=ctr.at(-1)[3]-2;slide.max=max; let s=895, last=0, running=false;
+function camera(t){
+ let k=ctr.findIndex(p=>p[3]>t);if(k<1)k=t<1?1:ctr.length-1;
+ const a=ctr[k-1],b=ctr[k],f=Math.max(0,Math.min(1,(t-a[3])/(b[3]-a[3]))),h=Math.hypot(b[0]-a[0],b[2]-a[2]);
+ const dx=(b[0]-a[0])/h,dz=(b[2]-a[2])/h;
+ const left=rows[k-1][0].map((v,i)=>v+f*(rows[k][0][i]-v));
+ return {x:left[0]-dz*1.775,y:a[1]+f*(b[1]-a[1]),z:left[2]+dx*1.775,dx,dz};
+}
+function draw(){
+ const car=camera(s),view={...car,x:car.x-9*car.dx,y:car.y+3.2,z:car.z-9*car.dz};
+ const scene=[];
+ function polygon(verts,fill){
+  let pts=verts.map(([x,y,z])=>[(x-view.x)*(-view.dz)+(z-view.z)*view.dx,y-view.y,(x-view.x)*view.dx+(z-view.z)*view.dz]);
+  if(pts.every(p=>p[2]>320)||pts.every(p=>p[2]<1))return;
+  const clipped=[];for(let i=0;i<pts.length;i++){const a=pts[(i+pts.length-1)%pts.length],b=pts[i];
+  if((a[2]<1)!=(b[2]<1)){const f=(1-a[2])/(b[2]-a[2]);clipped.push(a.map((v,j)=>v+f*(b[j]-v)));}
+  if(b[2]>=1)clipped.push(b);}
+  if(clipped.length>=3)scene.push([clipped.reduce((a,p)=>a+p[2],0)/clipped.length,fill,clipped]);
+ }
+ roads.forEach((road,j)=>{for(let i=1;i<road.length;i++){const [a,b]=road[i-1],[c,d]=road[i];
+ polygon([a,b,d,c],j?'#75818a':'#387568');
+ for(const [u,v,other,other2] of [[a,c,b,d],[b,d,a,c]]){
+ const inset=(p,q)=>p.map((v,k)=>v+.018*(q[k]-v));
+ polygon([u,v,inset(v,other2),inset(u,other)],j?'#c3c8c8':'#e3dbb4');}
+ }});
+ function point(u,v,h){return [car.x-car.dz*u+car.dx*v,car.y+h,car.z+car.dx*u+car.dz*v]}
+ const rect=(w,l,h)=>[[-w,-l],[w,-l],[w,l],[-w,l]].map(([u,v])=>point(u,v,h));
+ const base=rect(.84,1.95,.22),belt=rect(.86,1.95,.84),roof=rect(.68,1.03,1.39);
+ for(let i=0;i<4;i++){const j=(i+1)%4;polygon([base[i],base[j],belt[j],belt[i]],'#ce9245');polygon([belt[i],belt[j],roof[j],roof[i]],i%2?'#485c60':'#677c80');}polygon(roof,'#e1ae60');
+ ctx.fillStyle='#dce9e9';ctx.fillRect(0,0,1000,475);ctx.fillStyle='#cbd3c8';ctx.fillRect(0,182,1000,294);
+ for(const [,color,pts] of scene.sort((a,b)=>b[0]-a[0])){ctx.fillStyle=color;ctx.beginPath();pts.forEach(([x,y,z],i)=>{const X=500+550*x/z,Y=182-550*y/z;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.closePath();ctx.fill()}
+ slide.value=s;document.querySelector('#status').textContent=Math.round(s)+' m · way '+ids[ends.findIndex(v=>v>=s)];
+}
+function frame(t){if(!running)return;s=Math.min(max,s+(last?Math.min(.1,(t-last)/1000):0)*25);last=t;draw();if(s<max)requestAnimationFrame(frame);else{running=false;play.textContent='Replay'}}
+play.onclick=()=>{running=!running;if(s>=max)s=2;last=0;play.textContent=running?'Pause':'Play';if(running)requestAnimationFrame(frame)};
+slide.oninput=()=>{s=+slide.value;draw()};cut.onclick=()=>{s=985.204;draw()};draw();
+</script></html>
