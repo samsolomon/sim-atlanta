@@ -62,8 +62,10 @@ def bake(boards, hpms_file, dest):
             runs.append({**evidence,"from":end(pt[0]),"to":end(pt[-1]),"allow":"both","aadt":{"forward":n//2,"reverse":n-n//2},
                          "speedMph":s.get("SPEED_LIMIT") or None,"truckShare":round(min(.5,truck/n),3)})
             observations.append(note)
+    existing = {key(p) for p in json.loads((repo/"web/src/city/fixtures/midtown-signals.json").read_text())}
+    extra_signals = [p for _, p in sorted(signals.items()) if key(p) not in existing]
     dest.mkdir(parents=True,exist_ok=True)
-    (dest/"runs.json").write_text(json.dumps({"runs":runs,"signals":list(signals.values())},separators=(",",":"))+"\n")
+    (dest/"runs.json").write_text(json.dumps({"runs":runs,"signals":extra_signals},separators=(",",":"))+"\n")
     (dest/"source.json").write_text(json.dumps({"service":data["service"],"meta":data["meta"],"hpmsSha256":hashlib.sha256(hpms_file.read_bytes()).hexdigest(),"osmArchiveHashes":hashes,"runs":observations,"excluded":excluded},indent=1)+"\n")
 
 if __name__=="__main__":bake(*map(Path,sys.argv[1:]))
