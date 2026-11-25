@@ -18,10 +18,13 @@ import { eastGroundRoad, isConnectorCity, paintConnector, surveyedRoad } from '.
 import { paintActiveOval } from '../city/active-oval';
 import { paintWinnPark } from '../city/winn-park';
 
+import { golfPaint } from './golf';
+
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
   brownfield: '#a99a7c', construction: '#b49a76', pedestrian: '#d6cdbd', plaza: '#d6cdbd',
   loading_apron: '#b2a89a', track: '#b98c77', pitch: '#78a467', playground: '#bba486', parking: '#76787c', fountain: '#91b4bc',
+  ...golfPaint,
   water: '#739a9c', swimming_pool: '#73c7cb',
 };
 const landOrder = Object.keys(landColors);
@@ -107,6 +110,23 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     for (const ring of g.rings) { trace(ctx, ring); ctx.closePath(); }
     ctx.fillStyle = landColors[g.kind];
     ctx.fill('evenodd');
+    if (g.kind === 'golf_fairway') {
+      ctx.save();
+      ctx.clip('evenodd');
+      ctx.strokeStyle = 'rgba(229,235,191,.095)';
+      ctx.lineWidth = 7;
+      const ring = g.rings[0];
+      const phases = ring.map(([x,z]) => x - z * .48);
+      const zs = ring.map(([,z]) => z);
+      const startZ = Math.min(...zs)-8, endZ = Math.max(...zs)+8;
+      ctx.beginPath();
+      for (let u = 16*Math.floor(Math.min(...phases)/16)-16; u < Math.max(...phases)+16; u += 16) {
+        ctx.moveTo(u + startZ*.48,startZ);
+        ctx.lineTo(u + endZ*.48,endZ);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
     if (g.kind === 'parking' && g.rings.length) stripeLot(ctx, g.rings[0], stallLine);
     if (g.kind === 'swimming_pool') { ctx.lineWidth = .45; ctx.strokeStyle = '#dbd9c9'; ctx.stroke(); }
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
