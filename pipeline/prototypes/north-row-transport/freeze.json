@@ -1,0 +1,209 @@
+{
+  "reference": "8678645f1c42d114e4f5c2057e2e4467145d2bcc",
+  "tree": "2270cb256942177d884ae662a64db3a20d704005",
+  "bounds": [
+    -1000,
+    -6500,
+    1800,
+    -5700
+  ],
+  "source": "OpenStreetMap contributors, ODbL. 35 m padded OSM API snapshot supplied by ground bake.",
+  "rawSha256": "1c4daabb914a6884f532324f8f1a87df18e417e45f6484b8e5ec0bf496740ebf",
+  "fraSource": "R16 staged FRA crossing inventory; extract by point within bounds",
+  "fra": [
+    {
+      "geometry": {
+        "coordinates": [
+          -84.39858,
+          33.80865
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": "narn:arc:454041",
+        "city": "ATLANTA",
+        "dayTrains": 5,
+        "id": "fra:crossing:639818R",
+        "maxSpeedMph": 40,
+        "nightTrains": 7,
+        "passengerTrains": 0,
+        "position": "RR Under",
+        "railroad": "CSX Transportation",
+        "street": "COLLIER RD"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -84.39226,
+          33.81164
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": "narn:arc:454382",
+        "city": "ATLANTA",
+        "dayTrains": 5,
+        "id": "fra:crossing:639817J",
+        "maxSpeedMph": 40,
+        "nightTrains": 7,
+        "passengerTrains": 0,
+        "position": "RR Under",
+        "railroad": "CSX Transportation",
+        "street": "PEACHTREE RD"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -84.37825,
+          33.80702
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": null,
+        "city": "ATLANTA",
+        "dayTrains": 0,
+        "id": "fra:crossing:935121G",
+        "maxSpeedMph": 10,
+        "nightTrains": 0,
+        "passengerTrains": 0,
+        "position": "RR Over",
+        "railroad": "Norfolk Southern Railway Company",
+        "street": "BUFORD HWY CONN"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -84.37768,
+          33.80881
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": null,
+        "city": "ATLANTA",
+        "dayTrains": 0,
+        "id": "fra:crossing:717948C",
+        "maxSpeedMph": 10,
+        "nightTrains": 0,
+        "passengerTrains": 0,
+        "position": "RR Over",
+        "railroad": "Norfolk Southern Railway Company",
+        "street": "I-85"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -84.37748,
+          33.80761
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": null,
+        "city": "ATLANTA",
+        "dayTrains": 0,
+        "id": "fra:crossing:935122N",
+        "maxSpeedMph": 10,
+        "nightTrains": 0,
+        "passengerTrains": 0,
+        "position": "RR Over",
+        "railroad": "Norfolk Southern Railway Company",
+        "street": "BUFFORD HWY CONN"
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -84.3777,
+          33.80969
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "arcId": null,
+        "city": "ATLANTA",
+        "dayTrains": 0,
+        "id": "fra:crossing:717947V",
+        "maxSpeedMph": 10,
+        "nightTrains": 0,
+        "passengerTrains": 0,
+        "position": "At Grade",
+        "railroad": "Norfolk Southern Railway Company",
+        "street": "MAYSON ST"
+      },
+      "type": "Feature"
+    }
+  ],
+  "nbiSource": "FHWA 2025 Georgia NBI GA25.txt, inventory point within bounds",
+  "nbi": [
+    {
+      "STRUCTURE_NUMBER_008": "000000012100280",
+      "FACILITY_CARRIED_007": "PEACHTREE STREET",
+      "FEATURES_DESC_006A": "CSX RAILROAD",
+      "LAT_016": "33484183",
+      "LONG_017": "084233224"
+    },
+    {
+      "STRUCTURE_NUMBER_008": "000000012104370",
+      "FACILITY_CARRIED_007": "COLLIER ROAD",
+      "FEATURES_DESC_006A": "CSX RAILROAD (639818R)",
+      "LAT_016": "33483117",
+      "LONG_017": "084235501"
+    },
+    {
+      "STRUCTURE_NUMBER_008": "000000012105570",
+      "FACILITY_CARRIED_007": "I-85 RAMP",
+      "FEATURES_DESC_006A": "SR 13",
+      "LAT_016": "33483326",
+      "LONG_017": "084223201"
+    },
+    {
+      "STRUCTURE_NUMBER_008": "000000012105620",
+      "FACILITY_CARRIED_007": "I-85",
+      "FEATURES_DESC_006A": "RAMP SR13 SBL TO 403 SBL",
+      "LAT_016": "33482190",
+      "LONG_017": "084225346"
+    },
+    {
+      "STRUCTURE_NUMBER_008": "000000012105900",
+      "FACILITY_CARRIED_007": "I-85",
+      "FEATURES_DESC_006A": "NS RAILROAD",
+      "LAT_016": "33482597",
+      "LONG_017": "084224736"
+    },
+    {
+      "STRUCTURE_NUMBER_008": "000000012106700",
+      "FACILITY_CARRIED_007": "I-85",
+      "FEATURES_DESC_006A": "ATLANTA BELTLINE",
+      "LAT_016": "33483157",
+      "LONG_017": "084223942"
+    }
+  ],
+  "controls": [
+    "Mayson 9270932 / MARTA NR 81137860, disjoint source nodes, upper relative order only",
+    "Mayson / NS yard 144485857 shared 4974267722; FRA 717947V at grade",
+    "MARTA Access 429349499 / NL 319512612, separately verify local order",
+    "MARTA track NR and NL across z=-5700 retain IDs and direction"
+  ],
+  "exampleBuildings": [
+    887724918,
+    268895222,
+    268895265
+  ],
+  "unknowns": [
+    "railhead and soffit elevations",
+    "physical minimum clearance",
+    "field-verified activity of yard movements",
+    "road/lane width or sidewalk side where unmapped"
+  ]
+}
