@@ -1,14 +1,13 @@
 // Private post-road ground-map pass. The accepted I-85 NB tread owns its own material.
 import raw from './ways.json';
+import { paintSouthbound } from '../brookwood-lanes/profile';
 import { Line, type P2 } from '../../../web/src/vignette/geom';
 import { PAL } from '../../../web/src/vignette/world';
 import { ribbons, sectionAt, stripePoint } from '../../../web/src/terrain/connector-corridor';
 
 const source = (id: number) => raw.find(w => w.id === id)!;
 const axis = (id: number) => new Line(source(id).axis as P2[]);
-const sbStart = axis(38983384).length;
 const specs = [
-  {id:38983384,phase:0}, {id:1409808969,phase:sbStart},
   {id:879130781,phase:0},{id:187141934,phase:0},
   {id:38981789,phase:axis(9238427).length+axis(38981788).length},
 ];
@@ -34,6 +33,7 @@ const roads = specs.map(({id,phase}) => {
 
 export function paintI85Corridor(ctx: CanvasRenderingContext2D, board: string) {
   if(board!=='brookwood-station' && board!=='r16') return;
+  paintSouthbound(ctx);
   ctx.save();
   ctx.beginPath();
   ctx.rect(600,-5800,455,215); // open approaches around the seam; structure owners draw their spans
