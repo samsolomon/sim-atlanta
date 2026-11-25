@@ -40,10 +40,12 @@ export function studyRails(area: Area) {
     }
   }
   const {minX,maxX,minZ,maxZ} = area.bounds;
+  // Adjacent track centres approach within 4 m. Limit the taper outside the 1.6 m half-bed.
+  const taperM = .9;
   const margin = area.grid.manifest.stepM + .01;
   if (!new URLSearchParams(location.search).has('uncutFormation')) area.carve(cuttingYields(beds, area.terrainAt, {
     minX:minX+margin, maxX:maxX-margin, minZ:minZ+margin, maxZ:maxZ-margin
-  }));
+  }, taperM));
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.name = 'Inferred North Line extension';
   return mesh;
