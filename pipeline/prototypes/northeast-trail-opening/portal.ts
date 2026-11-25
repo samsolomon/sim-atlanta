@@ -38,7 +38,7 @@ export function trailOpening(
     // In each approach the original terrain meets the outside of the wing.
     const depth=.12;
     slots.push({start:lift(a.centre,-depth), end:lift(b.centre,-depth),
-      halfWidthM:wallOffset, ...(inside ? {cutHeightM:depth+headroom+slab-.05} : {}),
+      halfWidthM:wallOffset, ...(inside ? {cutHeightM:depth+headroom+.03} : {}),
       footprint:[a.left,a.right,b.right,b.left].map(([x,,z])=>[x,z] as const)});
     for (const side of [-1,1] as const) {
       const sideAt=(r: ReturnType<typeof section>) => side === -1 ? r.left : r.right;
