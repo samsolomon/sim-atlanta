@@ -20,7 +20,7 @@ const render = new THREE.WebGLRenderer({
   preserveDrawingBuffer: true,
 });
 render.setSize(960, 540, false);
-const camera = new THREE.PerspectiveCamera(52, 960 / 540, 0.2, 1500);
+const camera = new THREE.PerspectiveCamera(66, 960 / 540, 0.18, 20000);
 const bounds = { minX: -3000, maxX: 3000, minZ: -3000, maxZ: 3000 };
 const city = { bounds, roads: [], buildings: [], rail: [] };
 // Obtain City's actual deck material from a normal SurfaceTransport batch. Only
