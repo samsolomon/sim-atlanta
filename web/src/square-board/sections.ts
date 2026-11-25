@@ -38,8 +38,10 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  * high, half that while the camera is dragged (the sliced-build gate: no long task while an
  * area mounts). Off by default.
  */
-function sliceBudget(quality: TerrainQuality): (() => number) | null {
-  if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') !== '1') return null;
+function sliceBudget(quality: TerrainQuality, section: Section): (() => number) | null {
+  if (typeof location === 'undefined') return null;
+  const query = new URLSearchParams(location.search);
+  if (query.get('slice') !== '1' && !(section === 'r16' && query.has('northSlice'))) return null;
   const ms = quality === 'low' ? 4 : 8;
   // Half the share while the user drags, so a moving camera stays smooth.
   return () => sliceInput.dragging ? ms / 2 : ms;
@@ -154,7 +156,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
 async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
-    gridAt(path, signal, id === 'north-band', id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
+    gridAt(path, signal, id === 'north-band', id === 'r16' || id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
   ]);
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
@@ -182,7 +184,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
   // low, all typed-array stores, in a heap snapshot diff).
   const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
-  const budget = sliceBudget(quality);
+  const budget = sliceBudget(quality, direction);
   const added = new Map<Board, TrafficArea>();
   // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {

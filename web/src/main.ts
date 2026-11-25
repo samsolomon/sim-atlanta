@@ -1224,7 +1224,7 @@ const shellOptions: ShellOptions = {
     const c = map?.getCenter();
     if (!c) return false;
     const [x, z] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
-    return x < -1000 || x > 1800 || z < -5700 || z > 1100;
+    return !inCityArea(x, z);
   },
   centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
   getTilt: () => diorama?.camera().tilt ?? cityTilt,
@@ -1305,6 +1305,7 @@ const shellOptions: ShellOptions = {
   },
 };
 // The A2c interface (docs/ui-controls-brief.md).
+Object.assign(window, { __northSelection: () => ({ selectedTrain, followed: follow?.vehicle, phase: follow?.phase, time: clock.now().toISOString() }) });
 const shell = createShellNext(shellOptions);
 addEventListener('popstate', () => {
   const v = initialView(location.search, location.hash);

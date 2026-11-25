@@ -1420,13 +1420,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setPixelRatio(pr);
     resize();
   };
+  let requestedNorthZ: number | null = null;
+  const northFrames: number[] = [];
   Object.assign(window, { __northStudy: {
     go(x: number, z: number) {
+      requestedNorthZ = z;
+      performance.mark("north:request");
       manualCamera();
       mosaic?.remember(x, z);
       approachMosaic(x, z, true);
       setView(-40, 55, 300, x, z);
     },
+    frames: northFrames,
     state: () => ({ x: controls.target.x, z: controls.target.z,
       rows: [...(mosaic?.areas.keys() ?? [])], allocations: { ...renderer.info.memory },
       cars: trains.group.children.filter(c => c.visible && c.userData.trainId === 'marta:trip:25-27300-20261120').map(c => c.position.toArray()) }),
@@ -2073,6 +2078,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (glass) showGlass(!!glassRects && glass.drew());
     whiteModel?.after();
     const renderEnd = performance.now();
+    northFrames.push(ts);
+    if (requestedNorthZ !== null && Math.abs(controls.target.z - requestedNorthZ) < 1 && composed) {
+      performance.mark("north:usable");
+      requestedNorthZ = null;
+    }
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
     if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {

@@ -128,6 +128,7 @@ export class SquareMosaic {
         if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure);
       }).catch(error => {
         if (!signal.aborted) {
+          if (direction === 'r16') Object.assign(window, { __northError: String(error) });
           this.failed.add(direction);
           failure(direction);
           console.warn(direction + ' City terrain unavailable', error);
