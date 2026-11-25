@@ -64,14 +64,20 @@ export function drawTrail(builder: Builder, bounds: Bounds) {
     face([at(b,-width,-.38),at(b,width,-.38),at(a,width,-.38),at(a,-width,-.38)],'#78766e');
     for(const side of [-width,width]){
       face([at(a,side,-.38),at(b,side,-.38),at(b,side),at(a,side)],'#8c8981');
-      for(const h of [.48,.91,1.13])
-        face([at(a,side,h),at(b,side,h),at(b,side,h+.055),at(a,side,h+.055)],'#535651');
+      // The opening-week photograph shows tall, see-through mesh panels.
+      for(const h of [.08,1.27,2.48])
+        face([at(a,side,h),at(b,side,h),at(b,side,h+.045),at(a,side,h+.045)],'#536064');
+      for(let h=.2;h<2.48;h+=.18)
+        face([at(a,side,h),at(b,side,h),at(b,side,h+.012),at(a,side,h+.012)],'#747c7c');
     }
   }
+  for(let s=trailBridge[0]+.18;s<trailBridge[1];s+=.18)
+    for(const side of [-width,width])
+      face([at(s,side,.08),at(s+.012,side,.08),at(s+.012,side,2.48),at(s,side,2.48)],'#747c7c');
   for(let i=0;i<=20;i++){
     const s=trailBridge[0]+i*(trailBridge[1]-trailBridge[0])/20;
     for(const side of [-width,width])
-      face([at(s-.045,side),at(s+.045,side),at(s+.045,side,1.185),at(s-.045,side,1.185)],'#51554f');
+      face([at(s-.045,side),at(s+.045,side),at(s+.045,side,2.525),at(s-.045,side,2.525)],'#51554f');
   }
 }
 
