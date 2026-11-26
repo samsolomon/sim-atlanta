@@ -25,11 +25,13 @@ export interface BakedArrays {
   starts: Uint32Array; blockCols: number;
 }
 
-/** One re-cut: the yields carved by then (count and ring checksum), and its tape or its surface. */
-export interface BakedStage { yields: number; yieldRingSum: number; tape?: Float64Array; surface?: BakedArrays }
+/** One re-cut: the yields carved by then (count and yieldPrint), and its tape or its surface. */
+export interface BakedStage { yields: number; yieldPrint: number; tape?: Float64Array; surface?: BakedArrays }
 
 export interface BakedGround {
   id: string; quality: string; gridSha256: string;
+  /** heightsPrint of the drawn grid (after any in-browser grading of the raw file). */
+  heights: number;
   /** The mount's re-cuts in order; the last has the surface the mount leaves. */
   stages: BakedStage[];
 }
@@ -37,8 +39,39 @@ export interface BakedGround {
 /** Counts for the perf summary and tests: bakes adopted, and fallbacks to the in-browser build. */
 export const bakeStats = { adopted: 0, fallbacks: 0, reasons: [] as string[] };
 
-export const ringSum = (yields: readonly { ring: readonly (readonly [number, number])[] }[]) =>
-  yields.reduce((s, y) => s + y.ring.reduce((t, [x, z]) => t + x * 1.000003 + z, 0), 0);
+/** FNV-1a over the bits of float64 values. */
+function fnv() {
+  let h = 2166136261;
+  const f = new Float64Array(1), u = new Uint32Array(f.buffer);
+  return {
+    add(v: number) { f[0] = v; for (const w of u) { h ^= w; h = Math.imul(h, 16777619) >>> 0; } },
+    get value() { return h; },
+  };
+}
+
+/**
+ * What a stage's yields do, as one number: each one's flags, ring, and floor at every ring
+ * vertex and the ring's centre (a floor relative to the vertex's own height is asked at 0).
+ * A yield whose floor, grade or edge rule changed no longer matches its bake.
+ */
+export function yieldPrint(yields: readonly import('./surface-build').GroundYield[]) {
+  const h = fnv();
+  for (const y of yields) {
+    h.add((y.grade ? 1 : 0) + (y.conformEdges ? 2 : 0));
+    let cx = 0, cz = 0;
+    for (const [x, z] of y.ring) { h.add(x); h.add(z); cx += x / y.ring.length; cz += z / y.ring.length; }
+    for (const [x, z] of [...y.ring, [cx, cz] as const]) { let v: number; try { v = y.floor(x, z, 0); } catch { v = -1e300; } h.add(v); }
+  }
+  return h.value;
+}
+
+/** The drawn grid's heights (scene metres, NaN in voids), as one number. */
+export function heightsPrint(heights: Float32Array) {
+  let h = 2166136261;
+  const u = new Uint32Array(heights.buffer, heights.byteOffset, heights.length);
+  for (let i = 0; i < u.length; i++) { h ^= u[i]; h = Math.imul(h, 16777619) >>> 0; }
+  return h;
+}
 
 const arraysBytes = (a: BakedArrays) => a.pos.byteLength + a.uv.byteLength + a.normal.byteLength + a.index.byteLength + a.starts.byteLength;
 
@@ -47,10 +80,12 @@ export class BakeRecorder {
   /** Builds so far, the first included. */
   builds = 0;
   inBuild = false;
-  private readonly stages: { yields: number; yieldRingSum: number; surface: BakedArrays; reads: number[] }[] = [];
-  /** A build finished: from the second on, a stage starts. */
-  built(surface: () => BakedArrays, yields: number, yieldRingSum: number) {
-    if (++this.builds >= 2) this.stages.push({ yields, yieldRingSum, surface: surface(), reads: [] });
+  heights = 0;
+  private readonly stages: { yields: number; yieldPrint: number; surface: BakedArrays; reads: number[] }[] = [];
+  /** A build finished: the first gives the grid's heights, and from the second on a stage starts. */
+  built(surface: () => BakedArrays, yields: number, print: number, heights: number) {
+    if (++this.builds === 1) this.heights = heights;
+    else this.stages.push({ yields, yieldPrint: print, surface: surface(), reads: [] });
   }
   record(kind: Read, input: number[], output: number[]) {
     // Reads made inside a build (yield floors, exit-bank shading) do not happen when it is skipped;
@@ -61,13 +96,13 @@ export class BakeRecorder {
   /** The bake: every stage but the last as a tape or a surface, whichever is smaller (`tapes`: always a tape, for tests). */
   bake(meta: { id: string; quality: string; gridSha256: string }, tapes: 'smaller' | 'always' = 'smaller'): BakedGround {
     return {
-      ...meta,
+      ...meta, heights: this.heights,
       stages: this.stages.map((s, i) => {
         const last = i === this.stages.length - 1;
         const tape = last ? null : Float64Array.from(s.reads);
         return tape && (tapes === 'always' || tape.byteLength < arraysBytes(s.surface))
-          ? { yields: s.yields, yieldRingSum: s.yieldRingSum, tape }
-          : { yields: s.yields, yieldRingSum: s.yieldRingSum, surface: s.surface };
+          ? { yields: s.yields, yieldPrint: s.yieldPrint, tape }
+          : { yields: s.yields, yieldPrint: s.yieldPrint, surface: s.surface };
       }),
     };
   }
@@ -116,7 +151,7 @@ export class BakeReplay {
 export interface GroundBake { record?: BakeRecorder; replay?: BakeReplay }
 
 const MAGIC = 0x4b425247; // 'GRBK'
-const VERSION = 2;
+const VERSION = 3;
 type Typed = Float32Array | Float64Array | Uint32Array | Uint16Array;
 const TYPES = { Float32Array, Float64Array, Uint32Array, Uint16Array } as const;
 const SURFACE = ['pos', 'uv', 'normal', 'index', 'starts'] as const;
@@ -126,9 +161,9 @@ export function encodeBake(b: BakedGround): Uint8Array {
   const arrays: Typed[] = [];
   const layout = (a: Typed) => { arrays.push(a); return { type: a.constructor.name, length: a.length }; };
   const header = {
-    id: b.id, quality: b.quality, gridSha256: b.gridSha256,
+    id: b.id, quality: b.quality, gridSha256: b.gridSha256, heights: b.heights,
     stages: b.stages.map(s => ({
-      yields: s.yields, yieldRingSum: s.yieldRingSum,
+      yields: s.yields, yieldPrint: s.yieldPrint,
       tape: s.tape ? layout(s.tape) : undefined,
       surface: s.surface ? { blockCols: s.surface.blockCols, ...Object.fromEntries(SURFACE.map(k => [k, layout(s.surface![k])])) } : undefined,
     })),
@@ -162,8 +197,10 @@ export function decodeBake(buffer: ArrayBuffer): BakedGround | null {
     return a;
   };
   type Layout = { type: keyof typeof TYPES; length: number };
-  const stages: BakedStage[] = (header.stages as { yields: number; yieldRingSum: number; tape?: Layout; surface?: Record<string, Layout> & { blockCols: number } }[]).map(s => {
-    const stage: BakedStage = { yields: s.yields, yieldRingSum: s.yieldRingSum };
+  const stages: BakedStage[] = (header.stages as { yields: number; yieldPrint: number; tape?: Layout; surface?: Record<string, Layout> & { blockCols: number } }[]).map(s => {
+    // A stage is a tape or a surface; one with neither would leave a re-cut unbuilt.
+    if (!s.tape === !s.surface) bad = true;
+    const stage: BakedStage = { yields: s.yields, yieldPrint: s.yieldPrint };
     if (s.tape) stage.tape = read(s.tape) as Float64Array;
     if (s.surface) {
       const [pos, uv, normal, index, starts] = SURFACE.map(k => read(s.surface![k]));
@@ -172,7 +209,8 @@ export function decodeBake(buffer: ArrayBuffer): BakedGround | null {
     return stage;
   });
   if (bad || !stages.length || !stages[stages.length - 1].surface) return null;
-  return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, stages };
+  if (typeof header.heights !== 'number') return null;
+  return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, heights: header.heights, stages };
 }
 
 /** `?perf&bake=0` builds every area's ground in the browser, for A/B runs. */

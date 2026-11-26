@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { runSync, type Build } from '../core/slice';
 import { type OpenSlot } from './openings';
-import { bakeStats, Read, ringSum, type BakedArrays, type GroundBake } from './ground-bake';
+import { bakeStats, heightsPrint, Read, yieldPrint, type BakedArrays, type GroundBake } from './ground-bake';
 import { farSurface, farSurfaceSteps, typedSteps, vertexNormalsSteps, nodeHeights, tessellateSteps, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
@@ -157,7 +157,7 @@ export class GroundSurface {
       const stage = replay.stage();
       if (stage) {
         const why = !replay.consumed ? 'tape not read through'
-          : this.yields.length !== stage.yields || ringSum(this.yields) !== stage.yieldRingSum ? 'different yields' : null;
+          : this.yields.length !== stage.yields || yieldPrint(this.yields) !== stage.yieldPrint ? 'different yields' : null;
         if (!why) {
           replay.enter(stage);
           if (stage.surface) this.adoptBaked(stage.surface);
@@ -169,8 +169,12 @@ export class GroundSurface {
     }
     if (record) record.inBuild = true;
     try { yield* this.tessellate(); } finally {
-      if (record) { record.inBuild = false; record.built(() => this.arraysNow(), this.yields.length, ringSum(this.yields)); }
+      // Printed while still in the build: a floor that samples the surface must not reach the tape.
+      if (record) { const print = yieldPrint(this.yields); record.inBuild = false; record.built(() => this.arraysNow(), this.yields.length, print, heightsPrint(this.heights)); }
     }
+    // The first build: a bake recorded on other ground (a regraded grid, or the raw grid when
+    // the grading module failed to load) is not used at all.
+    if (replay && !replay.failed && replay.builds === 1 && heightsPrint(this.heights) !== replay.baked.heights) replay.fail('different ground');
   }
 
   /** A baked surface (already shaded), as its re-cut would have left it. */

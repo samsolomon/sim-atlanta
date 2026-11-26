@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, expect, it } from 'vitest';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { bakeFile, bakeStats, decodeBake, encodeBake } from './ground-bake';
+import { bakeFile, bakeStats, decodeBake, encodeBake, yieldPrint } from './ground-bake';
 import { bakeRow, dataRoot, mountRows, stubPage } from './ground-bake.node';
 import type { TerrainQuality } from './surface';
 
@@ -65,10 +65,34 @@ it.skipIf(!staged).each([['low', 'smaller'], ['high', 'smaller'], ['high', 'alwa
   // A stale bake: a tape read recorded differently, or (with no tape) a different yield set.
   const stages = baked.stages.map(st => ({ ...st, tape: st.tape?.slice() }));
   const taped = stages.find(st => st.tape?.length);
-  if (taped) taped.tape![3] += 0.25; else stages[stages.length - 1].yieldRingSum += 1;
+  if (taped) taped.tape![3] += 0.25; else stages[stages.length - 1].yieldPrint ^= 1;
   const stale = { ...baked, stages };
   const withStale = await fingerprint(quality, new Map([[path, gzipSync(encodeBake(stale))]]));
   expect(bakeStats.fallbacks).toBe(before.fallbacks + 1);
   expect(bakeStats.adopted).toBe(before.adopted + 1);
   expect(withStale).toBe(plain);
+  // A bake recorded on other ground (say, before a change to the Brookwood grading) is not used.
+  const otherGround = await fingerprint(quality, new Map([[path, gzipSync(encodeBake({ ...baked, heights: baked.heights ^ 1 }))]]));
+  expect(bakeStats.reasons.at(-1)).toMatch(/different ground/);
+  expect(bakeStats.adopted).toBe(before.adopted + 1);
+  expect(otherGround).toBe(plain);
 }, 600_000);
+
+it('a yield whose floor, grade or edge rule changed no longer matches its bake', () => {
+  const ring = [[100, -4500], [140, -4500], [140, -4460], [100, -4460]] as [number, number][];
+  const base = yieldPrint([{ ring, floor: () => 1 }]);
+  expect(yieldPrint([{ ring, floor: () => 1 }])).toBe(base);
+  expect(yieldPrint([{ ring, floor: () => -2 }])).not.toBe(base);
+  expect(yieldPrint([{ ring, floor: () => 1, grade: true }])).not.toBe(base);
+  expect(yieldPrint([{ ring, floor: () => 1, conformEdges: true }])).not.toBe(base);
+  expect(yieldPrint([{ ring, floor: (x, z) => x > 139 ? 0 : 1 }])).not.toBe(base);
+});
+
+it('reads only bakes whose every stage is a tape or a surface', () => {
+  const surface = { pos: new Float32Array(9), uv: new Float32Array(6), normal: new Float32Array(9), index: new Uint16Array([0, 1, 2]), starts: new Uint32Array([0, 3]), blockCols: 1 };
+  const ok = { id: 'x', quality: 'low', gridSha256: 'a', heights: 7, stages: [{ yields: 1, yieldPrint: 2, tape: new Float64Array([0, 1, 2, 1, 5]) }, { yields: 2, yieldPrint: 3, surface }] };
+  const file = (b: typeof ok) => Uint8Array.from(encodeBake(b as never)).buffer;
+  expect(decodeBake(file(ok))).toEqual(ok);
+  expect(decodeBake(file({ ...ok, stages: [{ yields: 1, yieldPrint: 2 } as never, ok.stages[1]] }))).toBeNull();
+  expect(decodeBake(file({ ...ok, stages: [ok.stages[0]] }))).toBeNull();
+});
