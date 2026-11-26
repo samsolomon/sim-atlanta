@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { inkFoliageMesh } from '../vignette/ink';
 import type { GroundYield } from '../terrain/surface';
@@ -162,6 +163,12 @@ function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, 
  * follows any slope, which a flat outline fill or a cell grid alone does not.
  */
 export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void, holes: P2[][] = []) {
+  runSync(drapeRingSteps(ring, cell, y, emit, holes));
+}
+
+/** drapeRing as a build that yields every 256 triangles, in the same order (core/slice.ts). */
+export function* drapeRingSteps(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void, holes: P2[][] = []) {
+  let emitted = 0;
   // Holes (mounds, paths, pads) are cut by the triangulation itself; indices run over ring then holes.
   // ShapeUtils drops a closing duplicate vertex from each contour, so drop it first to keep indices aligned.
   const open = (r: P2[]) => r.length > 1 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1] ? r.slice(0, -1) : r;
@@ -179,6 +186,7 @@ export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) =>
     for (let u = 0; u < n; u++) for (let v = 0; v < n - u; v++) {
       emit(at(u, v), at(u + 1, v), at(u, v + 1));
       if (u + v + 1 < n) emit(at(u + 1, v), at(u + 1, v + 1), at(u, v + 1));
+      if (++emitted % 256 === 0) yield 'drape';
     }
   }
 }

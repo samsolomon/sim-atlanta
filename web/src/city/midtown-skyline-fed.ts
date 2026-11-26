@@ -18,7 +18,8 @@ const glass = ['#2f3a44', '#3a4651', '#2a333c'];
 const TOWER = { x0: 41, x1: 67, z0: 11, z1: 38 }, SLAB = { x0: 22.5, x1: 67.5, z0: -58.5, z1: 11 };
 const H = { tower: 61.9, towerStep: 58.9, towerShaft: 51.5, slab: 47.5, slabTop: 53.7, wing: 14.2 };
 
-export function federalReserve(shell: Shell, ground: LocalGround) {
+/** Yields between its parts (core/slice.ts; createSkylineLandmark runs it). */
+export function* federalReserve(shell: Shell, ground: LocalGround) {
   const { band, edges } = classicalOrnament(shell, { stone: marble, shade, limestone: marble, joint });
   const ccw = (r: P2[]) => r.reduce((s, [x, z], i) => { const [a, b] = r[(i + 1) % r.length]; return s + x * b - z * a; }, 0) < 0 ? [...r].reverse() : r;
   const box = (x0: number, x1: number, z0: number, z1: number): P2[] => ccw([[x0, z0], [x1, z0], [x1, z1], [x0, z1]]);
@@ -78,6 +79,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   shell.prism(attic, H.slab, H.slabTop, marble, '#d4d2cb');
   punched(attic, H.slab + .4, H.slabTop - .8, 5);
   band(attic, H.slabTop - .6, H.slabTop, .35);
+  yield 'Fed slab';
 
   // Corner tower: taller than the slab, vertical recessed panels grouping window
   // columns, then two step-ins to a flat crown with tall paired attic windows.
@@ -182,6 +184,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
     wash.quad([x - .7, y + .6, z + .7], [x + .7, y + .6, z + .7], [x + .5, y + 6.6, z + .7], [x - .5, y + 6.6, z + .7], '#ffe7bd');
   }
 
+  yield 'Fed tower and plaza';
   const model = shell.finish('#ffe2b4', .6);
   const crownMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, emissive: '#ffffff', emissiveIntensity: 0 });
   const crownMesh = new THREE.Mesh(crown.geometry(), crownMaterial);

@@ -77,12 +77,12 @@ import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchel
 import { createVarsity, varsityId } from '../city/midtown-culture-varsity';
 import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
-import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
-import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
+import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
+import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
-import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { buildMidtownLandmark, createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
@@ -360,6 +360,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
+  yield 'bridge approaches';
   // On the high tier the sampler also carries the drawn triangles, so ground-following
   // layers can drape (terrain/drape.ts). The low tier skips the drape until the phone
   // memory budget is known: it adds ~100k triangles across the board.
@@ -440,6 +441,10 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)
       : site.id === norfolkSouthernId ? createNorfolkSouthern(sceneryCity.buildings, site, grid)
       : site.id === vireoId ? createVireo(sceneryCity.buildings, site, grid)
+      // The heaviest landmark modules build in steps (core/slice.ts).
+      : create === createSkylineLandmark ? yield* buildSkylineLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : create === createMidtownLandmark ? yield* buildMidtownLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : create === createArtsCampusLandmark ? yield* buildArtsCampusLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {

@@ -27,7 +27,8 @@ const GLYPHS: Record<string, string[]> = {
   E: ['11111','10000','10000','11110','10000','10000','11111'],
 };
 
-export function biltmore(shell: Shell) {
+/** Yields between its parts (core/slice.ts; createSkylineLandmark runs it). */
+export function* biltmore(shell: Shell) {
   const { band, modillions, rusticated, quoins } = classicalOrnament(shell, colours);
   const glass = ['#2f3b43', '#38454e', '#2b343b'];
   // Facades face outward only on counter-clockwise rings (as in 1180 Peachtree).
@@ -48,6 +49,7 @@ export function biltmore(shell: Shell) {
     band(p.ring, p.h - .75, p.h - .15, .95, '#e3dac9');
     band(p.ring, p.h - .15, p.h + .6, -.1, brick);
   }
+  yield 'Biltmore wings';
 
   // West Peachtree portico: ten columns two storeys high on a raised base,
   // carrying an entablature and balustrade, centred on the main front.
@@ -118,6 +120,7 @@ export function biltmore(shell: Shell) {
     });
   }
 
+  yield 'Biltmore masts';
   const model = shell.finish('#ffd9a0', .7);
   const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false });

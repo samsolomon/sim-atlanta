@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { P2 } from '../vignette/geom';
-import { drapeRing, g0, type Ground, type Quality } from './primitives';
+import { drapeRingSteps, g0, type Ground, type Quality } from './primitives';
+import { runSync } from '../core/slice';
 import { cutOut, drapeTriangle, type DrapeGround } from '../terrain/drape';
 import type { GroundYield } from '../terrain/surface';
 
@@ -29,6 +30,12 @@ export class GroundCover {
   patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number; holes?: P2[][];
     /** Convex hard-surface footprints (a stair run's GroundYield ring) the cover leaves to the stone. */
     cut?: GroundYield['ring'][] } = {}) {
+    runSync(this.patchSteps(ring, ground, cover, o));
+  }
+
+  /** patch as a build that yields while it drapes (core/slice.ts); same triangles, same order. */
+  *patchSteps(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number; holes?: P2[][];
+    cut?: GroundYield['ring'][] } = {}) {
     const k = COVERS.indexOf(cover), lift = o.lift ?? .02;
     // Off-board samples reuse the sampler's last valid height (never 0, which in City is 30 m off).
     const y = (x: number, z: number) => g0(ground, x, z) + lift;
@@ -36,7 +43,7 @@ export class GroundCover {
     const put = (o.cut ?? []).reduce((next, ring) => (a: number[], b: number[], c: number[]) => cutOut(a, b, c, ring, next), push);
     // On a City board, split each cell along the drawn terrain so no crease shows through.
     const drawn = (ground as DrapeGround).triangles;
-    drapeRing(ring, o.quality === 'low' ? 2 : 1, y, drawn ? (a, b, c) => drapeTriangle(drawn, a, b, c, lift, put) : put, o.holes);
+    yield* drapeRingSteps(ring, o.quality === 'low' ? 2 : 1, y, drawn ? (a, b, c) => drapeTriangle(drawn, a, b, c, lift, put) : put, o.holes);
   }
 
   get triangles() { return this.pos.length / 9; }
