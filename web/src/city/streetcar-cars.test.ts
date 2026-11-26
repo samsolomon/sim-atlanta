@@ -168,10 +168,10 @@ it('lights the street ahead of cab A at night, on the drawn height, and not wher
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
   // The street is drawn at 0.5 m up to x = 5 and not beyond.
   const cars = createStreetcarCars(rf, origin, (x) => (x > 5 ? null : 0.5), []);
-  const pools: { near: Vector3; far: Vector3 }[] = [];
+  const pools: { near: Vector3; far: Vector3; power?: number }[] = [];
   let active = true;
   cars.lights = { get active() { return active; }, inRange: () => true,
-    add: (nx, ny, nz, fx, fy, fz) => { pools.push({ near: new Vector3(nx, ny, nz), far: new Vector3(fx, fy, fz) }); return true; } };
+    add: (nx, ny, nz, fx, fy, fz, _w, power) => { pools.push({ near: new Vector3(nx, ny, nz), far: new Vector3(fx, fy, fz), power }); return true; } };
   const state = (s: number) => ({ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: s, tier: 'scheduled' }, lengthM: { value: 24 } } as TrainState);
   expect(cars.update([state(20)], 1)).toBe(1);
   expect(pools).toHaveLength(1);
@@ -179,6 +179,7 @@ it('lights the street ahead of cab A at night, on the drawn height, and not wher
   expect(pools[0].far.x).toBeGreaterThan(pools[0].near.x); // cab A leads along +s
   // From 0.5 m under cab A's bumper to the full reach ahead of it.
   expect(pools[0].far.distanceTo(pools[0].near)).toBeCloseTo(POOL.bus.length + 0.5, 1);
+  expect(pools[0].power).toBe(POOL.bus.power);
   pools.length = 0;
   // Further on, the car is drawn but the street its pool would light is not.
   expect(cars.update([state(40)], 1)).toBe(1);
