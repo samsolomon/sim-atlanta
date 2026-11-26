@@ -1,0 +1,58 @@
+import { readFileSync } from 'node:fs';
+import { expect, it } from 'vitest';
+import { southConnectorTransport } from '../square-board/south-connector-decks';
+import type { P2 } from '../vignette/geom';
+import { GroundGrid } from './grid';
+import { applyLids, lidRoads, onLid } from './lids';
+import { GroundSurface } from './surface';
+import type { TerrainCity } from './transport-data';
+
+const band = new URL('../../../pipeline/prototypes/square-board/south-band/context.json', import.meta.url);
+const context = (): TerrainCity => JSON.parse(readFileSync(band, 'utf8'));
+
+it('draws the Capitol Gateway lid streets and walks on the lid, not as decks', () => {
+  // OSM tags 35 streets and walks on the lid bridge=yes. Drawn as decks over the
+  // concealed freeway they stood 1-6 m above the lid the board already carries.
+  const before = context().roads.filter(r => r.bridge && r.pts.every(p => onLid(p)));
+  expect(before.length).toBe(35);
+  expect(lidRoads(context()).roads.filter(r => r.bridge && r.pts.every(p => onLid(p)))).toHaveLength(0);
+  const runs = southConnectorTransport(context()).terrainTransport!.roads;
+  expect(runs.filter(r => r.kind === 'bridge' && r.pts.every(p => onLid(p)))).toHaveLength(0);
+  // Bridges off the lid are untouched.
+  expect(lidRoads(context()).roads.filter(r => r.bridge).length).toBe(context().roads.filter(r => r.bridge).length - 35);
+});
+
+it('cuts a baked bridge run at the lid outline and keeps the part off the lid a bridge', () => {
+  // Downtown's board ends at z = 700, inside the lid's northern tip: three short
+  // service runs there lie on it. A run crossing the outline edge from
+  // (382.72, 697.64) to (399.76, 684.84) is cut where it crosses, near z 692.
+  const run = { kind: 'bridge', cls: 'service', pts: [[390, 670], [390, 700]] as P2[] };
+  const city = { roads: [], terrainTransport: { version: 1, rail: [], roads: [run] } } as unknown as TerrainCity;
+  const pieces = applyLids(city).terrainTransport!.roads;
+  expect(pieces.map(p => p.kind)).toEqual(['bridge', 'ground']);
+  expect(pieces[0].pts[0]).toEqual([390, 670]);
+  expect(pieces[1].pts.at(-1)).toEqual([390, 700]);
+  const cut = pieces[0].pts.at(-1)!;
+  expect(pieces[1].pts[0]).toEqual(cut);
+  expect(onLid(cut, .01)).toBe(true);
+  expect(Math.abs(cut[1] - 692.2)).toBeLessThan(.2);
+  // A run that only touches a lid corner stays a bridge.
+  const corner = { roads: [], terrainTransport: { version: 1, rail: [], roads: [{ kind: 'bridge', cls: 'footway', pts: [[376.16, 671.81], [376.39, 711.18]] }] } } as unknown as TerrainCity;
+  expect(applyLids(corner).terrainTransport!.roads.map(r => r.kind)).toEqual(['bridge']);
+});
+
+it.each(['low', 'high'] as const)('draws the lid top, not its DEM spikes or the cut, under its streets on %s', quality => {
+  // Something overhead was classified as ground near (375, 760): the grid read up
+  // to 316.0 m over a 310.3 m lid. At the south portal a 5 m node sat in the cut,
+  // and service road 561694954 dropped into it (lids.py, underpass-floors.json).
+  const dir = new URL('../../../pipeline/prototypes/square-board/south-band/', import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', dir))).buffer);
+  const ground = new GroundSurface(grid, quality);
+  const zero = manifest.vertical.sceneZeroNavd88M;
+  try {
+    for (const [x, z, lid] of [[375, 760, 310.33], [370, 760, 310.34], [365, 760, 310.42], [375, 765, 309.92], [330, 875, 310.27]]) {
+      expect(Math.abs(ground.sampleScene(x, z)! + zero - lid), `${x}, ${z}`).toBeLessThan(.05);
+    }
+  } finally { ground.geometry.dispose(); }
+});

@@ -1,0 +1,278 @@
+{
+ "oldChecker": "439abf84",
+ "newChecker": "e2b253ee (samsolomon/crossing-check-lid)",
+ "runs": [
+  {
+   "export": "/tmp/four-city-study/step0",
+   "expect": "baseline",
+   "identical": true,
+   "sha256": "f7aefbe577a8fbbb894b6d800d26c8d7810f28e52410ed8504ee5441f626a2ee"
+  },
+  {
+   "export": "/tmp/four-city-study/step0-beb9b2d0",
+   "expect": "peachtree",
+   "identical": true,
+   "sha256": "175281df913d4b2be7b65182a5b0efe82c8c18bc4998af9e68e0e5f4cbeb0086"
+  },
+  {
+   "export": "/tmp/four-city-study/step0-1d04eadc",
+   "expect": "combined",
+   "identical": true,
+   "sha256": "62290ed4c01e367528120978cb0362a098936dc5b318cd97168b0d4d9f981d48"
+  },
+  {
+   "export": "connector-b2-ramps 70cdd4af",
+   "expect": "combined",
+   "identical": true,
+   "sha256": "62290ed4c01e367528120978cb0362a098936dc5b318cd97168b0d4d9f981d48"
+  }
+ ],
+ "negativeCases": [
+  {
+   "variant": "a-board-raised",
+   "expected": "fails: lid not found",
+   "result": "Calibration mismatch [('capitol', 'low', ['lid not found'], []), ('capitol', 'high', ['lid not found'], [])]"
+  },
+  {
+   "variant": "b-walks-removed-decks-kept",
+   "expected": "fails: lid not found, joint grade",
+   "result": "Calibration mismatch [('capitol', 'low', ['joint grade', 'lid not found'], []), ('capitol', 'high', ['joint grade', 'lid not found'], [])]"
+  },
+  {
+   "variant": "c-no-board",
+   "expected": "stops: no board selection",
+   "result": "ValueError: Empty mounted selection: , (), board=True"
+  }
+ ],
+ "round2": {
+  "newChecker": "daaa6bbd (samsolomon/crossing-check-lid)",
+  "change": "Lid thresholds per way (at least 6 stations, 80% found, 95% within 0.30 m), deck test against the class-2 median where the board is missing, and a joint step over 2 mm fails in every mode.",
+  "runs": [
+   {
+    "export": "/tmp/four-city-study/step0",
+    "expect": "baseline",
+    "seventeenthAndPeachtreeIdentical": true,
+    "capitol": {
+     "high": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     },
+     "low": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     }
+    },
+    "sha256": "cc2e0e7c97b6c5c61f5a1a6a39d3b2fbc260e7e860dd5b06aae9710b1a76a49c"
+   },
+   {
+    "export": "/tmp/four-city-study/step0-beb9b2d0",
+    "expect": "peachtree",
+    "seventeenthAndPeachtreeIdentical": true,
+    "capitol": {
+     "high": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     },
+     "low": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     }
+    },
+    "sha256": "fe80959118c7c651976e3138ece2ccd3c8cde63ec24426c8ec6720734dc367f4"
+   },
+   {
+    "export": "/tmp/four-city-study/step0-1d04eadc",
+    "expect": "combined",
+    "seventeenthAndPeachtreeIdentical": true,
+    "capitol": {
+     "high": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     },
+     "low": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     }
+    },
+    "sha256": "45e1db48d17451af514b81eacf18eea26ec9c92eb29fa25aca1e7611dd8e939f"
+   },
+   {
+    "export": "B2 head export (scratch gateFB2b, the B2 branch before merge)",
+    "expect": "combined",
+    "seventeenthAndPeachtreeIdentical": true,
+    "capitol": {
+     "high": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     },
+     "low": {
+      "failuresBefore": [
+       "walk support",
+       "joint grade"
+      ],
+      "failuresAfter": [
+       "walk support",
+       "joint grade",
+       "joint step"
+      ],
+      "restIdentical": true
+     }
+    },
+    "sha256": "45e1db48d17451af514b81eacf18eea26ec9c92eb29fa25aca1e7611dd8e939f"
+   }
+  ],
+  "negativeCases": [
+   {
+    "variant": "d-short-way-raised",
+    "checker": "daaa6bbd",
+    "expected": "fails: joint step, lid not found (way 1451206626)",
+    "failures": {
+     "high": [
+      "joint step",
+      "lid not found"
+     ],
+     "low": [
+      "joint step",
+      "lid not found"
+     ]
+    },
+    "lid": {
+     "high": {
+      "ok": false,
+      "matchedShare": 0.9912,
+      "decksAboveSamples": 0
+     },
+     "low": {
+      "ok": false,
+      "matchedShare": 0.9903,
+      "decksAboveSamples": 0
+     }
+    }
+   },
+   {
+    "variant": "d-short-way-raised",
+    "checker": "e2b253ee",
+    "expected": "passed (the hole Grok found)",
+    "failures": {
+     "high": [],
+     "low": []
+    },
+    "lid": {
+     "high": {
+      "ok": true,
+      "matchedShare": 0.9912,
+      "decksAboveSamples": 0
+     },
+     "low": {
+      "ok": true,
+      "matchedShare": 0.9903,
+      "decksAboveSamples": 0
+     }
+    }
+   },
+   {
+    "variant": "e-hole-with-deck",
+    "checker": "daaa6bbd",
+    "expected": "fails: lid not found (38 deck samples over the hole)",
+    "failures": {
+     "high": [
+      "lid not found"
+     ],
+     "low": [
+      "lid not found"
+     ]
+    },
+    "lid": {
+     "high": {
+      "ok": false,
+      "matchedShare": 1.0,
+      "decksAboveSamples": 38
+     },
+     "low": {
+      "ok": false,
+      "matchedShare": 1.0,
+      "decksAboveSamples": 38
+     }
+    }
+   },
+   {
+    "variant": "e-hole-with-deck",
+    "checker": "e2b253ee",
+    "expected": "passed (the hole Grok found)",
+    "failures": {
+     "high": [],
+     "low": []
+    },
+    "lid": {
+     "high": {
+      "ok": true,
+      "matchedShare": 1.0,
+      "decksAboveSamples": 0
+     },
+     "low": {
+      "ok": true,
+      "matchedShare": 1.0,
+      "decksAboveSamples": 0
+     }
+    }
+   }
+  ],
+  "unitTests": "pipeline/prototypes/crossing-checks/test_lid.py on the checker branch: 3 tests; the e2b253ee checker passes both bad inputs."
+ }
+}

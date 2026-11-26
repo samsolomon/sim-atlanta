@@ -1,4 +1,5 @@
 import { auburnTransport } from '../city/sweet-auburn-transport';
+import { lidRoads } from '../terrain/lids';
 import { Line, type P2 } from '../vignette/geom';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
@@ -48,7 +49,8 @@ const key = (pts: P2[]) => pts[0] + '/' + pts.at(-1);
 /** I-20 and the interchange flyovers cross several other road surfaces before
  * reaching a bank. Use the deck profile for the structural mesh and its cars. */
 export function southConnectorTransport(context: TerrainCity): TerrainCity {
-  const city = auburnTransport(context);
+  // Streets and walks on the Capitol Gateway lid are board pavement (lids.ts).
+  const city = auburnTransport(lidRoads(context));
   const roads: TransportRun[] = city.terrainTransport!.roads.filter(r => !surveyed[key(r.pts)]);
   const sources = city.roads.map(road => {
     const samples = road.cls === 'motorway' && surveyed[key(road.pts)];
