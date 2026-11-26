@@ -34,6 +34,8 @@ export interface SurfaceTransport {
   freightTreads: FreightTreadPoint[][];
   /** Scene y on the specified road deck, or null outside its visible tread. */
   deckAt(x: number, z: number, run: TransportRun): number | null;
+  /** deckAt by a full scan of the run's treads, without the index (for tests). */
+  deckAtScan(x: number, z: number, run: TransportRun): number | null;
   clearOfFreight(x: number, z: number): boolean;
   /** Graded cuttings for ground ballast the terrain stands over. Carve the board with them
    * (`area.carve`) once the transport is built: they only lower the terrain. */
@@ -70,6 +72,29 @@ function freightTexture() {
 }
 
 /** Attach beside the terrain group. All heights use the board's shared scene zero. */
+
+/** Cell size of deckAt's tread index (metres). */
+const TREAD_CELL_M = 8;
+const cellKey = (cx: number, cz: number) => (cx + 32768) * 65536 + (cz + 32768);
+/**
+ * The x/z box of every point triangleHeight accepts for triangle `i`: the triangle grown by its
+ * tolerance in barycentric terms (u >= -e|c|, v >= -e|b|, u + v <= 1 + e|c - b|), plus a millimetre.
+ * A sliver's tolerance reaches well past its own vertices, so its own box would not do.
+ */
+function acceptedBox(p: THREE.BufferAttribute, i: number): [number, number, number, number] {
+  const ax = p.getX(i), az = p.getZ(i), bx = p.getX(i + 1) - ax, bz = p.getZ(i + 1) - az, cx = p.getX(i + 2) - ax, cz = p.getZ(i + 2) - az;
+  const det = bx * cz - bz * cx;
+  if (Math.abs(det) < 1e-8) return [Infinity, -Infinity, Infinity, -Infinity];
+  const eps = 0.0001 / Math.abs(det), eu = eps * Math.hypot(cx, cz), ev = eps * Math.hypot(bx, bz), ew = eps * Math.hypot(cx - bx, cz - bz);
+  const corners = [[-eu, -ev], [1 + ew + ev, -ev], [-eu, 1 + ew + eu]];
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [u, v] of corners) {
+    const x = ax + u * bx + v * cx, z = az + u * bz + v * cz;
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+  }
+  return [minX - .001, maxX + .001, minZ - .001, maxZ + .001];
+}
+
 export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
   cut?: { freight: TransportRun; treadY: number }): SurfaceTransport {
   return runSync(buildSurfaceTransport(city, grid, terrainGround, cut));
@@ -110,7 +135,31 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
   let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
+  /**
+   * The height of a run's drawn tread at (x, z): the first of its triangles, in build order, that
+   * contains the point. Traffic samples this every frame (a Connector car takes three to six
+   * samples), and a motorway run holds thousands of tread triangles, so the triangles are
+   * bucketed by 8 m cell, each bucket keeping build order. A bucket holds every triangle whose
+   * accepted region (triangleHeight's tolerance included) can reach the cell, so the first hit is
+   * the same triangle the full scan finds. The index rebuilds if the tread list or its vertex
+   * buffer changes.
+   */
   function deckAt(x: number, z: number, run: TransportRun) {
+    const halfWidth = junctionWidths.get(run);
+    if (halfWidth !== undefined && !run.pts.some((p, i) =>
+      i > 0 && segDist(x, z, run.pts[i - 1], p) <= halfWidth + .1)) return null;
+    const quads = roadTreads.get(run);
+    if (!quads) return null;
+    const p = bridgeRuns.has(run) ? bridgePositions : structurePositions;
+    const bucket = treadIndex(run, quads, p).get(cellKey(Math.floor(x / TREAD_CELL_M), Math.floor(z / TREAD_CELL_M)));
+    if (bucket) for (const i of bucket) {
+      const h = triangleHeight(p, i, x, z);
+      if (h !== null) return h;
+    }
+    return null;
+  }
+  /** deckAt without the index: the full scan in build order (tests compare the two). */
+  function deckAtScan(x: number, z: number, run: TransportRun) {
     const halfWidth = junctionWidths.get(run);
     if (halfWidth !== undefined && !run.pts.some((p, i) =>
       i > 0 && segDist(x, z, run.pts[i - 1], p) <= halfWidth + .1)) return null;
@@ -120,6 +169,22 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       if (h !== null) return h;
     }
     return null;
+  }
+  const treadIndexes = new Map<TransportRun, { quads: number[]; length: number; p: THREE.BufferAttribute; version: number; cells: Map<number, number[]> }>();
+  function treadIndex(run: TransportRun, quads: number[], p: THREE.BufferAttribute) {
+    const known = treadIndexes.get(run);
+    if (known && known.quads === quads && known.length === quads.length && known.p === p && known.version === p.version) return known.cells;
+    const cells = new Map<number, number[]>();
+    for (const i of quads) {
+      const [minX, maxX, minZ, maxZ] = acceptedBox(p, i);
+      for (let cx = Math.floor(minX / TREAD_CELL_M); cx <= Math.floor(maxX / TREAD_CELL_M); cx++)
+        for (let cz = Math.floor(minZ / TREAD_CELL_M); cz <= Math.floor(maxZ / TREAD_CELL_M); cz++) {
+          const k = cellKey(cx, cz), list = cells.get(k);
+          if (list) list.push(i); else cells.set(k, [i]);
+        }
+    }
+    treadIndexes.set(run, { quads, length: quads.length, p, version: p.version, cells });
+    return cells;
   }
   // A 3.2 m locomotive, the 2.2 × 2.6 m column on its diagonal and a small margin.
   const pierClearanceM = 3.8;
@@ -771,7 +836,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     builder.col.length = 0;
   }
   uv.length = 0;
-  return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
+  return { group, freightTreads, deckAt, deckAtScan, clearOfFreight, cutting, structuralTier: 'illustrative',
     setNight: hasBridge ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
