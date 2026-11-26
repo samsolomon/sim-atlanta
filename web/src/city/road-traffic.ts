@@ -5,7 +5,7 @@ import { rng, type Line } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
-import { LENGTH, PAINT, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
+import { LENGTH, PAINT, vanPaintIndex, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import type { TerrainCity } from '../terrain/transport-data';
 import { perf, perfOverrides } from '../core/perf';
 import { legacySignalPositions } from './traffic-signals-legacy';
@@ -549,7 +549,8 @@ export class RoadTraffic {
         const brake = mesh.geometry.getAttribute('braking') as THREE.InstancedBufferAttribute;
         const braking = timed != null ? (lane.queue?.brakes ?? lane.brakes)[i] : course.rush && free < course.rush.center &&
           rushDistance(free + 1, course, rushHour) - s < .65;
-        const lamp = braking ? 1 : 0;
+        // The semi's van colour shares the per-instance brake float (see vehicleMaterial).
+        const lamp = (braking ? 1 : 0) + (slot.kind === 'semi' ? 2 * vanPaintIndex(slot.threshold) : 0);
         if (brake.getX(index) !== lamp) { brake.setX(index, lamp); brake.needsUpdate = true; }
         // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);

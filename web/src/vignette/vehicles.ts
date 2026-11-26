@@ -4,19 +4,16 @@
  * centre of the footprint on the ground.
  *
  * Per-vertex `aKind`: 0 paint (takes the instance colour), 1 headlight, 2 taillight,
- * 3 glass, 4 fixed colour (tyres, trim, livery: ignores the instance colour).
+ * 3 glass, 4 fixed colour (tyres, trim, livery: ignores the instance colour), 5 amber marker (fixed
+ * colour, lit at night), 6 semi van box (white, or a plain colour carried in the braking attribute).
  */
 import { roadSedanGeometry } from './road-sedan';
+import { roadSemiGeometry, SEMI_LENGTH } from './road-semi';
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' | 'tractor' | 'trailer' | 'semi';
 
-/** Tractor-trailer as one rigid body: the trailer's kingpin (1 m behind its front) sits on the tractor's
- * fifth wheel (z ≈ −2.0). Overall 19.16 m, from the tractor's grille (z 3.70) to the trailer's tail
- * lamps (7.255 m behind the trailer's centre). */
-const SEMI_TRAILER_DZ = -2.0 - 6.2, SEMI_FRONT = 3.7, SEMI_REAR = SEMI_TRAILER_DZ - 7.255;
-const SEMI_LENGTH = SEMI_FRONT - SEMI_REAR;
+/** The semi is the long-hood sleeper tractor and 53 ft van of road-semi.ts, one rigid 22.97 m body. */
 export const LENGTH: Record<VehicleType, number> = { sedan: 4.885, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, semi: SEMI_LENGTH };
 
 class Kit {
@@ -150,18 +147,9 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
       k.lights(3.21, -3.2, 1.2, 1.9, 0.9);
       return k.geometry();
     }
-    case 'semi': {
-      // Recentre the pair on the footprint so it queues and clips like any one-body vehicle.
-      const centre = (SEMI_FRONT + SEMI_REAR) / 2;
-      const tractor = vehicleGeometry('tractor').translate(0, 0, -centre);
-      const trailer = vehicleGeometry('trailer').translate(0, 0, SEMI_TRAILER_DZ - centre);
-      // The cab takes the instance colour; the trailer box stays white as fixed trim.
-      const kinds = trailer.getAttribute('aKind');
-      for (let i = 0; i < kinds.count; i++) if (kinds.getX(i) === 0) kinds.setX(i, 4);
-      const merged = mergeGeometries([tractor, trailer])!;
-      tractor.dispose(); trailer.dispose();
-      return merged;
-    }
+    case 'semi':
+      // The traffic form; the Model Lab also shows the close form.
+      return roadSemiGeometry();
     case 'trailer': {
       const k = new Kit();
       k.box(2.55, 2.9, 14.4, 0, 2.75, 0, '#fff', 0);
@@ -173,6 +161,18 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
   }
 }
 
+/** Plain van colours for the occasional non-white semi van, indexed from 1 (0 is white). */
+export const VAN_PAINT = ['#2d4f7c', '#8e2a26', '#3f6b4a'];
+/** About one semi van in seven is a plain colour; the choice rides on the slot's own draw. */
+export function vanPaintIndex(threshold: number) {
+  const u = (threshold * 977) % 1;
+  return u < 0.86 ? 0 : 1 + Math.min(VAN_PAINT.length - 1, Math.floor(((u - 0.86) / 0.14) * VAN_PAINT.length));
+}
+const glslColor = (hex: string) => {
+  const c = new THREE.Color(hex);
+  return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
+};
+
 /**
  * Shared vehicle material: paint from the instance colour, fixed glass/tyres/trim, and head
  * and tail lights that glow by `night` (road cars can light their own brakes).
@@ -183,9 +183,11 @@ export function vehicleMaterial(night: { value: number }, brakes = false) {
   m.customProgramCacheKey = () => shaderKey() + (brakes ? '-brakes' : '');
   m.onBeforeCompile = (sh) => {
     if (brakes) {
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float braking; varying float vBrake;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrake = braking;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vBrake;')
+      // braking = lamp (0 or 1) + 2 × van paint index, so the semi's van colour needs no attribute of its own.
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float braking; varying float vBrake; varying float vVan;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrake = mod(braking, 2.0); vVan = floor(braking * 0.5 + 0.25);');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vBrake; varying float vVan;')
+        .replace('#include <alphamap_fragment>', `if (vKind > 5.5 && vVan > 0.5) diffuseColor.rgb = vVan < 1.5 ? ${glslColor(VAN_PAINT[0])} : vVan < 2.5 ? ${glslColor(VAN_PAINT[1])} : ${glslColor(VAN_PAINT[2])};\n#include <alphamap_fragment>`)
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nif (vKind > 1.5 && vKind < 2.5) totalEmissiveRadiance += vec3(3.6, 0.06, 0.01) * vBrake;');
     }
     sh.uniforms.uNight = night;
@@ -205,6 +207,7 @@ export function vehicleMaterial(night: { value: number }, brakes = false) {
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
         if (vKind > 0.5 && vKind < 2.5) totalEmissiveRadiance += diffuseColor.rgb * (0.12 + 1.6 * uNight);
+        if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += diffuseColor.rgb * 1.6 * uNight;
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(0.0, 0.01, 0.02);`,
       );
   };
