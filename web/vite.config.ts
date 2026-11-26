@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => {
     // VITEST_MAX_WORKERS changes the cap.
     test: {
       pool: 'forks', maxWorkers: Number(process.env.VITEST_MAX_WORKERS) || 4,
+      setupFiles: ['./test-setup.ts'],
       // Slower machines (CI) raise the per-test limit; unset, Vitest's 5 s stands.
       ...(process.env.VITEST_TEST_TIMEOUT ? { testTimeout: Number(process.env.VITEST_TEST_TIMEOUT) } : {}),
     },

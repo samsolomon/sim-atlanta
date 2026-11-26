@@ -14,6 +14,7 @@ import { createSurfaceTransport } from './transport';
 import type { TerrainCity } from './transport-data';
 import { triangleHeight } from './tread-height';
 import { Line } from '../vignette/geom';
+import { turn } from '../testing/turn';
 
 afterEach(() => setFarOrdering(true));
 
@@ -142,7 +143,7 @@ function boardFor(name: 'downtown' | 'north-band' | 'south-band') {
 }
 for (const quality of ['low', 'high'] as const)
   for (const name of ['downtown', 'north-band', 'south-band'] as const)
-    it.skipIf(name === 'downtown' && !existsSync(vignette))(`keeps a shadow caster under every deck in the shadow-pass prefix on ${name} at ${quality}`, () => {
+    it.skipIf(name === 'downtown' && !existsSync(vignette))(`keeps a shadow caster under every deck in the shadow-pass prefix on ${name} at ${quality}`, async () => {
       const { grid, city } = boardFor(name);
       const surface = new GroundSurface(grid, quality), bare = surface.sampleScene.bind(surface);
       const transport = createSurfaceTransport(city, grid, bare);
@@ -154,6 +155,7 @@ for (const quality of ['low', 'high'] as const)
       for (const run of [...city.terrainTransport!.roads, ...city.terrainTransport!.rail]) {
         if (run.kind !== 'bridge' || run.cls === 'tram' || run.pts.length < 2) continue;
         const line = new Line(run.pts);
+        await turn(); // a run per turn of the event loop (test-setup.ts)
         for (let s = 1; s < line.length - 1; s += 3) {
           const { x, z } = line.at(s);
           if (!triangleHeights(pos, x, z, 0, pos.count / 3).length) continue; // not drawn on this board
