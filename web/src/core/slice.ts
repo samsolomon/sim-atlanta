@@ -50,9 +50,10 @@ export const sliceInput = { dragging: false, inputAt: -Infinity, dayOfYear: 180,
 /**
  * Build time per frame, all section builds together. While the camera is in use (a drag, or input
  * within `idleAfterMs`) building takes `movingMs`. Otherwise it takes `idleShare` of what the
- * rest of the last frame cost, from `idleMinMs` to `idleMaxMs`.
+ * rest of the last frame cost, from `idleMinMs` to `idleMaxMs`: a still map fills fast (measured
+ * in docs/perf.md), and steps back as soon as someone touches it.
  */
-export const SHARE = { movingMs: 2, idleAfterMs: 1000, idleShare: 0.5, idleMinMs: 4, idleMaxMs: 24 };
+export const SHARE = { movingMs: 2, idleAfterMs: 1000, idleShare: 1, idleMinMs: 4, idleMaxMs: 50 };
 
 /** One build's share of the next frame, split between the builds under way. */
 export function frameShare(restMs: number, now = performance.now()) {

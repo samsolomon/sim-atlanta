@@ -14,6 +14,7 @@ import {
 import { drapeTriangle, type TriangleSource } from '../terrain/drape';
 import survey from './fixtures/brookwood.json';
 import { corridor, corridorGrade, corridorGrids } from './brookwood-corridor';
+import { runSync } from '../core/slice';
 import { createNorcrossFreight } from './brookwood-freight';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
@@ -565,6 +566,10 @@ function peachtreeLandings(floor: number, ground: (x: number,z: number) => numbe
 
 /** Attach to the City mosaic at its existing vertical datum. */
 export function createBrookwood(sceneZero: number, instanceFreight = true, northFreight?: Line) {
+  return runSync(createBrookwoodSteps(sceneZero, instanceFreight, northFreight));
+}
+/** createBrookwood as a build that yields between the track, the station and the trains. */
+export function* createBrookwoodSteps(sceneZero: number, instanceFreight = true, northFreight?: Line) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
@@ -580,9 +585,11 @@ export function createBrookwood(sceneZero: number, instanceFreight = true, north
       b.ribbon(line, 2.5, () => bed(p.x) + 0.19, '#665c50', 1, s, Math.min(line.length, s + 0.22));
     }
     for (const off of [-0.7175, 0.7175]) b.ribbon(line.offset(off), 0.085, (_, x) => bed(x) + 0.32, '#b0ae9f');
+    yield 'brookwood track';
   }
   const litPlatform = new Builder();
   station(b, lamps, litPlatform, sceneZero);
+  yield 'brookwood station';
   const group = new THREE.Group(),
     cars = new THREE.Group();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -617,6 +624,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true, north
     }
     return { geometry, offset, length, trucks: dimensions(unit).trucks };
   });
+  yield 'brookwood cars';
   const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   // The mapped mains meet the west board edge on a diagonal. Square off the ballast there.
   const westEdge = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1000);

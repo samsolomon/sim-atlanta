@@ -12,6 +12,7 @@ import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
 import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure, undersideFaces } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
+import { runSync } from '../core/slice';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
 type Origin = { lon: number; lat: number };
@@ -201,7 +202,11 @@ export function northLinePortalSlots(grid: { sample(x: number, z: number): numbe
   ];
 }
 
-export function createNorthLine(
+export function createNorthLine(...args: Parameters<typeof createNorthLineSteps>) {
+  return runSync(createNorthLineSteps(...args));
+}
+/** createNorthLine as a build that yields between its design passes and meshes. */
+export function* createNorthLineSteps(
   area: {
     group: THREE.Group;
     groundAt: (x: number, z: number) => number | null;
@@ -223,11 +228,15 @@ export function createNorthLine(
   // to its span, then design the profile to keep the soffit clear over every road.
   const draft = northLineProfile(lines, rows, area.groundAt, roads);
   if (!draft.height.every(Number.isFinite)) return;
+  yield 'north line draft';
   const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
   const depths = northLineDepths(draft, piers);
+  yield 'north line piers';
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
+  yield 'north line profile';
   const guideway = northLineGuideway(lines, profile, area.groundAt);
   area.group.add(guideway);
+  yield 'north line guideway';
   const walls = new THREE.Group();
   if (area.terrainAt) {
     const underside = undersideFaces(guideway, 425, 445, -5415, -5390);
@@ -239,7 +248,9 @@ export function createNorthLine(
     }
     area.group.add(walls);
   }
+  yield 'north line walls';
   const spans = northLineStructure(profile, piers, area.groundAt);
+  yield 'north line spans';
   area.group.add(spans.mesh, spans.lamps);
   let height = (line: Line, along: number) => profile.at(line, along);
   let tops: RailTops | undefined;

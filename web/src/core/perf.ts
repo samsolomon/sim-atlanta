@@ -611,6 +611,8 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
     // R16 joined the board while the sample ran, so its mount is in the long tasks below.
     r16BuiltInSample: r16Built !== undefined && r16Built >= sampleStart,
     // Longest main-thread task during the sample, and how many passed 100 ms.
+    // The longest task a visitor meets after the page is ready, while the other areas load.
+    loadLongestTaskMs: at('ready') === null ? null : Math.max(0, ...longTasks.filter(l => l.start >= at('ready')! && l.start < sampleStart).map(l => l.ms)),
     longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
     longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
     longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),

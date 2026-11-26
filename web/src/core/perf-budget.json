@@ -61,15 +61,19 @@
     }
   },
   "low-north": {
+    "_doc": "Also gates the load before the route starts: loadLongestTaskMs is the longest task between ready and the sample, while every other area mounts, and lastAreaMs records when the last one did (the fill time, in page ms).",
     "tier": "low",
     "viewport": "a16",
     "cpu": 6,
     "motion": "route:north",
     "ceiling": {
-      "longestTaskMs": 650
+      "longestTaskMs": 650,
+      "loadLongestTaskMs": 400
     },
     "target": {
-      "longestTaskMs": 150
+      "longestTaskMs": 150,
+      "loadLongestTaskMs": 150,
+      "lastAreaMs": 30000
     }
   },
   "low-r16": {

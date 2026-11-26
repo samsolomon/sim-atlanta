@@ -25,7 +25,7 @@ import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
-import { createNorthLine } from './midtown-marta-rail';
+import { createNorthLineSteps, type createNorthLine } from './midtown-marta-rail';
 import { drawnAt } from './drawn-at';
 import { FOLLOW_CAMERA, leadFirst, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
@@ -150,7 +150,7 @@ import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } fr
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { sliceBudget, sliceInput } from '../core/slice';
+import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
 import { distToLine } from './line-distance';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { shadowStepM } from './shadow-step';
@@ -298,15 +298,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   async function brookwoodGrid(spec: GroundManifest, bytes: ArrayBuffer) {
     // Prepare the station before either row is cut. Both rows retain the original
     // surface and generic structures if the chunk or the model is unavailable.
-    railModule ??= import('./brookwood').then(mod => {
+    railModule ??= import('./brookwood').then(async mod => {
       if (eastController.signal.aborted) return;
-      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low, northFreightMain);
+      const build = mod.createBrookwoodSteps(spec.vertical.sceneZeroNavd88M, !low, northFreightMain), budget = sliceBudget();
+      const built = budget ? await runBudgeted(build, { budgetMs: budget, stats: sliceStats }) : runSync(build);
+      if (eastController.signal.aborted) { built.dispose(); return; }
+      preparedBrookwood = built;
       return mod;
     }).catch(error => {
       console.warn('Brookwood station unavailable', error);
       return undefined;
     });
     const mod = await railModule;
+    // Grading the ground under the rail is its own frame's work.
+    await nextFrame();
     return mod ? mod.brookwoodGrid(spec, bytes) : new GroundGrid(spec, bytes);
   }
   const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
@@ -318,7 +323,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const seamNormals = rowJoinNormals();
-  const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
+  /** Where a page builds in steps, wait a frame between two pieces of main-thread work. */
+  const nextFrame = () => sliceBudget() ? new Promise<unknown>(resolve => requestAnimationFrame(resolve)) : Promise.resolve();
+  // The North Line is built with its row, aside, and joins the row's group when City mounts it.
+  const northLines = new WeakMap<object, { holder: THREE.Group; line: ReturnType<typeof createNorthLine> }>();
+  function prepareRow(id: string, area: { groundAt: (x: number, z: number) => number | null; terrainAt: (x: number, z: number) => number | null; connectorBoard: ConnectorBoard }): Build<void> | undefined {
+    if (id !== 'brookwood-station') return;
+    return (function* () {
+      const holder = new THREE.Group();
+      const line = yield* createNorthLineSteps({ group: holder, groundAt: area.groundAt, terrainAt: area.terrainAt, connectorBoard: area.connectorBoard }, rf, manifest.origin, trains.group);
+      northLines.set(area, { holder, line });
+    })();
+  }
+  const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -1123,7 +1140,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const disposeFragments = mountStationFragments(atl, quality);
         const dispose = atl.dispose.bind(atl);
         atl.dispose = () => { disposeFragments(); dispose(); };
-        const line = createNorthLine(atl, rf, manifest.origin, trains.group);
+        const prepared = northLines.get(atl);
+        if (prepared?.holder.children.length) atl.group.add(...prepared.holder.children);
+        const line = prepared?.line;
         northLine = line;
         // The area's dispose clears its group without freeing it; free the North Line too.
         const disposeArea = atl.dispose.bind(atl);
@@ -1160,21 +1179,29 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       signal.throwIfAborted();
       const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal, mosaic?.joins('auburn').slice(2));
       if (signal.aborted) { area.dispose(); return; }
-      mosaic?.mount('auburn', area);
+      // The streetcar's track and stops are ready before the board shows, a frame apart.
+      const board = area.connectorBoard;
+      await nextFrame();
+      const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
+      const lines = streetcarLines(rf, manifest.origin);
+      const sites = platformSites(streetcarStopList(), lines, board.city.roads);
+      const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
+      await nextFrame();
+      const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
+      await nextFrame();
+      const stops = buildStreetcarStops(sites, area.bounds, surface);
+      await nextFrame();
+      const discard = () => { track.dispose(); stops.dispose(); };
+      if (signal.aborted) { discard(); area.dispose(); return; }
+      try { mosaic?.mount('auburn', area); }
+      catch (error) { discard(); throw error; }
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
       addArea(area);
       north = area;
       {
-        const board = area.connectorBoard;
-        const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
-        const lines = streetcarLines(rf, manifest.origin);
-        const sites = platformSites(streetcarStopList(), lines, board.city.roads);
-        const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
-        const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
         const entry = { bounds: area.bounds, height: surface };
         streetcarSurface.push(entry);
         area.group.add(track.group);
-        const stops = buildStreetcarStops(sites, area.bounds, surface);
         // Match the downtown track and shelter shaders while keeping the interior seam open.
         if (perimeter) {
           clipScenery(track.group, perimeter);
@@ -1198,6 +1225,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       renderer.shadowMap.needsUpdate = true;
       areaResult('auburn', null);
+      perf.phase('area:auburn');
       if (pendingNorthTarget) {
         const { x, z } = pendingNorthTarget;
         const offset = camera.position.clone().sub(controls.target);
@@ -1240,6 +1268,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (wholeBoardRequested) approachNorth(1400, 0);
       else approachNorth(next.x, next.z);
       areaResult('king', null);
+      perf.phase('area:king');
       renderer.shadowMap.needsUpdate = true;
       if (pendingEastTarget) {
         const { x, z } = pendingEastTarget;

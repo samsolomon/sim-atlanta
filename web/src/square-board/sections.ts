@@ -170,7 +170,10 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
   return { id, grid:drawnGrid, context, ramp, trail, slots };
 }
 
-export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {
+/** Work a page adds to a row's build, as its last steps before the row connects to the board. */
+export type PrepareRow = (id: Board, area: TrafficArea) => Build<void> | undefined;
+
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid; prepare?: PrepareRow }) {
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
@@ -302,6 +305,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           },
         });
       } catch (error) { hospitalLink?.dispose(); for (const t of transports) t.dispose(); area.dispose(); throw error; }
+      const own = options?.prepare?.(id, added.get(id)!);
+      if (own) yield* own;
     }
     return added;
   } catch (error) {

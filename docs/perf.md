@@ -144,13 +144,30 @@ ceilings, so each run prints how far R16 takes memory, calls and programs past t
 
 ### Sliced area builds
 
-Every area builds in steps. Each frame, building gets half of what the rest of the last frame cost, from 4 to 24 ms,
-split between the builds under way and halved while the camera is dragged (`?slice=0` builds each area in one task). A run settles only once no build is under way (`__perf.building`). The trade is
-time for smoothness: on the Studio at 6x CPU the default board fills in 41.5 s instead of 20.7 s, and the longest task
-after ready falls from 3.1 s to 1.0 s (2026-11-26; not yet measured on the A16).
+King Memorial, Sweet Auburn and the rows beyond downtown (the north and south patches, Midtown, Brookwood and R16) build
+in steps; `?slice=0` builds each in one task. Downtown builds in one task, before the page is ready, and so do some
+follow-ups a mounted area runs on the main thread (the North Line when Brookwood Station mounts, Brookwood's rail).
 
-`src/square-board/section-steps.test.ts` mounts the Station and R16 as a page would and fails if the main thread is held
-over 32 ms at 1x between two frames, which also catches work moved back outside the steps.
+While the camera is in use (a drag, or input within the last second) building takes 2 ms a frame. Otherwise each frame
+gives it half of what the rest of the last frame cost, from 4 to 24 ms, split between the builds under way. A run
+settles only once no build is under way (`__perf.building`).
+
+Studio, 6x CPU on the A16 canvas, Low, two runs each (2026-11-26; not an A16 or an iPhone). Fill is all 12 areas mounted
+with nothing building; frame rate is counted from ready to fill.
+
+| Build | Board filled, s | Frames/s while filling | Longest task after ready, ms |
+| --- | --- | --- | --- |
+| `8678645f`, nothing sliced | 20.0 / 20.2 | 2.0 / 1.9 | 2,459 / 2,392 |
+| `66b8a295`, rows sliced | 36.0 / 35.5 | 35 / 35 | 986 / 972 |
+| Boards sliced too, half the rest, cap 24 | 34.3 / 34.6 | 35 / 37 | 328 / 318 |
+| The same, the whole rest, cap 50 | 28.3 / 29.3 | 27 / 27 | 335 / 334 |
+| The same, twice the rest, cap 80 | 27.2 / 27.1 | 20 / 21 | 332 / 320 |
+
+The longest task no longer depends on the share: it is work that is not yet in steps.
+
+`src/square-board/section-steps.test.ts` mounts the Station and R16, and loads King Memorial and Sweet Auburn, as a page
+would, and fails if the main thread is held over 32 ms at 1x between two frames, which also catches work moved back
+outside the steps.
 
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
