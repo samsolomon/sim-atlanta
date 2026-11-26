@@ -133,6 +133,18 @@ export function resolveModel(entry: string, state: VariantState): { model: strin
   return { model: 'freightWellA', well: state.load === 'empty' ? [null, null] : state.load === 'single' ? [lower, null] : [lower, upper] };
 }
 
+/**
+ * Where an already-loaded Lab should go for a requested id: the entry and state, or null when it is
+ * already there. A former id (City's "See the model" names lead units like es44acNs) resolves to
+ * its family and preset; a family id takes its state from the URL params.
+ */
+export function nextEntry(current: { entry: string; state: VariantState }, id: string, params?: URLSearchParams) {
+  const next = entryFor(id, params);
+  const same = next.entry === current.entry && Object.keys({ ...next.state, ...current.state })
+    .every((k) => next.state[k] === current.state[k]);
+  return same ? null : next;
+}
+
 /** Write the entry and its control state into a URL, dropping keys that belong to other families. */
 export function writeEntryParams(url: URL, idKey: 'v' | 'model', entry: string, state: VariantState) {
   url.searchParams.set(idKey, entry);

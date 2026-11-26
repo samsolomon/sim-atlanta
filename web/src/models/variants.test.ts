@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FOLDED_IDS, VARIANT_FAMILIES, WELL_CONTAINER_SETS, entryFor, familyOf, resolveModel, writeEntryParams } from './variants';
+import { readFileSync } from 'node:fs';
+import { FOLDED_IDS, VARIANT_FAMILIES, WELL_CONTAINER_SETS, entryFor, familyOf, nextEntry, resolveModel, writeEntryParams } from './variants';
 import { WELL_LOADS } from '../vignette/intermodal';
 
 describe('Model Lab families', () => {
@@ -37,4 +38,27 @@ describe('Model Lab families', () => {
     expect(resolveModel('freightWell', { load: 'single', containers: 'whiteRed' }).well).toEqual(['#d6d4cc', null]);
     expect(familyOf('freightWell')?.controls.map(c => c.key)).toEqual(['load', 'containers']);
   });
+  it('takes a loaded Lab to a former id from City, and leaves it alone when it is already there', () => {
+    // "See the model" on an NS ES44 lead, with the Lab warm on the CQ400 and a stale coal key in the URL.
+    const params = new URLSearchParams('view=models&model=es44acNs&load=empty');
+    expect(nextEntry({ entry: 'cq400', state: {} }, 'es44acNs', params)).toEqual({ entry: 'es44', state: { scheme: 'ns' } });
+    expect(nextEntry({ entry: 'es44', state: { scheme: 'csx' } }, 'es44acNs', params)).toEqual({ entry: 'es44', state: { scheme: 'ns' } });
+    expect(nextEntry({ entry: 'es44', state: { scheme: 'ns' } }, 'es44acNs', params)).toBeNull();
+    // A family id takes its state from the URL; the same entry and state is a no-op.
+    expect(nextEntry({ entry: 'freightCoal', state: { load: 'empty' } }, 'freightCoal', new URLSearchParams('load=empty'))).toBeNull();
+    expect(nextEntry({ entry: 'cq400', state: {} }, 'cq400')).toBeNull();
+  });
 });
+
+describe('the app opens Lab ids through the Lab', () => {
+  it('routes openModels through lab.open, not a picker click by raw id (a folded id has no button)', () => {
+    const app = readFileSync(new URL('../main.ts', import.meta.url), 'utf8');
+    const open = app.slice(app.indexOf('async function openModels'), app.indexOf('function leaveModels'));
+    expect(open).toContain('labApi?.open(target, here.searchParams)');
+    expect(open).not.toMatch(/data-model="\$\{CSS\.escape\(target\)\}"/);
+    const lab = readFileSync(new URL('./main.ts', import.meta.url), 'utf8');
+    // Reset view re-selects the current entry; that keeps its controls.
+    expect(lab).toMatch(/if \(id === entry\) applyEntry\(entry, variantState\);/);
+  });
+});
+

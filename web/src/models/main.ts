@@ -17,7 +17,7 @@ import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-cons
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { roadSemiGeometry, SEMI_LENGTH } from '../vignette/road-semi';
-import { VARIANT_FAMILIES, entryFor, familyOf, resolveModel, writeEntryParams, type VariantState } from './variants';
+import { VARIANT_FAMILIES, entryFor, familyOf, nextEntry, resolveModel, writeEntryParams, type VariantState } from './variants';
 import { LENGTH, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -1116,9 +1116,15 @@ function setModel(id: Model) {
   variantControls();
   view(id === 'generic' || id === 'lineup' || isMaterial(id) || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
 }
-/** Open a picker entry: a family opens on its default state. */
+/** Open a picker entry: a family opens on its default state, except that choosing the entry already
+ * shown (the app's Reset view) keeps its controls. */
 function selectModel(id: Model) {
-  ({ entry, state: variantState } = entryFor(id));
+  if (id === entry) applyEntry(entry, variantState);
+  else applyEntry(entryFor(id).entry, entryFor(id).state);
+}
+function applyEntry(next: string, state: VariantState) {
+  entry = next;
+  variantState = state;
   const url = new URL(location.href);
   writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
   if (embedded) url.searchParams.delete('v');
@@ -1371,3 +1377,17 @@ function crownStats() {
   return { pixels: n, luminance: +(lum / Math.max(1, n)).toFixed(3), saturation: +(sat / Math.max(1, n)).toFixed(3) };
 }
 Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame === 0, crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+
+/**
+ * The app's handle on an already-loaded Lab (web/src/main.ts): the current entry and control state
+ * (for Share), and opening any id, including a former per-state id from City's "See the model".
+ */
+export const lab = {
+  current: () => ({ entry, state: { ...variantState } }),
+  open(id: string, params?: URLSearchParams) {
+    const next = nextEntry({ entry, state: variantState }, id, params);
+    if (!next) return false;
+    applyEntry(next.entry, next.state);
+    return true;
+  },
+};

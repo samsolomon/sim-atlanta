@@ -1009,6 +1009,8 @@ function closeCity(keepMapView = false, writeUrl = true) {
 let labRoot: HTMLElement | null = null;
 let labView: { enter(): void; openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
+/** The loaded Lab's own API: open any id (with its controls) and read the current entry and state. */
+let labApi: typeof import('./models/main').lab | null = null;
 let sceneTitle = document.title;
 let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
@@ -1038,7 +1040,7 @@ async function openModels() {
   setViewParam('models');
   // One mount, however often Models is chosen while the lab is still loading.
   labReady ??= (async () => {
-    await import('./models/main');
+    labApi = (await import('./models/main')).lab;
     const { mountModelsView } = await import('./ui/next/models-view');
     labView = mountModelsView(labRoot!, { dev: params.has('dev') });
     const night = labRoot!.querySelector('#night');
@@ -1057,10 +1059,11 @@ async function openModels() {
   }
   if (!inModels()) return;
   labView?.enter();
-  const target = new URL(location.href).searchParams.get('model');
-  if (target && labView?.model() !== target) {
-    labRoot.querySelector<HTMLButtonElement>(`.library [data-model="${CSS.escape(target)}"]`)?.click();
-  }
+  // Through the Lab, not a picker click: a former per-state id (City's "See the model" names lead
+  // units like es44acNs) has no button of its own, only a family entry and a control preset.
+  const here = new URL(location.href);
+  const target = here.searchParams.get('model');
+  if (target) labApi?.open(target, here.searchParams);
   setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
@@ -1294,8 +1297,10 @@ const shellOptions: ShellOptions = {
   viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
   shareTarget() {
     if (inModels()) {
-      const model = labView?.model();
-      return model ? { view: 'models' as const, model } : null;
+      // The entry and its controls (load, paint, scheme), so the link opens the same state.
+      const current = labApi?.current();
+      const model = current?.entry ?? labView?.model();
+      return model ? { view: 'models' as const, model, params: current?.state } : null;
     }
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;

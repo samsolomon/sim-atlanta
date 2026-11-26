@@ -9,7 +9,8 @@ import { neighborhoodAt } from '../core/places';
 export type ShareView = (
   | { view: 'city'; cam: string }
   | { view: 'map'; hash: string }
-  | { view: 'models'; model: string }
+  /** `params`: the Lab entry's control state (load, paint, scheme…), carried as query keys. */
+  | { view: 'models'; model: string; params?: Record<string, string> }
 ) & { selection?: { kind: string; id: string } };
 
 /** Query keys a shared link keeps from the current page; everything else (dev tools, follow) drops. */
@@ -34,7 +35,10 @@ export function shareUrl(page: string, target: ShareView, mode: 'live' | 'freeze
   u.searchParams.set('view', target.view);
   if (target.view === 'city') u.searchParams.set('cam', target.cam);
   // A model link names the model; there is no clock to freeze in Models.
-  if (target.view === 'models') u.searchParams.set('model', target.model);
+  if (target.view === 'models') {
+    u.searchParams.set('model', target.model);
+    for (const [k, v] of Object.entries(target.params ?? {})) u.searchParams.set(k, v);
+  }
   else if (mode === 'freeze') {
     u.searchParams.set('t', at.toISOString().replace(/\.\d{3}Z$/, 'Z'));
     u.searchParams.set('speed', '0');
