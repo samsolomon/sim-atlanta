@@ -1989,23 +1989,99 @@
       "samples": 1138,
       "matchedShare": 1.0,
       "decksAboveSamples": 0,
-      "samplesByWay": {
-        "9271969": 85,
-        "561694953": 194,
-        "563545712": 77,
-        "563545714": 149,
-        "563545716": 119,
-        "755543610": 59,
-        "755543611": 64,
-        "755543612": 60,
-        "755543614": 52,
-        "1110029487": 128,
-        "564348422": 43,
-        "1451206626": 10,
-        "1451206630": 44,
-        "1451206633": 18,
-        "1451206640": 36
+      "ways": {
+        "9271969": {
+          "stations": 85,
+          "found": 85,
+          "matched": 85,
+          "ok": true
+        },
+        "561694953": {
+          "stations": 194,
+          "found": 194,
+          "matched": 194,
+          "ok": true
+        },
+        "563545712": {
+          "stations": 77,
+          "found": 77,
+          "matched": 77,
+          "ok": true
+        },
+        "563545714": {
+          "stations": 149,
+          "found": 149,
+          "matched": 149,
+          "ok": true
+        },
+        "563545716": {
+          "stations": 119,
+          "found": 119,
+          "matched": 119,
+          "ok": true
+        },
+        "755543610": {
+          "stations": 59,
+          "found": 59,
+          "matched": 59,
+          "ok": true
+        },
+        "755543611": {
+          "stations": 64,
+          "found": 64,
+          "matched": 64,
+          "ok": true
+        },
+        "755543612": {
+          "stations": 60,
+          "found": 60,
+          "matched": 60,
+          "ok": true
+        },
+        "755543614": {
+          "stations": 52,
+          "found": 52,
+          "matched": 52,
+          "ok": true
+        },
+        "1110029487": {
+          "stations": 128,
+          "found": 128,
+          "matched": 128,
+          "ok": true
+        },
+        "564348422": {
+          "stations": 43,
+          "found": 43,
+          "matched": 43,
+          "ok": true
+        },
+        "1451206626": {
+          "stations": 10,
+          "found": 10,
+          "matched": 10,
+          "ok": true
+        },
+        "1451206630": {
+          "stations": 44,
+          "found": 44,
+          "matched": 44,
+          "ok": true
+        },
+        "1451206633": {
+          "stations": 18,
+          "found": 18,
+          "matched": 18,
+          "ok": true
+        },
+        "1451206640": {
+          "stations": 36,
+          "found": 36,
+          "matched": 36,
+          "ok": true
+        }
       },
+      "failedWays": [],
       "joints": 6,
       "ok": true
     },
@@ -4184,23 +4260,99 @@
       "samples": 1138,
       "matchedShare": 1.0,
       "decksAboveSamples": 0,
-      "samplesByWay": {
-        "9271969": 85,
-        "561694953": 194,
-        "563545712": 77,
-        "563545714": 149,
-        "563545716": 119,
-        "755543610": 59,
-        "755543611": 64,
-        "755543612": 60,
-        "755543614": 52,
-        "1110029487": 128,
-        "564348422": 43,
-        "1451206626": 10,
-        "1451206630": 44,
-        "1451206633": 18,
-        "1451206640": 36
+      "ways": {
+        "9271969": {
+          "stations": 85,
+          "found": 85,
+          "matched": 85,
+          "ok": true
+        },
+        "561694953": {
+          "stations": 194,
+          "found": 194,
+          "matched": 194,
+          "ok": true
+        },
+        "563545712": {
+          "stations": 77,
+          "found": 77,
+          "matched": 77,
+          "ok": true
+        },
+        "563545714": {
+          "stations": 149,
+          "found": 149,
+          "matched": 149,
+          "ok": true
+        },
+        "563545716": {
+          "stations": 119,
+          "found": 119,
+          "matched": 119,
+          "ok": true
+        },
+        "755543610": {
+          "stations": 59,
+          "found": 59,
+          "matched": 59,
+          "ok": true
+        },
+        "755543611": {
+          "stations": 64,
+          "found": 64,
+          "matched": 64,
+          "ok": true
+        },
+        "755543612": {
+          "stations": 60,
+          "found": 60,
+          "matched": 60,
+          "ok": true
+        },
+        "755543614": {
+          "stations": 52,
+          "found": 52,
+          "matched": 52,
+          "ok": true
+        },
+        "1110029487": {
+          "stations": 128,
+          "found": 128,
+          "matched": 128,
+          "ok": true
+        },
+        "564348422": {
+          "stations": 43,
+          "found": 43,
+          "matched": 43,
+          "ok": true
+        },
+        "1451206626": {
+          "stations": 10,
+          "found": 10,
+          "matched": 10,
+          "ok": true
+        },
+        "1451206630": {
+          "stations": 44,
+          "found": 44,
+          "matched": 44,
+          "ok": true
+        },
+        "1451206633": {
+          "stations": 18,
+          "found": 18,
+          "matched": 18,
+          "ok": true
+        },
+        "1451206640": {
+          "stations": 36,
+          "found": 36,
+          "matched": 36,
+          "ok": true
+        }
       },
+      "failedWays": [],
       "joints": 6,
       "ok": true
     },

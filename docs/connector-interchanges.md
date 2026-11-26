@@ -179,5 +179,12 @@ On D2 it reads 1,398 walk samples on the board and 1,138 lid samples, 100% match
 - walk decks removed but street decks kept over the lid: `lid not found` and `joint grade`;
 - no board: the check stops.
 
+**Review round 2 (Grok).** The 95% share and 80% coverage were totals over all ways, so a short way could hide inside them. With the board 1 m high on the 10 stations of the 1011 limb (1451206626), the lid still matched at 0.991 and passed. A deck 2 m above a 19 m hole in the board (38 of the 194 stations on 561694953) was never tested, because the deck test ran only where the board was found. The checker (daaa6bbd) now holds each way on its own, and adds a deck test and a joint-step rule:
+- **Each way:** at least six stations, the board found at 80% or more of them, and within 0.30 m at 95% or more of those.
+- **Decks:** a deck is tested against the class-2 median wherever the board is missing.
+- **Joints:** any joint whose two sides differ by more than 2 mm fails with `joint step`, in every mode. The unrepaired Capitol has steps up to 0.60 m, so the `baseline`, `peachtree` and `combined` modes now expect it.
+
+D still passes: all 15 ways are 100% found and matched, the smallest has 10 stations, and no joint steps more than 0.12 mm. Both of Grok's inputs now fail; the e2b253ee checker passed them. On the four earlier calibration exports, 17th Street and Peachtree are byte-identical, and Capitol changes only by adding `joint step` to its failures ([evidence](log/ui/connector-repairs/d-lid/gate/calibration-old-vs-new.json), `round2`). `test_lid.py` on the checker branch builds both inputs as synthetic scenes.
+
 `pipeline/scripts/test_gate_sites.py` (run by `pnpm test`) checks only that the committed gate evidence is consistent: the 439abf84 reference against the D result, Capitol passing, and the lid found. It reads JSON, so it cannot catch a code regression. `web/src/terrain/lids.test.ts` holds the code: the lid roads draw on the board, and the drawn ground sits at the lid top. **Open, outside D:** the south-band board carries the covered Connector under the lid as a plain ground road (OSM `covered=yes` is not mapped to a tunnel there), so its centreline reads the lid top. D2's spike correction moves it 1.99 m at (367.4, 760.3), back to the lid level. Whether its cars should run under the lid is a separate item.
 

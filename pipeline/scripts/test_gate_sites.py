@@ -9,10 +9,11 @@ patched nodes). Rerun the browser gate (check.py --expect repaired) when those
 change.
 
 What this test holds: the committed D result from the lid-aware checker
-(samsolomon/crossing-check-lid e2b253ee) leaves every site but Capitol equal to
+(samsolomon/crossing-check-lid daaa6bbd) leaves every site but Capitol equal to
 the 439abf84 reference, Capitol has no failures, and the lid was positively
-found (walk samples on the board matched the cover's class-2 level, with no
-deck above it)."""
+found on every registered way on its own (board found and at the cover's
+class-2 level, with no deck above the cover even where the board is missing),
+with no step at any of the six joints."""
 import json
 import unittest
 from pathlib import Path
@@ -45,6 +46,14 @@ class GateSites(unittest.TestCase):
             self.assertGreaterEqual(lid["matchedShare"], 0.95)
             self.assertEqual(lid["decksAboveSamples"], 0)
             self.assertEqual(lid["joints"], 6)
+            self.assertEqual(lid["failedWays"], [])
+            self.assertEqual(len(lid["ways"]), 15)
+            for way, held in lid["ways"].items():
+                self.assertTrue(held["ok"], way)
+                self.assertGreaterEqual(held["stations"], 6, way)
+                self.assertGreaterEqual(held["found"], 0.80 * held["stations"], way)
+                self.assertGreaterEqual(held["matched"], 0.95 * held["found"], way)
+            self.assertTrue(all(abs(j["stepM"]) <= 0.002 for j in now["joints"]))
 
 
 if __name__ == "__main__":
