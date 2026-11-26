@@ -278,15 +278,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   applyRampDecks(vd);
   // The downtown edge of the Capitol Gateway lid draws its streets on the lid.
   applyLids(vd);
-  let grid: GroundGrid | undefined;
+  let grid: GroundGrid | undefined, groundBytes: ArrayBuffer | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
     try {
       const [spec, bytes] = await Promise.all([
         asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
         asset('ground.i16').then(r => r.arrayBuffer()),
       ]);
-      // The Capitol tunnel's north-east portals are cut into the bank on this board too.
-      grid = new GroundGrid(spec, capitolTunnelGround(spec, bytes));
+      groundBytes = bytes;
+      grid = new GroundGrid(spec, bytes);
     } catch {
       options.signal?.throwIfAborted();
       // Older or partially refreshed caches can still render the legacy profiles.
@@ -343,6 +343,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     })();
   }
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
+  // With the south band, which draws the Capitol tunnel, downtown's edge of its north-east
+  // portals is cut into the bank too. Downtown alone (board=downtown, or no square board) keeps
+  // its ground and no tunnel cut.
+  if (mosaic && grid && groundBytes) grid = new GroundGrid(grid.manifest, capitolTunnelGround(grid.manifest, groundBytes));
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
