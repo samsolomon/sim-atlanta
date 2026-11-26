@@ -31,6 +31,7 @@ function buildingLayer(area: TrafficArea, city: TerrainCity, sample: (x:number,z
   world.group.name = name;
   world.group.userData.sourceIds = city.buildings.map(b => b.id);
   const yards = homes.yards();
+  if (yards) yards.group.name = name + ' yards';
   area.group.add(world.group);
   if (yards) area.group.add(yards.group);
   // The area's own scenery was clipped to the board perimeter when it mounted. Clipping these the
@@ -46,13 +47,16 @@ function buildingLayer(area: TrafficArea, city: TerrainCity, sample: (x:number,z
 }
 
 const stationLayers = new WeakMap<TrafficArea, ReturnType<typeof buildingLayer>>();
+/** The clip City gave a Station's fragments, reused for the seam buildings R16 mounts later. */
+const stationClips = new WeakMap<TrafficArea, (group: Object3D) => void>();
 
 export function mountStationFragments(station: TrafficArea, quality: TerrainQuality, clip?: (group: Object3D) => void) {
   const city = station.connectorBoard.city;
   const layer = buildingLayer(station, {...city, buildings: city.buildings.filter(b => sharedIds.has(b.id))},
     station.groundAt, city.buildings, quality, 'Station seam fragments', clip);
   stationLayers.set(station, layer);
-  return () => { stationLayers.delete(station); layer.dispose(); };
+  if (clip) stationClips.set(station, clip);
+  return () => { stationLayers.delete(station); stationClips.delete(station); layer.dispose(); };
 }
 
 /**
@@ -79,7 +83,8 @@ export function* mountSeamBuildingsSteps(north: TrafficArea, south: TrafficArea,
   for (const [id, area] of owners) {
     const buildings = inventory.filter(entry => entry.owner === id).map(entry => entry.building as VBuilding);
     const city = {...area.connectorBoard.city, roads, bounds, buildings};
-    const layer = buildingLayer(area, city, sample, footprints, quality, 'Shared seam buildings ' + id);
+    // Clipped as the Station's fragments are (City's live perimeter), so they share its programs.
+    const layer = buildingLayer(area, city, sample, footprints, quality, 'Shared seam buildings ' + id, stationClips.get(south));
     layer.show(false);
     layers.push(layer);
     yield 'seam buildings';

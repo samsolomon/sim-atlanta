@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
+import { Mesh, type Object3D, Plane, Vector3 } from 'three';
 import { brookwoodGrid } from '../city/brookwood';
 import { mountStationFragments } from '../city/north-seam-neighborhood';
 import { GroundGrid } from '../terrain/grid';
@@ -53,7 +54,13 @@ it.skipIf(!ready)('draws the Station uncut until R16 commits, and puts it back w
     vi.stubGlobal('location', { search: '?slice=0' });
     for (const row of ['north', ...midtownRows.slice(0, -1)] as const) await addSection(row, mounted, 'low', new AbortController().signal, options);
     const station = mounted.get('brookwood-station') as TrafficArea;
-    mountStationFragments(station, 'low');
+    // City clips each layer to its live board perimeter (city.ts clipScenery); a stand-in here.
+    const perimeter = [new Plane(new Vector3(1, 0, 0), 5000)];
+    const clip = (group: Object3D) => group.traverse(o => {
+      const m = (o as Mesh).material;
+      for (const mat of Array.isArray(m) ? m : m ? [m] : []) mat.clippingPlanes = perimeter;
+    });
+    mountStationFragments(station, 'low', clip);
     const drawn = () => [station.board.geometry.getAttribute('position').array, station.board.geometry.index!.array] as const;
     const original = drawn(), height = station.terrainAt(...CENTRE)!, carves = station.carved.length;
     const uncut = () => drawn()[0] === original[0] && drawn()[1] === original[1];
@@ -98,6 +105,18 @@ it.skipIf(!ready)('draws the Station uncut until R16 commits, and puts it back w
     expect(uncut()).toBe(false);
     expect(station.terrainAt(...CENTRE)!).toBeLessThan(height - 1);
     expect(station.carved.length).toBeGreaterThan(carves);
+
+    // Every seam layer, the Station's fragments and both rows' shared buildings with their yards,
+    // carries the perimeter clip, so none compiles an unclipped copy of the houses' or yards' program.
+    const seamMeshes: Mesh[] = [];
+    for (const area of [station, mounted.get('r16')!]) area.group.traverse(o => {
+      let p: Object3D | null = o;
+      while (p && !/^(Station seam fragments|Shared seam buildings)/.test(p.name)) p = p.parent;
+      if (p && (o as Mesh).isMesh) seamMeshes.push(o as Mesh);
+    });
+    expect(seamMeshes.some(m => m.parent?.name.startsWith('Shared seam buildings') || m.parent?.parent?.name.startsWith('Shared seam buildings'))).toBe(true);
+    for (const mesh of seamMeshes) for (const mat of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+      expect(mat.clippingPlanes, `${mesh.parent?.name} / ${mesh.name}`).toBe(perimeter);
   } finally {
     for (const area of mounted.values()) area.dispose();
     vi.unstubAllGlobals();
