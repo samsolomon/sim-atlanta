@@ -1,3 +1,5 @@
+import { capitolTunnelSlots } from '../terrain/capitol-tunnel';
+import { slotPlanes } from '../terrain/openings';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { BufferGeometry, InstancedMesh } from 'three';
@@ -60,6 +62,8 @@ it('rejects a mismatched interior node on the committed R16 to Brookwood Station
   expect(() => verifySeam(new GroundGrid(north.manifest, bytes), station, edge)).toThrow(/400,-5700/);
 });
 
+const tunnelCuts = capitolTunnelSlots().map(slotPlanes);
+const inTunnelCut = (x: number, z: number) => tunnelCuts.some(c => c.planes.slice(0, 4).every(p => p(x, 0, z) >= -0.01));
 it.each(['high', 'low'] as const)('preserves all exterior and internal seam nodes and midpoints on %s', async quality => {
   const ctx = new Proxy({}, { get: () => () => { } });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
@@ -137,6 +141,8 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
         const vertical = 'x' in edge;
         for (let v = vertical ? edge.minZ : edge.minX; v <= (vertical ? edge.maxZ : edge.maxX); v += 2.5) {
           const x = vertical ? edge.x : v, z = vertical ? v : edge.z;
+          // The Capitol tunnel's north-east mouths are cut across the z = 700 seam on both boards.
+          if (inTunnelCut(x, z)) continue;
           const h = area.grid.sample(x, z)!;
           expect(area.groundAt(x, z)! + 323.8).toBeCloseTo(h, 4);
         }
