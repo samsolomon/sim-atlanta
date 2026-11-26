@@ -4,7 +4,7 @@
  * sidewalks, the MARTA line (tunnel portal, open cut, viaduct), freight tracks,
  * detailed buildings and trees.
  */
-import { boxFromVertices, type FarBox } from '../city/far-board';
+import { boxFromVertices, dominantWallStyle, type FarBox } from '../city/far-board';
 import * as THREE from 'three';
 import { runSync } from '../core/slice';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
@@ -880,28 +880,9 @@ export class World {
     const farBox = () => {
       const end = b.pos.length / 3;
       if (withFarBoxes && end - bdStart >= 3) {
-        // The style covering the most wall area (Builder writes whole triangles). Ground-floor base
-        // styles (generic v2 52–55: lobby, arcade, plinth, shopfront) count only when nothing else
-        // does: painted over a whole box they light most of a tower at night.
-        const counts = new Map<number, number>();
-        let firstOf = new Map<number, number>();
-        for (let t = bdStart; t + 2 < end; t += 3) {
-          const st = style[t] ?? -1;
-          if (st < 0) continue;
-          const o = t * 3, P = b.pos;
-          const ax = P[o + 3] - P[o], ay = P[o + 4] - P[o + 1], az = P[o + 5] - P[o + 2];
-          const bx = P[o + 6] - P[o], by = P[o + 7] - P[o + 1], bz = P[o + 8] - P[o + 2];
-          const area = Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx) / 2;
-          counts.set(st, (counts.get(st) ?? 0) + area);
-          if (!firstOf.has(st)) firstOf.set(st, t);
-        }
-        const isBase = (st: number) => st >= 51.5 && st <= 55.5;
-        let wallStyle = -1, most = 0;
-        for (const [st, c] of counts) if (!isBase(st) && c > most) { most = c; wallStyle = st; }
-        if (wallStyle < 0) for (const [st, c] of counts) if (c > most) { most = c; wallStyle = st; }
+        const { style: wallStyle, first } = dominantWallStyle(b.pos, style, bdStart, end);
         const box = boxFromVertices(b.pos, b.col, bdStart, end, 1, farRing);
-        if (box) this.farBoxes.push(wallStyle >= 0 ? { ...box, style: wallStyle, base: base[firstOf.get(wallStyle)!] ?? box.y0 } : box);
-        firstOf = new Map();
+        if (box) this.farBoxes.push(wallStyle >= 0 ? { ...box, style: wallStyle, base: base[first] ?? box.y0 } : box);
       }
       bdStart = end;
     };

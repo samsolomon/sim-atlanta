@@ -109,6 +109,29 @@ export function orientedRect(xs: ArrayLike<number>, zs: ArrayLike<number>) {
   return { ...best, hull: hullRing };
 }
 
+/**
+ * The wall style covering the most area in a Builder vertex range (whole triangles), and its first
+ * vertex. Ground-floor base styles (generic v2 52–55: lobby, arcade, plinth, shopfront) win only
+ * when nothing else is there: painted over a whole far box, one lights most of a tower at night.
+ */
+export function dominantWallStyle(pos: ArrayLike<number>, style: ArrayLike<number>, start: number, end: number) {
+  const area = new Map<number, number>(), first = new Map<number, number>();
+  for (let t = start; t + 2 < end; t += 3) {
+    const st = style[t] ?? -1;
+    if (st < 0) continue;
+    const o = t * 3;
+    const ax = pos[o + 3] - pos[o], ay = pos[o + 4] - pos[o + 1], az = pos[o + 5] - pos[o + 2];
+    const bx = pos[o + 6] - pos[o], by = pos[o + 7] - pos[o + 1], bz = pos[o + 8] - pos[o + 2];
+    area.set(st, (area.get(st) ?? 0) + Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx) / 2);
+    if (!first.has(st)) first.set(st, t);
+  }
+  const isBase = (st: number) => st >= 51.5 && st <= 55.5;
+  let best = -1, most = 0;
+  for (const [st, a] of area) if (!isBase(st) && a > most) { most = a; best = st; }
+  if (best < 0) for (const [st, a] of area) if (a > most) { most = a; best = st; }
+  return { style: best, first: first.get(best) ?? start };
+}
+
 /** A far box from a Builder vertex range (positions and colours as flat number arrays). */
 export function boxFromVertices(pos: ArrayLike<number>, col: ArrayLike<number>, start: number, end: number, tint = 1, ring?: number[]): FarBox | null {
   const n = end - start;
