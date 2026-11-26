@@ -1,4 +1,5 @@
 import { FreightBatches, freightMaterial } from './freight-batches';
+import { POOL, type PoolSink } from './headlight-pools';
 import * as THREE from 'three';
 import type { FreightTreadPoint } from '../terrain/transport';
 import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING } from '../vignette/freight-stock';
@@ -57,6 +58,10 @@ function cutPlane(end: FreightTreadPoint, inside: FreightTreadPoint) {
 }
 
 export class CityFreight {
+  /** Headlight pools at night on High (city/headlight-pools.ts); unset on Low. Lead unit only. */
+  lights: PoolSink | null = null;
+  private readonly poolNear = new THREE.Vector3();
+  private readonly poolFar = new THREE.Vector3();
   private batches: FreightBatches;
   get group() { return this.batches.group; }
   get poses() { return this.batches.poses; }
@@ -148,6 +153,16 @@ export class CityFreight {
         if (unit.flip) car.rotateY(Math.PI);
         this.batches.append(unit.kind, car, unit.load);
         this.visibleCars++;
+        // The lead's headlamps light the track ahead of its front coupler, where that track is drawn
+        // (a section's ends are its tunnel and cut mouths, so a pool never reaches under a cover).
+        const far = head + dir * POOL.rail.length;
+        if (i === 0 && this.lights?.active && Math.min(head, far) >= section.start && Math.max(head, far) <= section.end) {
+          sample(section.points, head, this.poolNear);
+          if (this.lights.inRange(this.poolNear.x, this.poolNear.y, this.poolNear.z)) {
+            sample(section.points, far, this.poolFar);
+            this.lights.add(this.poolNear.x, this.poolNear.y + 0.1, this.poolNear.z, this.poolFar.x, this.poolFar.y + 0.1, this.poolFar.z, POOL.rail.width);
+          }
+        }
       });
     }
     this.draws = this.batches.finish();

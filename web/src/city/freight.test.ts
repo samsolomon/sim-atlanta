@@ -141,3 +141,36 @@ it('puts the leading locomotive first for follow, whichever way the train runs',
   }
   freight.dispose();
 });
+
+it('lights the drawn track ahead of the lead at night, never across a cover gap, and lights the lamps with no new program', () => {
+  const freight = new CityFreight([[point(0), point(150)], [point(180), point(350)]], []);
+  const pools: { near: THREE.Vector3; far: THREE.Vector3 }[] = [];
+  let active = true;
+  freight.lights = { get active() { return active; }, inRange: () => true,
+    add: (nx, ny, nz, fx, fy, fz) => { pools.push({ near: new THREE.Vector3(nx, ny, nz), far: new THREE.Vector3(fx, fy, fz) }); return true; } };
+  try {
+    freight.update(at(50));
+    expect(pools).toHaveLength(1);
+    expect(pools[0].near.x).toBeCloseTo(50); // the lead's front coupler
+    expect(pools[0].far.x).toBeGreaterThan(50);
+    expect(pools[0].near.y).toBeCloseTo(50 * .02 + .1);
+    // Approaching the cover at 150 m: the pool would light covered track, so none.
+    pools.length = 0;
+    freight.update(at(140));
+    expect(freight.visibleCars).toBeGreaterThan(0);
+    expect(pools).toHaveLength(0);
+    active = false;
+    freight.update(at(50));
+    expect(pools).toHaveLength(0);
+    // Locomotive lamps glow through the shared freight patch; its program key is unchanged.
+    const material = freightMaterial([]);
+    expect(material.customProgramCacheKey()).toBe('freight-containers-1');
+    const shader = { uniforms: {}, vertexShader: '#include <begin_vertex>', fragmentShader: '#include <emissivemap_fragment>' } as unknown as THREE.WebGLProgramParametersWithUniforms;
+    material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
+    expect(shader.fragmentShader).toContain('freightNight');
+    expect(shader.vertexShader).toContain('vStockLight = stockLight');
+    material.dispose();
+  } finally {
+    freight.dispose();
+  }
+});

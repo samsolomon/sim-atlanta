@@ -79,6 +79,60 @@ describe('Brookwood corridor trains', () => {
     vi.unstubAllGlobals();
   });
 
+  // A sink that records each pool, switchable between night and day.
+  const recorder = () => {
+    const pools: { near: number[]; far: number[] }[] = [];
+    const state = { active: true };
+    const sink = { get active() { return state.active; }, inRange: () => true,
+      add: (nx: number, ny: number, nz: number, fx: number, fy: number, fz: number) => { pools.push({ near: [nx, ny, nz], far: [fx, fy, fz] }); return true; } };
+    return { pools, state, sink };
+  };
+
+  it('lights the track ahead of the Norcross freight lead in its direction of travel, at night only', () => {
+    const freight = createNorcrossFreight(corridor.main2.pts, () => 0, []);
+    const { pools, state, sink } = recorder();
+    freight.lights = sink;
+    for (const slot of [0, 1]) {
+      const at = (seconds: number) => slot * FREIGHT_SLOT_MS + seconds * 1000;
+      freight.update(at(120), false);
+      const before = leadFirst(freight.poses.children)[0];
+      pools.length = 0;
+      freight.update(at(121), false);
+      const lead = leadFirst(freight.poses.children)[0];
+      expect(pools).toHaveLength(1);
+      const { near, far } = pools[0];
+      expect(near[1]).toBeCloseTo(-0.05); // just under the rail head
+      expect((far[0] - near[0]) * (lead.x - before.x) + (far[2] - near[2]) * (lead.z - before.z)).toBeGreaterThan(0);
+    }
+    state.active = false;
+    pools.length = 0;
+    freight.update(121e3, false);
+    expect(pools).toHaveLength(0);
+    freight.dispose();
+  });
+
+  it('lights the track ahead of the Crescent lead in its direction of travel', () => {
+    const context = new Proxy({}, { get: (_, key) => key === 'measureText' ? () => ({ width: 1 }) : () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context, width: 1, height: 1 }) });
+    const brookwood = createBrookwood(0);
+    brookwood.setNorthEdge(-5700);
+    const { pools, sink } = recorder();
+    brookwood.setLights(sink);
+    for (const dir of [1, -1]) {
+      const i = placed.findIndex(p => p.dir === dir && Math.abs(p.center) < 100);
+      pools.length = 0;
+      brookwood.update(schedule.trainsAt(new Date(placed[i].t)), 1);
+      const lead = leadFirst(brookwood.cars.children)[0];
+      expect(pools).toHaveLength(1);
+      brookwood.update(schedule.trainsAt(new Date(placed[i].t + step)), 1);
+      const moved = leadFirst(brookwood.cars.children)[0];
+      const { near, far } = pools[0];
+      expect((far[0] - near[0]) * (moved.x - lead.x) + (far[2] - near[2]) * (moved.z - lead.z)).toBeGreaterThan(0);
+    }
+    brookwood.dispose();
+    vi.unstubAllGlobals();
+  });
+
   it('keeps the illustrative Main 2 freight clear of every Crescent near the island', () => {
     const berth = crescentPlacement({
       id: 'berth', routeId: 'amtrak:route:Crescent', pathId: 'berth', heading: 45, lon: -84.392477, lat: 33.799445,

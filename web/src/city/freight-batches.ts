@@ -28,13 +28,24 @@ const palette = { value: CONTAINER_PALETTE.map((hex) => new THREE.Color(hex)) };
  * top length); a colour of 0 hides that box, and a length of BOX_40_SCALE shortens it to 40 ft about
  * the car's centre. Vertices with aSlot 0 (the car itself) are untouched.
  */
+/** City's darkness for every freight material: locomotive headlamps and ditch lights glow at night. */
+export const freightNight = { value: 0 };
+
 function patchFreight(shader: THREE.WebGLProgramParametersWithUniforms) {
   shader.uniforms.containerPalette = palette;
+  shader.uniforms.freightNight = freightNight;
+  // stockLight 2 marks lamps (vignette/crescent-stock.ts finishStockGeometry); cars carry zeros.
+  shader.fragmentShader = 'uniform float freightNight; varying float vStockLight;\n' + shader.fragmentShader.replace(
+    '#include <emissivemap_fragment>',
+    '#include <emissivemap_fragment>\nif (vStockLight > 1.5) totalEmissiveRadiance += diffuseColor.rgb * (0.35 + 1.8 * freightNight);');
   shader.vertexShader = `attribute float aSlot;
+attribute float stockLight;
+varying float vStockLight;
 attribute float aShade;
 attribute vec4 aLoad;
 uniform vec3 containerPalette[${CONTAINER_PALETTE.length}];
 ` + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+vStockLight = stockLight;
 if (aSlot > 0.5) {
   bool topBox = aSlot > 1.5;
   float paint = topBox ? aLoad.y : aLoad.x;

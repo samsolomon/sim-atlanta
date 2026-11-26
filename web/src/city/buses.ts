@@ -15,6 +15,7 @@ import { makeProjector } from '../core/scene-data';
 import { segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
+import { POOL, type PoolSink } from './headlight-pools';
 
 type GroundAt = (x: number, z: number) => number | null;
 type Bounds = { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -57,6 +58,8 @@ interface Shown {
 }
 
 export class CityBuses {
+  /** Headlight pools at night on High (city/headlight-pools.ts); unset on Low. */
+  lights: PoolSink | null = null;
   readonly mesh: THREE.InstancedMesh;
   readonly night = { value: 0 };
   /** Footprints drawn this frame (after update), for traffic and readouts. */
@@ -124,6 +127,15 @@ export class CityBuses {
     return { x: ax + (cx - ax) * t - Math.cos(a) * lane, z: az + (cz - az) * t + Math.sin(a) * lane, a, run: best.run };
   }
 
+  /** A pool from the front bumper forward, on this bus's own street; none where it has no surface. */
+  private light(x: number, z: number, a: number, run: TransportRun) {
+    const fx = Math.sin(a), fz = Math.cos(a);
+    const nx = x + fx * BUS_LENGTH / 2, nz = z + fz * BUS_LENGTH / 2;
+    const ex = nx + fx * POOL.bus.length, ez = nz + fz * POOL.bus.length;
+    const ny = this.surface(nx, nz, run), ey = this.surface(ex, ez, run);
+    if (ny !== null && ey !== null) this.lights!.add(nx, ny, nz, ex, ey, ez, POOL.bus.width);
+  }
+
   /** Surface height for a bus at (x, z) on `run`: bridge tread, or the painted terrain. */
   private surface(x: number, z: number, run: TransportRun): number | null {
     return run.kind === 'bridge' ? this.opts.deckAt(x, z, run) : this.opts.groundAt(x, z);
@@ -186,6 +198,7 @@ export class CityBuses {
       this.obj.rotation.set(0, p.a, 0);
       this.obj.updateMatrix();
       this.mesh.setMatrixAt(i++, this.obj.matrix);
+      if (run && this.lights?.active && this.lights.inRange(p.x, y, p.z)) this.light(p.x, p.z, p.a, run);
     }
     this.mesh.count = i;
     this.mesh.instanceMatrix.needsUpdate = true;

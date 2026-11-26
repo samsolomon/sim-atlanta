@@ -90,4 +90,40 @@ describe('City train placement', () => {
     expect(carInDaylight(crossTown, 103)).toBe(false);
     expect(carInDaylight(crossTown, -25)).toBe(false);
   });
+
+  it('lights the track ahead of the lead cab only, in world space, and none where the track goes under cover', () => {
+    const bounds = { minX: -300, maxX: 300, minZ: -100, maxZ: 100 };
+    const line = new Line([[-300, 0], [300, 0]]);
+    const trains = new CityTrains([{ line, elev: () => 7, openToSky: (s: number) => s < 330 }], {
+      name: 'lit', origin: { lon: 0, lat: 0 }, bounds, notes: '', sources: [],
+      profiles: { track: { s0: 0, step: 1, z: [7] } },
+    }, bounds, new Map([['blue', '#0075b2']]), []);
+    trains.group.position.y = -9.7;
+    const pools: { near: Vector3; far: Vector3 }[] = [];
+    let active = true;
+    trains.lights = { get active() { return active; }, inRange: () => true,
+      add: (nx, ny, nz, fx, fy, fz) => { pools.push({ near: new Vector3(nx, ny, nz), far: new Vector3(fx, fy, fz) }); return true; } };
+    const at = (x: number, heading: number) => [{ id: 't', routeId: 'blue', pathId: 'track', heading, lon: x / (6371000 * Math.PI / 180), lat: 0,
+      s: { value: 300 + x, tier: 'scheduled' as const, source: 'test', asOf: '' }, headsign: '', vehicleType: 'rail',
+      lengthM: { value: 92, tier: 'illustrative' as const, source: 'test', asOf: '' } }];
+    // Four cars westbound, well short of the roof at s = 330: one pool, ahead of the lead, on the anchored track.
+    trains.update(at(-100, 270), 1);
+    expect(pools).toHaveLength(1);
+    expect(pools[0].far.x).toBeLessThan(pools[0].near.x);
+    expect(pools[0].near.y).toBeCloseTo(7 + 0.45 - 9.7, 5);
+    // Eastbound with the roof just ahead of the lead: the pool would run under cover, so none.
+    pools.length = 0;
+    trains.update(at(-40, 90), 1);
+    expect(trains.group.children.filter(c => c.visible && c.userData.trainId === 't')).toHaveLength(4); // the lead is in the open
+    expect(pools).toHaveLength(0);
+    // A little further back, the whole pool is in the open: it lights.
+    trains.update(at(-70, 90), 1);
+    expect(pools).toHaveLength(1);
+    expect(pools[0].far.x).toBeGreaterThan(pools[0].near.x);
+    // By day, none.
+    pools.length = 0;
+    active = false;
+    trains.update(at(-100, 270), 0);
+    expect(pools).toHaveLength(0);
+  });
 });

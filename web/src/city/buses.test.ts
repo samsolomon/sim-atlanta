@@ -141,4 +141,28 @@ describe.skipIf(!existsSync(vjson) || !existsSync(sjson))('CityBuses on the ship
       expect(b.snap(bus), name).not.toBeNull();
     }
   });
+
+  it('lights the street ahead of a bus at night, on its own street, and none by day or past the drawn ground', () => {
+    const b = make();
+    const pools: { near: THREE.Vector3; far: THREE.Vector3 }[] = [];
+    let active = true;
+    b.lights = { get active() { return active; }, inRange: () => true,
+      add: (nx, ny, nz, fx, fy, fz) => { pools.push({ near: new THREE.Vector3(nx, ny, nz), far: new THREE.Vector3(fx, fy, fz) }); return true; } };
+    // Eastbound (bearing 90) on the flat street: the pool starts at the front bumper and runs east on the ground.
+    b.update([fix('east', -100, 0, t, 90)], 0);
+    expect(pools).toHaveLength(1);
+    const [{ near, far }] = pools;
+    expect(far.x).toBeGreaterThan(near.x);
+    expect(near.y).toBeCloseTo(groundAt(near.x, near.z)!, 5);
+    expect(far.y).toBeCloseTo(groundAt(far.x, far.z)!, 5);
+    // Near the board edge the pool would run off the drawn ground: none, though the bus shows.
+    pools.length = 0;
+    b.update([fix('edge', 185, 0, t + 1, 90)], 0);
+    expect(b.summary().count).toBe(1);
+    expect(pools).toHaveLength(0);
+    active = false;
+    b.update([fix('east', -100, 0, t + 2, 90)], 0);
+    expect(pools).toHaveLength(0);
+  });
 });
+

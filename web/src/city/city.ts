@@ -70,6 +70,8 @@ import { streetcarTraffic } from './streetcar-traffic';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
+import { freightNight } from './freight-batches';
+import { HeadlightPools } from './headlight-pools';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
@@ -850,6 +852,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.add(streetcar.group);
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, low) : undefined;
+  // Headlight pools on the road and track ahead of every lit vehicle at night, High only (Low is at its
+  // program budget). One instanced draw for all producers; the hidden template compiles it at boot.
+  // Capacity covers every producer's maximum: road traffic caps, 64 buses, trains, streetcars, freight.
+  const lightPools = low ? null : new HeadlightPools(640);
+  if (lightPools) scene.add(lightPools.mesh, lightPools.template);
   if (freight) scene.add(freight.group);
   // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
   // flat board's ribbons when there is no measured ground.
@@ -2057,6 +2064,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
       cameraFrame = false;
     }
+    freightNight.value = atm.dark;
+    if (lightPools) {
+      lightPools.setNight(atm.dark, wx.rain);
+      lightPools.setEye(camera.position);
+      lightPools.begin();
+    }
+    // Every producer each frame: traffic layers and the North Line are rebuilt as boards mount.
+    buses.lights = trains.lights = streetcar.lights = lightPools;
+    if (freight) freight.lights = lightPools;
+    if (northLine) northLine.lights = lightPools;
+    brookwood?.setLights(lightPools);
+    for (const layer of [traffic, arterials, midtownArterials]) if (layer) layer.lights = lightPools;
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
@@ -2123,6 +2142,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     traffic?.update(sceneTime, atm.dark, trafficView);
     arterials?.update(sceneTime, atm.dark, trafficView);
     midtownArterials?.update(sceneTime, atm.dark, trafficView);
+    lightPools?.end();
+    if (import.meta.env.DEV && lightPools?.overflowed) console.warn('Headlight pools over capacity this frame');
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);

@@ -1,4 +1,5 @@
 import { FreightBatches, freightMaterial } from './freight-batches';
+import { POOL, type PoolSink } from './headlight-pools';
 import * as THREE from 'three';
 import { Line, type P2 } from '../vignette/geom';
 import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING } from '../vignette/freight-stock';
@@ -52,6 +53,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
     return car;
   });
   const nose = new THREE.Vector3(), tail = new THREE.Vector3(), m = new THREE.Matrix4();
+  const poolNear = new THREE.Vector3(), poolFar = new THREE.Vector3();
   // Straddling cars extend along the end tangent so they slide out through the clip planes.
   function at(s: number, target: THREE.Vector3) {
     const clamped = THREE.MathUtils.clamp(s, 0, line.length), p = line.at(clamped), beyond = s - clamped;
@@ -92,11 +94,22 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
       if (unit.flip) car.rotateY(Math.PI);
       batches.append(unit.kind, car, unit.load);
       visibleCars++;
+      // The lead's headlamps on the track ahead of its front coupler, within the mounted corridor.
+      const lights = api.lights, far = pass.head + pass.dir * POOL.rail.length;
+      if (i === 0 && lights?.active && Math.min(pass.head, far) >= 0 && Math.max(pass.head, far) <= mountedLength) {
+        at(pass.head, poolNear);
+        if (lights.inRange(poolNear.x, poolNear.y, poolNear.z)) {
+          at(far, poolFar);
+          lights.add(poolNear.x, poolNear.y - 0.05, poolNear.z, poolFar.x, poolFar.y - 0.05, poolFar.z, POOL.rail.width);
+        }
+      }
     });
     draws = batches.finish();
     return visibleCars;
   }
-  return {
+  const api = {
+    /** Headlight pools at night on High (city/headlight-pools.ts); unset on Low. */
+    lights: null as PoolSink | null,
     group: batches.group, poses: batches.poses,
     update,
     get visibleCars() { return visibleCars; },
@@ -107,4 +120,5 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
       material.dispose();
     },
   };
+  return api;
 }

@@ -8,6 +8,7 @@ import type { TrafficData } from '../vignette/traffic';
 import { LENGTH, PAINT, vanPaintIndex, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import type { TerrainCity } from '../terrain/transport-data';
 import { perf, perfOverrides } from '../core/perf';
+import { POOL, type PoolSink } from './headlight-pools';
 import { legacySignalPositions } from './traffic-signals-legacy';
 import { signalPhase, signalPositions, SIGNAL_MAX_WAIT_S, type CourseSignal } from './traffic-signals';
 
@@ -236,6 +237,9 @@ export class RoadTraffic {
   private readonly frustumBox = new THREE.Box3();
   private readonly axles = [{ x: 0, z: 0, y: 0 }, { x: 0, z: 0, y: 0 }, { x: 0, z: 0, y: 0 }];
   private readonly point = { x: 0, z: 0 };
+  private readonly lightPoint = { x: 0, z: 0 };
+  /** Headlight pools at night on High (city/headlight-pools.ts); unset on Low. stepLegacy draws none. */
+  lights: PoolSink | null = null;
   private readonly visible: { x: number; z: number; y: number; half: number; ux: number; uz: number; lane?: TrafficCourse }[] = [];
   /** One mast and head per stop line, coloured from the shared controller every frame. */
   private heads?: { mesh: THREE.InstancedMesh; masts: THREE.InstancedMesh; signals: CourseSignal[] };
@@ -586,6 +590,24 @@ export class RoadTraffic {
             colors[index * 3 + 2] !== Math.fround(c.b)) {
           mesh.setColorAt(index, c);
           mesh.instanceColor!.needsUpdate = true;
+        }
+        const lights = this.lights;
+        if (lights?.active && lights.inRange(x, y, z)) {
+          // On this car's own lane, from the front axle sample ahead: decks and ramps carry it, and a road
+          // crossing overhead never does. No pool where the lane has no drawn surface or leaves the board.
+          const reach = slot.kind === 'semi' || slot.kind === 'box' ? POOL.truck : POOL.car;
+          let at = s + half + reach.length;
+          if (course.closed) at = THREE.MathUtils.euclideanModulo(at, line.length);
+          if (at <= line.length) {
+            const p = pointAt(line, at, this.lightPoint);
+            const inside = p.x > box.minX && p.x < box.maxX && p.z > box.minZ && p.z < box.maxZ;
+            const ey = inside ? this.heightAt(lane, at, p.x, p.z) : null;
+            if (ey !== null) {
+              const fade = course.fadeStartM || course.fadeEndM
+                ? Math.min(1, course.fadeStartM ? (s - half) / course.fadeStartM : 1, course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1) : 1;
+              lights.add(front.x, front.y, front.z, p.x, ey, p.z, reach.width, Math.max(0, fade));
+            }
+          }
         }
       }
     }
