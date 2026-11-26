@@ -30,8 +30,12 @@ def witness(way, station, p, **details):
                 camera=f'{p[0]:.2f},{p[1]:.2f},110,75,75',**details)
 
 
-# A lid model passes only when the lid is positively found (see capitol()).
-LID_TOLERANCE_M, LID_SHARE, LID_COVERAGE, LID_MIN_WALK_SAMPLES = .30, .95, .80, 1000
+# A lid model passes only when the lid is positively found (see capitol()). Shares and
+# coverage hold per registered way, and every way needs a minimum number of stations, so a
+# short way cannot hide inside a long one's total.
+LID_TOLERANCE_M, LID_SHARE, LID_COVERAGE, LID_MIN_WALK_SAMPLES, LID_MIN_STATIONS = .30, .95, .80, 1000, 6
+# A joint's two sides must meet: the same limit as the landing and tile seams.
+JOINT_STEP_M = .002
 
 
 class NoFaces:
@@ -122,30 +126,34 @@ def capitol(scene):
     extra={}
     if fallbacks:
         # A lid model must be found, not assumed: every registered street and walk
-        # on the cover is sampled on its centreline, and the board there must sit at
-        # the cover's own class-2 level, with no street deck standing above it.
+        # on the cover is sampled on its centreline every 0.5 m. On each way, the board
+        # must be found at enough stations and sit at the cover's own class-2 level at
+        # nearly all of them, and no street deck may stand above the cover anywhere,
+        # including where the board is missing (there the lidar surface is the reference).
         checked=matched=above=0
-        per_way={};expected={}
+        per_way={}
         for key,data in REGISTER.items():
             line=LineString(data['points'])
             ar=np.array(data['class2'])
-            n=e=0
+            e=n=m=0
             for s in np.arange(0,line.length,.5):
                 near=ar[np.argmin(abs(ar[:,0]-s))]
                 if abs(near[0]-s)>1.0:continue
                 e+=1
                 p=location(line,s)
                 board=ground.hits(p)
+                cover=max(board) if board else near[3]-323.8
+                if any(y>cover+LID_TOLERANCE_M for y in pavement.hits(p)):above+=1
                 if not board:continue
-                top=max(board)
                 n+=1;checked+=1
-                if abs(top+323.8-near[3])<=LID_TOLERANCE_M:matched+=1
-                if any(y>top+LID_TOLERANCE_M for y in pavement.hits(p)):above+=1
-            per_way[data['way']]=n;expected[data['way']]=e
-        ok=(checked>0 and matched>=LID_SHARE*checked and above==0 and
-            all(per_way[w]>=LID_COVERAGE*expected[w] and expected[w]>0 for w in per_way) and len(walk_rows)>=LID_MIN_WALK_SAMPLES and len(joints)==6)
+                if abs(cover+323.8-near[3])<=LID_TOLERANCE_M:m+=1;matched+=1
+            per_way[data['way']]=dict(stations=e,found=n,matched=m,
+                ok=bool(e>=LID_MIN_STATIONS and n>=LID_COVERAGE*e and n>0 and m>=LID_SHARE*n))
+        ok=(all(w['ok'] for w in per_way.values()) and above==0 and
+            len(walk_rows)>=LID_MIN_WALK_SAMPLES and len(joints)==6)
         extra=dict(lid=dict(walkSamplesOnBoard=fallbacks,samples=checked,matchedShare=round(matched/checked,4) if checked else 0,
-                            decksAboveSamples=above,samplesByWay=per_way,joints=len(joints),ok=bool(ok)))
+                            decksAboveSamples=above,ways=per_way,failedWays=[w for w,v in per_way.items() if not v['ok']],
+                            joints=len(joints),ok=bool(ok)))
     return dict(**extra,walkSamples=len(walk_rows),missingWalkSamples=len(missing),firstMissing=next(iter(missing),None),firstUnsupported=next(iter(floated),None),
                 lengthByWayAndOffsetM={f"{way}/{offset}":round(sum(1 for r in floated if r["way"]==way and r["offset"]==offset)*LineString(data["points"]).length/(int(LineString(data["points"]).length*4)+1),3) for key,data in REGISTER.items() if key in ["517","518","519","520"] for way in [data["way"]] for offset in [-.99,0,.99]},
                 maxWalkGap=max(walk_rows,key=lambda r:r['gapM']),joints=joints)
@@ -274,8 +282,9 @@ def main():
                 failed=[]
                 if row['firstUnsupported'] or row['missingWalkSamples']:failed.append('walk support')
                 if any(j['outside'] for j in row['joints']):failed.append('joint grade')
+                if any(abs(j['stepM'])>JOINT_STEP_M for j in row['joints']):failed.append('joint step')
                 if 'lid' in row and not row['lid']['ok']:failed.append('lid not found')
-                wanted=[] if args.expect=='repaired' else ['walk support','joint grade']
+                wanted=[] if args.expect=='repaired' else ['walk support','joint grade','joint step']
             else:
                 failed=[]
                 joins=[v[k] for v in row['fullWidth'] for k in ['joint','groundLanding'] if k in v]
