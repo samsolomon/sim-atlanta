@@ -650,10 +650,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const keptLandmarks = new Set<THREE.Object3D>([...landmarks.map(l => l.group).filter(g => !boxedFromAfar(g.name)), ...(batches && !FAR_LANDMARKS ? [batches.group] : [])]);
     farHidden.push(...scenery.group.children.filter(o => (o.userData.building || o.userData.roofClutter) && !keptLandmarks.has(o)), houses.group,
       ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
-    if (HIDE_LANDMARKS) {
-      lmRoots.push(...keptLandmarks);
-      void batches?.farReady.then(() => { if (!disposed) showFar(farOn); });
-    }
+    if (HIDE_LANDMARKS) lmRoots.push(...keptLandmarks);
     // Only the styled mesh can be added late: it draws with a material City has already clipped.
     farPending = !!options.deferFarBoxes && !!buildingMaterial;
     if (!farPending) {
@@ -699,6 +696,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight;
     for (const o of farHidden) o.visible = !on;
   };
+  // hidelm: the batches' far meshes arrive later; hide them too if the area is already far.
+  if (lmRoots.length) void batches?.farReady.then(() => { if (!disposed) showFar(farOn); });
   /** The deferred far form: fit the boxes, ground them on the terrain as it then is and mesh them.
    * A carve or an added building part way through starts the mesh again. */
   function* farSteps() {

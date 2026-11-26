@@ -711,7 +711,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const boxed = landmarks.filter(g => boxedFromAfar(g.name));
         const farBoxesDowntown = low ? boxed.flatMap(g => boxesFromObject(g, terrain!.scenery)) : [];
         const farRoots: THREE.Object3D[] = [...boxed];
-        if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); if (FAR_LANDMARKS) farRoots.push(bodies); }
+        const hideRoots: THREE.Object3D[] = [...landmarks];
+        if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); hideRoots.push(bodies); if (FAR_LANDMARKS) farRoots.push(bodies); }
         else {
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
@@ -728,6 +729,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
+          hideRoots.push(batches.group);
           if (FAR_LANDMARKS) farRoots.push(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
@@ -737,7 +739,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           }
         }
         terrain!.addFar(farBoxesDowntown, farRoots);
-        if (low && HIDE_LANDMARKS) terrain!.hideWhenFar(downtownBatches ? [...landmarks, downtownBatches.group] : landmarks, downtownBatches?.farReady);
+        if (low && HIDE_LANDMARKS) terrain!.hideWhenFar(hideRoots, downtownBatches?.farReady);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
