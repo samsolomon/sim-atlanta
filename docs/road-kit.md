@@ -182,6 +182,15 @@ Measured on `main` cf83c531 (A, B1 and B2 merged), High tier, all 13 boards. Sou
 - [R2, downtown: a Gulch-area street drawn as a deck with bare edges](log/ui/road-kit/open-edges-gulch-street.jpg), `cam=-578,-43,120,60,160`
 
 
+## Pre-existing item: the covered Connector under Capitol Gateway
+
+Raised in Grok's review of D, and written up for Sam. No code.
+
+- **What is there.** The Connector runs beneath the Capitol Gateway lid as eight covered ways: both six-lane mainlines (39160888, 39160890) and the branches 39160886, 39160889, 435734520, 435734523, 580328711 and 580328712. `extract-ways.py` turns OSM `covered=yes` into `tunnel` ribbons, so none of them is painted and the freeway is not drawn under the lid.
+- **Cars.** `connector-traffic.ts` gives a car no height on a tunnel interval (`if (run.tunnel) return null`), so Connector traffic disappears at one portal and reappears at the other. Cars never drive on the lid and are never seen under it.
+- **The inconsistency.** The south-band board's own road list (`context.json`) carries the same mainline as an ordinary motorway, with `bridge` and `tunnel` both false. Anything that samples that record reads the lid top. That is why Grok saw its centreline move 1.99 m at (367.4, 760.3) when D2 removed the DEM spike there. Connector traffic does not use that record, so no car is placed on the lid today.
+- **The question for Sam.** Should the covered Connector be a modelled tunnel: portal walls and ceilings at both mouths, lit interiors, and cars that drive in and stay visible a few car lengths into the dark? Or should the lid simply hide it, as now? A modelled tunnel would make the mouths read correctly from the street and at night, cost about one draw per portal, and need the board's road list to carry `tunnel` so that nothing else can drape on the lid.
+
 ## Order of work
 
 1. **Overlap rule plus merge/diverge.** This fixes Sam's A5 and J3, and is the largest visible error at grade.
