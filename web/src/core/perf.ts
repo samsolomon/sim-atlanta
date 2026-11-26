@@ -164,6 +164,7 @@ function phase(name: string) {
  * triangles it drew (all passes, shadow redraws included). */
 function frame(ts: number, update: number, render: number, triangles = 0) {
   stamps[head] = ts;
+  if (sampling) sampledFrames++;
   trafficMs[head] = trafficNow;
   trafficNow = 0;
   trafficCars[head] = carsNow; trafficSamples[head] = samplesNow; trafficLanes[head] = lanesNow;
@@ -474,6 +475,10 @@ let inv: ReturnType<typeof inventory> = null;
 let invAt = 0;
 /** True while ?perf=run samples frames. */
 let sampling = false;
+/** Per traffic layer (by group name), summed over the sampled frames: phase ms and counts. */
+type LayerSums = { updates: number; ms: number; queueMs: number; heightMs: number; planeMs: number; cars: number; samples: number; lanes: number; planes: number };
+const trafficLayers = new Map<string, LayerSums>();
+let sampledFrames = 0;
 function startOverlay() {
   if (silent) return;
   if (overlay || typeof document === 'undefined') return;
@@ -591,6 +596,8 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     };
     requestAnimationFrame(turn);
   }
+  trafficLayers.clear();
+  sampledFrames = 0;
   sampling = true;
   await sleep(sampleMs);
   sampling = false;
@@ -603,6 +610,10 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
     trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     trafficCars: f.trafficCars, trafficSamples: f.trafficSamples, trafficLanes: f.trafficLanes,
+    // Per layer, per sampled frame: update ms split into queue/signal stepping, axle heights and
+    // wheel planes (the rest is posing), plus counts.
+    trafficLayers: Object.fromEntries([...trafficLayers].map(([name, t]) => [name, Object.fromEntries(
+      Object.entries(t).map(([k, v]) => [k, k === 'updates' ? v : Math.round(v / Math.max(1, sampledFrames) * 1000) / 1000])) ])),
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
@@ -698,6 +709,15 @@ export const perf = {
   setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
   /** Add one road-traffic layer's update() to the current frame: CPU ms, cars posed, road-surface
    * samples and lanes stepped. */
+  /** True while ?perf=run samples: traffic layers then time their phases (a few performance.now()
+   * calls per car, so only while sampling). */
+  get trafficTiming() { return sampling; },
+  trafficLayer(name: string, t: Omit<LayerSums, 'updates'>) {
+    const sum = trafficLayers.get(name) ?? { updates: 0, ms: 0, queueMs: 0, heightMs: 0, planeMs: 0, cars: 0, samples: 0, lanes: 0, planes: 0 };
+    sum.updates++;
+    for (const k of Object.keys(t) as (keyof typeof t)[]) sum[k] += t[k];
+    trafficLayers.set(name, sum);
+  },
   traffic(ms: number, cars = 0, samples = 0, lanes = 0) { trafficNow += ms; carsNow += cars; samplesNow += samples; lanesNow += lanes; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
