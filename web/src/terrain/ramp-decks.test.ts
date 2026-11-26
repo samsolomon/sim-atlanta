@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import register from '../../../pipeline/prototypes/connector-footprint/ramp-register.json';
 import survey from '../../../pipeline/prototypes/connector-footprint/ramp-decks.json';
@@ -7,6 +7,8 @@ import type { P2 } from '../vignette/geom';
 import { GroundGrid } from './grid';
 import { applyRampDecks } from './ramp-decks';
 import { GroundSurface } from './surface';
+import { bridgeApproaches } from './bridge-approaches';
+import { streetPortals } from './street-bridges';
 import { createSurfaceTransport } from './transport';
 import type { TerrainCity, TransportRun } from './transport-data';
 
@@ -157,9 +159,10 @@ it('draws the MLK SB ramp tree as one deck across its ways, onto the MLK west ap
   const climbing = runs.filter(r => r.deckNavd88M && r.pts.some(p => same(p, joint)));
   expect(climbing.length).toBe(1);
   expect(climbing[0].deckWeight![0]).toBe(0);
-  // 755543580 eases onto the approach and runs 2.5 m under it, 3 cm below its 313.23 m.
+  // 755543580 eases onto the approach and runs 2.5 m under it: tread 313.07 m,
+  // under the approach's lowest point across the ramp (313.111 m).
   const top = runs.find(r => r.deckNavd88M && same(r.pts[0], [561.1, 584.44]))!;
-  expect(Math.abs(top.deckNavd88M!.at(-1)! + .12 - 313.2)).toBeLessThan(.02);
+  expect(Math.abs(top.deckNavd88M!.at(-1)! + .12 - 313.07)).toBeLessThan(.02);
   // Past 2.5 m along 755543583 the approach owns the pavement: the rest stays a plain run.
   const end = runs.find(r => same(r.pts.at(-1)!, [551.31, 601.54]))!;
   expect(end.deckNavd88M).toBeUndefined();
@@ -193,5 +196,39 @@ it.each(['low', 'high'] as const)('carries 38974038 from 9239459\'s fill on %s, 
     }
     // The start ties to the fill: tread on the drawn terrain plus the deck lift.
     expect(Math.abs(ramp.deckNavd88M![0] - zero - ground.sampleScene(...ramp.pts[0])!)).toBeLessThan(.25);
+  } finally { decks.dispose(); ground.geometry.dispose(); }
+});
+
+const stagedDowntown = new URL('../../public/data/scene/downtown/', import.meta.url);
+it.skipIf(!existsSync(new URL('vignette.json', stagedDowntown)))('keeps the MLK ramp under the MLK west approach across its whole width', () => {
+  // The approach falls across its width, so a ramp pinned under it on the
+  // centreline still cut its lower edge by up to 8 cm (Grok, step 3). Sample the
+  // ramp's footprint where it runs under the approach.
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', stagedDowntown), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', stagedDowntown))).buffer);
+  const city = applyRampDecks(JSON.parse(readFileSync(new URL('vignette.json', stagedDowntown), 'utf8')) as TerrainCity);
+  const ground = new GroundSurface(grid, 'high');
+  const bare = (x: number, z: number) => ground.sampleScene(x, z);
+  const approaches = bridgeApproaches(streetPortals(city), manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads)!;
+  const decks = createSurfaceTransport(city, grid, (x, z, r) => approaches.groundAt(x, z, r as never));
+  const ramp = city.terrainTransport!.roads.filter(r => r.deckNavd88M && r.pts.some(p => Math.hypot(p[0] - 554.34, p[1] - 593.76) < 3.5));
+  try {
+    expect(ramp.length).toBeGreaterThan(0);
+    const [a, joint, e] = [[561.1, 584.44], [554.34, 593.76], [551.31, 601.54]];
+    let covered = 0;
+    for (let s = -3; s <= 2.6; s += .2) {
+      const [p, q] = s < 0 ? [a, joint] : [joint, e], l = Math.hypot(q[0]-p[0], q[1]-p[1]);
+      const [tx, tz] = [(q[0]-p[0])/l, (q[1]-p[1])/l];
+      for (let off = -2.6; off <= 2.6; off += .2) {
+        const x = joint[0] + s*tx - off*tz, z = joint[1] + s*tz + off*tx;
+        const h = approaches.groundAt(x, z), b = bare(x, z);
+        if (h == null || b == null || h < b + .5) continue;
+        const treads = ramp.map(r => decks.deckAt(x, z, r)).filter((v): v is number => v != null);
+        if (!treads.length) continue;
+        covered++;
+        expect(Math.max(...treads) - h, `tread over the approach at ${x.toFixed(2)}, ${z.toFixed(2)}`).toBeLessThan(-.02);
+      }
+    }
+    expect(covered).toBeGreaterThan(40);
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });

@@ -3913,7 +3913,7 @@ The plan built the Freedom Parkway climb (38974058) before the flyover above it 
 ### 2026-11-26 — Ramps the ground was pulling down
 
 The MLK southbound ramps climb about 4 m on their own structure to the MLK Jr. Drive bridge. The City drew them on a board the covered-pavement taper had lowered, so they ran 1–6 m low and hit the bridge's west approach as a 6.7 m wall. They now ride their lidar profiles. Two things the profile alone could not settle:
-- **The top end.** It is already drawn by the street-bridge survey, so the ramp tucks 2.5 m under that approach, 4 cm below it, instead of ending at its diagonal edge with a wedge of air.
+- **The top end.** It is already drawn by the street-bridge survey, so the ramp tucks 2.5 m under that approach instead of ending at its diagonal edge with a wedge of air. The approach falls across its width, so the ramp has to clear its lowest point (313.11 m), not its centreline. A review caught the first version cutting through the low edge by 8 cm.
 - **The fork.** Three ramps split from one deck. Their ribbons start at no width, so for the first few metres each car's own piece has no tread. A probe found cars would have vanished there. They now ride the deck they split from. [The ramp tree, before and after](log/ui/connector-repairs/b2-mlk/M1-high-before-after.jpg) · [The fork](log/ui/connector-repairs/b2-mlk/M2-high-before-after.jpg) · [Onto the approach](log/ui/connector-repairs/b2-mlk/M3-high-before-after.jpg)
 
 ### 2026-11-26 — The lane that started in the air

@@ -38,9 +38,11 @@ CLIP = {755543583: (0, 2.5)}
 # Span rows pinned to a structure drawn from another survey: way -> [(station,
 # NAVD88 profile height)]. Other rows within EASE metres move by a share of the
 # pin's offset, so the ramp eases onto it. Profiled decks draw their tread
-# 0.12 m above the profile: 313.08 keeps the tread 3 cm under the approach's
-# 313.23 m (City probe, b2-mlk/evidence), so the approach stays on top.
-MEETS = {755543580: [(11.6, 313.08)], 755543583: [(0.0, 313.08), (2.5, 313.08)]}
+# 0.12 m above the profile, and the deck is flat across. The MLK approach falls
+# across its width: its lowest point over the ramp's footprint is 313.111 m
+# (ramp-decks.test.ts samples it), so 312.95 keeps the whole tread at least
+# 4 cm under the approach and the approach stays on top.
+MEETS = {755543580: [(11.6, 312.95)], 755543583: [(0.0, 312.95), (2.5, 312.95)]}
 EASE = 10.0
 # Only these stretches of longer ways belong to a step (station window, metres).
 # 38974051 from 75 m on is the Baker junction deck's own approach
