@@ -117,6 +117,35 @@ The draw ceiling leaves room for about ten building skins at +1 to +4 draws each
 640 calls, 6.82M triangles and 99 programs measured, against a 720-call ceiling; 569 calls after landmark batching
 and house blocks, against a 630-call ceiling.
 
+### Road traffic (`low`, 2026-11-26)
+
+The low entry also bounds traffic at the default view:
+
+- `trafficMean`: the CPU ms per frame that every road-traffic layer spends in `update()`.
+- `trafficSamples`: how many road-surface heights those layers sample per frame.
+- `connectorMs` and `connectorSamplesPerCar`: the Connector layer on its own.
+
+`?perf=run` also reports `trafficCars` and `trafficLanes`, and `summary.trafficLayers` gives each layer's
+per-frame ms split into queue and signal stepping (`queueMs`), axle heights (`heightMs`) and wheel planes
+(`planeMs`), with counts.
+
+Release 17 cost the iPhone 7 → 15 ms of traffic per frame, and 53 ms at #682. The cause was `deckAt` in
+`terrain/transport.ts`, which scanned every tread triangle of a road run for each sample. Its 8 m tread
+index restores the phone to 3.3 ms per frame and 0.009 ms per sample. Ceilings at 1× on the Studio:
+
+| Measure | Ceiling | Measured |
+|---|---:|---:|
+| `trafficMean` | 0.8 ms | 0.57 ms |
+| `trafficSamples` | 160 | 117 |
+| `connectorMs` | 0.4 ms | 0.21 ms |
+| `connectorSamplesPerCar` | 3 | 1.6 |
+
+On the phone, Connector samples per car reached 3.1. Slower frames meet more untested height steps, so
+about 3.5 samples per car is the phone-equivalent bound.
+
+A/B switches: `&wheelplane=0` (no fitted wheel plane), `&sampleweight=1` (no 2× northern US 19 weight) and
+`&traffic=legacy` (the pre-2026-11-24 path).
+
 ### Long tasks while moving (`low-north`, `low-zoomout`)
 
 These two entries run the low tier on the A16 canvas (384x692 at DPR 1) with 6x CPU throttle while the camera flies a route

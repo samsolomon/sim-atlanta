@@ -613,12 +613,16 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
   const f = frames(sampleMs);
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
+  const connector = trafficLayers.get('Illustrative Connector traffic');
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
     trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     trafficCars: f.trafficCars, trafficSamples: f.trafficSamples, trafficLanes: f.trafficLanes,
     // Per layer, per sampled frame: update ms split into queue/signal stepping, axle heights and
     // wheel planes (the rest is posing), plus counts.
+    // The Connector layer flat, for test:perf ceilings: ms per frame and road samples per car.
+    connectorMs: connector ? Math.round(connector.ms / Math.max(1, sampledFrames) * 1000) / 1000 : null,
+    connectorSamplesPerCar: connector?.cars ? Math.round(connector.samples / connector.cars * 100) / 100 : null,
     trafficLayers: Object.fromEntries([...trafficLayers].map(([name, t]) => [name, Object.fromEntries(
       Object.entries(t).map(([k, v]) => [k, k === 'updates' ? v : Math.round(v / Math.max(1, sampledFrames) * 1000) / 1000])) ])),
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.

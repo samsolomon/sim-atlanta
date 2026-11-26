@@ -1,5 +1,6 @@
 {
   "_doc": "City budgets per tier, checked by `pnpm test:perf` (scripts/perf-budget.mjs) on the default open view at 2026-11-20 14:00 with all 12 areas mounted; `high-night` repeats high at 22:00, where lit windows and lamps add draws and programs. `ceiling` fails the check (regression guard, set ~10% over the 2026-11-23 measurement on main). `target` is the goal and is reported, not enforced, until a cut reaches it; then move the ceiling down. Counts and memory come from a headless Studio run and match the device; fps and A16 ready time come only from the A16 runs in docs/perf.md. Studio readyMs swings 2-4x with shader-cache state and machine load, so it is a target only; the A16 ready time is the real check. Program ceilings (2026-11-24) are the post-prewarm total plus two: core/prewarm.ts compiles at boot what used to compile at dusk, at night or in weather, so the count at ready rose while late compiles fell; the binding check for those is the sweep under _lateCompiles. The moving entries (low-north, low-zoomout) fly a camera route at 6x CPU in the A16's portrait canvas and fail if any main-thread task during the sample runs longer than longestTaskMs: a whole-board build in one idle or frame task (865 ms for #538's very-far ground) is a stall a visitor feels. route:north starts at 650 ms (2026-11-24, after #586: 268-589 ms over 7 runs on main, so 500 flaked) and zoomout at 500 ms (72-190 ms); ratchet both toward 300 as swap and build steps are sliced. summary.longTasks lists each task over 100 ms (start and duration in page ms) for attribution.",
+  "_traffic": "Low also bounds road traffic at the default view (2026-11-26). trafficMean is the CPU ms per frame every traffic layer spends in update(), and trafficSamples the road-surface samples they take per frame. connectorMs and connectorSamplesPerCar isolate the Connector layer, whose deck sampling took release 17's iPhone traffic from 7 to 15 ms per frame (#682: 53 ms), until deckAt's tread index (2026-11-26). On the Studio at 1x, the fix measured 0.57 ms, about 117 samples, Connector 0.21 ms and 1.6 samples per car. The phone took 3.1 samples per car, because slow frames meet more untested height steps. Ceilings sit at about 40-90% over the Studio figures. The sample counts are the stable checks: machine load does not change them.",
   "_lateCompiles": {
     "_doc": "test:perf also sweeps the clock (dusk, night, late night, dawn) and weather on low and high after City is ready, and fails if any shader program compiles then: each late compile is a frame that stalls (100+ ms on the Studio). core/prewarm.ts compiles everything City has built but not drawn. These are the known exceptions, each matched against the late program's owners and cache key, with who is fixing it. Remove an entry when its fix lands.",
     "allow": [
@@ -13,9 +14,14 @@
       "programs": 86,
       "textureMB": 125,
       "geometryMB": 190,
-      "heapAfterGcMB": 460
+      "heapAfterGcMB": 460,
+      "trafficMean": 0.8,
+      "trafficSamples": 160,
+      "connectorMs": 0.4,
+      "connectorSamplesPerCar": 3
     },
     "target": {
+      "trafficMean": 0.6,
       "triangles": 2000000,
       "calls": 500,
       "programs": 80,
