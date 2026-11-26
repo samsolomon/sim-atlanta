@@ -188,3 +188,7 @@ A dense probe at each joint (5 cm samples over ±0.8 m, at −1.5, 0 and +1.5 m 
 - **316454361 → 39160300 at (260.46, 1022.97) is flush.** The step is ≤ 2 mm on the centreline and at +1.5 m. The 0.051 m at −1.5 m is lane paint within the window, not at the joint. Both profiles meet at 307.62 m in `south-connector-decks.ts`. The +0.22 m in the plan came from samples up to 0.9 m either side of the joint on a sloping deck.
 - **181273020 → 39160311 at (110.84, 939.22) is the deck lift.** 181273020's class-17 deck ends at 301.15 m and lands on 39160311, whose first 261 m are at grade and drawn as a ground run painted on the board. Every profiled deck draws its tread 0.12 m above its profile, so the end stands 0.105 m above the ground run on the centreline, 0.194 m at −1.5 m and 0.010 m at +1.5 m (the board has crossfall the deck does not). That is the same lip the A abutments and the B2 ties accept. A tie like B2's (the end meeting the drawn terrain) only evens it to 0.12–0.13 m across the width, raising the +1.5 m side, so it was tried and left out. Making this joint truly flush would mean tapering the deck lift to zero where a profiled deck meets a ground run, a City-wide change to every such joint, not an E fix.
 
+### E1: Washington Street, researched and held
+
+The inventory record, links, estimated dimensions and gaps are in [Washington Street bridge](washington-street-bridge.md): NBI 000000012104160, 1959, five steel spans, 135.3 m long, a 19.5 m deck with a 14.6 m roadway and 2.4 m walks. It is held for Sam, because it is a new bridge model.
+
