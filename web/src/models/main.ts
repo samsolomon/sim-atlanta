@@ -1384,8 +1384,8 @@ Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame =
  */
 export const lab = {
   current: () => ({ entry, state: { ...variantState } }),
-  open(id: string, params?: URLSearchParams) {
-    const next = nextEntry({ entry, state: variantState }, id, params);
+  open(id: string, params?: URLSearchParams, preset = false) {
+    const next = nextEntry({ entry, state: variantState }, id, params, preset);
     if (!next) return false;
     applyEntry(next.entry, next.state);
     return true;

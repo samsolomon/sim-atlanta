@@ -26,6 +26,7 @@ import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
 import { carries, followLabel, inCityArea, type Selection } from './core/carry';
 import { mountGlassDebug, setGlassMode } from './ui/glass';
+import { viewUrl } from './models/variants';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -1015,6 +1016,8 @@ let sceneTitle = document.title;
 let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
+  // "See the model" from City names one model; read it before the first await clears it.
+  const requested = pendingModel;
   hideCard();
   if (diorama && cityLoading.hidden) {
     leaving++;
@@ -1061,9 +1064,11 @@ async function openModels() {
   labView?.enter();
   // Through the Lab, not a picker click: a former per-state id (City's "See the model" names lead
   // units like es44acNs) has no button of its own, only a family entry and a control preset.
+  // A City request opens that model's own preset; a plain return keeps the Lab's state.
   const here = new URL(location.href);
   const target = here.searchParams.get('model');
-  if (target) labApi?.open(target, here.searchParams);
+  if (requested) labApi?.open(requested, undefined, true);
+  else if (target) labApi?.open(target, here.searchParams);
   setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
@@ -1083,16 +1088,8 @@ function labZoom(dir: 1 | -1) {
 
 function setViewParam(v: View) {
   const u = new URL(location.href);
-  u.searchParams.set('view', v);
-  if (v === 'models') {
-    const id = pendingModel ?? u.searchParams.get('model') ?? labView?.model() ?? u.searchParams.get('v') ?? 'cq400';
-    u.searchParams.set('model', id);
-    u.searchParams.delete('v');
-  } else {
-    u.searchParams.delete('model');
-    u.searchParams.delete('v');
-  }
-  history.replaceState(history.state, '', u);
+  // models/variants.ts: also clears the Lab's control keys on leaving Models and for "See the model".
+  history.replaceState(history.state, '', viewUrl(u.href, v, pendingModel, labView?.model() ?? null));
 }
 
 document.getElementById('early-map')!.hidden = true;

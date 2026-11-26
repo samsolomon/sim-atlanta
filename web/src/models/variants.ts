@@ -137,12 +137,35 @@ export function resolveModel(entry: string, state: VariantState): { model: strin
  * Where an already-loaded Lab should go for a requested id: the entry and state, or null when it is
  * already there. A former id (City's "See the model" names lead units like es44acNs) resolves to
  * its family and preset; a family id takes its state from the URL params.
+ * - `preset` (City's "See the model"): the target's own preset, ignoring the URL, even on the
+ *   entry already shown (a City bus after XN40 Rapid opens the MARTA paint).
+ * - Otherwise, returning to the entry already shown with no control keys in the URL keeps its state.
  */
-export function nextEntry(current: { entry: string; state: VariantState }, id: string, params?: URLSearchParams) {
-  const next = entryFor(id, params);
+export function nextEntry(current: { entry: string; state: VariantState }, id: string, params?: URLSearchParams, preset = false) {
+  if (!preset && id === current.entry && !VARIANT_KEYS.some((k) => params?.has(k))) return null;
+  const next = entryFor(id, preset ? undefined : params);
   const same = next.entry === current.entry && Object.keys({ ...next.state, ...current.state })
     .every((k) => next.state[k] === current.state[k]);
   return same ? null : next;
+}
+
+/** Every control key any family uses (load, paint, scheme, containers). */
+export const VARIANT_KEYS: readonly string[] = [...new Set(VARIANT_FAMILIES.flatMap((f) => f.controls.map((c) => c.key)))];
+
+/**
+ * The app's URL for a view change. Leaving Models drops the model and every control key. Opening a
+ * named model from City (`pending`, "See the model") drops the ambient control keys too, so the Lab
+ * shows that model's own preset rather than whatever state the last family left in the query.
+ */
+export function viewUrl(href: string, view: string, pending: string | null, current: string | null): URL {
+  const u = new URL(href);
+  u.searchParams.set('view', view);
+  if (view !== 'models' || pending) for (const k of VARIANT_KEYS) u.searchParams.delete(k);
+  if (view === 'models') {
+    u.searchParams.set('model', pending ?? u.searchParams.get('model') ?? current ?? u.searchParams.get('v') ?? 'cq400');
+  } else u.searchParams.delete('model');
+  u.searchParams.delete('v');
+  return u;
 }
 
 /** Write the entry and its control state into a URL, dropping keys that belong to other families. */
