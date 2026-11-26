@@ -1386,7 +1386,14 @@ export const lab = {
   current: () => ({ entry, state: { ...variantState } }),
   open(id: string, params?: URLSearchParams, preset = false) {
     const next = nextEntry({ entry, state: variantState }, id, params, preset);
-    if (!next) return false;
+    if (!next) {
+      // Staying put: still write the kept state back, since leaving Models cleared it from the URL.
+      const url = new URL(location.href);
+      writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
+      if (embedded) url.searchParams.delete('v');
+      history.replaceState(history.state, '', url);
+      return false;
+    }
     applyEntry(next.entry, next.state);
     return true;
   },
