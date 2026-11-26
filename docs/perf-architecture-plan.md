@@ -3,7 +3,7 @@
 Draft for Sam, 2026-11-26. This is a plan only: nothing here changes product code. It covers what
 City costs today, measured, and what it would cost at the full I-285-plus-airport extent under
 today's architecture and under the proposed one. It then sets out the five pillars, the program
-consolidation, the order of shippable increments, and the questions for Sam.
+consolidation, the order of shippable increments, and Sam's decisions (§7).
 
 Measured on `main` 1e9e7a7b (north expansion merged). The integrator re-ran `test:perf` on
 1550d9d0 (#685) at the same counts: Low 366 calls, 85 programs, 148.9 MB geometry, 413 MB heap;
@@ -48,9 +48,10 @@ gives one task per area).
    structure-owned hooked shaders, 15 system-owned hooked shaders, 12 shadow-depth variants and 17
    post/ShaderMaterial programs. Consolidation targets about 45 on High and 35 on Low, with landmarks
    adding none.
-6. **Projection.** Today's board is 21 km², about 3% of the 682 km² I-285 hull, not a quarter.
-   Scaled linearly, the current architecture needs about 5 GB of Low geometry, about 15 GB of High
-   ground maps, and roughly 3 minutes of main-thread build at 1×. The proposed architecture holds
+6. **Projection.** Today's board is 21 km², under 2% of the 1,239 km² square that encloses I-285
+   and the airport (Sam's target, §7). Scaled linearly, the current architecture needs about 10 GB of
+   Low geometry, about 27 GB of High ground maps, and roughly 5 minutes of main-thread build at 1×.
+   The proposed architecture holds
    Low at or under 150 MB geometry, 250 draws and 45 programs whatever the size of the city.
 7. **Before the next expansion:** per-view budgets, area slicing (in flight), near-tile eviction
    plus packing, program phase A and night draw consolidation. New areas load lazily on approach,
@@ -251,10 +252,12 @@ these tasks as a whole. A per-task split at 6×, repeated twice, waits for the i
 
 ## 3. Projection to the full extent
 
-**Extent.** #435's `docs/expansion-plan.md` measured the I-285 hull at 682 km², and 1,218 tiles of
-800 m (780 km²) touch it. Today's board is 19.0 km², plus R16's 2.24 km²: about **3%** of the hull.
-The brief's "about a quarter" doesn't match, which is Q1. The figures below project to 682 km², a
-factor of 32.
+**Extent (Sam, 2026-11-26).** The target is the full square enclosing I-285 and the airport: 35.2 ×
+35.2 km, about **1,239 km²**. On #435's 800 m lattice that's 1,936 tiles, or 5,808 files at three per
+tile (29% of the free plan's 20,000-file cap). The I-285 hull alone is 682 km² (1,218 tiles).
+Today's board is 19.0 km², plus R16's 2.24 km²: under **2%** of the square. The figures below
+project to 1,239 km², a factor of about 59. The first draft projected to the hull; scaling from it
+gives the same numbers, at about 1,239 / 682 = 1.8× the hull figures.
 
 **Method.** Fabric (ground, generic buildings, houses, trees, roads, yards) scales with area, using
 the matched R16 pair as the marginal cost per km². Hand-built landmarks don't scale with area: they
@@ -262,16 +265,16 @@ scale with how many get built, and they are projected separately. Main-thread ti
 from the boot profile (0.26 s/km² at 1×). R16 runs at 1.8 s/km², an upper bound for dense highway
 ground.
 
-| Metric (opening view unless noted) | Today (21 km²) | Current architecture at 682 km² | Proposed at 682 km² (budget) |
+| Metric (opening view unless noted) | Today (21 km²) | Current architecture at 1,239 km² | Proposed at 1,239 km² (budget) |
 |---|---:|---:|---:|
-| Low geometry | 149 MB (226 at R16) | ≈ 5.4 GB (149 + 663 × 7.9 MB/km²) | ≤ 150 MB resident, flat |
-| Low heap after GC | 413 MB | ≈ 17 GB (25 MB/km²) | ≤ 400 MB |
-| High ground maps | 406 MB | ≈ 15 GB (21.8 MB/km²) | ≤ 120 MB (distance-tiered) |
-| Low draws | 366 | ≈ 9,000 (about 30 per 2.24 km² area today); ≈ 5,000 with #613's boxes (about 16 per area) | ≤ 250 |
-| Low triangles | 1.79M | ≈ 40–60M (far forms at today's density) | ≤ 1.5M |
+| Low geometry | 149 MB (226 at R16) | ≈ 9.8 GB (149 + 1,218 × 7.9 MB/km²) | ≤ 150 MB resident, flat |
+| Low heap after GC | 413 MB | ≈ 31 GB (25 MB/km²) | ≤ 400 MB |
+| High ground maps | 406 MB | ≈ 27 GB (21.8 MB/km²) | ≤ 120 MB (distance-tiered) |
+| Low draws | 366 | ≈ 16,600 (about 30 per 2.24 km² area today); ≈ 8,900 with #613's boxes (about 16 per area) | ≤ 250 |
+| Low triangles | 1.79M | ≈ 70–105M (far forms at today's density) | ≤ 1.5M |
 | Programs | 100 High / 85 Low | +1 per hooked landmark material; about 70 landmarks and 100 skins are listed for the four directions' first steps | ≤ 55 High / 45 Low, and landmarks add 0 |
-| Main-thread build, 1× | 4.9 s busy | ≈ 3 min (0.26 s/km²); worst case ≈ 20 min (1.8 s/km²) | ≤ 1 s at boot; ≤ 8 ms per frame while streaming |
-| Main-thread build, A16 (6×) | 22 s of long tasks | ≈ 13 min | Ready ≤ 8 s; no task > 50 ms |
+| Main-thread build, 1× | 4.9 s busy | ≈ 5 min (0.26 s/km²); worst case ≈ 37 min (1.8 s/km²) | ≤ 1 s at boot; ≤ 8 ms per frame while streaming |
+| Main-thread build, A16 (6×) | 22 s of long tasks | ≈ 24 min | Ready ≤ 8 s; no task > 50 ms |
 | Download, opening view | ≈ 18 MB (all of `web/public/data`) plus the 1 MB `midtown-rows` chunk | grows with area | ≤ 8 MB compressed (horizon plus coarse levels); tiles stream after |
 
 **Where the proposed numbers come from (Low).**
@@ -288,10 +291,10 @@ ground.
 Draws come from about 2 draws per coarse block and 15–25 for the near ring. Triangles come from #613's
 measured 1.16M for the whole board as boxes, plus canopy masses.
 
-**The opening view decides the far budget.** Today the opening view frames the whole board from
-about 20 km. At full extent, a whole-hull frame shows every tile at a coarse level. A frame of
-downtown at about 5 km, with the hull as horizon, needs fewer coarse tiles. Both fit the budgets
-above only with the hierarchy in §4.3 (Q2).
+**The opening view decides the far budget.** Sam chose downtown at about 5 km, with the rest of
+the city as horizon (today's tilted diorama; §7). Only the tiles near downtown then need L0 or L1.
+Everything else draws at L2 or L3 (§4.3), which keeps the opening download and the coarse budget
+above independent of the square's size.
 
 ## 4. The five pillars
 
@@ -365,9 +368,9 @@ Both run V8 with the same float32 rounding, so a mismatch is a bug, not noise.
 - Builders that read the DOM or canvas need splitting. Ground-map painting stays in the browser.
 - The joined-seam bake must equal today's mount for the default visit. The parity hash runs on the
   joined board, both tiers.
-- Download grows by the baked ground bytes (above). High is the risk, and Q4 asks Sam.
-- Bake time is about 5 s for today's board on the Studio, and roughly 3 minutes for the hull.
-- Hand-written per-area branches (`id === 'r16'` in `square-board/sections.ts`) don't scale to 1,218
+- Download grows by the baked ground bytes (above). Sam accepted that for both tiers (§7, decision 4).
+- Bake time is about 5 s for today's board on the Studio, and roughly 5 minutes for the square.
+- Hand-written per-area branches (`id === 'r16'` in `square-board/sections.ts`) don't scale to 1,936
   tiles. The bake has to emit them as data: yields, special profiles, overrides.
 
 **Effort.** 15–25 agent-hours for today's areas: bake, joined seams, fallback and parity test.
@@ -383,7 +386,7 @@ along the pan velocity.
 
 - **The unit is today's areas first, then 800 m tiles.** Areas already exist, R16 already loads
   lazily, and slicing makes mounts safe. Retiling to #435's lattice (anchor (−1,000, −5,700), about
-  3,650 files, 18% of the free 20,000-file cap) comes with the next large expansion.
+  5,808 files for the square, 29% of the free 20,000-file cap) comes with the next large expansion.
 - **Unload comes after baking.** Evicting an in-browser-built unit would have to undo the seam
   changes its mount made to neighbours (§4.1). Baked units carry joined seams, so eviction is
   just disposal. Until the bake lands, new areas load lazily and stay loaded, as R16 does.
@@ -469,7 +472,7 @@ level ships without Sam seeing that sheet.
   `StaticLandmarkMaterial` for boxes and the foliage program for canopy masses, so no new program.
   #613's night variant uses an unlit Basic program that already exists at night.
 - **Worker:** none.
-- **Hosting:** about 1 file per tile and level. That is within #435's 18% file estimate if L1 is
+- **Hosting:** about 1 file per tile and level. That is within the square's 29% file estimate if L1 is
   folded into the tile's `lod.bin`.
 
 **Risks.**
@@ -633,22 +636,24 @@ touches the look. "Gate" marks what must land before the next expansion.
 - **Integration:** one integration owner per group, per AGENTS.md: increments 0, 2 and 6
   (streaming); 3, 4 and 8 (materials); 5, 7 and 9 (bake and LOD).
 
-## 7. Open questions for Sam
+## 7. Decisions (Sam, 2026-11-26)
 
-1. **Extent.** The brief says we cover about a quarter. #435 measures 21 of 682 km² (3%). Is the
-   target the I-285 hull plus the airport (682 km², 1,218 tiles) or the literal square (1,239 km²)?
-2. **Opening view at full extent:** the whole hull from about 30 km, or downtown at about 5 km with
-   the hull as horizon? This sets the coarse-level budget.
-3. **Far LOD look:** may the coarse levels differ from near forms within the blink-test thresholds
-   (boxes at 9 km or more, #613), or must they be indistinguishable at the switch?
-4. **Baking ground into data files** adds an estimated 3–5 MB (Low) to 15–20 MB (High) of
-   compressed download for today's board, and makes `pnpm data` part of more PRs. Is that acceptable,
-   or should High refine Low's baked ground in the browser?
-5. **Phase B touches approved landmarks** (skyline reflections, One Atlantic, 1180, the Capitol).
-   Will you review them as one batch sheet?
-6. **Loading versus look:** the iPhone's worst experience is 75 s of mounting with freezes up to
-   8.7 s. Until baking lands, should areas past the fog mount only on approach (as R16 does), even
-   if the opening view briefly shows bare table at the far edge?
+Sam answered the six open questions. The coordinator relayed them on 2026-11-26.
+
+1. **Extent:** the full square enclosing I-285 and the airport, about 1,239 km² and 1,936 tiles,
+   not just the 682 km² hull. §3 projects to the square.
+2. **Opening view:** downtown at about 5 km with the city as horizon (today's tilted diorama). Far
+   areas need only a cheap coarse level (L2 and L3 in §4.3).
+3. **Far LOD look:** simpler far forms are fine, such as #613's boxes past 9 km, as long as a blink
+   test at normal views shows no pop at the switch. The blink harness in §4.3 stays the gate.
+4. **Baking ground:** yes, on both tiers. That's +3–5 MB (Low) and +15–20 MB (High) of compressed
+   download for today's board, and PRs that need `pnpm data` are accepted. Increment 5 bakes Low
+   and High. Measuring the bytes per tier is still its first output.
+5. **Approved landmarks in Phase B:** one batch review sheet (matched day and night stills) is
+   expected to be fine. The coordinator confirms with Sam when the sheet is ready.
+6. **Loading versus look:** largely overtaken by #686 and #687's sliced builds. Mount-on-approach
+   for areas past the fog is still allowed if needed, but a brief bare table edge should be the
+   exception, not the plan.
 
 ## Appendix: reproducing
 
