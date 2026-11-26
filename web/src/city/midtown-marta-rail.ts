@@ -401,7 +401,7 @@ export function* createNorthLineSteps(
             cars.updateWorldMatrix(true, false); // the cars' group is the pool's frame of reference
             const n = new THREE.Vector3(p0.x, height(run.line, a0) - 0.05, p0.z).applyMatrix4(cars.matrixWorld);
             const f = new THREE.Vector3(p1.x, height(run.line, a1) - 0.05, p1.z).applyMatrix4(cars.matrixWorld);
-            lights.add(n.x, n.y, n.z, f.x, f.y, f.z, POOL.rail.width);
+            lights.add(n.x, n.y, n.z, f.x, f.y, f.z, POOL.rail.width, POOL.rail.power);
           }
         }
       }

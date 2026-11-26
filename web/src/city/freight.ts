@@ -160,7 +160,7 @@ export class CityFreight {
           sample(section.points, head, this.poolNear);
           if (this.lights.inRange(this.poolNear.x, this.poolNear.y, this.poolNear.z)) {
             sample(section.points, far, this.poolFar);
-            this.lights.add(this.poolNear.x, this.poolNear.y + 0.1, this.poolNear.z, this.poolFar.x, this.poolFar.y + 0.1, this.poolFar.z, POOL.rail.width);
+            this.lights.add(this.poolNear.x, this.poolNear.y + 0.1, this.poolNear.z, this.poolFar.x, this.poolFar.y + 0.1, this.poolFar.z, POOL.rail.width, POOL.rail.power);
           }
         }
       });

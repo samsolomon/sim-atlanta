@@ -13,8 +13,8 @@ import * as THREE from 'three';
  */
 
 /** Camera distance (m) over which pools fade out; beyond the end nothing is placed at all. */
-export const FADE_START = 250;
-export const FADE_END = 900;
+export const FADE_START = 450;
+export const FADE_END = 1400;
 
 /** What a producer needs: whether pools are on, whether a point is near enough, and add. */
 export interface PoolSink {
@@ -28,7 +28,7 @@ export const POOL = {
   car: { length: 16, width: 4.4 },
   truck: { length: 20, width: 5 },
   bus: { length: 18, width: 5 },
-  rail: { length: 26, width: 3.4 },
+  rail: { length: 20, width: 4.2, power: 0.65 },
 } as const;
 
 const VERT = /* glsl */ `
@@ -62,13 +62,13 @@ void main() {
   // u across (0..1), v along the beam (0 at the bumper, 1 at the far end).
   float v = vUv.y, x = vUv.x - 0.5;
   // Two lobes, one per lamp, that spread and merge with distance.
-  float spread = mix(0.11, 0.3, v);
+  float spread = mix(0.13, 0.34, v);
   float lobes = exp(-pow((x - 0.2 * (1.0 - v)) / spread, 2.0)) + exp(-pow((x + 0.2 * (1.0 - v)) / spread, 2.0));
-  // Brightest a few metres out, gone at the far edge; a short soft start at the bumper.
-  float along = smoothstep(0.0, 0.12, v) * (1.0 - smoothstep(0.35, 1.0, v));
+  // Brightest just ahead of the bumper, gone at the far edge; a short soft start so it meets the lamps.
+  float along = smoothstep(0.0, 0.04, v) * (1.0 - smoothstep(0.35, 1.0, v));
   float fade = 1.0 - smoothstep(uFade.x, uFade.y, vDist);
   float wet = 1.0 + 0.4 * uWet;
-  float i = 0.28 * lobes * along * fade * uNight * vPower * wet;
+  float i = 1.1 * lobes * along * fade * uNight * vPower * wet;
   // Additive light fades into fog rather than taking on the fog colour.
   #ifdef USE_FOG
     #ifdef FOG_EXP2

@@ -110,10 +110,10 @@ describe('City train placement', () => {
     trains.update(at(-100, 270), 1);
     expect(pools).toHaveLength(1);
     expect(pools[0].far.x).toBeLessThan(pools[0].near.x);
-    expect(pools[0].near.y).toBeCloseTo(7 + 0.45 - 9.7, 5);
+    expect(pools[0].near.y).toBeCloseTo(7 + 0.57 - 9.7, 5);
     // Eastbound with the roof just ahead of the lead: the pool would run under cover, so none.
     pools.length = 0;
-    trains.update(at(-40, 90), 1);
+    trains.update(at(-30, 90), 1);
     expect(trains.group.children.filter(c => c.visible && c.userData.trainId === 't')).toHaveLength(4); // the lead is in the open
     expect(pools).toHaveLength(0);
     // A little further back, the whole pool is in the open: it lights.

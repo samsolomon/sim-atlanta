@@ -696,7 +696,7 @@ export function* createBrookwoodSteps(sceneZero: number, instanceFreight = true,
         const s0 = s + run.dir * length / 2, s1 = s0 + run.dir * POOL.rail.length;
         if (index === 0 && poolSink?.active && Math.min(s0, s1) >= corridorChainage.min && Math.max(s0, s1) <= corridorChainage.max) {
           const a = brookwoodTruckAt(s0), b = brookwoodTruckAt(s1), ay = bed(a.x) + 0.27;
-          if (poolSink.inRange(a.x, ay, a.z)) poolSink.add(a.x, ay, a.z, b.x, bed(b.x) + 0.27, b.z, POOL.rail.width);
+          if (poolSink.inRange(a.x, ay, a.z)) poolSink.add(a.x, ay, a.z, b.x, bed(b.x) + 0.27, b.z, POOL.rail.width, POOL.rail.power);
         }
       }
     }

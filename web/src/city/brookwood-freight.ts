@@ -100,7 +100,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
         at(pass.head, poolNear);
         if (lights.inRange(poolNear.x, poolNear.y, poolNear.z)) {
           at(far, poolFar);
-          lights.add(poolNear.x, poolNear.y - 0.05, poolNear.z, poolFar.x, poolFar.y - 0.05, poolFar.z, POOL.rail.width);
+          lights.add(poolNear.x, poolNear.y - 0.05, poolNear.z, poolFar.x, poolFar.y - 0.05, poolFar.z, POOL.rail.width, POOL.rail.power);
         }
       }
     });

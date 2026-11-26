@@ -165,13 +165,13 @@ export class CityTrains {
     const a = al.line.at(s0), b = al.line.at(s1), box = this.bounds;
     const ax = a.x - a.nx * off, az = a.z - a.nz * off, bx = b.x - b.nx * off, bz = b.z - b.nz * off;
     if (bx < box.minX || bx > box.maxX || bz < box.minZ || bz > box.maxZ) return;
-    // The car stands 0.55 m above the alignment; the pool lies just under that, on the rails and ties.
+    // The car stands 0.55 m above the alignment, on the rail heads; the pool lies just over them.
     // Track coordinates are the group's; the pool batch is in world space.
     this.group.updateWorldMatrix(true, false);
-    const near = this.poolNear.set(ax, al.elev(s0) + 0.45, az).applyMatrix4(this.group.matrixWorld);
+    const near = this.poolNear.set(ax, al.elev(s0) + 0.57, az).applyMatrix4(this.group.matrixWorld);
     if (!lights.inRange(near.x, near.y, near.z)) return;
-    const far = this.poolFar.set(bx, al.elev(s1) + 0.45, bz).applyMatrix4(this.group.matrixWorld);
-    lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width);
+    const far = this.poolFar.set(bx, al.elev(s1) + 0.57, bz).applyMatrix4(this.group.matrixWorld);
+    lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width, POOL.rail.power);
   }
 
   update(states: TrainState[], darkness: number) {
@@ -213,7 +213,7 @@ export class CityTrains {
             this.group.updateWorldMatrix(true, false);
             const near = this.poolNear.set(nx, y, nz).applyMatrix4(this.group.matrixWorld);
             const far = this.poolFar.set(nx + fx * POOL.rail.length, y, nz + fz * POOL.rail.length).applyMatrix4(this.group.matrixWorld);
-            this.lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width);
+            this.lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width, POOL.rail.power);
           }
           continue;
         }
