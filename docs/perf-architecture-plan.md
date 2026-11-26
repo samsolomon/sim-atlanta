@@ -11,6 +11,22 @@ High 435 / 100 / 270.3 MB / 536 MB; High night 622 calls / 100 programs; `low-no
 199 ms. The raw results and probe scripts are in
 [`docs/log/perf-architecture/`](log/perf-architecture/) (provenance in §1).
 
+**Release 17 (`main` 66b8a295).** The integrator's `test:perf` ran 2026-11-26 04:39–04:47 at a load
+average of 8.1 falling to 5.9, with 0 retries. Main now builds areas in slices by default (`?slice=0`
+gives one task per area).
+
+| Tier | Calls | Programs | Triangles | Geometry MB | Heap MB | Texture MB | Ready |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Low | 368 | 85 | 1,795,179 | 149.3 | 413 | 108.7 | 1.5 s |
+| High | 436 | 100 | 6,456,744 | 269.5 | 537 | 772 | 1.8 s |
+| High night | 624 | 100 | — | — | — | — | — |
+
+- **Longest tasks:** `low-north` 177 ms, `low-zoomout` 0 ms, `low-r16` 335 ms, `high-r16` 86 ms.
+  Slicing took R16's mount from 4.1 s (27.7 s at 6×) to under 0.4 s per task.
+- **With R16 mounted:** Low geometry 241.5 MB, heap 510 MB, 88 programs. High geometry 372.9 MB,
+  heap 666 MB, 105 programs. The memory and program findings in §2 still hold.
+- Increment 1 has landed.
+
 ## 0. Summary
 
 1. **Today's board is already over its ceilings away from the opening view.** At a Midtown street
@@ -595,7 +611,7 @@ touches the look. "Gate" marks what must land before the next expansion.
 | # | Increment | Pillar | Effort (h) | Reuses | Gate |
 |---:|---|---|---:|---|---|
 | 0 | Per-view budgets: street and north-edge views, the growth check, the A16 and iPhone proxies; ceilings at today's figures | 5 | 6–10 | perf-run, program-sweep | **Gate** |
-| 1 | Area slicing lands: R16 mount in the budgeted build | 1 | (in flight) | #611, #621, `area-build-slicing` | **Gate** |
+| 1 | Area slicing lands: R16 mount in the budgeted build (landed in release 17, 66b8a295) | 1 | done | #611, #621, `area-build-slicing` | **Gate** |
 | 2 | Dispose near house tiles outside the near band; pack generic buildings and houses like #575 | 2 | 6–10 | #575, #442 | **Gate** (gets street and route back under ceilings) |
 | 3 | Programs phase A plus the program-rule lint | 4 | 8–12 | library, prewarm | **Gate** (High is at 100/100) |
 | 4 | Night windows and lit panes ride the wall draw | 4 | 6–10 | #441 | **Gate** (High night is at 622/630; Low 22:00 is at 543 calls, unbudgeted, on draw-bound phones) |
