@@ -112,7 +112,7 @@ export function capitolTunnelSlots(): OpenSlot[] {
 }
 
 let pinned: (Mouth & { floor: number })[] | undefined;
-/** Road level for a car on a covered way: the mouth's floor while it is in view, else null. */
+/** Road level at a mouth: on the cut-away apron and a few lengths into the tube, else null. */
 export function capitolTunnelFloorAt(x: number, z: number) {
   pinned ??= capitolMouths().flatMap(m => MOUTH_FLOORS[mouthKey(m)] === undefined ? [] : [{ ...m, floor: MOUTH_FLOORS[mouthKey(m)] }]);
   return capitolTunnelFloor(pinned, x, z);
@@ -122,7 +122,8 @@ export function capitolTunnelFloor(mouths: readonly (Mouth & { floor: number })[
   for (const m of mouths) {
     const dx = x - m.at[0], dz = z - m.at[1];
     const along = dx * m.dir[0] + dz * m.dir[1], across = dx * m.right[0] + dz * m.right[1] - m.offset;
-    if (along >= -0.5 && along <= TUNNEL_VISIBLE_M && Math.abs(across) <= m.halfWidth) return m.floor;
+    // From the start of the open apron, whose board is cut away, to as far in as cars show.
+    if (along >= -APRON_M - 0.5 && along <= TUNNEL_VISIBLE_M && Math.abs(across) <= m.halfWidth) return m.floor;
   }
   return null;
 }

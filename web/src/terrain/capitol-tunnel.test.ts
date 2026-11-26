@@ -38,12 +38,17 @@ describe('the covered Connector under Capitol Gateway as a tunnel', () => {
   it('cuts one covered slot per mouth, below the lid top, and shows cars only near the mouths', () => {
     const slots = capitolTunnelSlots();
     expect(slots.length).toBe(20);
-    for (const slot of slots.filter(s => s.cutHeightM)) expect(slot.cutHeightM! - 0.4).toBeLessThan(Math.max(...Object.values(MOUTH_LIDS)) - 0.29);
+    // Each covered cut stops 0.3 m under its own tube's lowest lid (slots come in mouth order).
+    const covered = slots.filter(s => s.cutHeightM);
+    expect(covered.length).toBe(mouths.length);
+    mouths.forEach((m, i) => expect(covered[i].cutHeightM! - 0.4, mouthKey(m)).toBeCloseTo(MOUTH_LIDS[mouthKey(m)] - 0.3, 6));
     const tunnel = capitolTunnel(ground);
     try {
       const m = tunnel.mouths[0];
       const at = (along: number) => tunnel.floorAt(m.at[0] + m.dir[0] * along + m.right[0] * m.offset, m.at[1] + m.dir[1] * along + m.right[1] * m.offset);
       expect(at(5)).toBe(m.floor);
+      // On the open apron, whose board is cut away, a car rides the same floor.
+      expect(at(-5)).toBe(m.floor);
       expect(at(TUNNEL_VISIBLE_M + 5)).toBeNull();
       expect(tunnel.group.getObjectByName('Capitol Gateway tunnel portals')).toBeTruthy();
     } finally { tunnel.dispose(); }

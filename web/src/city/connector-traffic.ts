@@ -39,8 +39,11 @@ export class ConnectorTraffic extends RoadTraffic {
     // A joined board can be L-shaped. Resolve each axle against the board under it;
     // the bounding rectangle alone includes empty space outside the diorama.
     const roadHeight: ConnectorBoard['roadHeight'] = (x, z, run) => {
-      // Covered: cars stay in view a few lengths into a Capitol Gateway tube, then vanish.
-      if (run.tunnel) return capitolTunnelFloorAt(x, z);
+      // At a Capitol Gateway mouth the board is cut away from the apron in: cars drive on the
+      // tube's floor there, stay in view a few lengths in, then vanish (covered).
+      const mouth = capitolTunnelFloorAt(x, z);
+      if (mouth !== null) return mouth;
+      if (run.tunnel) return null;
       for (const board of boards) {
         const b = board.city.bounds;
         if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ)

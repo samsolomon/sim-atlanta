@@ -168,7 +168,7 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
           const vertex = line.vertexAt(s), i = Math.min(Math.floor(vertex), line.pts.length - 2), f = vertex - i;
           const x = line.pts[i][0] + (line.pts[i + 1][0] - line.pts[i][0]) * f, z = line.pts[i][1] + (line.pts[i + 1][1] - line.pts[i][1]) * f;
           const road = roads[Math.min(roads.length - 1, Math.floor(vertex))];
-          const exact = connector && road.tunnel ? capitolTunnelFloorAt(x, z) : roadHeight(x, z, road);
+          const exact = connector ? capitolTunnelFloorAt(x, z) ?? roadHeight(x, z, road) : roadHeight(x, z, road);
           const got = inner.heightAt(lane, s, x, z);
           samples++;
           if ((exact === null) !== (got === null)) mismatched++;
