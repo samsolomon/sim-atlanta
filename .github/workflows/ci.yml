@@ -105,6 +105,9 @@ jobs:
           # four busy workers starve Vitest's own messaging.
           VITEST_TEST_TIMEOUT: '60000'
           VITEST_MAX_WORKERS: '3'
+          # One pause on a shared runner can double a build step's time (20 ms against an 18.6 ms
+          # limit in this workflow's own runs). The exact limits hold in local runs.
+          STEP_LIMIT_SCALE: '2'
 
       - name: Type check and build
         run: pnpm --filter web build:app

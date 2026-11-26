@@ -126,7 +126,7 @@ uses the timetable.
   worktree, so don't edit another worktree's files.
 - CI (`.github/workflows/ci.yml`) runs `pnpm test:release` and the web type check and build on
   every pull request and push to `main`, so a separate fresh-clone run isn't needed. It has no
-  GPU, so it skips the browser tests in `web/tests/` (`pnpm test` on a Mac runs them; run it
+  GPU, so it doubles the build-step time limits and skips the browser tests in `web/tests/` (`pnpm test` on a Mac runs them; run it
   there when you change City's camera, follow or board edges). It doesn't render the share
   previews or run `test:perf`, and it checks nothing visual. Its map data is cached until the
   pipeline changes, so it doesn't catch a new upstream feed; releases stage fresh data.
