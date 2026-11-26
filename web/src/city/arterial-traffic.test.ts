@@ -79,8 +79,9 @@ it.each(['low','high'] as const)('draws repeatable %s traffic within its cap and
   const first = snapshot(fleet);
   expect(fleet.visibleCars).toBeGreaterThan(0);
   expect(fleet.visibleCars).toBeLessThanOrEqual(ARTERIAL_TRAFFIC_CAP[quality]);
-  // One instanced draw per vehicle kind: low keeps sedan, SUV and box truck; high adds hatch, pickup, van and semi.
-  expect(fleet.group.children.length).toBeLessThanOrEqual(quality === 'low' ? 3 : 7);
+  // One instanced draw per vehicle kind: low keeps sedan, SUV and box truck; high adds hatch, the pickup and
+  // its work trim, van and semi.
+  expect(fleet.group.children.length).toBeLessThanOrEqual(quality === 'low' ? 3 : 8);
   expect(fleet.group.userData.positionTier).toBe('illustrative');
   fleet.update(noon+7000,1);
   expect(snapshot(fleet)).not.toEqual(first);

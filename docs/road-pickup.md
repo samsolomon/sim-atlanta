@@ -5,7 +5,7 @@
 - **Trim:** chrome (XLT-like, with chrome bumpers and grille bars and alloy wheels) or work (XL-like, with dark bumpers and grille and painted steel wheels).
 - **Detail:** High shows the close form; Low shows the traffic form.
 
-A midsize sedan follows 3 m behind for scale. City traffic doesn't draw it yet (Lab study, 2026-11-26).
+A midsize sedan follows 3 m behind for scale. City High traffic draws the traffic form in place of the generic pickup (2026-11-26; see [City traffic](#city-traffic)).
 
 ## Dimensions
 
@@ -27,10 +27,18 @@ A midsize sedan follows 3 m behind for scale. City traffic doesn't draw it yet (
 | Form | Triangles | Vertices | Use |
 |---|---:|---:|---|
 | Close | 3,110 | — | Model Lab only |
-| Traffic | 1,178 | — | City High, if adopted |
-| Today's generic `pickup` (vehicles.ts) | 432 | 1,296 | City High traffic |
+| Traffic | 1,178 | — | City High traffic |
+| Generic `pickup` (vehicles.ts) | 432 | 1,296 | East Portal vignette |
 
 It uses the shared `vehicleMaterial` kinds: 0 paint, 1 headlamps and C-clamp running lamps, 2 tail lamps, 3 glass, 4 trim, and 5 amber markers. It adds no program. Faces come from the shared `face-kit.ts` (the semi's kit, now shared), and a test raycasts both forms and both trims for back faces.
+
+## City traffic
+
+City High traffic draws the traffic form for every pickup slot. That's 13% of passenger cars, the same band as the generic pickup it replaces. About 1 in 4 is the XL-like work trim (`work`), and the rest are XLT-like (`pickup`). Each trim is its own instanced mesh on the shared vehicle material: +1 draw, 0 programs. The trim and the paint both come from the slot's existing passenger draw, so no other slot's phase, threshold or paint moves.
+
+- **Paint.** XLT-like trucks spread evenly over `PICKUP_PAINTS`. Work trucks are fleet white three times in five, otherwise silver or grey.
+- **Length.** The footprint is 5.893 m (it was 5.6 m), which also sets traffic spacing and the headlight pool's start.
+- **Not changed:** Low (sedan, SUV and box truck only), and the East Portal vignette, which keeps the generic `pickup` from `vehicles.ts`.
 
 ## Lighting
 
@@ -46,4 +54,4 @@ Links only; the photographs are not committed.
 
 ## Stills
 
-[Cab side and night lamps, close](log/road-pickup/f150-closeups.jpg) · [Close form, day and night](log/road-pickup/f150-lab-day-night.jpg) · [Trim, scale and traffic form](log/road-pickup/f150-lab-trim-traffic.jpg)
+[Cab side and night lamps, close](log/road-pickup/f150-closeups.jpg) · [Close form, day and night](log/road-pickup/f150-lab-day-night.jpg) · [Trim, scale and traffic form](log/road-pickup/f150-lab-trim-traffic.jpg) · [In City traffic, before and after](log/road-pickup/f150-city-traffic.jpg)

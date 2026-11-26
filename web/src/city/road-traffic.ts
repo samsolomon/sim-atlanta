@@ -6,6 +6,7 @@ import type { VRoad } from '../vignette/world';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
 import { LENGTH, PAINT, vanPaintIndex, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
+import { PICKUP_LENGTH, PICKUP_PAINTS, roadPickupGeometry } from '../vignette/road-pickup';
 import type { TerrainCity } from '../terrain/transport-data';
 import { perf, perfOverrides } from '../core/perf';
 import { POOL, type PoolSink } from './headlight-pools';
@@ -73,12 +74,44 @@ interface LaneState {
   smooth: Uint8Array;
 }
 
-/** Every kind City may draw. Low keeps sedan, SUV and box truck; high adds hatch, pickup, van and the
- * semi (illustrative mix, picked once per slot in slotsFor). */
-const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as const;
+/** Every kind City may draw. Low keeps sedan, SUV and box truck; high adds hatch, the F-150-like pickup
+ * (XLT-like `pickup` and XL-like work truck `work`), van and the semi (illustrative mix, picked once per
+ * slot in slotsFor). */
+const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'work', 'van', 'semi'] as const;
 /** High-tier car mix, as cumulative shares of the non-truck slots. */
 const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
 type Kind = typeof models[number];
+/** Footprint length by kind: the pickups are the F-150-like traffic form, not the vignette's generic one. */
+const KIND_LENGTH: Record<Kind, number> = { ...LENGTH, pickup: PICKUP_LENGTH, work: PICKUP_LENGTH };
+/** About 1 in 4 pickups is the work trim (Sam, 2026-11-26). */
+export const WORK_PICKUP_SHARE = 0.25;
+const PICKUP_COLORS = Object.values(PICKUP_PAINTS).map(p => p.hex);
+/** Work trucks are mostly fleet white, otherwise silver or grey. */
+const WORK_COLORS = [PICKUP_PAINTS.white.hex, PICKUP_PAINTS.white.hex, PICKUP_PAINTS.white.hex, PICKUP_PAINTS.silver.hex, PICKUP_PAINTS.grey.hex];
+function kindGeometry(kind: Kind) {
+  if (kind === 'pickup') return roadPickupGeometry({ trim: 'xlt' });
+  if (kind === 'work') return roadPickupGeometry({ trim: 'xl' });
+  return vehicleGeometry(kind);
+}
+/**
+ * The high-tier passenger kind and, for a pickup, its trim and paint, from the passenger share alone, so no
+ * extra random draw shifts any other slot's phase, threshold or paint.
+ */
+export function passengerKind(passenger: number): { kind: Kind; paint?: string } {
+  let lower = 0;
+  for (const [kind, upTo] of CAR_MIX) {
+    if (passenger < upTo) {
+      if (kind !== 'pickup') return { kind };
+      const f = (passenger - lower) / (upTo - lower); // uniform 0..1 within the pickup band
+      const work = f < WORK_PICKUP_SHARE;
+      const g = work ? f / WORK_PICKUP_SHARE : (f - WORK_PICKUP_SHARE) / (1 - WORK_PICKUP_SHARE);
+      const colors = work ? WORK_COLORS : PICKUP_COLORS;
+      return { kind: work ? 'work' : 'pickup', paint: colors[Math.min(colors.length - 1, Math.floor(g * colors.length))] };
+    }
+    lower = upTo;
+  }
+  return { kind: 'van' };
+}
 type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
   city: TerrainCity;
@@ -177,14 +210,16 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
       const u = random();
       const phase = (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane));
       const threshold = random();
-      const color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
+      let color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
       let kind: Kind;
       if (u < lane.truckShare) {
         kind = quality === 'high' && u < lane.truckShare * (lane.semiShare ?? .15) ? 'semi' : 'box';
       } else if (quality === 'high') {
         // Reuse the passenger portion of this draw to preserve every slot's phase, threshold and paint.
         const passenger = (u - lane.truckShare) / (1 - lane.truckShare);
-        kind = CAR_MIX.find(([, upTo]) => passenger < upTo)?.[0] ?? 'van';
+        const pick = passengerKind(passenger);
+        kind = pick.kind;
+        if (pick.paint) color = new THREE.Color(pick.paint);
       } else {
         kind = u < lane.truckShare + .35 ? 'suv' : 'sedan';
       }
@@ -284,7 +319,7 @@ export class RoadTraffic {
     for (const kind of models) {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
-      const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      const mesh = new THREE.InstancedMesh(kindGeometry(kind), this.material, count);
       if (opts.fitWheelPlane) this.contactAxles.set(kind, outerAxles(mesh.geometry.getAttribute('position')));
       mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
@@ -507,7 +542,7 @@ export class RoadTraffic {
         for (let i = 0; i < active.length; i++) {
           const trip = trips[i] ??= { start: 0, length: 0 };
           trip.start = (Math.floor((seconds * v + active[i].phase) / period) * period - active[i].phase) / v;
-          trip.length = LENGTH[active[i].kind];
+          trip.length = KIND_LENGTH[active[i].kind];
         }
         const q0 = timing ? performance.now() : 0;
         positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds, lane.brakes);
@@ -521,7 +556,7 @@ export class RoadTraffic {
         if (timed === null) continue;
         const free = THREE.MathUtils.euclideanModulo(seconds * v + slot.phase, period);
         const s = timed ?? rushDistance(free, course, rushHour);
-        const length = LENGTH[slot.kind], half = length / 2;
+        const length = KIND_LENGTH[slot.kind], half = length / 2;
         if (!course.closed && (s < half || s > line.length - half)) continue;
         if (view) {
           const c = pointAt(line, course.closed ? THREE.MathUtils.euclideanModulo(s, line.length) : s, this.point);
@@ -686,7 +721,7 @@ export class RoadTraffic {
     for (const [lane, slots] of byLane) {
       const period = lane.line.length + offstage(lane), v = lane.speedMps;
       const trips = slots.map(sl => ({
-        start: (Math.floor((seconds * v + sl.phase) / period) * period - sl.phase) / v, length: LENGTH[sl.kind] }));
+        start: (Math.floor((seconds * v + sl.phase) / period) * period - sl.phase) / v, length: KIND_LENGTH[sl.kind] }));
       const pos = this.movingQueues.get(lane)?.at(trips, seconds)
         ?? legacySignalPositions(lane.signals!, lane.line.length, v, trips, seconds);
       slots.forEach((sl, i) => signalled.set(sl, pos[i]));
@@ -698,7 +733,7 @@ export class RoadTraffic {
       if (timed === null) continue;
       const free = THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
       const s = timed ?? rushDistance(free, slot.lane, rushHour);
-      const length = LENGTH[slot.kind], half = length / 2;
+      const length = KIND_LENGTH[slot.kind], half = length / 2;
       if (!slot.lane.closed && (s < half || s > line.length - half)) continue;
       const axle = (at: number) => {
         if (slot.lane.closed) at = THREE.MathUtils.euclideanModulo(at,line.length);
