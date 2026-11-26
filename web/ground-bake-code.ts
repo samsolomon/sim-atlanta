@@ -1,6 +1,6 @@
 /**
  * The code fingerprint of baked ground (src/terrain/ground-bake.ts): a hash of every source on the
- * bake path, served as `virtual:ground-bake-code` to the site and to the bake runner alike. A bake
+ * bake path, served as src/terrain/bake-code.ts to the site and to the bake runner alike. A bake
  * made by other code (a stale staged bake after an edit to tessellation, grading or normals) then
  * no longer matches, and the browser builds the ground itself.
  */
@@ -32,11 +32,10 @@ export function groundBakeCode(roots = ROOTS, base = repo) {
   return h.digest('hex').slice(0, 16);
 }
 
+/** Serves src/terrain/bake-code.ts as the current fingerprint. */
 export function groundBakeCodePlugin(): Plugin {
-  const id = 'virtual:ground-bake-code', resolved = '\0' + id;
   return {
     name: 'ground-bake-code',
-    resolveId: s => s === id ? resolved : undefined,
-    load: s => s === resolved ? `export default ${JSON.stringify(groundBakeCode())};` : undefined,
+    load: id => id.replace(/\\/g, '/').endsWith('/src/terrain/bake-code.ts') ? `export default ${JSON.stringify(groundBakeCode())};` : undefined,
   };
 }

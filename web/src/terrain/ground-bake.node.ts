@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import groundBakeCode from 'virtual:ground-bake-code';
+import groundBakeCode from './bake-code';
 import { brookwoodGrid } from '../city/brookwood';
 import { addSection, bounds, joins, midtownRows, type Area, type Board, type MidtownRow } from '../square-board/sections';
 import { GroundGrid } from './grid';

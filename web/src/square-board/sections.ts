@@ -36,7 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
 import { runBudgeted, runSync, sliceBudget, sliceInput, sectionWorkMs, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
-import groundBakeCode from 'virtual:ground-bake-code';
+import groundBakeCode from '../terrain/bake-code';
 import { BAKED_AREAS, bakeBytes, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
