@@ -149,3 +149,24 @@ The concealed lower lanes are unchanged.
 
 **Deploy.** A `web/dist` rebuild only. `underpass-floors.json` is bundled, and the staged ground files do not change.
 
+### The gate's Capitol site, re-baselined
+
+**Checker.** `check.py`'s Capitol check now reads a lid model: branch `samsolomon/crossing-check-lid` at 846cb5b8, off `study/crossing-check-calibration`. Absent street and walk deck layers give no hits, and a walk's top falls back to the board. Nothing else changes. The calibration shows the checker change alone moves no result: old (439abf84) and new checker outputs are byte-identical on every run ([evidence](log/ui/connector-repairs/d-lid/gate/calibration-old-vs-new.json)):
+
+| Export | Mode | Old vs new |
+|---|---|---|
+| step0 | `baseline` | Byte-identical |
+| step0-beb9b2d0 | `peachtree` | Byte-identical |
+| step0-1d04eadc | `combined` | Byte-identical |
+| B2 head 70cdd4af (before D) | `combined` | Byte-identical, and the same result as step0-1d04eadc |
+
+**D's result.** On the D2 export, `--expect repaired` passes ([result](log/ui/connector-repairs/d-lid/gate/d-repaired.json) against the [439abf84 reference](log/ui/connector-repairs/d-lid/gate/ref-439abf84-combined.json)):
+
+| Site, Low and High | 439abf84 (accepted limits) | D |
+|---|---|---|
+| Capitol walk support | Failed: first unsupported 755543611 at station 2.0248 m, 197 mm; largest walk gap 6.69 m | Passes: no gap in 1,398 samples |
+| Capitol joint grade | Failed: all six joints outside the class-2 envelope (59–95 pp; steps up to 0.60 m) | Passes: all six inside (−2.2 to +1.7 pp), steps ≤ 0.1 mm |
+| 17th Street, Peachtree | Pass | Byte-identical |
+
+`pipeline/scripts/test_gate_sites.py` (run by `pnpm test`) holds this: every site but Capitol equals the 439abf84 reference, and Capitol has no failures.
+
