@@ -218,6 +218,8 @@ it('schedules no very-far build with the level switched off', async () => {
     vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
     const b = bounds['south-corner'];
     const area = createDowntownTerrain(grid('square-board/south-corner'), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    // The board's own far level is built in the same steps as it mounts.
+    steps.mockClear();
     const camera = new PerspectiveCamera();
     const before = timers;
     camera.position.set(b.maxX + 2 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);

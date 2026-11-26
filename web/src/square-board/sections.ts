@@ -34,7 +34,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
-import { emptySliceStats, frameShare, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
+import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -43,17 +43,6 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  * The +13 MB it used to add on low was the prebuilt near arrays kept reachable after a deck
  * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
  */
-/**
- * Each section's build is spread over frames, a share of each (frameShare in core/slice.ts; the
- * sliced-build gate: no long task while an area mounts). ?slice=0 builds each section in one
- * task, for comparisons and profiles; so does Node.
- */
-function sliceBudget() {
-  return typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0' ? null : frameShare;
-}
-/** Sliced-build stats across every section this page loaded, for the perf harness. */
-export const sliceStats = emptySliceStats();
-if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { piedmontCampusMassing, piedmontNorthLink } from '../city/piedmont-campus';
@@ -181,7 +170,10 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
   return { id, grid:drawnGrid, context, ramp, trail, slots };
 }
 
-export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {
+/** Work a page adds to a row's build, as its last steps before the row connects to the board. */
+export type PrepareRow = (id: Board, area: TrafficArea) => Build<void> | undefined;
+
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid; prepare?: PrepareRow }) {
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
@@ -313,6 +305,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           },
         });
       } catch (error) { hospitalLink?.dispose(); for (const t of transports) t.dispose(); area.dispose(); throw error; }
+      const own = options?.prepare?.(id, added.get(id)!);
+      if (own) yield* own;
     }
     return added;
   } catch (error) {

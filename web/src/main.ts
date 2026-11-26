@@ -10,6 +10,7 @@ import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atm
 import type { ShellOptions, View } from './ui/shell-api';
 import { createShellNext } from './ui/next/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
+import { sliceInput } from './core/slice';
 import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { place as stationName, busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
@@ -377,7 +378,7 @@ const buses = new LiveBuses();
 // so the Map's own per-frame poll below adds no extra requests.
 buses.heartbeat(() => clock.isRealTime() && !document.hidden);
 const schedule = new Schedule(rf, tf, vts);
-if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule, __clock: clock });
+if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule, __clock: clock, __sliceInput: sliceInput });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);

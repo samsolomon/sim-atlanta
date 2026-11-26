@@ -35,6 +35,9 @@ const page = `
     const seen = {};
     try {
       await until('the follow', () => status() === 'following', 60000);
+      // A followed train counts as a moving camera for sliced builds.
+      await frames(3);
+      seen.movingWhileFollowing = performance.now() - window.__sliceInput.inputAt < 500;
       seen.early = await held();
       jump('${at(33)}');
       await until('R16 to be asked for', held, 20000);
@@ -98,6 +101,7 @@ it.skipIf(!chrome || !staged)('keeps following a train that crosses into R16 whi
     const message = await result;
     expect(JSON.parse(message), message).toEqual({
       early: 0,
+      movingWhileFollowing: true,
       askedShortOfTheRow: true,
       insideWhileLoading: { mounted: false, status: 'following' },
       afterMount: 'following',

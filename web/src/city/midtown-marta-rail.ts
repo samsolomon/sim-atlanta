@@ -12,6 +12,7 @@ import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
 import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure, undersideFaces } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
+import { runSync } from '../core/slice';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
 type Origin = { lon: number; lat: number };
@@ -201,7 +202,25 @@ export function northLinePortalSlots(grid: { sample(x: number, z: number): numbe
   ];
 }
 
-export function createNorthLine(
+/**
+ * The North Line as the last steps of its row's build: built into a group of its own, which City
+ * adds to the row's group when it mounts the row, and freed whenever the row is, mounted or not.
+ */
+export function* prepareNorthLine(area: Parameters<typeof createNorthLineSteps>[0] & { dispose(): void },
+  rf: RoutesFile, origin: Origin, cars: THREE.Group, freed: (line: unknown) => void = () => { }) {
+  const holder = new THREE.Group();
+  const line = yield* createNorthLineSteps({ group: holder, groundAt: area.groundAt, terrainAt: area.terrainAt, connectorBoard: area.connectorBoard }, rf, origin, cars);
+  const disposeArea = area.dispose.bind(area);
+  // The row's dispose clears its group without freeing it, and an abandoned row never mounts.
+  area.dispose = () => { line?.dispose(); freed(line); disposeArea(); };
+  return { holder, line };
+}
+
+export function createNorthLine(...args: Parameters<typeof createNorthLineSteps>) {
+  return runSync(createNorthLineSteps(...args));
+}
+/** createNorthLine as a build that yields between its design passes and meshes. */
+export function* createNorthLineSteps(
   area: {
     group: THREE.Group;
     groundAt: (x: number, z: number) => number | null;
@@ -223,11 +242,15 @@ export function createNorthLine(
   // to its span, then design the profile to keep the soffit clear over every road.
   const draft = northLineProfile(lines, rows, area.groundAt, roads);
   if (!draft.height.every(Number.isFinite)) return;
+  yield 'north line draft';
   const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
   const depths = northLineDepths(draft, piers);
+  yield 'north line piers';
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
+  yield 'north line profile';
   const guideway = northLineGuideway(lines, profile, area.groundAt);
   area.group.add(guideway);
+  yield 'north line guideway';
   const walls = new THREE.Group();
   if (area.terrainAt) {
     const underside = undersideFaces(guideway, 425, 445, -5415, -5390);
@@ -239,7 +262,9 @@ export function createNorthLine(
     }
     area.group.add(walls);
   }
+  yield 'north line walls';
   const spans = northLineStructure(profile, piers, area.groundAt);
+  yield 'north line spans';
   area.group.add(spans.mesh, spans.lamps);
   let height = (line: Line, along: number) => profile.at(line, along);
   let tops: RailTops | undefined;

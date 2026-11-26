@@ -40,24 +40,54 @@ export interface SliceStats {
 export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
 
 /**
- * Set by City: `dragging` while the user drags the camera (background builds then take a
- * smaller share), and today's `dayOfYear`, so a sliced build dresses its trees for today.
- * `building` counts sliced builds in progress (runBudgeted), for other background work to
- * defer to; `workedMs` totals the time they have spent building.
+ * Set by City: `dragging` while a camera gesture is held, `inputAt` the last time the camera was
+ * in use (builds then stay out of the way), and today's `dayOfYear`, so a sliced build
+ * dresses its trees for today. `building` counts sliced builds in progress (runBudgeted), for
+ * other background work to defer to; `workedMs` totals the time they have spent building.
  */
-export const sliceInput = { dragging: false, dayOfYear: 180, building: 0, workedMs: 0 };
-
-/** The bounds of a frame's build time, all section builds together. */
-export const SHARE_MIN_MS = 4, SHARE_MAX_MS = 24;
+export const sliceInput = { dragging: false, inputAt: -Infinity, dayOfYear: 180, building: 0, workedMs: 0 };
 
 /**
- * One build's share of the next frame: half of what the rest of the last frame cost, so a slow
- * device fills its board in reasonable time and a fast one keeps its frames; split between the
- * builds under way, and halved while the camera is dragged.
+ * Build time per frame, all section builds together. While the camera is in use (a drag, or input
+ * within `idleAfterMs`) building takes `movingMs`. Otherwise it takes `idleShare` of what the
+ * rest of the last frame cost, from `idleMinMs` to `idleMaxMs`: a still map fills fast (measured
+ * in docs/perf.md), and steps back as soon as someone touches it.
  */
-export function frameShare(restMs: number) {
-  const share = Math.min(SHARE_MAX_MS, Math.max(SHARE_MIN_MS, restMs / 2)) / Math.max(1, sliceInput.building);
-  return sliceInput.dragging ? share / 2 : share;
+export const SHARE = { movingMs: 2, idleAfterMs: 1000, idleShare: 1, idleMinMs: 4, idleMaxMs: 50 };
+
+type Vec = { readonly x: number; readonly y: number; readonly z: number };
+
+/**
+ * Call once a frame, after everything that moves the camera: marks it in use whenever the view
+ * changed since the last frame, however it moved (a gesture, a key, a slider, a glide, a followed
+ * vehicle). Movements too small to see do not count, or a damped orbit's long tail would: about a
+ * tenth of a pixel, which grows with the orbit distance (2 cm at the closest views).
+ */
+export function cameraWatch() {
+  const last = new Float64Array(10);
+  let seen = false;
+  return (position: Vec, target: Vec, turn: Vec & { readonly w: number }, now = performance.now()) => {
+    const view = [position.x, position.y, position.z, target.x, target.y, target.z, turn.x, turn.y, turn.z, turn.w];
+    // City's 22° lens spans about 4e-4 of the orbit distance per pixel.
+    const still = Math.max(.02, 5e-5 * Math.hypot(position.x - target.x, position.y - target.y, position.z - target.z));
+    if (seen && view.every((v, i) => Math.abs(v - last[i]) <= (i < 6 ? still : 2e-5))) return;
+    if (seen) sliceInput.inputAt = now;
+    seen = true;
+    last.set(view);
+  };
+}
+
+/** No camera is in use: for a City that is leaving, or a gesture that will never end. */
+export function releaseCamera() {
+  sliceInput.dragging = false;
+  sliceInput.inputAt = -Infinity;
+}
+
+/** One build's share of the next frame, split between the builds under way. */
+export function frameShare(restMs: number, now = performance.now()) {
+  const moving = sliceInput.dragging || now - sliceInput.inputAt < SHARE.idleAfterMs;
+  const share = moving ? SHARE.movingMs : Math.min(SHARE.idleMaxMs, Math.max(SHARE.idleMinMs, restMs * SHARE.idleShare));
+  return share / Math.max(1, sliceInput.building);
 }
 
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
@@ -89,6 +119,18 @@ export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise
   }
   } finally { sliceInput.building--; }
 }
+
+/**
+ * How City builds an area on this page: spread over frames, a share of each (frameShare; the
+ * sliced-build gate: no long task while an area mounts). Null builds it in one task: under
+ * ?slice=0, for comparisons and profiles, and in Node.
+ */
+export function sliceBudget() {
+  return typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0' ? null : frameShare;
+}
+/** Sliced-build stats across every area this page loaded, for the perf harness. */
+export const sliceStats = emptySliceStats();
+if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 
 /** Yield after every unit (tests: proves a build is independent of where it yields). */
 export async function runEveryStep<T>(build: Build<T>, between?: () => void): Promise<T> {

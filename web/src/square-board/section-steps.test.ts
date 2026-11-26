@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { Group } from 'three';
+import { runBudgeted } from '../core/slice';
 import { expect, it, vi } from 'vitest';
-import { brookwoodGrid } from '../city/brookwood';
+import { brookwoodGrid, createBrookwoodSteps } from '../city/brookwood';
+import { createNorthLineSteps } from '../city/midtown-marta-rail';
+import { loadEast } from '../city/king-memorial-board';
+import { loadNorth } from '../city/sweet-auburn-board';
 import { mountStationFragments } from '../city/north-seam-neighborhood';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
@@ -36,7 +41,16 @@ async function blocksOf(quality: TerrainQuality) {
   const downtown = createDowntownTerrain(grid, { bounds: bounds.downtown, roads: [], rail: [], buildings: [] }, [], { quality, join: joins('downtown') });
   const mounted = new Map<Board, Area>([['downtown', downtown]]);
   const signal = new AbortController().signal;
-  const options = { brookwood: async (...[m, b]: Parameters<typeof brookwoodGrid>) => brookwoodGrid(m, b) };
+  const json = (path: string) => JSON.parse(readFileSync(new URL(path, data), 'utf8'));
+  const routes = json('ga/routes.json'), origin = json('scene/downtown/scene.json').origin;
+  const lines: unknown[] = [];
+  const options = {
+    brookwood: async (...[m, b]: Parameters<typeof brookwoodGrid>) => brookwoodGrid(m, b),
+    // As City does: the North Line is the last of the Station row's build.
+    prepare: (id: Board, area: TrafficArea) => id !== 'brookwood-station' ? undefined : (function* () {
+      lines.push(yield* createNorthLineSteps({ ...area, group: new Group() }, routes, origin, new Group()));
+    })(),
+  };
   const out: [string, number][] = [];
   try {
     for (const row of ['north', ...midtownRows] as const) {
@@ -52,6 +66,7 @@ async function blocksOf(quality: TerrainQuality) {
       }
       if (row === 'brookwood-station') mountStationFragments(mounted.get(row) as TrafficArea, quality);
     }
+    expect(lines.at(-1), 'the North Line was built').toBeTruthy();
   } finally { for (const area of mounted.values()) area.dispose(); }
   return out;
 }
@@ -59,18 +74,21 @@ async function blocksOf(quality: TerrainQuality) {
 /** At 1x. A step runs inside one frame, so this is about 200 ms on a phone-class CPU at 6x. */
 const LIMIT_MS = 32;
 
-it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', data))).each(['low', 'high'] as const)(`mounting the Station and R16 never holds the main thread over ${LIMIT_MS} ms at 1x (%s)`, async quality => {
+/** Fail if any block of a sliced mount holds the main thread over the limit. */
+async function holdsUnderLimit(blocks: () => Promise<[string, number][]>, atLeast: number) {
   const ctx: object = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   vi.stubGlobal('fetch', async (url: string) => {
     let r: Response;
-    try { r = new Response(bytes(new URL(url.split('/data/')[1], data))); } catch { return new Response(null, { status: 404 }); }
+    const path = url.includes('/data/') ? url.split('/data/')[1] : url.replace(/^\//, '');
+    try { r = new Response(bytes(new URL(path, data))); } catch { return new Response(null, { status: 404 }); }
     // The clock starts once an area's files are read: what follows holds the main thread, so
     // work done on them outside any step (the ramp setup, say) counts with the first one.
-    if (url.includes('/square-board/')) for (const read of ['json', 'arrayBuffer'] as const) {
-      const body = r[read].bind(r);
-      r[read] = async () => { const value = await body(); probe.mark = performance.now(); return value as never; };
-    }
+    if (url.includes('/square-board/') || url.includes('/king-memorial/') || url.includes('/sweet-auburn/'))
+      for (const read of ['json', 'arrayBuffer'] as const) {
+        const body = r[read].bind(r);
+        r[read] = async () => { const value = await body(); probe.mark = performance.now(); return value as never; };
+      }
     return r;
   });
   try {
@@ -81,11 +99,44 @@ it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', dat
     const over = () => [...best].filter(([, ms]) => ms > LIMIT_MS * slow);
     for (let run = 0; run < 5 && (run < 2 || over().length); run++) {
       slow = Math.min(slow, slowness());
-      for (const [label, ms] of await blocksOf(quality)) best.set(label, Math.min(best.get(label) ?? Infinity, ms));
+      for (const [label, ms] of await blocks()) best.set(label, Math.min(best.get(label) ?? Infinity, ms));
     }
-    expect(best.size).toBeGreaterThan(200);
+    expect(best.size).toBeGreaterThan(atLeast);
     expect(over().map(([label, ms]) => `${label}: ${ms.toFixed(1)} ms (limit ${(LIMIT_MS * slow).toFixed(1)})`)).toEqual([]);
   } finally {
     vi.unstubAllGlobals();
   }
-}, 600_000);
+}
+
+it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', data))).each(['low', 'high'] as const)(`mounting the Station and R16 never holds the main thread over ${LIMIT_MS} ms at 1x (%s)`,
+  quality => holdsUnderLimit(() => blocksOf(quality), 200), 600_000);
+
+/** King Memorial and Sweet Auburn, as a page loads them after downtown. */
+async function boardBlocks(quality: TerrainQuality) {
+  const grid = new GroundGrid(JSON.parse(readFileSync(new URL('scene/downtown/ground.json', data), 'utf8')), bytes(new URL('scene/downtown/ground.i16', data)));
+  const signal = new AbortController().signal;
+  const out: [string, number][] = [];
+  vi.stubGlobal('location', { search: '' });
+  const keep = (board: string) => {
+    probe.blocks.push(['end', performance.now() - probe.mark]);
+    probe.blocks.forEach(([label, ms], i) => out.push([`${board} ${label} #${i}`, ms]));
+  };
+  probe.mark = 0; probe.blocks.length = 0;
+  const king = await loadEast('', grid, quality, -48, signal);
+  keep('king');
+  probe.mark = 0; probe.blocks.length = 0;
+  const auburn = await loadNorth('', grid, king.grid, quality, -48, signal);
+  keep('auburn');
+  auburn.dispose(); king.dispose();
+  return out;
+}
+
+it.skipIf(!existsSync(new URL('scene/sweet-auburn/context.json', data))).each(['low', 'high'] as const)(`loading King Memorial and Sweet Auburn never holds the main thread over ${LIMIT_MS} ms at 1x (%s)`,
+  quality => holdsUnderLimit(() => boardBlocks(quality), 200), 600_000);
+
+it(`preparing Brookwood's rail never holds the main thread over ${LIMIT_MS} ms at 1x`, () => holdsUnderLimit(async () => {
+  probe.mark = 0; probe.blocks.length = 0;
+  const rail = await runBudgeted(createBrookwoodSteps(0, false), { budgetMs: () => 4 });
+  rail.dispose();
+  return probe.blocks.map(([label, ms], i) => [`rail ${label} #${i}`, ms] as [string, number]);
+}, 4), 120_000);

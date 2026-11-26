@@ -144,13 +144,41 @@ ceilings, so each run prints how far R16 takes memory, calls and programs past t
 
 ### Sliced area builds
 
-Every area builds in steps. Each frame, building gets half of what the rest of the last frame cost, from 4 to 24 ms,
-split between the builds under way and halved while the camera is dragged (`?slice=0` builds each area in one task). A run settles only once no build is under way (`__perf.building`). The trade is
-time for smoothness: on the Studio at 6x CPU the default board fills in 41.5 s instead of 20.7 s, and the longest task
-after ready falls from 3.1 s to 1.0 s (2026-11-26; not yet measured on the A16).
+King Memorial, Sweet Auburn and the rows beyond downtown (the north and south patches, Midtown, Brookwood and R16) build
+in steps, as do Brookwood's rail and the North Line (the last of its row's build); `?slice=0` builds each in one task.
+Downtown builds in one task, before the page is ready.
 
-`src/square-board/section-steps.test.ts` mounts the Station and R16 as a page would and fails if the main thread is held
-over 32 ms at 1x between two frames, which also catches work moved back outside the steps.
+While the camera is in use (a gesture held, any movement of the view in the last second, or a followed vehicle) building takes 2 ms a frame. Otherwise each frame
+gives it what the rest of the last frame cost, from 4 to 50 ms, split between the builds under way. A run settles only
+once no build is under way (`__perf.building`).
+
+Studio, 6x CPU on the A16 canvas, Low, two runs each (2026-11-26; not an A16 or an iPhone). Fill is all 12 areas mounted
+with nothing building; frame rate is counted from ready to fill.
+
+| Build | Board filled, s | Frames/s while filling | Longest task after ready, ms |
+| --- | --- | --- | --- |
+| `8678645f`, nothing sliced | 20.0 / 20.2 | 2.0 / 1.9 | 2,459 / 2,392 |
+| `66b8a295`, rows sliced | 36.0 / 35.5 | 35 / 35 | 986 / 972 |
+| Boards sliced too, half the rest, cap 24 | 34.3 / 34.6 | 35 / 37 | 328 / 318 |
+| The same, the whole rest, cap 50 | 28.3 / 29.3 | 27 / 27 | 335 / 334 |
+| The same, twice the rest, cap 80 | 27.2 / 27.1 | 20 / 21 | 332 / 320 |
+| **Whole rest, cap 50, the follow-ups in steps too** (three runs) | 30.0 / 29.6 / 30.3 | 27 / 28 / 26 | 185 / 193 / 209 |
+
+The share does not move the longest task; splitting the work does. The whole rest, cap 50, is the share in use (the
+coordinator's choice). At 1x the same build fills in 4.6 s on Low (longest task 91 ms) and 5.7 s on High (65 ms), and R16
+mounts at 6x with a longest task of 214 to 217 ms in 11.3 to 11.9 s.
+
+`pnpm test:perf` fails if any task between ready and the sample of `low-north` (6x) passes 300 ms (`loadLongestTaskMs`),
+and reports when the last area mounted (`lastAreaMs`). The same run with `&slice=0` read 2,358 ms, and
+the sliced build 181 to 237 ms across three runs. At 300 ms the gate catches the North Line going back into the Station's
+mount; it does not catch the streetcar, Connector traffic or east-rail deferrals being undone, which each stay under it.
+
+While the camera is moving, building takes 2 ms a frame: on `route:r16`, which flies the whole time, R16 builds in
+15.3 to 15.6 s at 6x, inside the 40 s sample (11.3 to 11.9 s with the camera still).
+
+`src/square-board/section-steps.test.ts` mounts the Station (with the North Line) and R16, loads King Memorial and Sweet
+Auburn and prepares Brookwood's rail as a page would, and fails if the main thread is held over 32 ms at 1x between two frames, which also catches work moved back
+outside the steps.
 
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 

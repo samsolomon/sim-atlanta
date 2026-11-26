@@ -25,7 +25,7 @@ import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
-import { createNorthLine } from './midtown-marta-rail';
+import { prepareNorthLine, type createNorthLine } from './midtown-marta-rail';
 import { drawnAt } from './drawn-at';
 import { FOLLOW_CAMERA, leadFirst, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
@@ -151,7 +151,8 @@ import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } fr
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { sliceInput } from '../core/slice';
+import { cameraWatch, releaseCamera, runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
+import { distToLine } from './line-distance';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
@@ -300,15 +301,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   async function brookwoodGrid(spec: GroundManifest, bytes: ArrayBuffer) {
     // Prepare the station before either row is cut. Both rows retain the original
     // surface and generic structures if the chunk or the model is unavailable.
-    railModule ??= import('./brookwood').then(mod => {
+    railModule ??= import('./brookwood').then(async mod => {
       if (eastController.signal.aborted) return;
-      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low, northFreightMain);
+      const build = mod.createBrookwoodSteps(spec.vertical.sceneZeroNavd88M, !low, northFreightMain), budget = sliceBudget();
+      const built = budget ? await runBudgeted(build, { budgetMs: budget, stats: sliceStats }) : runSync(build);
+      if (eastController.signal.aborted) { built.dispose(); return; }
+      preparedBrookwood = built;
       return mod;
     }).catch(error => {
       console.warn('Brookwood station unavailable', error);
       return undefined;
     });
     const mod = await railModule;
+    // Grading the ground under the rail is its own frame's work.
+    await nextFrame();
     return mod ? mod.brookwoodGrid(spec, bytes) : new GroundGrid(spec, bytes);
   }
   const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
@@ -320,7 +326,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const seamNormals = rowJoinNormals();
-  const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
+  /** Where a page builds in steps, wait a frame between two pieces of main-thread work. */
+  const nextFrame = () => sliceBudget() ? new Promise<unknown>(resolve => requestAnimationFrame(resolve)) : Promise.resolve();
+  // The North Line is built with its row, aside, and joins the row's group when City mounts it.
+  const northLines = new WeakMap<object, { holder: THREE.Group; line: ReturnType<typeof createNorthLine> }>();
+  function prepareRow(id: string, area: Parameters<typeof prepareNorthLine>[0]): Build<void> | undefined {
+    if (id !== 'brookwood-station') return;
+    return (function* () {
+      northLines.set(area, yield* prepareNorthLine(area, rf, manifest.origin, trains.group, line => { if (northLine === line) northLine = undefined; }));
+    })();
+  }
+  const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -848,8 +864,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
   /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
   let trafficHeightsStale = false;
+  let trafficQueued = false;
+  /** Rejoin Connector traffic across the mounted boards: in a page that builds in steps, on the
+   * next frame, once for however many boards mounted, so no mount carries it. */
   function extendConnectorTraffic() {
     trafficHeightsStale = true;
+    if (!trafficOptions || trafficQueued) return;
+    if (!sliceBudget()) { joinConnectorTraffic(); return; }
+    trafficQueued = true;
+    requestAnimationFrame(() => {
+      trafficQueued = false;
+      if (!eastController.signal.aborted) joinConnectorTraffic();
+    });
+  }
+  function joinConnectorTraffic() {
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
     if (east) clippingPlanes[1].constant = east.bounds.maxX;
@@ -1113,11 +1141,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const disposeFragments = mountStationFragments(atl, quality);
         const dispose = atl.dispose.bind(atl);
         atl.dispose = () => { disposeFragments(); dispose(); };
-        const line = createNorthLine(atl, rf, manifest.origin, trains.group);
-        northLine = line;
-        // The area's dispose clears its group without freeing it; free the North Line too.
-        const disposeArea = atl.dispose.bind(atl);
-        atl.dispose = () => { line?.dispose(); if (northLine === line) northLine = undefined; disposeArea(); };
+        const prepared = northLines.get(atl);
+        if (prepared?.holder.children.length) atl.group.add(...prepared.holder.children);
+        northLine = prepared?.line;
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
@@ -1150,21 +1176,32 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       signal.throwIfAborted();
       const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal, mosaic?.joins('auburn').slice(2));
       if (signal.aborted) { area.dispose(); return; }
-      mosaic?.mount('auburn', area);
-      updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
-      addArea(area);
-      north = area;
-      {
-        const board = area.connectorBoard;
+      // The streetcar's track and stops are ready before the board shows, a frame apart.
+      const board = area.connectorBoard;
+      const { surface, track, stops } = await (async () => {
+        await nextFrame();
         const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
         const lines = streetcarLines(rf, manifest.origin);
         const sites = platformSites(streetcarStopList(), lines, board.city.roads);
         const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
+        await nextFrame();
         const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
+        await nextFrame();
+        const stops = buildStreetcarStops(sites, area.bounds, surface);
+        await nextFrame();
+        return { surface, track, stops };
+      })().catch(error => { area.dispose(); throw error; });
+      const discard = () => { track.dispose(); stops.dispose(); };
+      if (signal.aborted) { discard(); area.dispose(); return; }
+      try { mosaic?.mount('auburn', area); }
+      catch (error) { discard(); throw error; }
+      updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
+      addArea(area);
+      north = area;
+      {
         const entry = { bounds: area.bounds, height: surface };
         streetcarSurface.push(entry);
         area.group.add(track.group);
-        const stops = buildStreetcarStops(sites, area.bounds, surface);
         // Match the downtown track and shelter shaders while keeping the interior seam open.
         if (perimeter) {
           clipScenery(track.group, perimeter);
@@ -1188,6 +1225,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       renderer.shadowMap.needsUpdate = true;
       areaResult('auburn', null);
+      perf.phase('area:auburn');
       if (pendingNorthTarget) {
         const { x, z } = pendingNorthTarget;
         const offset = camera.position.clone().sub(controls.target);
@@ -1230,6 +1268,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (wholeBoardRequested) approachNorth(1400, 0);
       else approachNorth(next.x, next.z);
       areaResult('king', null);
+      perf.phase('area:king');
       renderer.shadowMap.needsUpdate = true;
       if (pendingEastTarget) {
         const { x, z } = pendingEastTarget;
@@ -1276,6 +1315,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       // Cars stay visible under the open-sided King Memorial canopy, like Georgia State's.
       t.visibleInStation = s => !!inStation?.(s) || (t.coverAt?.(s) === 'roofed' && t.formAt?.(s) === 'station' && t.line.at(s).x > b.maxX);
     }
+    // The alignments and the track are each a frame's work on a phone.
+    if (sliceBudget()) await new Promise(resolve => requestAnimationFrame(resolve));
+    if (eastController.signal.aborted) return;
     const rail = mod.buildEastRail(extended, rf, pack, area.groundAt, ground.manifest.vertical.sceneZeroNavd88M, b.maxX);
     scene.add(rail.mesh);
     scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
@@ -1560,9 +1602,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
-  // Sliced area builds take a smaller share of each frame while the camera is dragged.
-  controls.addEventListener('start', () => { sliceInput.dragging = true; });
-  controls.addEventListener('end', () => { sliceInput.dragging = false; });
+  // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
+  // (here) and whenever the view moves (watched once a frame, below).
+  releaseCamera();
+  const watchCamera = cameraWatch();
+  controls.addEventListener('start', () => { sliceInput.dragging = true; sliceInput.inputAt = performance.now(); });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; sliceInput.inputAt = performance.now(); });
+  // A gesture the browser cancels, or one whose window loses focus, never ends.
+  const dropGesture = () => { sliceInput.dragging = false; };
+  window.addEventListener('blur', dropGesture);
+  renderer.domElement.addEventListener('pointercancel', dropGesture);
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
     cancelPendingTarget();
@@ -1961,6 +2010,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     stopGestures?.tick?.(frameMs);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
+    // Watching a vehicle counts as using the camera, even while it stands still.
+    if (options.follow?.vehicle) sliceInput.inputAt = performance.now();
     if (glideTo) {
       const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : frameFraction(GLIDE_PER_60HZ_FRAME, frameMs));
       controls.target.add(step);
@@ -2048,6 +2099,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         clampTarget();
       }
     }
+    watchCamera(camera.position, controls.target, camera.quaternion);
     treeDetail();
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
@@ -2390,6 +2442,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       ro.disconnect();
       stopPicking();
       controls.removeEventListener('start', startGesture);
+      window.removeEventListener('blur', dropGesture);
+      renderer.domElement.removeEventListener('pointercancel', dropGesture);
+      // A drag held while City leaves gets no 'end'.
+      releaseCamera();
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
@@ -2458,31 +2514,3 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
   return { tracks: kept, station };
 }
 
-const lineBoxes = new WeakMap<Line, { minX: number; maxX: number; minZ: number; maxZ: number }>();
-/** Distance from (x, z) to the polyline. With `within`, only "is it under `within`" is exact: a
- * point farther than that from the line's box returns Infinity, and the scan stops at the first
- * segment closer than `within` (this ran ~0.35 s of a phone's City load scanning every point). */
-function distToLine(line: Line, x: number, z: number, within = Infinity) {
-  let best = Infinity;
-  const pts = line.pts;
-  if (within < Infinity) {
-    let box = lineBoxes.get(line);
-    if (!box) {
-      box = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
-      for (const [px, pz] of pts) { box.minX = Math.min(box.minX, px); box.maxX = Math.max(box.maxX, px); box.minZ = Math.min(box.minZ, pz); box.maxZ = Math.max(box.maxZ, pz); }
-      lineBoxes.set(line, box);
-    }
-    if (x < box.minX - within || x > box.maxX + within || z < box.minZ - within || z > box.maxZ + within) return Infinity;
-  }
-  for (let i = 1; i < pts.length; i += 1) {
-    const [ax, az] = pts[i - 1];
-    const [bx, bz] = pts[i];
-    const dx = bx - ax;
-    const dz = bz - az;
-    const l2 = dx * dx + dz * dz || 1;
-    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
-    best = Math.min(best, Math.hypot(ax + dx * t - x, az + dz * t - z));
-    if (best < within) return best;
-  }
-  return best;
-}

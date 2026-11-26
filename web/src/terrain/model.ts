@@ -478,7 +478,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // per frame, like the very-far level). Outside a page the plain level stays, so every mount
   // builds and frees the same geometry.
   const settleNow = FAR_GROUND_SETTLED && mesh.hasPrebuiltFar(FAR_GROUND_ERROR_M, true);
-  let farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, settleNow) : null;
+  let farGeometry = options.quality !== 'low' || !GroundSurface.farLow ? null
+    : mesh.hasPrebuiltFar(FAR_GROUND_ERROR_M, settleNow) ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, settleNow)
+    : yield* mesh.farGeometrySteps(FAR_GROUND_ERROR_M, 160, settleNow);
   let pendingFar: THREE.BufferGeometry | null = null;
   if (farGeometry && FAR_GROUND_SETTLED && !settleNow && (inPage || settleInTests)) {
     queueVeryFar(() => mesh.farGeometrySteps(FAR_GROUND_ERROR_M, 160, true), settled => {
