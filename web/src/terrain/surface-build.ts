@@ -189,6 +189,20 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       if (x < y.minX - margin || x > y.maxX + margin || z < y.minZ - margin || z > y.maxZ + margin) return false;
       return y.planes.every(plane => plane(x, 0, z) >= -eps);
     };
+    // A face wholly outside a footprint's box cannot be split by it. Asking splitConvex anyway
+    // returns the face unchanged, but first allocates cut vertices that nothing draws.
+    const apart = (y: ReturnType<typeof yieldPlanes>, face: number[]) => {
+      if (y.reach === Infinity) return false;
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const i of face) {
+        const x = pos[3 * i], z = pos[3 * i + 2];
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (z < minZ) minZ = z;
+        if (z > maxZ) maxZ = z;
+      }
+      return maxX < y.minX - 1e-6 || minX > y.maxX + 1e-6 || maxZ < y.minZ - 1e-6 || minZ > y.maxZ + 1e-6;
+    };
     const lowered = new Map<number, number>();
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
@@ -224,6 +238,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
           [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
         )) continue;
         faces = faces.flatMap(f => {
+          if (apart(y, f)) return [f];
           const { inside, outside } = splitConvex(f, y.planes, pos, add);
           if (!inside) return outside;
           const low = inside.map(lower);
