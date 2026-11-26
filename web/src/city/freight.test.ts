@@ -174,3 +174,25 @@ it('lights the drawn track ahead of the lead at night, never across a cover gap,
     freight.dispose();
   }
 });
+
+it('builds locomotives with their lamps and lights only the lead’s at night', () => {
+  const freight = new CityFreight([[point(0, 0), point(2000, 0)]], []);
+  try {
+    freight.update(at(300));
+    const batches = freight.group.children.filter((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh && m.visible);
+    // The lead's shape carries headlamps and ditch lights (stockLight 2), as the night shader expects.
+    const lead = freight.passage(0).units[0].kind;
+    const leadMesh = batches.find(m => Array.from({ length: m.count }, (_, i) => (m.geometry.getAttribute('aLoad') as THREE.InstancedBufferAttribute).getX(i)).includes(1))!;
+    expect(leadMesh).toBeDefined();
+    expect(Array.from(leadMesh.geometry.getAttribute('stockLight').array).includes(2), lead).toBe(true);
+    // Exactly one instance in the whole train is lit: the lead.
+    let lit = 0;
+    for (const m of batches) {
+      const loads = m.geometry.getAttribute('aLoad') as THREE.InstancedBufferAttribute;
+      for (let i = 0; i < m.count; i++) if (loads.getX(i) === 1 && m.geometry.getAttribute('stockLight').array.includes(2)) lit++;
+    }
+    expect(lit).toBe(1);
+  } finally {
+    freight.dispose();
+  }
+});

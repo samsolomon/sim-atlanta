@@ -92,7 +92,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
       car.position.addVectors(nose, tail).multiplyScalar(0.5);
       car.quaternion.setFromRotationMatrix(m.lookAt(nose, tail, car.up));
       if (unit.flip) car.rotateY(Math.PI);
-      batches.append(unit.kind, car, unit.load);
+      batches.append(unit.kind, car, unit.load, i === 0);
       visibleCars++;
       // The lead's headlamps on the track ahead of its front coupler, within the mounted corridor.
       const lights = api.lights, far = pass.head + pass.dir * POOL.rail.length;

@@ -151,7 +151,7 @@ export class CityFreight {
         car.position.addVectors(this.nose, this.tail).multiplyScalar(.5);
         car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.nose, this.tail, car.up));
         if (unit.flip) car.rotateY(Math.PI);
-        this.batches.append(unit.kind, car, unit.load);
+        this.batches.append(unit.kind, car, unit.load, i === 0);
         this.visibleCars++;
         // The lead's headlamps light the track ahead of its front coupler, where that track is drawn
         // (a section's ends are its tunnel and cut mouths, so a pool never reaches under a cover).
