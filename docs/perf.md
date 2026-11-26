@@ -148,7 +148,7 @@ King Memorial, Sweet Auburn and the rows beyond downtown (the north and south pa
 in steps, as do Brookwood's rail and the North Line (the last of its row's build); `?slice=0` builds each in one task.
 Downtown builds in one task, before the page is ready.
 
-While the camera is in use (a drag, or input within the last second) building takes 2 ms a frame. Otherwise each frame
+While the camera is in use (a drag, input within the last second, a glide, a drive-through or a followed vehicle) building takes 2 ms a frame. Otherwise each frame
 gives it what the rest of the last frame cost, from 4 to 50 ms, split between the builds under way. A run settles only
 once no build is under way (`__perf.building`).
 

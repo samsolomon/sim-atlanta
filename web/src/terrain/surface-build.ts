@@ -233,15 +233,21 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     let work = 0;
     let blockSlots: ReturnType<typeof slotPlanes>[] | undefined;
     let blockYields: ReturnType<typeof yieldPlanes>[] | undefined;
+    // A triangle with openings or footprints to clip against returns that work as a build: one
+    // triangle can meet hundreds of footprints, so it pauses between them.
     const tri = (a: number, b: number, c: number) => {
       const ia = vertex(a), ib = vertex(b), ic = vertex(c);
       if (!blockSlots && !blockYields) {
         indices.push(ia, ib, ic);
-        return;
+        return undefined;
       }
+      return clipTri(ia, ib, ic);
+    };
+    function* clipTri(ia: number, ib: number, ic: number): Build<void> {
       let faces = [[ia, ib, ic]];
       for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
       for (const y of blockYields ?? []) {
+        if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
         work += faces.length;
         // splitConvex can allocate temporary intersections before rejecting a face.
         // Keep a tee's extended clip lines off the neighbouring board rim.
@@ -275,7 +281,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
         });
       }
       for (const f of faces) emit(f);
-    };
+    }
     for (let k = 0; k < detail.length; k++) {
       if (k % (2 * blockCols) === 2 * blockCols - 1 || work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
       starts[k] = indices.length;
@@ -289,11 +295,10 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             const a = r * cols + c, b = a + cols;
             // Never bridge a void with a coarse face. Omit the entire invalid source cell.
             if (!Number.isFinite(heights[a] + heights[a + 1] + heights[b] + heights[b + 1])) continue;
-            tri(a, b, a + 1);
-            // A block crowded with footprints costs a step per triangle, not per block.
-            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
-            tri(b, b + 1, a + 1);
-            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
+            const first = tri(a, b, a + 1);
+            if (first) yield* first;
+            const second = tri(b, b + 1, a + 1);
+            if (second) yield* second;
           }
         }
         continue;
@@ -308,13 +313,14 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       ring.push(ne);
       if (bz && detail[k - blockCols]) ring.push(nw + 1);
       if (ring.length === 4) {
-        tri(nw, sw, ne);
-        if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
-        tri(sw, se, ne);
+        const first = tri(nw, sw, ne);
+        if (first) yield* first;
+        const second = tri(sw, se, ne);
+        if (second) yield* second;
       } else {
         for (let i = 0; i < ring.length; i++) {
-          tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
-          if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
+          const fan = tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
+          if (fan) yield* fan;
         }
       }
     }

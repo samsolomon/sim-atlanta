@@ -2001,6 +2001,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     stopGestures?.tick?.(frameMs);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
+    // A glide, a drive-through or a followed vehicle moves the camera: sliced builds step back.
+    if (glideTo || drive || options.follow?.vehicle) sliceInput.inputAt = performance.now();
     if (glideTo) {
       const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : frameFraction(GLIDE_PER_60HZ_FRAME, frameMs));
       controls.target.add(step);

@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { eastLandingYields, seatLandingEdges } from '../../../pipeline/prototypes/highway-four-ground/landing';
 import { runSync } from '../core/slice';
 import { splitConvex } from './openings';
-import { apartFromFootprint, footprintContains, yieldPlanes } from './surface-build';
+import { apartFromFootprint, footprintContains, tessellateSteps, yieldPlanes } from './surface-build';
 
 /**
  * The box tests in front of the footprint plane tests may only skip work the planes would reject.
@@ -147,4 +147,18 @@ it('seating landing edges inside their boxes seats the same vertices as testing 
     expect(pos).toEqual(expected);
   }
   expect(seated).toBeGreaterThan(1000);
+});
+
+it('pauses inside one triangle crowded with footprints', () => {
+  // One 10 m block of flat ground (eight triangles) under thousands of thin footprints.
+  const spec = { rows: 3, cols: 3, stepM: 5, bounds: { minX: 0, maxX: 10, minZ: 0, maxZ: 10 }, sha256: '', sceneZeroNavd88M: 0 };
+  const r = random(9);
+  const yields = Array.from({ length: 3000 }, () => {
+    const x = .5 + r() * 8.5, z = .5 + r() * 8.5;
+    return { ring: [[x, z], [x + .4, z + .02], [x + .2, z + .05]] as Point[], floor: () => -1 };
+  });
+  let steps = 0;
+  for (const _ of tessellateSteps(spec, new Float32Array(9), 'high', [], undefined, yields)) steps++;
+  // Pausing only between triangles would give at most one step per triangle and pass.
+  expect(steps).toBeGreaterThan(40);
 });
