@@ -1,0 +1,1 @@
+(async()=>{const {ribbons}=await import('/src/terrain/connector-corridor.ts'); return ribbons.map(r=>({id:r.id,kind:r.kind,dir:r.direction,lanes:r.lanes,link:r.link,rows:r.rows.map(q=>[q.s,q.inner,q.outer])}));})()
