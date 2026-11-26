@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { createServer } from 'vite';
 import { expect, it } from 'vitest';
 
-const chrome = [process.env.CHROME_BIN, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+// SKIP_BROWSER_TESTS=1: a machine whose Chrome has no GPU (CI) is too slow to draw City.
+const chrome = process.env.SKIP_BROWSER_TESTS === '1' ? undefined : [process.env.CHROME_BIN, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome', '/usr/bin/chromium'].find(path => path && existsSync(path));
 const staged = existsSync('public/data/scene/square-board/r16/context.json') && existsSync('public/data/ga/timetable.json');
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));

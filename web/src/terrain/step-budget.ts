@@ -18,6 +18,9 @@ import type { TerrainQuality } from './surface-build';
  * the limit scales up, never down, on a machine slower than a fixed reference workload.
  */
 export const STEP_MS = 8;
+/** STEP_LIMIT_SCALE loosens every step limit on a shared runner (CI), where one pause can double a
+ * step. A step that stops yielding is far past twice its limit; the exact limit holds elsewhere. */
+export const LIMIT_SCALE = Math.max(1, Number(process.env.STEP_LIMIT_SCALE) || 1);
 const scene = new URL('../../public/data/scene/square-board/', import.meta.url);
 export const staged = (rows: readonly string[]) => rows.every(r => existsSync(new URL(`${r}/context.json`, scene)));
 
@@ -61,7 +64,7 @@ export function stepsOverBudget(rows: readonly string[], quality: TerrainQuality
       if (counts(label)) best.set(key, Math.min(best.get(key) ?? Infinity, ms));
     }
   }
-  const limit = () => STEP_MS * Math.max(1, ref / REF_MS);
+  const limit = () => STEP_MS * Math.max(1, ref / REF_MS) * LIMIT_SCALE;
   const over = () => [...best].filter(([, ms]) => ms > limit());
   for (let run = 0; run < 2; run++) for (const row of rows) measure(row);
   for (let run = 0; run < 6 && over().length; run++) for (const row of rows) if (over().some(([l]) => l.startsWith(row + ' '))) measure(row);

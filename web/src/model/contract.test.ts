@@ -10,7 +10,8 @@ import type { CrossingProps, RoutesFile, TimetableFile, TrackArcProps, VehicleTy
 
 const dir = resolve(__dirname, '../../public/data/ga');
 const has = existsSync(resolve(dir, 'routes.json'));
-const load = <T>(f: string): T => JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+// The describe body still runs when it is skipped, so a missing file must not throw there.
+const load = <T>(f: string): T => (has ? JSON.parse(readFileSync(resolve(dir, f), 'utf8')) : undefined) as T;
 
 describe.skipIf(!has)('generated Georgia data', () => {
   const rf = load<RoutesFile>('routes.json');

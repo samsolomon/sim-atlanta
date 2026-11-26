@@ -6,6 +6,7 @@ import { joins } from '../square-board/sections';
 import { Builder } from '../vignette/geom';
 import { GroundGrid } from './grid';
 import { buildDowntownTerrain } from './model';
+import { LIMIT_SCALE } from './step-budget';
 
 /**
  * The landmark tail must not regrow: in a sliced mount each landmark step runs inside
@@ -58,7 +59,7 @@ it.skipIf(!staged).each(['low', 'high'] as const)('no landmark build step takes 
       best.set(label, Math.min(best.get(label) ?? Infinity, ms));
     }
   }
-  const limit = () => STEP_MS * Math.max(1, ref / REF_MS);
+  const limit = () => STEP_MS * Math.max(1, ref / REF_MS) * LIMIT_SCALE;
   const over = () => [...best].filter(([, ms]) => ms > limit());
   for (let run = 0; run < 2; run++) for (const row of ROWS) measure(row);
   // Builds are deterministic, so a step that is really slow stays slow; one that a busy machine or a

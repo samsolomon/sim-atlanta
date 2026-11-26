@@ -24,6 +24,7 @@ import { Line, segDist } from '../vignette/geom';
 import { roadWidth } from './transport-data';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
 import { applyRampDecks } from './ramp-decks';
+import { turn } from '../testing/turn';
 
 const root = new URL('../../../pipeline/prototypes/', import.meta.url);
 const staged = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
@@ -219,15 +220,18 @@ it('keeps the Ellis road top and its outgoing grade continuous across the east l
 // deckAt's tread index must find the same triangle as the full scan it replaced, everywhere a
 // car can sample: along every deck run at 1 m with lateral offsets, and along every Connector
 // lane every 0.5 m (four points per 2 m height step) through cityRoadHeight. Tolerance 0.
-it('finds the same deck heights with the tread index as with the full scan, on every board', () => {
-  const boards = BOARDS.map(id => {
+it('finds the same deck heights with the tread index as with the full scan, on every board', async () => {
+  const build = (id: (typeof BOARDS)[number]) => {
     // City applies the surveyed Connector ramp decks to downtown before building its transport.
     const { grid, city: source } = board(id), zero = grid.manifest.vertical.sceneZeroNavd88M;
     const city = id === 'downtown' ? applyRampDecks(source) : source;
     const surface = new GroundSurface(grid, 'low'), bare = surface.sampleScene.bind(surface);
     const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
     return { id, city, groundAt: approach.groundAt, transport: createSurfaceTransport(city, grid, approach.groundAt) };
-  });
+  };
+  // One board, or a few hundred metres of sampling, per turn of the event loop (test-setup.ts).
+  const boards: ReturnType<typeof build>[] = [];
+  for (const id of BOARDS) { boards.push(build(id)); await turn(); }
   let samples = 0, hits = 0;
   const same = (a: number | null, b: number | null, where: string) => {
     samples++;
@@ -235,6 +239,7 @@ it('finds the same deck heights with the tread index as with the full scan, on e
     if (!Object.is(a, b)) throw Error(`${where}: index ${a} vs scan ${b}`);
   };
   for (const { id, city, transport } of boards) for (const run of city.terrainTransport?.roads ?? []) {
+    await turn();
     if (run.pts.length < 2) continue;
     const line = new Line(run.pts);
     for (let s = 0; s <= line.length; s += 1) {
@@ -248,6 +253,7 @@ it('finds the same deck heights with the tread index as with the full scan, on e
   // Connector lanes, through the same height function traffic uses.
   const home = boards[0], neighbors = boards.slice(1);
   for (const lane of connectorTrafficRoutes(home.city, neighbors.map(b => b.city))) {
+    await turn();
     for (let s = 0; s <= lane.line.length; s += 0.5) {
       const p = lane.line.at(s), road = lane.roads[Math.min(lane.roads.length - 1, Math.floor(lane.line.vertexAt(s)))];
       const b = boards.find(({ city: { bounds: r } }) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);

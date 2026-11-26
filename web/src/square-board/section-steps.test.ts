@@ -10,7 +10,7 @@ import { mountStationFragments } from '../city/north-seam-neighborhood';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { TerrainQuality } from '../terrain/surface';
-import { slowness, staged } from '../terrain/step-budget';
+import { LIMIT_SCALE, slowness, staged } from '../terrain/step-budget';
 import { addSection, bounds, joins, midtownRows, type Area, type Board, type TrafficArea } from './sections';
 
 /** How long the main thread is held between yields while a section really mounts, by stage label.
@@ -96,13 +96,14 @@ async function holdsUnderLimit(blocks: () => Promise<[string, number][]>, atLeas
     // The limit scales with the best reference time seen, so a busy moment cannot loosen it.
     const best = new Map<string, number>();
     let slow = Infinity;
-    const over = () => [...best].filter(([, ms]) => ms > LIMIT_MS * slow);
+    const limit = () => LIMIT_MS * slow * LIMIT_SCALE;
+    const over = () => [...best].filter(([, ms]) => ms > limit());
     for (let run = 0; run < 5 && (run < 2 || over().length); run++) {
       slow = Math.min(slow, slowness());
       for (const [label, ms] of await blocks()) best.set(label, Math.min(best.get(label) ?? Infinity, ms));
     }
     expect(best.size).toBeGreaterThan(atLeast);
-    expect(over().map(([label, ms]) => `${label}: ${ms.toFixed(1)} ms (limit ${(LIMIT_MS * slow).toFixed(1)})`)).toEqual([]);
+    expect(over().map(([label, ms]) => `${label}: ${ms.toFixed(1)} ms (limit ${limit().toFixed(1)})`)).toEqual([]);
   } finally {
     vi.unstubAllGlobals();
   }
