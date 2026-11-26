@@ -24,6 +24,10 @@ style.
   this.
 - `worker/`: a Cloudflare Worker. It serves `web/dist` and `/api/marta/rail`, which proxies
   MARTA's realtime API with a secret key, normalizes the response, and caches it for 10 s.
+- `pipeline/feeds.json`: the GTFS feeds releases ship. A weekly Action
+  (`.github/workflows/feeds.yml`) opens one issue when MARTA or Amtrak publishes a new feed or
+  one ends within 21 days. When a release ships new feeds, run
+  `python3 pipeline/scripts/feed_watch.py record data/raw` and commit the file.
 - `docs/data-model.md`: truth tiers, identifiers, geometry, and colour. Read it before you
   touch anything users see.
 - `docs/art-backlog.md`: art ideas and decisions for the diorama.

@@ -21,6 +21,8 @@ const run = (args) => {
 run(['-m', 'unittest', 'test_building_parts']);
 // Freight centreline smoothing and surface-way baking (terrain_transport.py).
 run(['-m', 'unittest', 'test_terrain_transport']);
+// The weekly feed watcher (.github/workflows/feeds.yml).
+run(['-m', 'unittest', 'test_feed_watch']);
 // The Capitol Gateway lid re-baselines only the gate's Capitol site (docs/connector-interchanges.md).
 run(['-m', 'unittest', 'test_gate_sites']);
 // Every committed OSM board context must match what the extractor produces now.
