@@ -8,6 +8,7 @@ import type { TerrainCity } from '../terrain/transport-data';
 import type { TerrainQuality } from '../terrain/surface';
 import type { TrafficArea } from '../square-board/sections';
 import type { P2 } from '../vignette/geom';
+import type { Object3D } from 'three';
 
 export const sharedIds = new Set(inventory.map(entry => entry.building.id));
 export function joinedPaint(row: keyof typeof paint.rows, city: TerrainCity) {
@@ -19,7 +20,7 @@ export function joinedPaint(row: keyof typeof paint.rows, city: TerrainCity) {
 }
 
 function buildingLayer(area: TrafficArea, city: TerrainCity, sample: (x:number,z:number) => number | null,
-  footprints: VBuilding[], quality: TerrainQuality, name: string) {
+  footprints: VBuilding[], quality: TerrainQuality, name: string, clip?: (group: Object3D) => void) {
   const footing = (b: VBuilding) => foundation(b.rings, sample, area.grid.manifest.stepM / 2);
   class Buildings extends World {
     override ground(x: number, z: number) { return sample(x,z)!; }
@@ -32,6 +33,11 @@ function buildingLayer(area: TrafficArea, city: TerrainCity, sample: (x:number,z
   const yards = homes.yards();
   area.group.add(world.group);
   if (yards) area.group.add(yards.group);
+  // The area's own scenery was clipped to the board perimeter when it mounted. Clipping these the
+  // same way keeps them on the houses' and yards' existing shader programs (a clip-plane count
+  // is part of a program's key), instead of compiling unclipped copies.
+  clip?.(world.group);
+  if (yards) clip?.(yards.group);
   return {
     yields: yards?.yields ?? [],
     show(visible: boolean) { world.group.visible = visible; if (yards) yards.group.visible = visible; },
@@ -41,10 +47,10 @@ function buildingLayer(area: TrafficArea, city: TerrainCity, sample: (x:number,z
 
 const stationLayers = new WeakMap<TrafficArea, ReturnType<typeof buildingLayer>>();
 
-export function mountStationFragments(station: TrafficArea, quality: TerrainQuality) {
+export function mountStationFragments(station: TrafficArea, quality: TerrainQuality, clip?: (group: Object3D) => void) {
   const city = station.connectorBoard.city;
   const layer = buildingLayer(station, {...city, buildings: city.buildings.filter(b => sharedIds.has(b.id))},
-    station.groundAt, city.buildings, quality, 'Station seam fragments');
+    station.groundAt, city.buildings, quality, 'Station seam fragments', clip);
   stationLayers.set(station, layer);
   return () => { stationLayers.delete(station); layer.dispose(); };
 }
