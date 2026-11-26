@@ -34,9 +34,9 @@ High 435 / 100 / 270.3 MB / 536 MB; High night 622 calls / 100 programs; `low-no
    ground maps, and roughly 3 minutes of main-thread build at 1×. The proposed architecture holds
    Low at or under 150 MB geometry, 250 draws and 45 programs whatever the size of the city.
 7. **Before the next expansion:** per-view budgets, area slicing (in flight), near-tile eviction
-   plus packing, program phase A, night draw consolidation, and area-level unload by distance.
-   Baking, 800 m tiles and the baked far LOD come before the second expansion, and before South in
-   any case.
+   plus packing, program phase A and night draw consolidation. New areas load lazily on approach,
+   as R16 does. Baking (with seams baked in their joined state), then unload by distance, 800 m
+   tiles and the baked far LOD come before the second expansion, and before South in any case.
 
 ## 1. How this was measured
 
@@ -275,8 +275,19 @@ Bake what is expensive **per byte**, not everything:
 - **Maybe later:** transport decks (0.43 s, about 8 MB).
 - **Never:** generic buildings (0.08 s; extruding footprints is cheaper than downloading them).
 
-The ground map stays procedural. It is painted in a Worker with `OffscreenCanvas` at a resolution set
-by distance (§4.3), so no texture bytes ship and the paint code is unchanged.
+Node can already run these builders: `terrain/sliced-build.test.ts` builds `buildDowntownTerrain`
+from staged rows under vitest. The bake reuses that path rather than a new runtime.
+
+**Seams are baked in their joined state.** Today a mount changes its neighbours. R16 re-cuts
+Brookwood Station's ground at the seam, swaps its seam buildings (`mountSeamBuildings`), and repaints
+both ground maps (`joinGroundMaps`, `city.ts` around line 1089). The bake builds each unit with all
+its neighbours present and stores the joined result. A unit's files then never depend on which
+neighbours are mounted. An absent neighbour is covered by its coarse level (§4.3), not by an unjoined
+edge. That is what makes unload (§4.2) safe without per-seam undo code.
+
+The ground map stays procedural and stays where it is painted today (`terrain/ground-map.ts`). Its
+cost is memory on High, which §4.3's distance-tiered resolution fixes. It moves to a Worker only if
+the per-task profile (§2.6) shows painting among the long tasks.
 
 **What changes.**
 
@@ -285,7 +296,8 @@ by distance (§4.3), so no texture bytes ship and the paint code is unchanged.
 - **Web:**
   - Areas fetch baked buffers and upload them; the builder becomes the fallback when a bake is
     missing or stale, so the site keeps working.
-  - A Worker paints the ground map.
+  - Mount-time seam work (`joinGroundMaps`, the seam cuts and `mountSeamBuildings`) is skipped for
+    baked units.
   - `area.carve` runs once.
 - **Contract:** bake manifest and buffer header types in `web/src/model/types.ts`, plus
   `bake.contract.test.ts`.
@@ -298,13 +310,15 @@ Both run V8 with the same float32 rounding, so a mismatch is a bug, not noise.
 
 **Risks.**
 
-- Builders that read the DOM or canvas need splitting. The ground map is the known one.
+- Builders that read the DOM or canvas need splitting. Ground-map painting stays in the browser.
+- The joined-seam bake must equal today's mount for the default visit. The parity hash runs on the
+  joined board, both tiers.
 - Download grows by the baked ground bytes (estimated at about 3 MB compressed for today's board).
 - Bake time is about 5 s for today's board on the Studio, and roughly 3 minutes for the hull.
 - Hand-written per-area branches (`id === 'r16'` in `square-board/sections.ts`) don't scale to 1,218
   tiles. The bake has to emit them as data: yields, special profiles, overrides.
 
-**Effort.** 15–25 agent-hours for today's areas: bake, fallback, parity test and Worker paint.
+**Effort.** 15–25 agent-hours for today's areas: bake, joined seams, fallback and parity test.
 
 **Reuse.** #611 and #621 generators (via `area-build-slicing`), #575's packing, #682's R16 mount
 function, and the ground-contact audit (`pnpm audit:ground`) as a parity check of the drawn surface.
@@ -318,9 +332,17 @@ along the pan velocity.
 - **The unit is today's areas first, then 800 m tiles.** Areas already exist, R16 already loads
   lazily, and slicing makes mounts safe. Retiling to #435's lattice (anchor (−1,000, −5,700), about
   3,650 files, 18% of the free 20,000-file cap) comes with the next large expansion.
-- **Eviction frees GPU buffers and the CPU arrays.** Drop attribute arrays after upload
-  (`onUploadCallback`) except for what queries need.
-- **The near-house leak is fixed first,** as the same rule on the smallest scale.
+- **Unload comes after baking.** Evicting an in-browser-built unit would have to undo the seam
+  changes its mount made to neighbours (§4.1). Baked units carry joined seams, so eviction is
+  just disposal. Until the bake lands, new areas load lazily and stay loaded, as R16 does.
+- **Eviction frees GPU buffers and the CPU arrays.** Attribute arrays are dropped after upload only
+  for meshes with no CPU reader. Ground keeps its height raster for `heightAt`. The batcher, picking
+  and far-form prefixes keep theirs. WebGL context loss (seen on phones) then reloads the affected
+  units from their files rather than re-uploading arrays that are gone.
+- **The near-house leak is fixed first,** as the same rule on the smallest scale. `HouseTile`
+  (`city/house-lod.ts`) builds its near group once and only hides it. Increment 2 disposes it a few
+  seconds after the tile leaves the near band. The existing one-near-build-per-frame cap bounds the
+  rebuild when the camera returns.
 
 Always resident:
 
@@ -357,7 +379,7 @@ Always resident:
 
 **Effort.**
 
-- 15–20 agent-hours for area-level unload, eviction and follow.
+- 15–20 agent-hours for area-level unload of baked units, eviction and follow.
 - Then about 10 hours to move the manager to tiles, plus #435's pipeline estimate of 12–18 hours.
 
 **Reuse.** #435's `city/stream/` ring prototype and fog culling, #682's lazy R16 and follow-pending
@@ -458,6 +480,9 @@ adds a showcase camera to the list (`docs/expansion-checklist.md`).
 Until then, each view starts at today's measurement plus 10% and ratchets down, as the opening view
 does now. Fps and A16 ready stay device-only (docs/perf.md).
 
+`perf-budget.mjs` needs two additions: a `cam` per entry (the motion and time fields exist), and
+a second sample after a route for the growth check, in `perf.ts`'s `run()`.
+
 **Effort.** 6–10 agent-hours. It reuses `perf-run.mjs`, `program-sweep.mjs` and the motion routes.
 
 ## 5. Programs: the consolidation design
@@ -466,8 +491,9 @@ does now. Fps and A16 ready stay device-only (docs/perf.md).
 
 - **Vertex colours always on** for static kit materials. Untinted meshes get a white Uint8 colour,
   which packing makes 3–4 bytes per vertex.
-- **Receive shadow on** for every static mesh. A shadowed vs unshadowed fork splits programs (field
-  `numDirLightShadows`).
+- **Receive shadow stays a kit axis.** It splits programs (`numDirLightShadows` in the cache key),
+  but forcing it on would add shadows Sam hasn't seen and shadow lookups on a GPU-bound A16. Each
+  static kit therefore has a shadowed and an unshadowed program, and nothing else varies.
 - **Flat shading baked into geometry** (unindexed normals), not the material flag.
 - **One side policy:** front for closed solids, double only in a named two-sided kit material.
   Back-side and flipped variants go.
@@ -477,12 +503,12 @@ does now. Fps and A16 ready stay device-only (docs/perf.md).
 
 | Bucket | High today | High after A |
 |---|---:|---:|
-| Plain Lambert | 25 | about 7 (static vertex-colour, static plus map, instanced, instanced alpha-test foliage, transparent glass, two-sided, ground map) |
+| Plain Lambert | 25 | about 9 (static vertex-colour and static plus map, each shadowed and unshadowed; instanced; instanced alpha-test foliage; transparent glass; two-sided; ground map) |
 | Plain Basic | 10 | about 4 (static, instanced, transparent glow, lit windows) |
 | Orphans | 4 | 0 |
 | Shadow depth | 12 | about 5 |
 
-That is about 35 fewer programs on High, with the post passes and hooked shaders unchanged.
+That is about 33 fewer programs on High, with the post passes and hooked shaders unchanged.
 
 **Phase B: one landmark program.** 20–30 hours, blink-tested per landmark. The library becomes the
 only way a landmark gets a look:
@@ -512,10 +538,10 @@ night share), which takes about 100–130 building submissions off High-night.
 |---|---:|---:|---:|---:|---|
 | Post and ShaderMaterial | 17 | 15 | 5 | 5 | Floor; landmark work can't touch it |
 | Shadow depth | 12 | 5 | 12 | 5 | |
-| Plain define variants and orphans | 39 | 11 | 37 | 11 | Phase A |
+| Plain define variants and orphans | 39 | 13 | 37 | 13 | Phase A |
 | Landmark and structure | 17 | 2 | 17 | 2 | Library opaque and transparent |
 | System hooked | 15 | 10 | 14 | 10 | Yards and ground cover merge; stock, bus and CQ400 share one livery program |
-| **Total** | **100** | **≈ 43** | **85** | **≈ 33** | Ceilings 55 / 45 leave room for systems, not landmarks |
+| **Total** | **100** | **≈ 45** | **85** | **≈ 35** | Ceilings 55 / 45 leave room for systems, not landmarks |
 
 **Risks.**
 
@@ -534,20 +560,23 @@ touches the look. "Gate" marks what must land before the next expansion.
 |---:|---|---|---:|---|---|
 | 0 | Per-view budgets: street and north-edge views, the growth check, the A16 and iPhone proxies; ceilings at today's figures | 5 | 6–10 | perf-run, program-sweep | **Gate** |
 | 1 | Area slicing lands: R16 mount in the budgeted build | 1 | (in flight) | #611, #621, `area-build-slicing` | **Gate** |
-| 2 | Evict near house tiles and ground re-cuts outside the ring; pack generic buildings and houses like #575 | 2 | 6–10 | #575 | **Gate** (gets street and route back under ceilings) |
+| 2 | Dispose near house tiles outside the near band; pack generic buildings and houses like #575 | 2 | 6–10 | #575 | **Gate** (gets street and route back under ceilings) |
 | 3 | Programs phase A plus the program-rule lint | 4 | 8–12 | library, prewarm | **Gate** (High is at 100/100) |
 | 4 | Night windows and lit panes ride the wall draw | 4 | 6–10 | #441 | **Gate** (High night is at 622/630) |
-| 5 | Area-level unload by distance, eviction of CPU arrays, follow and deep links into evicted areas | 2 | 15–20 | #682 R16 rules, #435 rings | **Gate** |
-| 6 | Bake ground in Node for today's areas, browser fallback, parity hash, Worker-painted ground map | 1 | 15–25 | #611, #621, #575 | Before the second expansion |
-| 7 | Far LOD L1 per area (boxes plus canopy plus coarse ground) behind a flag, blink harness, then Sam's call | 3 | 20–30 | #613, #450 | Before the second expansion |
+| 5 | Bake ground in Node for today's areas with seams joined, browser fallback, parity hash | 1 | 15–25 | sliced-build tests, #611, #621, #575 | Before the second expansion |
+| 6 | Unload baked areas by distance, drop CPU arrays where nothing reads them, follow and deep links into evicted areas | 2 | 15–20 | #682 R16 rules, #435 rings | Before the second expansion |
+| 7 | Far LOD L1 per area (boxes plus canopy plus coarse ground) behind a flag, blink harness, then Sam's call; distance-tiered High ground maps | 3 | 20–30 | #613, #450 | Before the second expansion |
 | 8 | Programs phase B (library kinds, data texture, facade array) | 4 | 20–30 | library, #441 | Before the second expansion |
 | 9 | Retile to 800 m; tile driver, index and contract; ring manager on tiles; L2 and L3 | 1–3 | 25–35 | #435 §1–§5, #538 | Before South, or any step over about 3 areas |
 
+- **The next expansion** loads its areas lazily, as R16 does, and must fit the increment-0 views.
+  Each new area costs about 8 MB of Low geometry at a distance (R16's matched pair). Increment 2
+  restores that headroom.
 - **Total:** about 130–190 agent-hours.
 - **Critical path:** 0 → 2 → 5 → 6 → 9 is about 70–100 hours. Steps 3, 4, 7 and 8 run in parallel
   with separate owners.
-- **Integration:** one integration owner per group, per AGENTS.md: increments 0, 2 and 5
-  (streaming); 3, 4 and 8 (materials); 6, 7 and 9 (bake and LOD).
+- **Integration:** one integration owner per group, per AGENTS.md: increments 0, 2 and 6
+  (streaming); 3, 4 and 8 (materials); 5, 7 and 9 (bake and LOD).
 
 ## 7. Open questions for Sam
 
@@ -581,3 +610,28 @@ node docs/log/perf-architecture/tools/tasks.mjs <out.json> 300
 `measurements-2026-11-26.json` holds every run's summary, categories, draws by category, largest
 geometry and texture layers, phases, long tasks over 100 ms, and the High program list with owners
 and cache keys.
+
+## Architect review (2026-11-26)
+
+`architect-plan-review` on the first draft, with claims checked against the code. Changes:
+
+- **Significant: unload before bake was the wrong order.** Mounting R16 changes its neighbour: it
+  re-cuts Brookwood Station's seam, swaps seam buildings and repaints both ground maps
+  (`city.ts` near line 1089). Unloading in-browser-built areas would have needed per-seam undo.
+  Now the bake stores joined seams, unload follows the bake, and the next expansion loads lazily
+  like R16.
+- **Significant: dropping CPU arrays after upload** would have broken `heightAt`, the batcher,
+  picking and recovery from context loss. It is now limited to meshes with no CPU reader, and
+  context loss reloads from files.
+- **Significant: forcing receive-shadow on** to merge programs would add unseen shadows and A16 GPU
+  cost. It stays a kit axis; the expected count is about 45 / 35 rather than 43 / 33.
+- **Simplified:** dropped Worker painting of the ground map from the bake. It wasn't measured as a
+  long task, and seam repainting runs on the main thread. The bake reuses the Node build path the
+  sliced-build tests already use.
+- **Confirmed:** `HouseTile` keeps its near group after building it (the leak in §2.2). `perf-budget.mjs`
+  has no `cam` field yet (added to §4.5).
+
+Not folded in:
+
+- The opening-view download budget (≤ 8 MB) stays an estimate until the coarse levels exist.
+- The 6× per-task attribution waits for the integrator's perf window (§2.6).
