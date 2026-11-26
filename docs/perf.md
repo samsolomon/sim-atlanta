@@ -169,7 +169,12 @@ coordinator's choice). At 1x the same build fills in 4.6 s on Low (longest task 
 mounts at 6x with a longest task of 214 to 217 ms in 11.3 to 11.9 s.
 
 `pnpm test:perf` fails if any task between ready and the sample of `low-north` (6x) passes 300 ms (`loadLongestTaskMs`),
-and reports when the last area mounted (`lastAreaMs`).
+and reports when the last area mounted (`lastAreaMs`). The same run with `&slice=0` read 2,358 ms, and
+the sliced build 181 to 237 ms across three runs. At 300 ms the gate catches the North Line going back into the Station's
+mount; it does not catch the streetcar, Connector traffic or east-rail deferrals being undone, which each stay under it.
+
+While the camera is moving, building takes 2 ms a frame: on `route:r16`, which flies the whole time, R16 builds in
+15.3 to 15.6 s at 6x, inside the 40 s sample (11.3 to 11.9 s with the camera still).
 
 `src/square-board/section-steps.test.ts` mounts the Station (with the North Line) and R16, loads King Memorial and Sweet
 Auburn and prepares Brookwood's rail as a page would, and fails if the main thread is held over 32 ms at 1x between two frames, which also catches work moved back
