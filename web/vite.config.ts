@@ -2,6 +2,7 @@
 import { existsSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
+import { groundBakeCodePlugin } from './ground-bake-code';
 
 // In dev, /api/* goes to the Cloudflare Worker running under wrangler dev.
 export default defineConfig(({ command }) => {
@@ -17,7 +18,7 @@ export default defineConfig(({ command }) => {
   return {
     // Rust still bakes the legacy meshes locally. City and East Portal only consume the
     // profile manifest; don't copy unused binary meshes into the deployed static assets.
-    plugins: [{
+    plugins: [groundBakeCodePlugin(), {
       name: 'omit-retired-scene-meshes',
       apply: 'build',
       closeBundle() {

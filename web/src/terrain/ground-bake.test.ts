@@ -1,4 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { groundBakeCode } from '../../ground-bake-code';
 import * as THREE from 'three';
 import { afterEach, expect, it } from 'vitest';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -79,7 +82,27 @@ it.skipIf(!staged).each([['low', 'smaller'], ['high', 'smaller'], ['high', 'alwa
   expect(bakeStats.reasons.at(-1)).toMatch(/different ground/);
   expect(bakeStats.adopted).toBe(before.adopted + 1);
   expect(otherGround).toBe(plain);
+  // A bake made by other code (a source on the bake path edited since) is never adopted.
+  const otherCode = await fingerprint(quality, new Map([[path, gzipSync(encodeBake({ ...baked, code: 'edited' }))]]));
+  expect(bakeStats.reasons.at(-1)).toMatch(/other code/);
+  expect(bakeStats.adopted).toBe(before.adopted + 1);
+  expect(otherCode).toBe(plain);
 }, 600_000);
+
+it('the code fingerprint changes when any source on the bake path is edited', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bake-code-'));
+  try {
+    mkdirSync(join(dir, 'web/src/terrain'), { recursive: true });
+    writeFileSync(join(dir, 'web/src/terrain/surface-build.ts'), 'export const merge = 0.20;');
+    writeFileSync(join(dir, 'web/src/terrain/surface-build.test.ts'), 'test');
+    const roots = ['web/src/terrain'];
+    const before = groundBakeCode(roots, dir);
+    writeFileSync(join(dir, 'web/src/terrain/surface-build.test.ts'), 'a test edit');
+    expect(groundBakeCode(roots, dir)).toBe(before);
+    writeFileSync(join(dir, 'web/src/terrain/surface-build.ts'), 'export const merge = 0.25;');
+    expect(groundBakeCode(roots, dir)).not.toBe(before);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 
 it('a yield whose floor, grade or edge rule changed no longer matches its bake', () => {
   const ring = [[100, -4500], [140, -4500], [140, -4460], [100, -4460]] as [number, number][];
@@ -93,7 +116,7 @@ it('a yield whose floor, grade or edge rule changed no longer matches its bake',
 
 it('reads only bakes whose every stage is a tape or a surface', () => {
   const surface = { pos: new Float32Array(9), uv: new Float32Array(6), normal: new Float32Array(9), index: new Uint16Array([0, 1, 2]), starts: new Uint32Array([0, 3]), blockCols: 1 };
-  const ok = { id: 'x', quality: 'low', gridSha256: 'a', heights: 7, stages: [{ yields: 1, yieldPrint: 2, tape: new Float64Array([0, 1, 2, 1, 5]) }, { yields: 2, yieldPrint: 3, surface }] };
+  const ok = { id: 'x', quality: 'low', gridSha256: 'a', code: 'c0de', heights: 7, stages: [{ yields: 1, yieldPrint: 2, tape: new Float64Array([0, 1, 2, 1, 5]) }, { yields: 2, yieldPrint: 3, surface }] };
   const file = (b: typeof ok) => Uint8Array.from(encodeBake(b as never)).buffer;
   expect(decodeBake(file(ok))).toEqual(ok);
   expect(decodeBake(file({ ...ok, stages: [{ yields: 1, yieldPrint: 2 } as never, ok.stages[1]] }))).toBeNull();

@@ -30,6 +30,8 @@ export interface BakedStage { yields: number; yieldPrint: number; tape?: Float64
 
 export interface BakedGround {
   id: string; quality: string; gridSha256: string;
+  /** The code fingerprint it was made with (web/ground-bake-code.ts): a bake by other code is not used. */
+  code: string;
   /** heightsPrint of the drawn grid (after any in-browser grading of the raw file). */
   heights: number;
   /** The mount's re-cuts in order; the last has the surface the mount leaves. */
@@ -94,7 +96,7 @@ export class BakeRecorder {
     this.stages[this.stages.length - 1].reads.push(kind, ...input, output.length, ...output);
   }
   /** The bake: every stage but the last as a tape or a surface, whichever is smaller (`tapes`: always a tape, for tests). */
-  bake(meta: { id: string; quality: string; gridSha256: string }, tapes: 'smaller' | 'always' = 'smaller'): BakedGround {
+  bake(meta: { id: string; quality: string; gridSha256: string; code: string }, tapes: 'smaller' | 'always' = 'smaller'): BakedGround {
     return {
       ...meta, heights: this.heights,
       stages: this.stages.map((s, i) => {
@@ -154,7 +156,7 @@ export class BakeReplay {
 export interface GroundBake { record?: BakeRecorder; replay?: BakeReplay }
 
 const MAGIC = 0x4b425247; // 'GRBK'
-const VERSION = 3;
+const VERSION = 4;
 type Typed = Float32Array | Float64Array | Uint32Array | Uint16Array;
 const TYPES = { Float32Array, Float64Array, Uint32Array, Uint16Array } as const;
 const SURFACE = ['pos', 'uv', 'normal', 'index', 'starts'] as const;
@@ -164,7 +166,7 @@ export function encodeBake(b: BakedGround): Uint8Array {
   const arrays: Typed[] = [];
   const layout = (a: Typed) => { arrays.push(a); return { type: a.constructor.name, length: a.length }; };
   const header = {
-    id: b.id, quality: b.quality, gridSha256: b.gridSha256, heights: b.heights,
+    id: b.id, quality: b.quality, gridSha256: b.gridSha256, code: b.code, heights: b.heights,
     stages: b.stages.map(s => ({
       yields: s.yields, yieldPrint: s.yieldPrint,
       tape: s.tape ? layout(s.tape) : undefined,
@@ -212,8 +214,8 @@ export function decodeBake(buffer: ArrayBuffer): BakedGround | null {
     return stage;
   });
   if (bad || !stages.length || !stages[stages.length - 1].surface) return null;
-  if (typeof header.heights !== 'number') return null;
-  return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, heights: header.heights, stages };
+  if (typeof header.heights !== 'number' || typeof header.code !== 'string') return null;
+  return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, code: header.code, heights: header.heights, stages };
 }
 
 /** `?perf&bake=0` builds every area's ground in the browser, for A/B runs. */

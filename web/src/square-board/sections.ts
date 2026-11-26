@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
 import { runBudgeted, runSync, sliceBudget, sliceInput, sectionWorkMs, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
+import groundBakeCode from 'virtual:ground-bake-code';
 import { BAKED_AREAS, bakeBytes, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -186,6 +187,11 @@ async function readBake(path: string, id: string, quality: TerrainQuality, grid:
   try { baked = decodeBake(await bakeBytes(r)); } catch (e) { if (signal.aborted) throw e; }
   if (!baked) return miss('bake unreadable');
   if (baked.id !== id || baked.quality !== quality || baked.gridSha256 !== grid.manifest.sha256) return miss('bake for another grid');
+  if (baked.code !== groundBakeCode) {
+    // Made by other code (a staged bake older than an edit on the bake path): never adopt it.
+    console.warn(`Baked ground for ${id} (${quality}) was made by other code (${baked.code}, this build ${groundBakeCode}); building it here. Run pnpm data:bake.`);
+    return miss('bake made by other code');
+  }
   return baked;
 }
 

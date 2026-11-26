@@ -36,7 +36,7 @@ it('a yield floor that samples the surface during a replay falls back, and the g
   const record = new BakeRecorder();
   expect(mount({ record })).toEqual(plain);
   // Forced tapes: the surface is stale between re-cuts, which is when the floor's samples miss.
-  const baked = record.bake({ id: 'slope', quality: 'high', gridSha256: '' }, 'always');
+  const baked = record.bake({ id: 'slope', quality: 'high', gridSha256: '', code: '' }, 'always');
   expect(baked.stages.slice(0, -1).every(s => s.tape)).toBe(true);
   const before = bakeStats.fallbacks;
   expect(mount({ replay: new BakeReplay(baked) })).toEqual(plain);
