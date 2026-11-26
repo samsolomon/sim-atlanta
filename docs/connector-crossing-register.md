@@ -32,6 +32,19 @@ Physical crossings in the City corridor and northern reference area, ordered by 
 | 24 | Brookwood shared NS / Amtrak | Approved material and clearance control on the northern branch. Preserve both train replays. | [City](http://localhost:5173/?view=city&cam=-320,-4836,35,55,430) |
 | 25 | Deering Road | Adjacent road crossing. Inventory 88.7 × 8.5 m. Test two-way carriageway, landings and freeway fork below. | [City](http://localhost:5173/?view=city&cam=-396,-4815,35,55,430) |
 
+## Sam's flagged spots (phase 1, November 25)
+
+These spots were measured on PR #682 head c8e3e34e, both tiers, at 14:00 EST. Full entries, stills and the repair plan are in [Connector repairs](connector-repairs.md). **Calibration on this head:** `--expect combined` passes on Low and High with the 439abf84 limits, byte-identical to 1d04eadc. Export faces only after a warm-up pose: a first-pose export captured a coarse Low board and produced a false 17th failure.
+
+| Repair order | Spot | Signed first failure (Low = High unless noted) | View |
+|---:|---|---|---|
+| 1 | C. Civic Center lane spikes | North-band node (375, −1425). The drawn surface is 307.0 m against the corrected floor of 294.6 m (+12.40 m), because `underpass-floors.json` overrides `northConnectorGround`. Confirmed: 30 override nodes and 4 rendered peaks. **Repaired** on `samsolomon/connector-c-floors`: (375, −1425) now draws at 294.5 m, the feeder-joint peak is closed. Of the 31 downtown taper candidates, 9 are rejected and 22 are real departures (Baker 2, MLK 20), left for a follow-up. | [City](http://localhost:5173/?view=city&cam=375,-1425,200,60,300) |
+| 2 | A. Sweet Auburn viaduct | Auburn z = −180: adjacent slab treads step +0.488 m at x 1207.85 across a 0.05 m parapet gap. Edgewood z = −60: +0.811 m at x 1179.1. NB slab 1450889003 starts 5.854 m in the air at (1100.81, 244.49). Ramp bridge 1450888999 ends 8.402 m above ground 9239463 at (1087.32, 155.15). | [City](http://localhost:5173/?view=city&cam=1200,-150,150,58,380) |
+| 3 | B. Freedom Parkway flyovers | NB 38974038 starts in mid-air at (1045.81, −497.53), 6.864 m above the ground just beyond. Joint 38974034 → 1450884828 steps −0.291 m (High) and −0.307 m (Low). | [City](http://localhost:5173/?view=city&cam=1200,-700,200,55,430) |
+| 3 | B. Jackson Street bridge (landmark) | 9.0 m roadway with two 1.95 m walk strips standing off it across open 2.05/2.55 m gaps; the west walk is 0.79 m low at z −715. NBI: one 18.9 m deck with 2.4 m raised walks. [Record](jackson-street-bridge.md) | [City](http://localhost:5173/?view=city&cam=1598,-697,250,62,180) |
+| 4 | D. Capitol Gateway | Row 1 above, re-measured on both tiers: walk 755543611 at 196.768 mm; joint +74.575 pp with a 158.94 mm step. Also raw DEM point spikes on the cover top at (375, 760) and (460, 760). | [City](http://localhost:5173/?view=city&cam=357,777,-22,56,470) |
+| 5 | E. I-20 / Connector | Rows 2–3 and the flyovers below; no new measurement. | [City](http://localhost:5173/?view=city&cam=190,1018,35,52,470) |
+
 ## Directed flyovers
 
 These OSM axes cross a lower Connector axis in plan and have an upper layer or bridge tag. A source way can occupy only part of a physical structure. Use inventory and imagery to group consecutive spans, confirm order and locate piers before design. Each row needs a full-width signed underside check and a through-vehicle replay.

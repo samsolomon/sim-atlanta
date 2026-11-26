@@ -57,6 +57,76 @@ sections = {
     ],
 }
 
+FLOORED_NODES = 224
+
+
+def floored(raw, m):
+    """The north-band grid as the City draws it before this patch: the shared
+    Connector floors of north-band-floors.json, applied exactly as
+    web/src/square-board/connector-ground.ts applies them (int16, JS rounding,
+    the lowest floor wins). Blending over this grid instead of the raw DEM keeps
+    the patch from restoring the deck and roof returns those floors removed."""
+    spec = json.loads((HERE / "north-band-floors.json").read_text())
+    if m["sha256"] != spec["groundSha256"]:
+        return raw
+    out = raw.astype(np.int64).copy()
+    step, b = m["stepM"], m["bounds"]
+    for f in spec["floors"]:
+        (x0, z0, h0), (x1, z1, h1), width, crossfall = f["start"], f["end"], f["halfWidthM"], f["crossfall"]
+        dx, dz = x1 - x0, z1 - z0
+        length, pad = math.hypot(dx, dz), width + step
+        row0 = max(1, math.floor((min(z0, z1) - pad - b["minZ"]) / step))
+        row1 = min(m["rows"] - 2, math.ceil((max(z0, z1) + pad - b["minZ"]) / step))
+        col0 = max(1, math.floor((min(x0, x1) - pad - b["minX"]) / step))
+        col1 = min(m["cols"] - 2, math.ceil((max(x0, x1) + pad - b["minX"]) / step))
+        for row in range(row0, row1 + 1):
+            for col in range(col0, col1 + 1):
+                x, z = b["minX"] + col * step - x0, b["minZ"] + row * step - z0
+                t = (x * dx + z * dz) / (length * length)
+                side = (z * dx - x * dz) / length
+                if t < 0 or t > 1 or abs(side) >= pad or raw[row, col] == m["noData"]:
+                    continue
+                old = m["offsetM"] + m["scaleM"] * float(raw[row, col])
+                floor = h0 + (h1 - h0) * t + crossfall * side
+                if old - floor < 0.45:
+                    continue
+                weight = min(1, (pad - abs(side)) / step)
+                lower = math.floor((old - weight * (old - floor) - m["offsetM"]) / m["scaleM"] + 0.5)
+                out[row, col] = min(out[row, col], lower)
+    # Shared endpoints: nodes on the outside of the bend lie beyond both
+    # segments. Give them the joint's floor (connector-ground.ts does the same).
+    def covers(f, x, z):
+        (x0, z0, _), (x1, z1, _) = f["start"], f["end"]
+        dx, dz = x1 - x0, z1 - z0
+        length = math.hypot(dx, dz)
+        t = ((x - x0) * dx + (z - z0) * dz) / (length * length)
+        side = ((z - z0) * dx - (x - x0) * dz) / length
+        return 0 <= t <= 1 and abs(side) < f["halfWidthM"] + step
+    floors = spec["floors"]
+    for i, a in enumerate(floors):
+        for b2 in floors[i + 1:]:
+            joint = next((p for p in (a["start"], a["end"]) if any(p[0] == q[0] and p[1] == q[1] for q in (b2["start"], b2["end"]))), None)
+            if joint is None:
+                continue
+            jx, jz, jh = joint
+            pad = min(a["halfWidthM"], b2["halfWidthM"]) + step
+            for row in range(max(1, math.floor((jz - pad - b["minZ"]) / step)), min(m["rows"] - 2, math.ceil((jz + pad - b["minZ"]) / step)) + 1):
+                for col in range(max(1, math.floor((jx - pad - b["minX"]) / step)), min(m["cols"] - 2, math.ceil((jx + pad - b["minX"]) / step)) + 1):
+                    x, z = b["minX"] + col * step, b["minZ"] + row * step
+                    distance = math.hypot(x - jx, z - jz)
+                    if distance >= pad or any(covers(f, x, z) for f in floors) or raw[row, col] == m["noData"]:
+                        continue
+                    old = m["offsetM"] + m["scaleM"] * float(raw[row, col])
+                    if old - jh < 0.45:
+                        continue
+                    weight = min(1, (pad - distance) / step)
+                    out[row, col] = min(out[row, col], math.floor((old - weight * (old - jh) - m["offsetM"]) / m["scaleM"] + 0.5))
+    changed = int((out != raw).sum())
+    if changed != FLOORED_NODES:
+        raise ValueError(f"north-band floors changed {changed} nodes, connector-ground.test.ts pins {FLOORED_NODES}")
+    return out
+
+
 surveys = json.loads((HERE / "junction-decks.json").read_text()) + json.loads(
     (HERE / "street-bridges.json").read_text()
 )
@@ -102,6 +172,10 @@ for source in ["downtown-ground", "square-board/north-band", "square-board/south
     raw = np.fromfile(directory / "ground.i16", dtype="<i2").reshape(
         m["rows"], m["cols"]
     )
+    # Blend over the grid the renderer actually holds at this stage. Indices are
+    # written where the result differs from that grid, and nodeHeights applies
+    # them after the grid corrections.
+    raw = floored(raw, m)
     old = raw * m["scaleM"] + m["offsetM"]
     j, i = np.indices(old.shape)
     x = m["bounds"]["minX"] + i * m["stepM"]
