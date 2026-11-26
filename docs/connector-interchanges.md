@@ -168,5 +168,16 @@ The concealed lower lanes are unchanged.
 | Capitol joint grade | Failed: all six joints outside the class-2 envelope (59–95 pp; steps up to 0.60 m) | Passes: all six inside (−2.2 to +1.7 pp), steps ≤ 0.1 mm |
 | 17th Street, Peachtree | Pass | Byte-identical |
 
-`pipeline/scripts/test_gate_sites.py` (run by `pnpm test`) holds this: every site but Capitol equals the 439abf84 reference, and Capitol has no failures.
+**Review round 1 (Grok).** The check could pass vacuously, because an absent deck layer became no hits and a walk fell back to the board. The checker (e2b253ee) now requires the lid to be **found** whenever any walk sample falls back to the board, or Capitol fails with `lid not found`:
+- the board sits within 0.30 m of the cover's class-2 median at 95% or more of centreline samples on every registered street and walk;
+- the board is found at 80% or more of each way's stations;
+- no street deck stands above it;
+- at least 1,000 walk samples and all six joints are evaluated.
+
+On D2 it reads 1,398 walk samples on the board and 1,138 lid samples, 100% matched, with no deck above. The calibration is still byte-identical, and three negative cases fail ([evidence](log/ui/connector-repairs/d-lid/gate/calibration-old-vs-new.json)):
+- the board raised 1 m: `lid not found`;
+- walk decks removed but street decks kept over the lid: `lid not found` and `joint grade`;
+- no board: the check stops.
+
+`pipeline/scripts/test_gate_sites.py` (run by `pnpm test`) checks only that the committed gate evidence is consistent: the 439abf84 reference against the D result, Capitol passing, and the lid found. It reads JSON, so it cannot catch a code regression. `web/src/terrain/lids.test.ts` holds the code: the lid roads draw on the board, and the drawn ground sits at the lid top. **Open, outside D:** the south-band board carries the covered Connector under the lid as a plain ground road (OSM `covered=yes` is not mapped to a tunnel there), so its centreline reads the lid top. D2's spike correction moves it 1.99 m at (367.4, 760.3), back to the lid level. Whether its cars should run under the lid is a separate item.
 
