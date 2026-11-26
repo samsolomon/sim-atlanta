@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { runSync, type Build } from '../core/slice';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
-import { alongOn, matchRibbon, sectionAt, stripePoint } from './connector-corridor';
+import { alongOn, joinedAt, matchRibbon, sectionAt, stripePoint } from './connector-corridor';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
@@ -350,11 +350,25 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }
       stations.sort((a,b)=>a-b);
     }
+    // A deck shares an option lane with its sibling until the gore opens: the part the owner
+    // covers (connector-corridor, one surface owner) is the owner's tread, so this deck's tread,
+    // shoulder and lines stop at the owner's edge there.
+    // An edge shared with a sibling (joined) has no shoulder: the two decks meet at the lane
+    // edge instead of lying across each other by their shoulders.
+    function uncovered(row: { s: number; inner: P2; outer: P2; covered?: { inner?: number; outer?: number } }, f: number) {
+      if (joinedAt(ribbon!, row.s, 'inner')) f = Math.max(f, 0);
+      if (joinedAt(ribbon!, row.s, 'outer')) f = Math.min(f, 1);
+      if (!row.covered) return f;
+      const w = Math.hypot(row.outer[0]-row.inner[0], row.outer[1]-row.inner[1]) || 1;
+      if (row.covered.inner) f = Math.max(f, row.covered.inner / w);
+      if (row.covered.outer) f = Math.min(f, 1 - row.covered.outer / w);
+      return f;
+    }
     function lateral(s:number,off:number): P2 {
       const p=line.at(s);
       if (!ribbon) return onSeam(s,p.x+off*p.nx,p.z+off*p.nz);
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
-      if (!gainEnds) return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+      if (!gainEnds) return onSeam(s,...stripePoint(row,uncovered(row,.5-off/travelWidth)));
       const [mine, next] = gainEnds, w = s / line.length;
       const inner: P2 = [row.inner[0] + w*(next.inner[0]-mine.inner[0]), row.inner[1] + w*(next.inner[1]-mine.inner[1])];
       const outer: P2 = [row.outer[0] + w*(next.outer[0]-mine.outer[0]), row.outer[1] + w*(next.outer[1]-mine.outer[1])];
@@ -709,7 +723,16 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       if (ribbon) {
         for (let i=0;i<=ribbon.lanes;i++) {
           const offset=travelWidth*(.5-i/ribbon.lanes);
-          strip(offset+.14,offset-.14,.15,i===0 && !ribbon.link ? PAL.lineYellow : PAL.lineWhite,0,false,i>0 && i<ribbon.lanes);
+          const edge = i === 0 ? 'inner' : i === ribbon.lanes ? 'outer' : null;
+          if (!edge) { strip(offset+.14,offset-.14,.15,PAL.lineWhite,0,false,true); continue; }
+          // An edge shared with a merge or diverge sibling: the owner dashes it, the other
+          // branch leaves it to the owner (connector-corridor, one surface owner).
+          const at0 = alongOn(ribbon, start).s;
+          const flag = (s: number) => joinedAt(ribbon, at0 + s, edge);
+          const shared = ribbon.rows.some(row => row.joined?.[edge]);
+          strip(offset+.14,offset-.14,.15,i===0 && !ribbon.link ? PAL.lineYellow : PAL.lineWhite,0,false,false,true,true,
+            shared ? s => !flag(s) : undefined);
+          if (shared) strip(offset+.14,offset-.14,.15,PAL.lineWhite,0,false,false,true,true,s => flag(s) === 'dash' && s % 12 < 3);
         }
       } else if (run.crossSection) {
         const { lanes, opposing } = run.crossSection;

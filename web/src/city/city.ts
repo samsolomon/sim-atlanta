@@ -2603,12 +2603,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Dev-only road-kit lint (see terrain/road-lint.ts and scripts/road-lint.mjs): window.__roadLint().
     (window as unknown as Record<string, unknown>).__roadLint = async (o?: object) => {
       const { roadLint } = await import('../terrain/road-lint');
-      const { paintedStrips } = await import('../terrain/connector-paint');
+      const { paintedStrips, paintedGores } = await import('../terrain/connector-paint');
       const areas: [string, NonNullable<typeof terrain>][] = mosaic ? [...mosaic.areas] : [];
       // Board ids in City, keyed by the board data's own name.
       const named: Record<string, string> = { 'sweet-auburn': 'auburn', 'king-memorial': 'king' };
       const painted = new Map([...paintedStrips].map(([name, strips]) => [named[name] ?? name, strips]));
-      return roadLint(scene, areas.map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })), { painted, ...o });
+      const gores = new Set([...paintedGores.values()].flatMap(set => [...set]));
+      return roadLint(scene, areas.map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })), { painted, gores, ...o });
     };
   }
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);

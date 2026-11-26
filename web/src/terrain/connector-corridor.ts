@@ -22,11 +22,26 @@ export interface Section {
   s: number;
   inner: P2;
   outer: P2;
+  /** Where this edge is shared with a sibling at a merge or diverge: the owner draws one dashed
+   * lane line ('dash') and the other branch draws none ('none'). Unset: an ordinary edge line. */
+  joined?: { inner?: 'dash' | 'none'; outer?: 'dash' | 'none' };
+  /** Metres of this section, measured in from that edge, that lie under a sibling that owns
+   * the surface there: a shared option lane before the gore opens. Paint and deck treads stop
+   * at the owner's edge (paintedSection); traffic keeps the whole section. */
+  covered?: { inner?: number; outer?: number };
 }
 type End = { ribbon: Ribbon; start: boolean; offset: number };
 type Joint = { incoming: End[]; outgoing: End[] };
 export const mix = (a: P2, b: P2, f: number): P2 => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
 export const stripePoint = (row: Section, fraction: number) => mix(row.inner, row.outer, fraction);
+/** The part of a section that is drawn: without what a sibling covers (one surface owner). */
+export function paintedSection(row: Section): Section {
+  const a = row.covered?.inner ?? 0, b = row.covered?.outer ?? 0;
+  if (!a && !b) return row;
+  const w = Math.hypot(row.outer[0] - row.inner[0], row.outer[1] - row.inner[1]) || 1;
+  const f0 = Math.min(1, a / w), f1 = Math.max(f0, 1 - b / w);
+  return { s: row.s, inner: mix(row.inner, row.outer, f0), outer: mix(row.inner, row.outer, f1), joined: row.joined };
+}
 const rawWays = { ...downtownWays, ...midtownWays, ...eastWays };
 const joints = new Map<string, Joint>();
 const sourceEnds = new Set(
@@ -280,6 +295,9 @@ for (const pick of surveyedEdges) {
   if (s > 0.1 && s < r.line.length - 0.1) pins.get(r)!.push({ s, inner: pick.inner, outer: pick.outer });
 }
 const index = new PlacementIndex<Ribbon>();
+/** Rows that are measured, not inferred: the rail-crossing section and the surveyed edges.
+ * The one-surface-owner pass never moves them. */
+const fixedRows = new Set<Section>();
 for (const r of ribbons) {
   const anchors = pins.get(r)!;
   if (underRail[r.id]) {
@@ -314,7 +332,9 @@ for (const r of ribbons) {
       p = r.line.at(s),
       station = railStation([p.x, p.z]);
     if (underRail[r.id] && station >= -76 - 1e-6 && station <= 77 + 1e-6) {
-      r.rows.push(measured(r, s, station));
+      const row = measured(r, s, station);
+      fixedRows.add(row);
+      r.rows.push(row);
       continue;
     }
     const right = anchors.find((a) => a.s >= s) ?? anchors.at(-1)!;
@@ -333,9 +353,255 @@ for (const r of ribbons) {
       for (const k of ['inner', 'outer'] as const)
         for (const j of [0, 1]) row[k][j] += (anchor[k][j] - base[k][j]) * w;
     }
-    r.rows.push(deeringSection(r.id,row));
+    const fitted = deeringSection(r.id,row);
+    // A surveyed pick inside the way (not a junction pin, which the owner pass may extend).
+    if (anchors.some(a => Math.abs(a.s - s) < 1e-6 && a.s > 0.1 && a.s < r.line.length - 0.1)) fixedRows.add(fitted);
+    r.rows.push(fitted);
   }
   index.add(r, r.pts, 32);
+}
+
+/**
+ * One surface owner at merges and diverges (docs/road-kit.md, primitive 5).
+ *
+ * Sibling ways share their OSM node, so once the 50 m junction blend fades each ribbon's width
+ * is laid around its own centreline, and the two lie over each other until the ways separate.
+ * The branch that does not own the surface (a link beside a mainline, else the narrower way) is
+ * pushed sideways row by row until its edge meets its neighbour's. The push falls to zero where
+ * the ways separate on their own, so it never adds a kink. The shared edge is one dashed lane
+ * line, and the wedge where the edges part is a gore, painted with chevrons (connector-paint).
+ */
+export interface Gore {
+  /** The joint's node, "x,z" as in the source ways. */
+  joint: string;
+  left: Ribbon;
+  right: Ribbon;
+  /** The wedge between the two edges, from where they part to where they are a lane apart. */
+  ring: P2[];
+}
+export const gores: Gore[] = [];
+/** Rows moved in the current separation pass. */
+let moved = 0;
+const GORE_GAP_M = 3.6, GORE_MAX_M = 150, ZONE_MAX_M = 400, BLEND_M = 60;
+/** A push grows at most 1 m per 10 m from a fixed joint (about 6 degrees), so a row at a node
+ * never moves and the edge never kinks. Where OSM lane counts do not balance, a branch starts
+ * inside its neighbour's lane at the node; it tapers out at this rate (lane tapers, part 4). */
+const PUSH_SLOPE = 0.1;
+/** Beside a mainline with no shared node, a branch's ends at real joints stay put; 1 m per 4 m. */
+const PARALLEL_SLOPE = 0.25;
+/** Total sideways push per row, across passes. */
+const pushed = new WeakMap<Section, number>();
+/** Record how much of a row stays under its owner after the push (or clear it). */
+function cover(row: Section, side: 'inner' | 'outer', metres: number) {
+  const { [side]: _, ...rest } = row.covered ?? {};
+  row.covered = metres > 0.02 ? { ...rest, [side]: metres } : Object.keys(rest).length ? rest : undefined;
+}
+/** Tests: how far the one-surface-owner pass moved this row sideways, in metres. */
+export const pushOf = (row: Section) => pushed.get(row) ?? 0;
+/** Push a row sideways along unit u by up to t metres, within its cap; returns the push made. */
+function push(ribbon: Ribbon, row: Section, u: P2, t: number, cap: number) {
+  if (fixedRows.has(row)) return 0;
+  // Beside a measured row, and from either end of the ribbon at a real joint (where lanes meet
+  // their successors), the push grows from zero, so nothing at a joint moves or kinks.
+  for (const q of ribbon.rows) if (fixedRows.has(q)) cap = Math.min(cap, 0.3 * Math.abs(q.s - row.s));
+  cap = Math.min(cap, PARALLEL_SLOPE * fixedDistance(ribbon, row.s));
+  const done = pushed.get(row) ?? 0, room = Math.max(0, cap - done), m = Math.sign(t) * Math.min(Math.abs(t), room);
+  if (Math.abs(m) < 1e-6) return 0;
+  for (const k of ['inner', 'outer'] as const) row[k] = [row[k][0] + u[0] * m, row[k][1] + u[1] * m];
+  pushed.set(row, done + Math.abs(m));
+  moved++;
+  return m;
+}
+
+type Step = { ribbon: Ribbon; forward: boolean };
+/** A ribbon and the ones that continue it away from the joint through plain chain joints. */
+function chainFrom(first: Step) {
+  const out = [first];
+  for (let length = first.ribbon.line.length; length < ZONE_MAX_M; ) {
+    const last = out.at(-1)!;
+    const node = (last.forward ? last.ribbon.pts.at(-1)! : last.ribbon.pts[0]).join(',');
+    const j = joints.get(node);
+    if (!j || j.incoming.length !== 1 || j.outgoing.length !== 1) break;
+    const next = (last.forward ? j.outgoing : j.incoming)[0].ribbon;
+    if (out.some(o => o.ribbon === next)) break;
+    out.push({ ribbon: next, forward: last.forward });
+    length += next.line.length;
+  }
+  return out;
+}
+/** Rows of a chain in walk order, with the distance walked from the joint. */
+function walkRows(chain: Step[]) {
+  const out: { row: Section; ribbon: Ribbon; d: number }[] = [];
+  let base = 0;
+  for (const { ribbon, forward } of chain) {
+    const rows = forward ? ribbon.rows : [...ribbon.rows].reverse();
+    for (const row of rows) out.push({ row, ribbon, d: base + (forward ? row.s : ribbon.line.length - row.s) });
+    base += ribbon.line.length;
+  }
+  return out;
+}
+/** Index of the last row at or before s. */
+function sectionIndex(r: Ribbon, s: number) {
+  let lo = 0, hi = r.rows.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (r.rows[m].s <= s) lo = m; else hi = m; }
+  return lo;
+}
+/** Signed distance t along unit u from p to the polyline, nearest crossing within reach. */
+function crossing(p: P2, u: P2, line: P2[], reach: number) {
+  let best: number | undefined;
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1], b = line[i], ex = b[0] - a[0], ez = b[1] - a[1];
+    const den = u[0] * ez - u[1] * ex;
+    if (Math.abs(den) < 1e-9) continue;
+    const wx = a[0] - p[0], wz = a[1] - p[1];
+    const t = (wx * ez - wz * ex) / den, v = (wx * u[1] - wz * u[0]) / den;
+    if (v < -1e-9 || v > 1 + 1e-9 || Math.abs(t) > reach) continue;
+    if (best === undefined || Math.abs(t) < Math.abs(best)) best = t;
+  }
+  return best;
+}
+/** The owner keeps its sections: a mainline over a link, else the wider way, else the first. */
+const owns = (a: Ribbon, b: Ribbon) => a.link !== b.link ? !a.link : a.lanes !== b.lanes ? a.lanes > b.lanes : true;
+/** Distance from a point on a branch to the nearest mainline at grade. */
+function toMainline(r: Ribbon, s: number) {
+  const p = r.line.at(s);
+  let best = Infinity;
+  for (const m of index.at(p.x, p.z)) if (!m.link && m.kind === 'ground') best = Math.min(best, alongOn(m, [p.x, p.z]).distance);
+  return best;
+}
+function separate(joint: string, left: End, right: End, forward: boolean) {
+  // Two equal links: the one nearer the mainline keeps its place and the other moves away,
+  // so a branch already beside the mainline is never pushed back into it.
+  const tie = left.ribbon.link === right.ribbon.link && left.ribbon.lanes === right.ribbon.lanes;
+  const at = (e: End) => forward ? Math.min(16, e.ribbon.line.length) : Math.max(0, e.ribbon.line.length - 16);
+  const leftOwns = tie ? toMainline(left.ribbon, at(left)) <= toMainline(right.ribbon, at(right)) : owns(left.ribbon, right.ribbon);
+  const owner = leftOwns ? left : right, minor = leftOwns ? right : left;
+  const ownerRows = walkRows(chainFrom({ ribbon: owner.ribbon, forward }));
+  // The owner's edge that faces the minor branch.
+  const edge = ownerRows.map(o => leftOwns ? o.row.outer : o.row.inner);
+  const minorRows = walkRows(chainFrom({ ribbon: minor.ribbon, forward }));
+  let parted = 0, clear = 0, cap = Infinity;
+  const edgeOfMinor: P2[] = [], edgeOfOwner: P2[] = [];
+  for (const { row, ribbon, d } of minorRows) {
+    if (d > ZONE_MAX_M) break;
+    const len = Math.hypot(row.outer[0] - row.inner[0], row.outer[1] - row.inner[1]);
+    if (len < 1e-6) continue;
+    const u: P2 = [(row.outer[0] - row.inner[0]) / len, (row.outer[1] - row.inner[1]) / len];
+    const p = leftOwns ? row.inner : row.outer;
+    const t = crossing(p, u, edge, 40);
+    if (t === undefined) break;
+    // Overlap: the owner's edge lies inside the minor branch (right of its inner edge when the
+    // owner is on the left, left of its outer edge when the owner is on the right).
+    const overlap = leftOwns ? t : -t;
+    // Balanced lanes abut at the node, and the push grows only as the centrelines meet. Where
+    // the lane counts do not balance, the branch starts inside its neighbour: it tapers out.
+    if (d < 0.5 && overlap > 0.05) cap = 0;
+    const facing = leftOwns ? 'inner' : 'outer';
+    if (overlap > 0.02 || (overlap > -0.02 && row.joined?.[facing] === 'none')) {
+      // Moved here, or already moved to abut on an earlier pass. What the push could not take
+      // out (a shared option lane, tapering out at 1:10) stays under the owner: covered.
+      const m = overlap > 0.02 ? push(ribbon, row, u, t, cap === Infinity ? Infinity : PUSH_SLOPE * d) : 0;
+      cover(row, facing, overlap - Math.abs(m));
+      row.joined = { ...row.joined, [facing]: 'none' };
+      parted = d;
+      clear = 0;
+      edgeOfMinor.length = edgeOfOwner.length = 0;
+      continue;
+    }
+    // Parted: collect the gore wedge until the edges are a lane apart.
+    if (-overlap < GORE_GAP_M && d - parted < GORE_MAX_M) {
+      const q = leftOwns ? row.inner : row.outer;
+      edgeOfMinor.push(q);
+      edgeOfOwner.push([q[0] + u[0] * t, q[1] + u[1] * t]);
+    }
+    if (d > BLEND_M && ++clear >= 3 && (-overlap >= GORE_GAP_M || d - parted >= GORE_MAX_M)) break;
+  }
+  // The owner draws the shared edge as one dashed lane line up to where the edges part.
+  for (const { row, d } of ownerRows) {
+    if (d > parted) break;
+    if (parted > 0) row.joined = { ...row.joined, [leftOwns ? 'outer' : 'inner']: 'dash' };
+  }
+  if (edgeOfMinor.length > 1) gores.push({ joint, left: left.ribbon, right: right.ribbon, ring: [...edgeOfMinor, ...edgeOfOwner.reverse()] });
+}
+function separateSiblings() {
+for (const [key, joint] of joints)
+  for (const [side, forward] of [[joint.outgoing, true], [joint.incoming, false]] as const) {
+    if (side.length < 2 || side.some(e => e.ribbon.kind === 'tunnel')) continue;
+    // Left to right across the carriageway, 16 m from the node along each branch.
+    const lateral = (e: End) => {
+      const ref = side[0].ribbon, f = frame(ref, forward ? 0 : ref.line.length);
+      const p = e.ribbon.line.at(forward ? Math.min(16, e.ribbon.line.length) : Math.max(0, e.ribbon.line.length - 16));
+      return (p.x - f.x) * f.rx + (p.z - f.z) * f.rz;
+    };
+    const ordered = side.slice().sort((a, b) => a.offset - b.offset || lateral(a) - lateral(b));
+    for (let i = 1; i < ordered.length; i++) separate(key, ordered[i - 1], ordered[i], forward);
+  }
+}
+
+/** Distance along a ribbon to its nearest end at a real joint (a plain chain node is not fixed). */
+function fixedDistance(r: Ribbon, s: number) {
+  const fixed = (p: P2) => { const j = joints.get(p.join(',')); return !j || j.incoming.length !== 1 || j.outgoing.length !== 1; };
+  return Math.min(fixed(r.pts[0]) ? s : Infinity, fixed(r.pts.at(-1)!) ? r.line.length - s : Infinity);
+}
+function separateParallel() {
+// Same-direction neighbours at grade that share no node (a ramp's upstream piece beside the
+// mainline before their joint): the same rule, row by row, with no gore. Only ground pairs:
+// two OSM bridges side by side may be at different levels (the stacked ramps).
+for (const minor of ribbons) {
+  if (minor.kind !== 'ground') continue;
+  const near = new Set<Ribbon>();
+  for (const p of minor.pts) for (const r of index.at(...p)) near.add(r);
+  for (const owner of near) {
+    if (owner === minor || owner.kind !== 'ground' || !owns(owner, minor) || owns(minor, owner) && owner.id > minor.id) continue;
+    // Pieces that meet at a node (a chain, or siblings already separated above) are not parallel.
+    const ends = (r: Ribbon) => [r.pts[0].join(','), r.pts.at(-1)!.join(',')];
+    if (ends(owner).some(e => ends(minor).includes(e))) continue;
+    const inner = owner.rows.map(q => q.inner), outer = owner.rows.map(q => q.outer);
+    for (const row of minor.rows) {
+      const len = Math.hypot(row.outer[0] - row.inner[0], row.outer[1] - row.inner[1]);
+      if (len < 1e-6) continue;
+      const u: P2 = [(row.outer[0] - row.inner[0]) / len, (row.outer[1] - row.inner[1]) / len];
+      const mid = mix(row.inner, row.outer, 0.5), nearest = alongOn(owner, mid);
+      if (nearest.distance > 40) continue;
+      const f = owner.line.at(nearest.s), t0 = minor.line.at(row.s);
+      if (f.dx * t0.dx + f.dz * t0.dz < 0.9) continue;
+      // Right of the owner (frame(): right is (-dz, dx)) faces its outer edge, left its inner.
+      const right = (mid[0] - f.x) * -f.dz + (mid[1] - f.z) * f.dx > 0;
+      const t = crossing(right ? row.inner : row.outer, u, right ? outer : inner, 40);
+      if (t === undefined || (right ? t : -t) <= 0.02) continue;
+      const m = push(minor, row, u, t, PARALLEL_SLOPE * fixedDistance(minor, row.s));
+      cover(row, right ? 'inner' : 'outer', Math.abs(t) - Math.abs(m));
+      row.joined = { ...row.joined, [right ? 'inner' : 'outer']: 'none' };
+      // The owner's facing edge here becomes the one dashed line.
+      const o = sectionIndex(owner, nearest.s);
+      for (const q of [owner.rows[o], owner.rows[o + 1]].filter(Boolean)) q.joined = { ...q.joined, [right ? 'outer' : 'inner']: 'dash' };
+    }
+  }
+}
+}
+// A ramp beside its mainline is moved first, then each sibling pair from its node. One move
+// can press a branch into another (a link pushed off its mainline into its own sibling), so
+// the passes repeat until nothing moves.
+for (let pass = 0; pass < 4; pass++) {
+  moved = 0;
+  gores.length = 0;
+  separateParallel();
+  separateSiblings();
+  if (!moved) break;
+}
+// Pieces of one road pushed separately meet again exactly at their chain node.
+for (const joint of joints.values()) {
+  if (joint.incoming.length !== 1 || joint.outgoing.length !== 1) continue;
+  const into = joint.incoming[0].ribbon, from = joint.outgoing[0].ribbon;
+  if (into.lanes !== from.lanes || into.kind === 'tunnel' || from.kind === 'tunnel') continue;
+  const a = into.rows.at(-1)!, b = from.rows[0];
+  if (!pushed.has(a) && !pushed.has(b)) continue;
+  for (const k of ['inner', 'outer'] as const) a[k] = b[k] = mix(a[k], b[k], 0.5);
+}
+
+/** The shared-edge treatment at distance s (from the row at or before s), or undefined. */
+export function joinedAt(r: Ribbon, s: number, side: 'inner' | 'outer') {
+  return r.rows[sectionIndex(r, s)]?.joined?.[side];
 }
 
 export function sectionAt(r: Ribbon, s: number): Section {
@@ -350,7 +616,12 @@ export function sectionAt(r: Ribbon, s: number): Section {
   const a = rows[lo],
     b = rows[hi],
     t = Math.max(0, Math.min(1, (s - a.s) / (b.s - a.s || 1)));
-  return { s, inner: mix(a.inner, b.inner, t), outer: mix(a.outer, b.outer, t) };
+  const row: Section = { s, inner: mix(a.inner, b.inner, t), outer: mix(a.outer, b.outer, t) };
+  if (a.covered || b.covered) {
+    const at = (k: 'inner' | 'outer') => (a.covered?.[k] ?? 0) * (1 - t) + (b.covered?.[k] ?? 0) * t;
+    row.covered = { inner: at('inner'), outer: at('outer') };
+  }
+  return row;
 }
 
 const mainline = (direction: ConnectorDirection) => ribbons
