@@ -80,7 +80,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxesFromObject, FAR_BUILDINGS_M, FAR_NIGHT_OFF, FAR_NIGHT_ON, KEEP_NEAR, farBoxMesh, type FarBox } from '../city/far-board';
+import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, type FarBox } from '../city/far-board';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
@@ -582,7 +582,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (farBoard && options.quality === 'low') {
     let t1 = performance.now(), slowest = 0;
     for (const [i, landmark] of landmarks.entries()) {
-      if (KEEP_NEAR.has(landmark.group.name)) continue;
+      if (!boxedFromAfar(landmark.group.name)) continue;
       farBoxes.push(...boxesFromObject(landmark.group, scenery.group));
       if (i % 2 === 1) { slowest = Math.max(slowest, performance.now() - t1); yield 'landmark far boxes'; t1 = performance.now(); }
     }
@@ -629,7 +629,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     farBoxes.push(...scenery.farBoxes, ...houses.boxes);
     grounded(farBoxes);
     farHidden.push(...scenery.group.children.filter(o => o.userData.building || o.userData.roofClutter), houses.group,
-      ...landmarks.map(l => l.group).filter(g => !KEEP_NEAR.has(g.name)), ...(batches ? [batches.group] : []));
+      ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
     const t0 = performance.now();
     farMesh = farBoxMesh(farBoxes, inCarved);
     if (import.meta.env.DEV) console.info('City far-board mesh', JSON.stringify({ boxes: farBoxes.length, tris: (farMesh.day.geometry.index?.count ?? 0) / 3, ms: Math.round(performance.now() - t0) }));

@@ -53,6 +53,19 @@ export const FAR_NIGHT_ON = 0.8, FAR_NIGHT_OFF = 0.75;
  * Each costs its own few draws.
  */
 export const KEEP_NEAR = new Set(['Mercedes-Benz Stadium']);
+/**
+ * Whether landmarks join the far form too. Off: every landmark keeps its own form (its landmark
+ * batch already has a far version), and boxes stand in only for generic buildings and houses.
+ * Boxed landmarks read as bulkier grey blocks without their glass, facades or lit signs, which
+ * popped visibly downtown at the switch (2026-11-26). `?perf&farlandmarks=1` boxes them again.
+ */
+export const FAR_LANDMARKS = (() => {
+  const q = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = q.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && q.get('farlandmarks') === '1';
+})();
+/** Whether a landmark group is drawn as boxes from afar. */
+export const boxedFromAfar = (name: string) => FAR_LANDMARKS && !KEEP_NEAR.has(name);
 
 /** Landmark meshes taller than this keep a three-band silhouette instead of one box. */
 export const TOWER_M = 60;

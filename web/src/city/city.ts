@@ -150,7 +150,7 @@ const GLIDE_PER_60HZ_FRAME = 0.12;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { boxesFromObject, KEEP_NEAR } from './far-board';
+import { boxedFromAfar, boxesFromObject, FAR_LANDMARKS } from './far-board';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { cameraWatch, releaseCamera, runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
@@ -700,7 +700,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         for (const c of landmarks) c.userData.perf = 'buildings';
         // Far-board buildings (low): downtown's landmarks join the downtown area's box mesh, from
         // boxes taken before batching empties their groups.
-        const boxed = landmarks.filter(g => !KEEP_NEAR.has(g.name));
+        const boxed = landmarks.filter(g => boxedFromAfar(g.name));
         const farBoxesDowntown = low ? boxed.flatMap(g => boxesFromObject(g, terrain!.scenery)) : [];
         const farRoots: THREE.Object3D[] = [...boxed];
         if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); farRoots.push(bodies); }
@@ -720,7 +720,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
-          farRoots.push(batches.group);
+          if (FAR_LANDMARKS) farRoots.push(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
             if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
