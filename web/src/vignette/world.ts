@@ -872,17 +872,27 @@ export class World {
     const m4 = new THREE.Matrix4();
     const v2 = genericV2(this.opts.cityFacades);
     let n = 0;
-    // One far-board box per building (city/far-board.ts), from the vertices it just added. Walls
-    // with procedural windows read darker from afar than their vertex colour.
+    // One far-board box per building (city/far-board.ts), from the vertices it just added. The box
+    // keeps the building's dominant wall style and base, and draws with this same material, so the
+    // shader's distance-faded windows (and their night glow) colour it as they colour the building.
     let bdStart = 0;
     let farRing: number[] | undefined;
     const farBox = () => {
       const end = b.pos.length / 3;
       if (withFarBoxes && end - bdStart >= 3) {
-        let windows = 0;
-        for (let i = bdStart; i < end; i++) if ((style[i] ?? -1) >= 0) windows++;
-        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1 - 0.3 * windows / (end - bdStart), farRing);
-        if (box) this.farBoxes.push(box);
+        const counts = new Map<number, number>();
+        let firstOf = new Map<number, number>();
+        for (let i = bdStart; i < end; i++) {
+          const st = style[i] ?? -1;
+          if (st < 0) continue;
+          counts.set(st, (counts.get(st) ?? 0) + 1);
+          if (!firstOf.has(st)) firstOf.set(st, i);
+        }
+        let wallStyle = -1, most = 0;
+        for (const [st, c] of counts) if (c > most) { most = c; wallStyle = st; }
+        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1, farRing);
+        if (box) this.farBoxes.push(wallStyle >= 0 ? { ...box, style: wallStyle, base: base[firstOf.get(wallStyle)!] ?? box.y0 } : box);
+        firstOf = new Map();
       }
       bdStart = end;
     };

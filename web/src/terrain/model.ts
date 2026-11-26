@@ -621,7 +621,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   };
   // One mesh of boxes stands in for every building of the area from afar (city/far-board.ts):
   // generic blocks, far houses and landmarks. It replaces them all beyond FAR_BUILDINGS_M.
-  let farMesh: { day: THREE.Mesh; night: THREE.Mesh } | null = null, farOn = false, farNight = false;
+  let farMesh: { day: THREE.Mesh; night: THREE.Mesh | null } | null = null, farOn = false, farNight = false;
+  // The far boxes draw with the generic buildings' material (city/far-board.ts styledBoxMesh).
+  const buildingMaterial = scenery.group.children.find((o): o is THREE.Mesh => o.userData.building && (o as THREE.Mesh).isMesh && !(o as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
   const farHidden: THREE.Object3D[] = [];
   if (farBoard && options.quality === 'low') {
     // Houses: their per-house boxes from house-lod.ts (the plan's oriented rect, eave height,
@@ -631,9 +633,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     farHidden.push(...scenery.group.children.filter(o => o.userData.building || o.userData.roofClutter), houses.group,
       ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
     const t0 = performance.now();
-    farMesh = farBoxMesh(farBoxes, inCarved);
+    farMesh = farBoxMesh(farBoxes, inCarved, buildingMaterial);
     if (import.meta.env.DEV) console.info('City far-board mesh', JSON.stringify({ boxes: farBoxes.length, tris: (farMesh.day.geometry.index?.count ?? 0) / 3, ms: Math.round(performance.now() - t0) }));
-    scenery.group.add(farMesh.day, farMesh.night);
+    scenery.group.add(farMesh.day, ...(farMesh.night ? [farMesh.night] : []));
     yield 'far-board buildings';
   }
   /** Add buildings to the far form: their boxes join the mesh, and their roots hide with it. */
@@ -642,11 +644,12 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     farBoxes.push(...boxes);
     grounded(farBoxes);
     farHidden.push(...roots);
-    const next = farBoxMesh(farBoxes, inCarved);
-    farMesh.day.parent?.add(next.day, next.night);
-    for (const m of [farMesh.day, farMesh.night]) { m.removeFromParent(); m.geometry.dispose(); }
+    const next = farBoxMesh(farBoxes, inCarved, buildingMaterial);
+    farMesh.day.parent?.add(next.day, ...(next.night ? [next.night] : []));
+    for (const m of [farMesh.day, farMesh.night]) { if (!m) continue; m.removeFromParent(); m.geometry.dispose(); }
     // City clips scenery materials to the board once, on load; the new meshes take the old planes.
     for (const [a, b] of [[farMesh.day, next.day], [farMesh.night, next.night]] as const) {
+      if (!a || !b || a.material === b.material) continue;
       const from = a.material as THREE.Material, to = b.material as THREE.Material;
       to.clippingPlanes = from.clippingPlanes; to.clipShadows = from.clipShadows;
     }
@@ -659,7 +662,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   /** Show the boxes (far) or the buildings (near). */
   const showFar = (on: boolean) => {
     farOn = on;
-    if (farMesh) { farMesh.day.visible = on && !farNight; farMesh.night.visible = on && farNight; }
+    if (farMesh) { farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight; }
     for (const o of farHidden) o.visible = !on;
   };
   // Yards by rule around every house (walks, drives, foundation planting).

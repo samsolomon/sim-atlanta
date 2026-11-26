@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
+import { BufferAttribute, BufferGeometry, type Material, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 
 /**
@@ -16,6 +16,9 @@ export interface FarBox {
   roof?: { r: number; g: number; b: number };
   /** The footprint (x, z pairs), extruded instead of the box when the box would overfill it. */
   ring?: number[];
+  /** The building's dominant wall style (vignette/world.ts aStyle) and its wall base height, for
+   * drawing the box with the generic building material. */
+  style?: number; base?: number;
 }
 
 /**
@@ -259,7 +262,8 @@ const AMBER = { r: 1, g: 0.62, b: 0.26 };
  * and index with its own colours (deep blue walls) plus amber window points on taller buildings,
  * drawn unlit (MeshBasicMaterial with vertex colours), so the city keeps its glow.
  */
-export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean): { day: Mesh; night: Mesh } {
+export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean, buildingMaterial?: Material): { day: Mesh; night: Mesh | null } {
+  if (buildingMaterial) return styledBoxMesh(boxes, buildingMaterial);
   const P: number[] = [], N: number[] = [], C: number[] = [], D: number[] = [], I: number[] = [], NI: number[] = [];
   let v = 0;
   const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, nr: number, ng: number, nb: number) => {
@@ -371,4 +375,56 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
     m.raycast = noRaycast;
   }
   return { day, night };
+}
+
+/**
+ * The far form drawn with the generic buildings' own material (vignette/world.ts): each wall keeps
+ * its building's style and base, so the shader's distance-faded facade (each archetype's mean of
+ * wall and glass) and its lit windows at night colour the box as they colour the building, and no
+ * night variant or extra program is needed. Roofs carry style −1 (plain), as the near roofs do.
+ */
+function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mesh; night: null } {
+  const P: number[] = [], N: number[] = [], C: number[] = [], S: number[] = [], B: number[] = [], I: number[] = [];
+  let v = 0;
+  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, st: number, base: number) => {
+    P.push(x, y, z); N.push(nx, ny, nz); C.push(r, g, b); S.push(st); B.push(base); return v++;
+  };
+  for (const bx of boxes) {
+    const { cx, cz, ux, uz, hx, hz, y0, y1 } = bx;
+    let ring: number[] = bx.ring ?? [];
+    if (!bx.ring) for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) ring.push(cx + su * hx * ux - sv * hz * uz, cz + su * hx * uz + sv * hz * ux);
+    if (ringArea2(ring) < 0) { const r2: number[] = []; for (let i = ring.length - 2; i >= 0; i -= 2) r2.push(ring[i], ring[i + 1]); ring = r2; }
+    const n = ring.length / 2, st = bx.style ?? -1, base = bx.base ?? y0;
+    for (let i = 0; i < n; i++) {
+      const ax = ring[i * 2], az = ring[i * 2 + 1], bx2 = ring[((i + 1) % n) * 2], bz = ring[((i + 1) % n) * 2 + 1];
+      let nx = bz - az, nz = -(bx2 - ax);
+      const l = Math.hypot(nx, nz);
+      if (l < 1e-3) continue;
+      nx /= l; nz /= l;
+      const p0 = put(ax, y0, az, nx, 0, nz, bx.r, bx.g, bx.b, st, base), p1 = put(bx2, y0, bz, nx, 0, nz, bx.r, bx.g, bx.b, st, base);
+      const p2 = put(bx2, y1, bz, nx, 0, nz, bx.r, bx.g, bx.b, st, base), p3 = put(ax, y1, az, nx, 0, nz, bx.r, bx.g, bx.b, st, base);
+      I.push(p0, p2, p1, p0, p3, p2);
+    }
+    const rf = bx.roof ?? { r: bx.r, g: bx.g, b: bx.b };
+    const roof = { r: (rf.r * 0.7 + CLUTTER.r * 0.3) * 0.86, g: (rf.g * 0.7 + CLUTTER.g * 0.3) * 0.86, b: (rf.b * 0.7 + CLUTTER.b * 0.3) * 0.86 };
+    const first = v;
+    for (let i = 0; i < n; i++) put(ring[i * 2], y1, ring[i * 2 + 1], 0, 1, 0, roof.r, roof.g, roof.b, -1, 0);
+    const pts = Array.from({ length: n }, (_, i) => new Vector2(ring[i * 2], ring[i * 2 + 1]));
+    for (const [a, b, c] of ShapeUtils.triangulateShape(pts, [])) I.push(first + a, first + c, first + b);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new BufferAttribute(new Float32Array(P), 3));
+  g.setAttribute('normal', new BufferAttribute(Int8Array.from(N, x => Math.round(x * 127)), 3, true));
+  g.setAttribute('color', new BufferAttribute(Uint8Array.from(C, byte), 3, true));
+  g.setAttribute('aStyle', new BufferAttribute(Int8Array.from(S), 1));
+  g.setAttribute('aBase', new BufferAttribute(new Float32Array(B), 1));
+  g.setIndex(new BufferAttribute(v > 65535 ? Uint32Array.from(I) : Uint16Array.from(I), 1));
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
+  const day = new Mesh(g, material);
+  day.name = 'far-board buildings';
+  day.castShadow = day.receiveShadow = true;
+  day.userData.perf = 'buildings'; day.userData.building = true; day.visible = false;
+  day.raycast = noRaycast;
+  return { day, night: null };
 }
