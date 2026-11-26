@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import register from '../../../pipeline/prototypes/connector-footprint/ramp-register.json';
 import survey from '../../../pipeline/prototypes/connector-footprint/ramp-decks.json';
-import { auburnTransport } from '../city/sweet-auburn-transport';
+import { auburnGround, auburnTransport } from '../city/sweet-auburn-transport';
 import type { P2 } from '../vignette/geom';
 import { GroundGrid } from './grid';
 import { applyRampDecks } from './ramp-decks';
@@ -163,4 +163,35 @@ it('draws the MLK SB ramp tree as one deck across its ways, onto the MLK west ap
   // Past 2.5 m along 755543583 the approach owns the pavement: the rest stays a plain run.
   const end = runs.find(r => same(r.pts.at(-1)!, [551.31, 601.54]))!;
   expect(end.deckNavd88M).toBeUndefined();
+});
+
+it.each(['low', 'high'] as const)('carries 38974038 from 9239459\'s fill on %s, across its full width', quality => {
+  // Phase 1: 38974038 started 6.86 m in the air because 1450884836 before it was
+  // drawn on the ground. OSM adds 38974038's second lane at the joint, so the new
+  // deck widens to it rather than leaving that lane's slab end over open air.
+  const auburn = new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL('ground/ground.json', auburn), 'utf8'));
+  const grid = auburnGround(manifest, Uint8Array.from(readFileSync(new URL('ground/ground.i16', auburn))).buffer);
+  const ground = new GroundSurface(grid, quality);
+  const city = auburnTransport(JSON.parse(readFileSync(new URL('context.json', auburn), 'utf8')));
+  const decks = createSurfaceTransport(city, grid, ground.sampleScene.bind(ground));
+  const runs = city.terrainTransport!.roads, zero = manifest.vertical.sceneZeroNavd88M;
+  try {
+    const joint: P2 = [1045.81, -497.53];
+    const ramp = runs.find(r => r.deckNavd88M && same(r.pts.at(-1)!, joint))!;
+    const flyover = runs.find(r => r.deckNavd88M && same(r.pts[0], joint))!;
+    expect(ramp.widenInto).toBeDefined();
+    expect(Math.abs(ramp.deckNavd88M!.at(-1)! - flyover.deckNavd88M![0])).toBeLessThan(.002);
+    const [a, b] = [ramp.pts.at(-2)!, joint], l = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    const [tx, tz] = [(b[0]-a[0])/l, (b[1]-a[1])/l];
+    for (const off of [-3, -1.5, 0, 1.5, 3]) {
+      const before = decks.deckAt(joint[0] - .2*tx - off*tz, joint[1] - .2*tz + off*tx, ramp);
+      const after = decks.deckAt(joint[0] + .2*tx - off*tz, joint[1] + .2*tz + off*tx, flyover);
+      expect(before, `ramp at ${off} m`).not.toBeNull();
+      expect(after, `flyover at ${off} m`).not.toBeNull();
+      expect(Math.abs(before! - after!), `step at ${off} m`).toBeLessThan(.01);
+    }
+    // The start ties to the fill: tread on the drawn terrain plus the deck lift.
+    expect(Math.abs(ramp.deckNavd88M![0] - zero - ground.sampleScene(...ramp.pts[0])!)).toBeLessThan(.25);
+  } finally { decks.dispose(); ground.geometry.dispose(); }
 });

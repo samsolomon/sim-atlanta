@@ -25,6 +25,10 @@ STEPS = {
     # The MLK SB ramps climb to the MLK deck on their own structure, over ground
     # the covered-pavement taper lowers (connector-repairs.md, taper follow-up).
     "mlk": [436808889, 755543582, 44698161, 436808888, 755543580, 755543583],
+    # NB to Freedom Parkway at the auburn edge: 38974038, 1450884835 and 38974039
+    # are Sweet Auburn surveyed decks. 1450884836 between 9239459's fill and
+    # 38974038 was drawn on the ground, leaving 38974038 to start 6.86 m in the air.
+    "auburn-edge": [1450884836],
 }
 # Only these stations of a way are drawn here (clipped, not just filtered).
 # The MLK street bridge's west approach (street-bridges.json, streetPortals)
@@ -183,9 +187,10 @@ def main():
                 if at is None:
                     continue
                 for sp in e["spans"]:
-                    if sp[0][0] < at < sp[-1][0]:
+                    if sp[0][0] - 0.05 <= at <= sp[-1][0] + 0.05:
+                        # The surveyed row replaces any span row within 0.5 m but a tie.
                         sp[:] = [r for r in sp if abs(r[0] - at) > 0.5 or len(r) > 2]
-                        sp.append([round(at, 2), row[1]])
+                        sp.append([round(min(max(at, 0.0), e["lengthM"]), 2), row[1]])
                         sp.sort(key=lambda r: r[0])
     (HERE / "ramp-decks.json").write_text(json.dumps({"ways": out}, separators=(",", ":")) + "\n")
     for e in out:

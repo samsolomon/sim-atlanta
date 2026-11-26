@@ -172,3 +172,28 @@ Step 3 lists 436808889, 755543582, 44698161, 436808888, 755543580 and the first 
 
 **Deploy.** A `web/dist` rebuild only.
 
+### Step 4: the NB-to-Freedom-Parkway chain and the 38974038 open start
+
+38974038, 1450884835 and 38974039 were already surveyed Sweet Auburn decks. The open start came from the 8.5 m link before them, 1450884836. The auburn board drew it on the ground, falling from 303.9 m at 9239459's fill to 297.7 m under 38974038's start. So 38974038 began 6.6 m in the air. 9239459 itself runs at grade on its fill (own within 0.1 m of the ground) and needs no deck. Step 4 lists 1450884836 only: a tie at s 0 on the fill, then up to 304.11 m, where the Sweet Auburn survey of 38974038 starts. The Sweet Auburn pin in `ramp-decks.py` now also applies at a span's end, not only inside it. The only other row it moves is 38970413's far end on the auburn board, which Sweet Auburn's own profile draws, so nothing drawn changes there.
+
+**Lane gain.** OSM adds 38974038's second lane at the joint (1450884836 has 1 lane, 38974038 has 2). On the ground that was paint. On a deck it left the added lane's 2.75 m of slab end standing over a 7.4 m drop. `ramp-decks.ts` `laneGain` marks a ramp deck piece that ends where exactly one way with more lanes begins, by setting `widenInto` to a point 1 m into that way. `transport.ts` then widens that piece's ribbon section across its length, from its own section at the fill to the next ribbon's section at the joint, keeping the shoulders. Only that piece is marked on any board.
+
+**Measured (both tiers identical; [b2-edge](log/ui/connector-repairs/b2-edge/)):**
+
+| Check | Result |
+|---|---|
+| 38974038's start | Continuous deck: 304.21, 304.25 and 304.26 m at s 7.5, 8.0 and 8.5 along the chain. Before: terrain 297.69 m, then the deck at 304.26 m |
+| Joint 1450884836 → 38974038, 5 cm samples at −1.5, 0 and +1.5 m | Tread steps ≤ 1 mm. On the centreline, 38974038's lane stripe starts 3 cm proud (paint) |
+| Deck width at the joint | −3.5 to +3.5 m on both sides (before: −3.5 to +0.75 m on 1450884836) |
+| Tie at 9239459's fill | Tread = drawn terrain + 0.12 m |
+| Drawn tread minus profile, centreline and ±1.6 m | 0.117–0.365 m (the upper end is the parapet edge over the widening). No surface through the tread |
+| Cars on 1450884836 | 0.120–0.166 m above the profile |
+| 439abf84 gate, warm, Low and High | Byte-identical |
+| Triangles | +252 deck triangles on both tiers |
+
+**Stills** (day, matched frozen cameras; BEFORE is step 3): [E1 High: the chain at the auburn edge](log/ui/connector-repairs/b2-edge/E1-high-before-after.jpg) · [E1 Low](log/ui/connector-repairs/b2-edge/E1-low-before-after.jpg) · [E2 High: 38974038 no longer starts in mid-air](log/ui/connector-repairs/b2-edge/E2-high-before-after.jpg) · [E2 Low](log/ui/connector-repairs/b2-edge/E2-low-before-after.jpg) · [E3 High: the widening ramp](log/ui/connector-repairs/b2-edge/E3-high-before-after.jpg) · [E3 Low](log/ui/connector-repairs/b2-edge/E3-low-before-after.jpg). Cameras: `cam=1045,-497,180,62,120`, `1046,-498,90,60,45`, `1040,-500,330,72,60`, with `&dev&mindist=20`.
+
+With this step the phase-1 B witnesses are closed: the 38974038 open start, the 38974034 → 1450884828 step (step 1) and the north-corner ramp ends (steps 1 and 2).
+
+**Deploy.** A `web/dist` rebuild only.
+

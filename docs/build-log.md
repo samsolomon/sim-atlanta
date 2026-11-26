@@ -3916,3 +3916,7 @@ The MLK southbound ramps climb about 4 m on their own structure to the MLK Jr. D
 - **The top end.** It is already drawn by the street-bridge survey, so the ramp tucks 2.5 m under that approach, 4 cm below it, instead of ending at its diagonal edge with a wedge of air.
 - **The fork.** Three ramps split from one deck. Their ribbons start at no width, so for the first few metres each car's own piece has no tread. A probe found cars would have vanished there. They now ride the deck they split from. [The ramp tree, before and after](log/ui/connector-repairs/b2-mlk/M1-high-before-after.jpg) · [The fork](log/ui/connector-repairs/b2-mlk/M2-high-before-after.jpg) · [Onto the approach](log/ui/connector-repairs/b2-mlk/M3-high-before-after.jpg)
 
+### 2026-11-26 — The lane that started in the air
+
+38974038, the flyover from the northbound Connector to Freedom Parkway, was surveyed and drawn correctly, but it started 6.6 m in mid-air. The 8.5 m link before it was drawn on the ground. Raising that link onto its lidar profile closed the gap down the middle and left 2.75 m of the flyover's end still hanging over the drop. OSM adds the flyover's second lane exactly at the joint, which on the ground is only paint. The link deck now widens across its 8.5 m from one lane to two, so the two slabs meet edge to edge. [Before and after](log/ui/connector-repairs/b2-edge/E2-high-before-after.jpg) · [The widening](log/ui/connector-repairs/b2-edge/E3-high-before-after.jpg)
+

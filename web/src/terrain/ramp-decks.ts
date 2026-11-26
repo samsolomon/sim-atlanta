@@ -1,4 +1,5 @@
 import survey from '../../../pipeline/prototypes/connector-footprint/ramp-decks.json';
+import osmWays from '../../../pipeline/prototypes/connector-footprint/ways.json';
 import type { P2 } from '../vignette/geom';
 import type { TerrainCity, TransportRun } from './transport-data';
 
@@ -35,6 +36,24 @@ function profileAt(span: number[][], s: number) {
 /** Share of the measured deck at a station: 0 on a tie row, where the deck meets the drawn terrain. */
 export const deckWeightAt = (span: number[][], s: number) => span.some(r => r[2] && Math.abs(r[0] - s) < .05) ? 0 : 1;
 
+type OsmWay = { lanes: number; link: boolean; pts: number[][] };
+const allWays = Object.values(osmWays as unknown as Record<string, OsmWay>);
+
+/** Where a deck piece ends at the end of its way and the one way leaving there
+ * carries more lanes (1450884836 into 38974038), a point 1 m into that way. The
+ * deck widens to it (transport.ts) instead of leaving the added lane's slab end
+ * standing over open air. */
+export function laneGain(pts: P2[]): P2 | undefined {
+  if (pts.length < 2) return;
+  const end = pts.at(-1)!, prev = pts.at(-2)!;
+  const same = (a: number[], b: number[]) => Math.abs(a[0]-b[0]) < .01 && Math.abs(a[1]-b[1]) < .01;
+  const mine = allWays.find(w => same(w.pts.at(-1)!, end) && along(w.pts.slice(-2), prev).distance < .05);
+  const next = allWays.filter(w => same(w.pts[0], end));
+  if (!mine || next.length !== 1 || next[0].link !== mine.link || next[0].lanes <= mine.lanes) return;
+  const [a, b] = next[0].pts, l = Math.hypot(b[0]-a[0], b[1]-a[1]);
+  return [a[0] + (b[0]-a[0]) / l, a[1] + (b[1]-a[1]) / l];
+}
+
 /** Cut a run into ground pieces and profiled deck pieces at its span ends. */
 function sliceRun(run: TransportRun, spans: number[][][]): TransportRun[] {
   const cum = [0];
@@ -61,9 +80,11 @@ function sliceRun(run: TransportRun, spans: number[][][]): TransportRun[] {
   const flush = () => {
     if (!current || current.stations.length < 2) return;
     const pts = current.stations.map(point), deck = current.deck;
+    const gain = deck && laneGain(pts);
     pieces.push(deck
       ? { ...run, kind: 'bridge', pts, deckNavd88M: current.stations.map(s => profileAt(deck, s)),
-        ...(deck.some(r => r[2]) && { deckWeight: current.stations.map(s => deckWeightAt(deck, s)) }) }
+        ...(deck.some(r => r[2]) && { deckWeight: current.stations.map(s => deckWeightAt(deck, s)) }),
+        ...(gain && { widenInto: gain }) }
       : { ...run, pts });
   };
   for (let k = 0; k + 1 < ordered.length; k++) {

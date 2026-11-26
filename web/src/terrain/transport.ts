@@ -223,6 +223,11 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
     const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    // A ramp deck ending where OSM adds a lane (ramp-decks.ts laneGain) widens
+    // across its length to the next ribbon's section at the joint, so the wider
+    // deck's slab end does not stand over open air. Shoulders keep their width.
+    const gain = ribbon && profile && run.widenInto ? matchRibbon(end, run.widenInto, run.sub === 'link') : undefined;
+    const gainEnds = gain && ribbon !== gain ? [sectionAt(ribbon!, alongOn(ribbon!, end).s), sectionAt(gain, alongOn(gain, end).s)] : undefined;
     const width = run.crossSection?.width ?? mapped;
     // An approach carries the inventory deck width at the abutment and blends
     // to the mapped street width where its profile weight reaches bare earth.
@@ -262,7 +267,12 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const p=line.at(s);
       if (!ribbon) return onSeam(s,p.x+off*p.nx,p.z+off*p.nz);
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
-      return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+      if (!gainEnds) return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+      const [mine, next] = gainEnds, w = s / line.length;
+      const inner: P2 = [row.inner[0] + w*(next.inner[0]-mine.inner[0]), row.inner[1] + w*(next.inner[1]-mine.inner[1])];
+      const outer: P2 = [row.outer[0] + w*(next.outer[0]-mine.outer[0]), row.outer[1] + w*(next.outer[1]-mine.outer[1])];
+      const travel = Math.hypot(outer[0]-inner[0], outer[1]-inner[1]), shoulder = mapped - travelWidth;
+      return onSeam(s,...stripePoint({ s: row.s, inner, outer }, .5 - off*(travel+shoulder)/(travelWidth+shoulder)/travel));
     }
     // A profiled deck that crosses a board seam obliquely ends on the seam itself:
     // each end corner slides along the run onto the boundary, so the neighbouring

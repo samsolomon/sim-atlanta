@@ -21,6 +21,9 @@ export interface TransportRun {
    * show through the tread is lowered to just under it: the misclassified freeway roof
    * beside the Leonard Tate opening keeps the deck's own height in the DEM. */
   yieldsGround?: (x: number, z: number) => boolean;
+  /** A point just inside the next way where OSM adds a lane at this deck's end:
+   * the deck widens across its length to that ribbon's section (ramp-decks.ts). */
+  widenInto?: P2;
   /** Share of the deck profile at each approach vertex. Zero meets local terrain. */
   deckWeight?: number[];
   /** Original directed centerline before resampling a measured deck or its approach. */
