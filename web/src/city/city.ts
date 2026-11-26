@@ -150,7 +150,7 @@ import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } fr
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
+import { cameraWatch, releaseCamera, runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
 import { distToLine } from './line-distance';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { shadowStepM } from './shadow-step';
@@ -1573,7 +1573,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     pendingEastTarget = undefined;
   };
   const manualCamera = () => {
-    sliceInput.inputAt = performance.now();
     cancelPendingTarget();
     if (options.follow?.active) options.follow.stop();
   };
@@ -1600,9 +1599,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
-  // Sliced area builds stay out of the way while the camera is in use.
+  // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
+  // (here) and whenever the view moves (watched once a frame, below).
+  releaseCamera();
+  const watchCamera = cameraWatch();
   controls.addEventListener('start', () => { sliceInput.dragging = true; sliceInput.inputAt = performance.now(); });
   controls.addEventListener('end', () => { sliceInput.dragging = false; sliceInput.inputAt = performance.now(); });
+  // A gesture the browser cancels, or one whose window loses focus, never ends.
+  const dropGesture = () => { sliceInput.dragging = false; };
+  window.addEventListener('blur', dropGesture);
+  renderer.domElement.addEventListener('pointercancel', dropGesture);
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
     cancelPendingTarget();
@@ -2001,8 +2007,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     stopGestures?.tick?.(frameMs);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
-    // A glide, a drive-through or a followed vehicle moves the camera: sliced builds step back.
-    if (glideTo || drive || options.follow?.vehicle) sliceInput.inputAt = performance.now();
+    // Watching a vehicle counts as using the camera, even while it stands still.
+    if (options.follow?.vehicle) sliceInput.inputAt = performance.now();
     if (glideTo) {
       const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : frameFraction(GLIDE_PER_60HZ_FRAME, frameMs));
       controls.target.add(step);
@@ -2090,6 +2096,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         clampTarget();
       }
     }
+    watchCamera(camera.position, controls.target, camera.quaternion);
     treeDetail();
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
@@ -2432,6 +2439,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       ro.disconnect();
       stopPicking();
       controls.removeEventListener('start', startGesture);
+      window.removeEventListener('blur', dropGesture);
+      renderer.domElement.removeEventListener('pointercancel', dropGesture);
+      // A drag held while City leaves gets no 'end'.
+      releaseCamera();
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();

@@ -40,8 +40,8 @@ export interface SliceStats {
 export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
 
 /**
- * Set by City: `dragging` while the user drags the camera, `inputAt` the time of their last
- * camera input (builds then stay out of the way), and today's `dayOfYear`, so a sliced build
+ * Set by City: `dragging` while a camera gesture is held, `inputAt` the last time the camera was
+ * in use (builds then stay out of the way), and today's `dayOfYear`, so a sliced build
  * dresses its trees for today. `building` counts sliced builds in progress (runBudgeted), for
  * other background work to defer to; `workedMs` totals the time they have spent building.
  */
@@ -54,6 +54,31 @@ export const sliceInput = { dragging: false, inputAt: -Infinity, dayOfYear: 180,
  * in docs/perf.md), and steps back as soon as someone touches it.
  */
 export const SHARE = { movingMs: 2, idleAfterMs: 1000, idleShare: 1, idleMinMs: 4, idleMaxMs: 50 };
+
+type Vec = { readonly x: number; readonly y: number; readonly z: number };
+
+/**
+ * Call once a frame, after everything that moves the camera: marks it in use whenever the view
+ * changed since the last frame, however it moved (a gesture, a key, a slider, a glide, a followed
+ * vehicle). Movements under a centimetre or so, a damped orbit's tail, do not count.
+ */
+export function cameraWatch() {
+  const last = new Float64Array(10);
+  let seen = false;
+  return (position: Vec, target: Vec, turn: Vec & { readonly w: number }, now = performance.now()) => {
+    const view = [position.x, position.y, position.z, target.x, target.y, target.z, turn.x, turn.y, turn.z, turn.w];
+    if (seen && view.every((v, i) => Math.abs(v - last[i]) <= (i < 6 ? .02 : 1e-5))) return;
+    if (seen) sliceInput.inputAt = now;
+    seen = true;
+    last.set(view);
+  };
+}
+
+/** No camera is in use: for a City that is leaving, or a gesture that will never end. */
+export function releaseCamera() {
+  sliceInput.dragging = false;
+  sliceInput.inputAt = -Infinity;
+}
 
 /** One build's share of the next frame, split between the builds under way. */
 export function frameShare(restMs: number, now = performance.now()) {
