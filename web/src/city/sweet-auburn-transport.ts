@@ -15,8 +15,8 @@ const profiles = new Map(decks.roads.map(row => [wayKey(row.start, row.end), row
  * interval on the same profile sampled by vehicles. */
 export function auburnTransport(context: TerrainCity): TerrainCity {
   const runs: TransportRun[] = [];
-  const roads = context.roads.map(road => {
-    if (road.tunnel || road.pts.length < 2) return road;
+  const roads = context.roads.flatMap(road => {
+    if (road.tunnel || road.pts.length < 2) return [road];
     // Stacked ramps (ramp-decks.json) are registered on whole OSM ways, so a board
     // road clipped at a seam still finds its own measured spans.
     const surveyed = road.cls === 'motorway' && profiles.get(wayKey(road.pts[0], road.pts.at(-1)!));
@@ -25,8 +25,13 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
     const base = { cls: road.cls, name: road.name, sub: road.sub ?? undefined };
     if (!spans) {
       if (road.bridge) runs.push({ ...base, pts: road.pts, kind: 'bridge' });
-      return road;
+      return [road];
     }
+    // A ground ramp with surveyed spans (ramp-decks.json) is structure only on its spans.
+    // Between them it stays a board road, drawn on the board: as a run of its own it was
+    // drawn on bare ground over the cut (39169033, release 18's ellis-high).
+    const onBoard = ramp && !road.bridge;
+    const pieces: typeof context.roads = [];
     const line = new Line(road.pts);
     // The survey stores distance to the millimetre; polygon and route endpoints
     // stay on the full-precision vertices shared with adjoining source ways.
@@ -50,6 +55,8 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
       // Ramp tie rows (ramp-decks.json) meet the drawn terrain.
       const deckWeight = samples?.some(r => r[2]) ? stations.map(s => deckWeightAt(samples, s)) : undefined;
       const widenInto = ramp && deckNavd88M ? laneGain(pts) : undefined;
+      if (onBoard) pieces.push({ ...road, pts, bridge: !!deckNavd88M });
+      if (onBoard && !deckNavd88M) return;
       runs.push({ ...base, pts, kind: deckNavd88M || road.bridge ? 'bridge' : 'ground', deckNavd88M,
         ...(deckWeight && { deckWeight }), ...(widenInto && { widenInto }) });
     }
@@ -61,7 +68,7 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
       last = end;
     }
     slice(last, line.length);
-    return { ...road, bridge: true };
+    return onBoard ? pieces : [{ ...road, bridge: true }];
   });
   viaductSurfaces(runs);
   // The 2019 classifier labels the freeway roof over Leonard Tate as bare earth, so

@@ -105,6 +105,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
  * shared builders in the same order either way, so the geometry, vertex order and far prefix are
  * identical (terrain/sliced-build.test.ts fingerprints them).
  */
+/** Dev: every unsurveyed deck joint whose height comes across the join (road-kit review). */
+export const acrossJoints: { board: string; at: P2; before: number | null; after: number }[] = [];
+
 export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
   cut?: { freight: TransportRun; treadY: number }): Build<SurfaceTransport> {
   const data = city.terrainTransport;
@@ -273,12 +276,31 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     const firstSupport=support(start),lastSupport=support(end);
     const elevation=(p:P2,height:number|null) => height===null ? grid.sample(...p) : height+grid.manifest.vertical.sceneZeroNavd88M;
-    const startHeight = bridge && !startCut ? elevation(start,firstSupport) : null;
+    // A joint whose own far end is a board edge has nothing to carry: the cut floor under
+    // it is not the deck. Take the joining deck's height from its own far end instead
+    // (Andrew Young International Blvd over the Connector, release 18's ellis-high).
+    const across = (p: P2) => {
+      if (!deckJoins(p, owner, run) || !onEdge(p === start ? end : start)) return null;
+      const key = p.join(',');
+      for (const other of data!.roads) {
+        if (other === owner || other.kind !== 'bridge' || other.deckNavd88M || sharedDecks.has(other)) continue;
+        const at = other.pts.findIndex(q => q.join(',') === key);
+        if (at < 0 || (at !== 0 && at !== other.pts.length - 1)) continue;
+        const far = at === 0 ? other.pts.at(-1)! : other.pts[0];
+        if (onEdge(far)) continue;
+        const y = elevation(far, support(far));
+        if (import.meta.env.DEV && y !== null) acrossJoints.push({ board: String((city as { name?: string }).name), at: p, before: elevation(p, support(p)), after: y });
+        return y;
+      }
+      return null;
+    };
+    const acrossStart = bridge && !startCut ? across(start) : null, acrossEnd = bridge && !endCut ? across(end) : null;
+    const startHeight = bridge && !startCut ? acrossStart ?? elevation(start,firstSupport) : null;
     // The short Midtown South building-to-sidewalk span crosses a DEM crease.
     const southFootbridge = bridge && use === 'road' && run.cls === 'footway' && !run.deckNavd88M &&
       [start, end].some(([x, z]) => Math.hypot(x - 371.18, z + 1870.12) < .05) &&
       [start, end].some(([x, z]) => Math.hypot(x - 360.93, z + 1870.15) < .05);
-    const endHeight = bridge && !endCut ? elevation(end,lastSupport) : null;
+    const endHeight = bridge && !endCut ? acrossEnd ?? elevation(end,lastSupport) : null;
     const profile = run.deckNavd88M;
     if (bridge && !profile && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
     // A board cut can pass through mid-air. Carry the in-board support to that edge.
@@ -447,7 +469,8 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const ends = bridge ? [0, line.length].map(s => {
         return offsets.map(off => {
           const [x,z]=lateral(s,off);
-          return raised[s === 0 ? 0 : 1] ?? (s===0 ? firstSupport : lastSupport) ?? groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
+          const joined = s === 0 ? acrossStart : acrossEnd;
+          return raised[s === 0 ? 0 : 1] ?? (joined !== null ? joined - grid.manifest.vertical.sceneZeroNavd88M : null) ?? (s===0 ? firstSupport : lastSupport) ?? groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
         });
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
