@@ -1594,20 +1594,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       approachNorth(1400, 0);
     };
     const frameFullBoard = (includeNorth = false) => {
-      const aspect = Math.max(.25, camera.aspect);
-      const edge = mosaic.framedNorthEdge(includeNorth);
-      if (edge > mosaic.northEdge) {
-        // An unloaded row lies beyond the edge: keep it out of the frame, so no bare table stands in for it.
-        const { distance, targetZ } = square!.frameToEdge(1100, edge, 1400, aspect, camera.fov, 35);
-        mosaic.remember(400, targetZ);
-        setView(0, 35, Math.min(controls.maxDistance, distance), 400, targetZ);
-        return;
-      }
-      const depth = 1100 - edge;
-      const distance = midtown ? Math.max(depth * 2.95, 11700 / aspect) : Math.max(9200, 9600 / aspect);
-      const centerZ = (1100 + edge) / 2;
-      mosaic.remember(400, centerZ);
-      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, centerZ);
+      const frame = square!.fullBoardFrame(1100, mosaic.framedNorthEdge(includeNorth), midtown, camera.aspect);
+      mosaic.remember(400, frame.targetZ);
+      setView(frame.azimuth, frame.tilt, Math.min(controls.maxDistance, frame.distance), 400, frame.targetZ);
     };
     if (rectangle || !midtown) {
       loadFullBoard(false);
