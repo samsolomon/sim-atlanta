@@ -98,3 +98,31 @@ D first (higher on the crossing register, and more visible), then E. Each step i
 - **Code they touch.** D1 and E2 touch `south-connector-decks.ts`, the downtown hook in `ramp-decks.ts` or a sibling, and possibly `transport.ts` for draping bridge-tagged runs. E1 touches `street-bridge-survey.py` and `street-bridges.json`.
 - **Integrator overlap.** The integrator is slicing `loadNorth` and `loadEast` (`sweet-auburn-board.ts`, `king-memorial-board.ts`, `city.ts`, and an `inConnectorLanes` prefilter). B2 needs a rebase onto that first. Check their branch before editing `transport.ts` or `sweet-auburn-transport.ts`.
 - **Open before building.** The coordinator's call on re-baselining the gate's Capitol site (D). The Washington Street inventory record and photographs (E1).
+
+## Built
+
+### D1: the lid's streets and walks on the lid
+
+`lids.py` writes the lid outline (`lids.json`, from the pinned Overpass source), and `web/src/terrain/lids.ts` uses it:
+
+- **South band.** `lidRoads` runs before `southConnectorTransport` builds its decks. Bridge-tagged roads that lie wholly on a lid (all 35 there) become ordinary roads on the board, so no deck is built for them.
+- **Downtown.** `applyLids` cuts baked bridge runs at the lid outline, and the pieces on the lid become ground runs. Downtown's board ends at z = 700 in the lid's northern tip, so this flips three short service runs; a run that only touches the outline at a corner stays a bridge.
+
+The concealed lower lanes are unchanged.
+
+**Measured (both tiers identical; [d-lid](log/ui/connector-repairs/d-lid/)):**
+
+| Check | Before | After |
+|---|---|---|
+| Lid ways: drawn surface minus the way's own lidar surface, every 1 m (1,005 samples) | Decks 1–6 m above the lid; 783 samples with nothing within 1 m | p5 −0.10, median 0.00, p95 +0.15 m. 26 samples over 0.5 m, all on the two DEM spikes (D2) |
+| Checker, Capitol joints (its own method, walk tops read from the board where no walk deck exists) | All six outside the class-2 envelope: 59–95 pp, steps up to 0.60 m | All six inside: −2.2 to +1.7 pp, steps ≤ 0.1 mm |
+| Checker, walk support (1,398 samples) | First unsupported: 755543611 at 197 mm; largest walk gap 6.69 m | No gap anywhere |
+| 439abf84 gate, 17th Street and Peachtree, Low and High | — | Byte-identical to the reference |
+| Triangles at the Capitol camera | — | −7,020 High, −7,080 Low (about 30 decks gone) |
+
+**The gate's Capitol site.** `check.py`'s Capitol check reads the walk and street *deck* layers. With the decks gone it stops with "Empty mounted selection" in every mode, `--expect repaired` included, because that mode assumed a deck repair. The numbers above come from the same function run in a scratch copy (`evidence/lid_probe.py.txt`) in which an empty layer becomes an empty selection and a walk's top falls back to the board. Re-baselining the Capitol site therefore needs a lid-aware Capitol check in the study branch's `check.py`. That is a checker change, and the register's rule applies: rerun the full three-site calibration after it.
+
+**Stills** (day, matched frozen cameras; BEFORE is B2): [L1 High: the lid](log/ui/connector-repairs/d-lid/L1-high-before-after.jpg) · [L1 Low](log/ui/connector-repairs/d-lid/L1-low-before-after.jpg) · [L1 night High](log/ui/connector-repairs/d-lid/L1-night-high-before-after.jpg) · [L1 night Low](log/ui/connector-repairs/d-lid/L1-night-low-before-after.jpg) · [L2 High: the 1451206626 joint](log/ui/connector-repairs/d-lid/L2-high-before-after.jpg) · [L3 High: walk 755543611](log/ui/connector-repairs/d-lid/L3-high-before-after.jpg) · [L4 High: Memorial and Capitol](log/ui/connector-repairs/d-lid/L4-high-before-after.jpg), with the Low versions beside them. Cameras: `cam=357,777,-22,56,470`, `298,782,60,62,60`, `370,778,250,62,60`, `350,778,20,60,90`, with `&dev&mindist=20`.
+
+**Deploy.** A `web/dist` rebuild only.
+

@@ -1,0 +1,26 @@
+"""Scratch only: the checker's Capitol measurements on a lid model (no walk or street decks).
+An empty deck layer becomes an empty selection; a walk's top is the board where no walk deck exists."""
+import json, sys
+from pathlib import Path
+import numpy as np
+import faces, check
+class Empty:
+    def hits(self, p): return []
+orig = faces.Scene.layer
+def layer(self, **kw):
+    try: return orig(self, **kw)
+    except ValueError: return Empty()
+faces.Scene.layer = layer
+src = Path(check.__file__).read_text()
+start, end = src.index('def capitol(scene):'), src.index('def reference(scene,site):')
+code = src[start:end].replace("top=walk.hits(p)", "top=walk.hits(p) or ground.hits(p)")
+ns = dict(check.__dict__); exec(code, ns)
+out = {}
+for tier in ['low', 'high']:
+    r = ns['capitol'](faces.Scene(Path(sys.argv[1]) / tier / f'faces-capitol-{tier}.json'))
+    out[tier] = r
+    j = [x for x in r['joints']]
+    print(tier, 'walk samples', r['walkSamples'], 'missing', r['missingWalkSamples'], 'firstUnsupported', r['firstUnsupported'] and {k: r['firstUnsupported'][k] for k in ('way','stationM','undersideGapM','gapM')},
+          'maxWalkGap', round(r['maxWalkGap']['gapM'], 4), r['maxWalkGap']['way'])
+    for x in j: print('   joint', x['way'], '->', x['receivingWay'], 'changePP', round(x['changePP'], 3), 'envelope', [round(v, 2) for v in x['sourceChangeEnvelopePP']], 'outside', x['outside'], 'stepM', round(x['stepM'], 4))
+Path(sys.argv[2]).write_text(json.dumps(out, indent=1, default=float))

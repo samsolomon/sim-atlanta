@@ -51,6 +51,7 @@ import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import { applyRampDecks } from '../terrain/ramp-decks';
+import { applyLids } from '../terrain/lids';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
@@ -273,6 +274,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.phase('city:data');
   // Downtown halves of the stacked Connector ramps take their measured spans too.
   applyRampDecks(vd);
+  // The downtown edge of the Capitol Gateway lid draws its streets on the lid.
+  applyLids(vd);
   let grid: GroundGrid | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
     try {
