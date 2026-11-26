@@ -154,7 +154,8 @@ export function capitolTunnel(ground: (x: number, z: number) => number | null) {
   const group = new THREE.Group();
   group.name = 'Capitol Gateway tunnel';
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
-  mesh.castShadow = mesh.receiveShadow = true;
+  // Under the lid: it receives shadow at the mouths but casts none (no extra shadow draw).
+  mesh.receiveShadow = true;
   mesh.name = 'Capitol Gateway tunnel portals';
   const glow = new THREE.Mesh(lamps.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffdfb0', emissiveIntensity: 0.35 }));
   glow.name = 'Capitol Gateway tunnel lamps';
