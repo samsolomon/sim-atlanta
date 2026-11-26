@@ -156,8 +156,8 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
       }
       // Cab A leads along +s: a pool on the street ahead of it, where both ends stand on a board.
       if (api.lights?.active) {
-        const n0 = on(path, s + S70_LENGTH / 2), n1 = on(path, s + S70_LENGTH / 2 + POOL.bus.length);
-        if (n0 && n1 && api.lights.inRange(n0.x, n0.y, n0.z)) api.lights.add(n0.x, n0.y, n0.z, n1.x, n1.y, n1.z, POOL.bus.width);
+        const n0 = on(path, s + S70_LENGTH / 2 - 0.5), n1 = on(path, s + S70_LENGTH / 2 + POOL.bus.length);
+        if (n0 && n1 && api.lights.inRange(n0.x, n0.y, n0.z)) api.lights.add(n0.x, n0.y, n0.z, n1.x, n1.y, n1.z, POOL.bus.width, POOL.bus.power);
       }
     }
     for (let i = used; i < pool.length; i++) for (const mesh of pool[i]) mesh.visible = false;

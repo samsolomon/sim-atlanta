@@ -23,11 +23,12 @@ export interface PoolSink {
   add(nx: number, ny: number, nz: number, fx: number, fy: number, fz: number, width: number, power?: number): boolean;
 }
 
-/** Pool reach and spread by vehicle: metres ahead of the bumper, metres across at the far end. */
+/** Pool reach, spread and power by vehicle: metres ahead of the bumper, metres across at the far end.
+ * Street-level pools are dimmer and shorter than rail's (Sam, 2026-11-26). */
 export const POOL = {
-  car: { length: 16, width: 4.4 },
-  truck: { length: 20, width: 5 },
-  bus: { length: 18, width: 5 },
+  car: { length: 12, width: 4.2, power: 0.7 },
+  truck: { length: 15, width: 4.8, power: 0.7 },
+  bus: { length: 14, width: 4.8, power: 0.7 },
   rail: { length: 20, width: 4.2, power: 0.65 },
 } as const;
 
@@ -65,7 +66,7 @@ void main() {
   float spread = mix(0.13, 0.34, v);
   float lobes = exp(-pow((x - 0.2 * (1.0 - v)) / spread, 2.0)) + exp(-pow((x + 0.2 * (1.0 - v)) / spread, 2.0));
   // Brightest just ahead of the bumper, gone at the far edge; a short soft start so it meets the lamps.
-  float along = smoothstep(0.0, 0.04, v) * (1.0 - smoothstep(0.35, 1.0, v));
+  float along = smoothstep(0.0, 0.015, v) * (1.0 - smoothstep(0.3, 1.0, v));
   float fade = 1.0 - smoothstep(uFade.x, uFade.y, vDist);
   float wet = 1.0 + 0.4 * uWet;
   float i = 1.1 * lobes * along * fade * uNight * vPower * wet;

@@ -130,10 +130,10 @@ export class CityBuses {
   /** A pool from the front bumper forward, on this bus's own street; none where it has no surface. */
   private light(x: number, z: number, a: number, run: TransportRun) {
     const fx = Math.sin(a), fz = Math.cos(a);
-    const nx = x + fx * BUS_LENGTH / 2, nz = z + fz * BUS_LENGTH / 2;
+    const nx = x + fx * (BUS_LENGTH / 2 - 0.5), nz = z + fz * (BUS_LENGTH / 2 - 0.5); // just under the bumper
     const ex = nx + fx * POOL.bus.length, ez = nz + fz * POOL.bus.length;
     const ny = this.surface(nx, nz, run), ey = this.surface(ex, ez, run);
-    if (ny !== null && ey !== null) this.lights!.add(nx, ny, nz, ex, ey, ez, POOL.bus.width);
+    if (ny !== null && ey !== null) this.lights!.add(nx, ny, nz, ex, ey, ez, POOL.bus.width, POOL.bus.power);
   }
 
   /** Surface height for a bus at (x, z) on `run`: bridge tread, or the painted terrain. */

@@ -605,7 +605,9 @@ export class RoadTraffic {
             if (ey !== null) {
               const fade = course.fadeStartM || course.fadeEndM
                 ? Math.min(1, course.fadeStartM ? (s - half) / course.fadeStartM : 1, course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1) : 1;
-              lights.add(front.x, front.y, front.z, p.x, ey, p.z, reach.width, Math.max(0, fade));
+              // Start half a metre under the bumper, so the light meets the car rather than floating ahead.
+              const grade = (front.y - rear.y) / horizontal; // along the car's own pitch, no extra height sample
+              lights.add(front.x - ux * 0.5, front.y - grade * 0.5, front.z - uz * 0.5, p.x, ey, p.z, reach.width, reach.power * Math.max(0, fade));
             }
           }
         }
