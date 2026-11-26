@@ -89,9 +89,17 @@ class FeedWatch(unittest.TestCase):
         self.assertIn('ended on 2027-03-01', past['reasons'][0])
         self.assertNotEqual(near['key'], past['key'])
 
-    def test_a_declared_feed_end_wins(self):
-        s = feed(self.dir.name, 'marta', extra={'feed_info.txt': 'feed_publisher_name,feed_end_date\nx,20261120\n'})
-        self.assertEqual(s['end'], '20261120')
+    def test_the_end_is_the_last_service_day_or_an_earlier_declared_one(self):
+        declared = lambda d: feed(self.dir.name, 'marta', extra={'feed_info.txt': f'feed_publisher_name,feed_end_date\nx,{d}\n'})['end']
+        self.assertEqual(declared('20261120'), '20261120')
+        self.assertEqual(declared('20270302'), '20270301')
+
+    def test_a_second_shortening_opens_a_new_issue(self):
+        github = GitHub()
+        watch.sync(self.report(amtrak={'end': '20270201'}), github)
+        github.issues[0]['state'] = 'CLOSED'
+        self.assertEqual(watch.sync(self.report(amtrak={'end': '20270201'}), github), 'already handled')
+        self.assertEqual(watch.sync(self.report(amtrak={'end': '20270115'}), github), 'created')
 
     def test_one_issue_is_opened_then_updated_not_repeated(self):
         github = GitHub()

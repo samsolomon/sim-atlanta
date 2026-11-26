@@ -71,7 +71,8 @@ def summarize(path, feed):
     return {
         'sha256': hashlib.sha256(Path(path).read_bytes()).hexdigest(),
         'start': min(starts),
-        'end': declared if re.fullmatch(r'\d{8}', declared) else max(ends),
+        # The last day with service, as the pipeline reads it, or an earlier declared feed end.
+        'end': min([max(ends)] + ([declared] if re.fullmatch(r'\d{8}', declared) else [])),
         'routes': dict(sorted(types.items())),
         'routeIds': sorted(clean(i) for i in ids),
         'trips': len(trips),
@@ -104,7 +105,7 @@ def compare(record, current, today):
         name, left = info['name'], (day(now['end']) - today).days
         if changed(feed, was, now):
             reasons.append(f'{name}: a new feed is published.')
-            state.append([feed, 'new', now['sha256'] if feed == 'marta' else [now['trains'], now['end'] < was['end']]])
+            state.append([feed, 'new', now['sha256'] if feed == 'marta' else [now['trains'], min(now['end'], was['end'])]])
         if left < 0:
             reasons.append(f"{name}: the published feed ended on {shown(now['end'])}.")
             state.append([feed, 'expired', now['end']])
