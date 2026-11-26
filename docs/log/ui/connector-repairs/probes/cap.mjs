@@ -37,6 +37,24 @@ try {
   }
   if (poses.length) await evaluate("document.head.appendChild(Object.assign(document.createElement('style'),{textContent:'body > *:not(#view3d), #view3d > *:not(#view3d-canvas), #view3d-canvas > *:not(canvas){display:none!important}'}));window.dispatchEvent(new Event('resize'));true");
   for (const pose of poses) {
+    if (pose.startsWith('freeze:')) {
+      // freeze:name,cameraJsonPath — reuse a saved camera's exact matrices.
+      const [name, file] = pose.slice(7).split(',');
+      const F = JSON.parse(readFileSync(file, 'utf8'));
+      await evaluate(`window.__restoreEye?.()`);
+      await evaluate(`__setView(0,60,150,${F.position[0]},${F.position[2]})`); await sleep(1500);
+      await evaluate(`(()=>{const {scene,camera}=__cityDev;const F=${JSON.stringify(F)};
+        const prev=scene.onBeforeRender,su=camera.updateMatrixWorld,sw=camera.updateWorldMatrix;
+        const lock=()=>{camera.position.fromArray(F.position);camera.matrixWorldInverse.fromArray(F.matrixWorldInverse);camera.matrixWorld.copy(camera.matrixWorldInverse).invert();camera.matrix.copy(camera.matrixWorld);camera.quaternion.setFromRotationMatrix(camera.matrixWorld);camera.projectionMatrix.fromArray(F.projectionMatrix);camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();};
+        camera.updateMatrixWorld=lock;camera.updateWorldMatrix=lock;scene.onBeforeRender=function(...a){prev.apply(this,a);if(a[2]===camera)lock();};lock();
+        window.__restoreEye=()=>{scene.onBeforeRender=prev;camera.updateMatrixWorld=su;camera.updateWorldMatrix=sw;delete window.__restoreEye;};return true;})()`);
+      await sleep(3000);
+      const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 88 });
+      writeFileSync(`${out}/${name}-${tier}.jpg`, Buffer.from(shot.data, 'base64'));
+      writeFileSync(`${out}/${name}-${tier}-camera.json`, JSON.stringify({ frozenFrom: file, ...F }));
+      await evaluate(`window.__restoreEye?.()`);
+      console.log('wrote', name, tier); continue;
+    }
     if (pose.startsWith('eye:')) {
       // eye:name,x,z,heightAboveTopSurface,bearingDeg(clockwise from north),pitchDeg,vfovDeg
       const [name, x, z, dh, bearing, pitch, fov] = pose.slice(4).split(',');
