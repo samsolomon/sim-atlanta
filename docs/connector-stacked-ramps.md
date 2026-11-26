@@ -79,7 +79,7 @@ The order is unambiguous from the other ways' heights. The lower way's own level
    - Each movement's drawn tread within 0.3 m of its own profile.
    - The phase-1 B witnesses all close: the 38974038 open start, the 38974034 → 1450884828 step, and the north-corner ramp ends.
    - Matched before/after stills at B1/B2/B5 and the three-level stack (1115.8, −591.0).
-5. **Order of work.** First the NB/SB Baker flyovers (38974028/34 and their legs) and the Baker exit, then 38974058 with its three-level stack, then the MLK SB ramp tree, then the north-corner part of 38970413.
+5. **Order of work.** First the NB/SB Baker flyovers (38974028/34 and their legs) and the Baker exit, then 38974058 with its three-level stack, then the MLK SB ramp tree, then the north-corner part of 38970413. *Revised in step 2:* the stack cannot clear without 38970413, so its north-corner half moved into step 2. Step 4 is now the NB-to-Freedom-Parkway chain at the auburn edge (1450884836 → 38974038 → 1450884835 → 38974039), with the 38974038 open start in its acceptance, plus any north-corner ramp ends still open.
 
 ## Built
 
@@ -119,3 +119,29 @@ Runs that already carry a profile keep it. Span ends that round to within 5 cm o
 **Stills** (day, matched frozen cameras, BEFORE | AFTER): [K1 High: the flyovers over the Connector](log/ui/connector-repairs/b2-baker/K1-high-before-after.jpg) · [K1 Low](log/ui/connector-repairs/b2-baker/K1-low-before-after.jpg) · [K2 High: side-on near the seam](log/ui/connector-repairs/b2-baker/K2-high-before-after.jpg) · [K2 Low](log/ui/connector-repairs/b2-baker/K2-low-before-after.jpg) · [K3 High: 38974034 into 1450884828](log/ui/connector-repairs/b2-baker/K3-high-before-after.jpg) · [K3 Low](log/ui/connector-repairs/b2-baker/K3-low-before-after.jpg) · [K4 High: the Baker exit](log/ui/connector-repairs/b2-baker/K4-high-before-after.jpg) · [K4 Low](log/ui/connector-repairs/b2-baker/K4-low-before-after.jpg). Cameras: `cam=1000,-790,150,60,220`, `1020,-785,200,70,90`, `1045,-772,120,65,60`, `895,-835,250,30,170`, with `&dev&mindist=20`, matrices in `cameras/`.
 
 **Deploy.** This needs a `web/dist` rebuild only. `ramp-decks.json` is imported at build time, and no `pnpm data` is needed.
+
+### Step 2: 38974058 and the three-level stack
+
+Step 2 lists 9235707 (its last 17 m), 38974058, the first 10 m of 38974043 and **38970413**. 38970413 was planned for step 4, but at (1115.8, −591.0) it drew at 307.34 m against a measured 314.94 m (7.6 m low). Lifting 38974058 alone to its measured 305.2 m would leave its tread 1.0 m under 38970413's soffit. Only 38970413's north-corner half takes the ramp spans: its Sweet Auburn half keeps the deck-survey profile. Where a Sweet Auburn surveyed road ends on a listed way, `ramp-decks.py` now pins the span to that surveyed height. Without the pin, 38970413 met Sweet Auburn at the z = −520 seam 1.4 cm apart.
+
+**Measured (both tiers identical; probes and outputs in [b2-stack](log/ui/connector-repairs/b2-stack/)):**
+
+| Check | Result |
+|---|---|
+| The stack at (1115.8, −591.0) | 38970413 tread 315.06 m, soffit 314.11 m. 38974058 tread 305.36 m, soffit 304.38 m. Mainline 294.15 m. **8.75 m and 10.23 m clear** (before: 38970413 7.6 m low) |
+| Every other register crossing on these ways | Soffit to lower tread 7.77–11.97 m, order kept |
+| Drawn tread minus profile, every 0.25 m, centreline and ±1.6 m | 0.09–0.15 m on the north-corner parts. 38970413 past s 246 is Sweet Auburn's own survey, unchanged |
+| Joints 9235707 → 38974058 and 38974058 → 38974043 | One height (< 2 mm, unit test) |
+| z = −520 seam on 38970413 | No gap. Steps ≤ 2 mm across the slab. On the centreline only, the Sweet Auburn side's raised centre stripe stands 3 cm and does not continue onto the north-corner lane layout (paint, cosmetic) |
+| Ties (9235707 at s 300, 38974043 at s 10, 38970413 at s 0) | Tread = drawn terrain + 0.12 m |
+| Any surface through the tread | None |
+| Cars (`cityRoadHeight`) | 0.112–0.120 m above the profile on all four ways |
+| 439abf84 gate, warm, Low and High | Byte-identical |
+| Triangles | +6,294 deck triangles on both tiers |
+
+`ramp-decks.test.ts` names the stack clearance, the joints and the seam height, plus Grok's request on step 1: no 38974051 span from 80 m on, where the Baker junction deck takes over. Each fails with its fix reverted.
+
+**Stills** (day, matched frozen cameras; BEFORE is step 1): [S1 High: the climb under the flyover](log/ui/connector-repairs/b2-stack/S1-high-before-after.jpg) · [S1 Low](log/ui/connector-repairs/b2-stack/S1-low-before-after.jpg) · [S2 High: the three-level stack](log/ui/connector-repairs/b2-stack/S2-high-before-after.jpg) · [S2 Low](log/ui/connector-repairs/b2-stack/S2-low-before-after.jpg) · [S3 High: onto 38974043's fill](log/ui/connector-repairs/b2-stack/S3-high-before-after.jpg) · [S3 Low](log/ui/connector-repairs/b2-stack/S3-low-before-after.jpg) · [S4 High: the z = −520 seam](log/ui/connector-repairs/b2-stack/S4-high-before-after.jpg) · [S4 Low](log/ui/connector-repairs/b2-stack/S4-low-before-after.jpg). Cameras: `cam=1140,-610,200,60,260`, `1112,-596,250,72,110`, `1228,-652,160,62,70`, `1112,-524,200,62,70`, with `&dev&mindist=20`.
+
+**Deploy.** A `web/dist` rebuild only.
+

@@ -19,6 +19,9 @@ HERE = Path(__file__).resolve().parent
 # Build order (docs/connector-stacked-ramps.md). Each step is reviewed on its own.
 STEPS = {
     "baker": [38974028, 38974034, 38974051, 1450884828, 1450884829, 38974031, 39169033],
+    # 38970413 belongs here, not step 4: lifting 38974058 alone leaves 1.0 m under
+    # its clearance-inferred deck at the three-level stack (1115.8, -591.0).
+    "stack": [9235707, 38974058, 38974043, 38970413],
 }
 # Only these stretches of longer ways belong to a step (station window, metres).
 # 38974051 from 75 m on is the Baker junction deck's own approach
@@ -71,6 +74,32 @@ def spans_for(way, length):
     return spans
 
 
+_AUBURN = {}
+
+
+def road_length(road):
+    """Length of a surveyed road, from its polyline on the Sweet Auburn board."""
+    if not _AUBURN:
+        context = json.loads((HERE.parent / "sweet-auburn" / "context.json").read_text())
+        for r in context["roads"]:
+            _AUBURN[(tuple(r["pts"][0]), tuple(r["pts"][-1]))] = sum(math.dist(a, b) for a, b in zip(r["pts"], r["pts"][1:]))
+    return _AUBURN.get((tuple(road["start"]), tuple(road["end"])), math.inf)
+
+
+def station_on(pts, p, tol=0.05):
+    """Metres along pts to the point p, or None when p is off the polyline."""
+    run = 0.0
+    for a, b in zip(pts, pts[1:]):
+        dx, dz = b[0] - a[0], b[1] - a[1]
+        l2 = dx * dx + dz * dz
+        if l2:
+            t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / l2))
+            if math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dz) < tol:
+                return run + t * math.sqrt(l2)
+        run += math.sqrt(l2)
+    return None
+
+
 def main():
     register = json.loads((HERE / "ramp-register.json").read_text())
     ways = json.loads((HERE / "ways.json").read_text())
@@ -96,6 +125,27 @@ def main():
             h = round(sum(r[1] for r in rows) / len(rows), 2)
             for r in rows:
                 r[1] = h
+    # Where a Sweet Auburn surveyed road ends on a listed way (the auburn board's
+    # seam), that survey owns the height: the ramp span passes through it exactly.
+    surveyed = json.loads((HERE / "sweet-auburn-decks.json").read_text())["roads"]
+    for e in out:
+        for road in surveyed:
+            if not road["spans"]:
+                continue
+            first, last = road["spans"][0][0], road["spans"][-1][-1]
+            # A surveyed span that reaches the road's own end (stations in mm).
+            ends = [(road["start"], first)] if first[0] == 0 else []
+            if abs(last[0] - road_length(road)) < 0.01:
+                ends.append((road["end"], last))
+            for end, row in ends:
+                at = station_on(e["pts"], end)
+                if at is None:
+                    continue
+                for sp in e["spans"]:
+                    if sp[0][0] < at < sp[-1][0]:
+                        sp[:] = [r for r in sp if abs(r[0] - at) > 0.5 or len(r) > 2]
+                        sp.append([round(at, 2), row[1]])
+                        sp.sort(key=lambda r: r[0])
     (HERE / "ramp-decks.json").write_text(json.dumps({"ways": out}, separators=(",", ":")) + "\n")
     for e in out:
         print(e["step"], e["way"], [(sp[0][0], sp[-1][0], sp[0][1], sp[-1][1]) for sp in e["spans"]])

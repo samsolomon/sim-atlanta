@@ -35,7 +35,7 @@ it.each(['low','high'] as const)('cars %s', q => {
           if (!sp) continue;
           const x = a[0] + (b[0]-a[0])*s/l, z = a[1] + (b[1]-a[1])*s/l;
           if (!inside(x)) continue;
-          const road = city.roads.find(r => r.cls === 'motorway' && r.pts.some((p, k) => k && seg([x, z], r.pts[k-1], p) < .05));
+          const road = city.roads.find(r => r.cls === 'motorway' && r.pts.some((p, k) => k && seg([x, z], r.pts[k-1], p) < .05) && r.pts.filter(p => w.pts.some((q, j) => j && seg(p, w.pts[j-1], q) < .05)).length >= 2);
           if (!road) { nul++; continue; }
           let k = 1; while (k < sp.length-1 && sp[k][0] < st) k++;
           const h = sp[k-1][1] + (sp[k][1]-sp[k-1][1])*(st-sp[k-1][0])/((sp[k][0]-sp[k-1][0])||1);

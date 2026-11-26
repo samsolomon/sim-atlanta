@@ -105,3 +105,38 @@ it.each(['low', 'high'] as const)('draws the Baker flyover treads on their own m
     }
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });
+
+it('keeps the Baker exit off the junction deck', () => {
+  // From about 75 m the Baker junction deck (junction-decks.json) draws 38974051's
+  // own approach; a ramp span there doubled it 1-12 cm under its surface.
+  expect(way(38974051).spans.every(sp => sp.at(-1)![0] < 80)).toBe(true);
+});
+
+it('stacks 38974058 under 38970413 with clearance, and meets Sweet Auburn at z = -520', () => {
+  const runs = auburnTransport(context()).terrainTransport!.roads;
+  // The climb's joints: 9235707 into 38974058, 38974058 onto 38974043's fill.
+  for (const p of [[1055.72, -604.16], [1229.87, -653.3]]) {
+    const h = heightAt(runs, p);
+    expect(h.length, `${p}`).toBeGreaterThan(1);
+    expect(Math.max(...h) - Math.min(...h)).toBeLessThan(.002);
+  }
+  // 38970413's north-corner half ends on the seam at the height Sweet Auburn surveyed.
+  const [seam] = heightAt(runs, [1111.89, -520]);
+  expect(Math.abs(seam - 314.9)).toBeLessThan(.002);
+});
+
+it.each(['low', 'high'] as const)('clears the three-level stack on %s', quality => {
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', board), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', board))).buffer);
+  const ground = new GroundSurface(grid, quality);
+  const city = auburnTransport(context());
+  const decks = createSurfaceTransport(city, grid, ground.sampleScene.bind(ground));
+  const runs = city.terrainTransport!.roads;
+  const top = (id: number, x: number, z: number) => Math.max(...decksOn(runs, id).map(r => decks.deckAt(x, z, r)).filter((h): h is number => h !== null));
+  try {
+    // At (1115.8, -591.0) the 38970413 flyover drew 7.6 m low, 1.0 m over 38974058
+    // once that climbed to its measured level. Tread to tread less the 0.95 m slab
+    // leaves at least 4.5 m; the mainline passes about 10 m under 38974058.
+    expect(top(38970413, 1115.8, -591) - top(38974058, 1115.8, -591) - .95).toBeGreaterThan(4.5);
+  } finally { decks.dispose(); ground.geometry.dispose(); }
+});
