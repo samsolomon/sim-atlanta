@@ -809,6 +809,8 @@ export const perf = {
   },
   get phases() { return phases.map(p => ({ ...p })); },
   get result() { return lastResult; },
+  /** Sliced area builds under way: a harness that waits for the whole view waits for zero. */
+  get building() { return sliceInput.building; },
 };
 
 Object.assign(globalThis, { __perf: perf });

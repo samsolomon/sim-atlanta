@@ -49,7 +49,7 @@ try {
       return r.result.value;
     };
     await send('Emulation.setDeviceMetricsOverride',{width:1200,height:630,mobile:false,deviceScaleFactor:1});
-    await send('Page.navigate',{url:server.resolvedUrls.local[0]+'?view=city&q=high&perf=1&t=2026-11-20T14:00:00-05:00&speed=0'});
+    await send('Page.navigate',{url:server.resolvedUrls.local[0]+'?view=city&q=high&perf=1&slice=0&t=2026-11-20T14:00:00-05:00&speed=0'});
     const deadline = Date.now()+300000;
     while (!await evaluate('window.__cityDev?.areas()?.size === 12 && window.__perf?.phases.some(p=>p.name==="ready")')) {
       if (Date.now()>deadline) throw Error('City failed to load all twelve areas for previews');
