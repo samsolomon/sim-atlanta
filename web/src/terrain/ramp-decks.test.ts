@@ -152,7 +152,9 @@ it('draws the MLK SB ramp tree as one deck across its ways, onto the MLK west ap
   const link = { kind: 'ground', cls: 'motorway', sub: 'link', pts: pts(755543580, 755543583) };
   const city = { roads: [climb], terrainTransport: { version: 1, rail: [], roads: [link] } } as unknown as TerrainCity;
   applyRampDecks(city);
-  expect(city.roads[0].bridge).toBe(true);
+  // The spanned pieces become structure; 9236952 before the tie stays a board road.
+  expect(city.roads.some(r => r.bridge)).toBe(true);
+  expect(city.roads[0].bridge).toBe(false);
   const runs = city.terrainTransport!.roads;
   // One deck from the 436808889 tie through the 755543582 joint: no break there.
   const joint = [593.93, 576.07];
@@ -248,4 +250,19 @@ it('keeps the MLK ramp under the MLK west approach across its whole width', () =
     }
     expect(covered).toBeGreaterThan(40);
   } finally { decks.dispose(); ground.geometry.dispose(); }
+});
+
+it('keeps the unspanned part of a sliced board ramp on the board (release 18 ellis-high)', () => {
+  // 39169033 runs from the z = -520 seam down to the Baker flyovers; only its south end
+  // is a surveyed span. The rest drew as its own run on bare ground, 2-5 m over the
+  // drawn cut, and ended under the flyover in mid-air.
+  const city = auburnTransport(context());
+  const runs = city.terrainTransport!.roads;
+  const onRamp = (pts: P2[]) => pts.every(p => way(39169033).pts.some((q, k) => k && segment(p, way(39169033).pts[k-1], q) < .05));
+  expect(runs.filter(r => r.kind === 'ground' && r.cls === 'motorway' && onRamp(r.pts as P2[]))).toEqual([]);
+  // The piece through (1125, -686), under the flyover, stays an ordinary board road; the
+  // spanned south end at the Baker flyovers is structure.
+  const through = (p: P2) => city.roads.filter(r => r.cls === 'motorway' && r.pts.some((q, k) => k && segment(p, r.pts[k-1], q) < 5));
+  expect(through([1125, -686]).map(r => r.bridge)).toEqual([false]);
+  expect(through([1065, -760]).some(r => r.bridge)).toBe(true);
 });

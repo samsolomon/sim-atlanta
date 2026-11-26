@@ -153,12 +153,16 @@ export function applyRampDecks<T extends TerrainCity>(city: T): T {
     const spans = run.cls === 'motorway' && !run.deckNavd88M && run.pts.length > 1 ? rampSpans(run.pts) : null;
     roads.push(...(spans ? sliceRun(run, spans) : [run]));
   }
-  city.roads = city.roads.map(road => {
-    if (road.cls !== 'motorway' || road.bridge || road.tunnel || road.pts.length < 2) return road;
+  city.roads = city.roads.flatMap(road => {
+    if (road.cls !== 'motorway' || road.bridge || road.tunnel || road.pts.length < 2) return [road];
     const spans = rampSpans(road.pts);
-    if (!spans) return road;
-    roads.push(...sliceRun({ cls: road.cls, name: road.name, sub: road.sub ?? undefined, pts: road.pts, kind: 'ground' }, spans));
-    return { ...road, bridge: true };
+    if (!spans) return [road];
+    // Only the spanned pieces become structure. The rest of the road stays a board road,
+    // drawn on the board as before: as a transport run of its own it was drawn on bare
+    // ground above the cut (39169033 below the Baker flyovers, release 18's ellis-high).
+    const pieces = sliceRun({ cls: road.cls, name: road.name, sub: road.sub ?? undefined, pts: road.pts, kind: 'ground' }, spans);
+    roads.push(...pieces.filter(p => p.kind === 'bridge'));
+    return pieces.map(p => ({ ...road, pts: p.pts, bridge: p.kind === 'bridge' }));
   });
   data.roads = roads;
   return city;
