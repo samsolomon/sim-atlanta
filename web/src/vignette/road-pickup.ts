@@ -21,8 +21,9 @@ const HALF = 2.029 / 2; // 79.9 in without mirrors
 const TYRE_R = 0.412; // 275/65R18, 32.1 in, on a 4x4's ride height
 const TRACK = 1.725; // 67.9 in front, 68.3 in rear
 const ROOF = 1.955; // 4x2 1.915, 4x4 1.958
-const BELT = 1.36; // side-window sill, level with the hood (estimated)
-const GLASS_TOP = 1.9; // tall door glass (estimated)
+const BELT = 1.33; // side-window sill, just under the hood line (estimated)
+const GLASS_TOP = 1.92; // tall door glass (estimated)
+const SCREEN_BASE = 1.45; // windshield base: the SuperCrew cab runs about 2.45 m from here to the back (estimated)
 const BED_TOP = 1.34; // box rail, just under the belt (estimated)
 const SILL = 0.64; // rocker bottom; 9.8 in ground clearance on a 4x4
 const ARCH = 0.52; // wheel-opening radius (estimated)
@@ -78,8 +79,8 @@ function frontBody(k: FaceKit, near: boolean) {
   // z, half width at the shoulder, top (hood, then belt), sill
   const rows = [
     [CAB_BACK, HALF, BELT, SILL],
-    [1.2, HALF, BELT + 0.02, SILL],
-    [2.2, HALF, 1.4, SILL + 0.02],
+    [SCREEN_BASE - 0.02, HALF, BELT + 0.03, SILL],
+    [2.25, HALF, 1.39, SILL + 0.02],
     [FRONT - 0.08, HALF - 0.015, 1.41, SILL + 0.04],
     [FRONT - 0.03, HALF - 0.05, 1.395, SILL + 0.06],
   ];
@@ -105,10 +106,10 @@ function frontBody(k: FaceKit, near: boolean) {
 function cab(k: FaceKit) {
   // z, half width at the belt, half width at the roof edge, roof height
   const rows = [
-    [CAB_BACK, 0.96, 0.82, ROOF - 0.04],
-    [CAB_BACK + 0.05, 0.965, 0.82, ROOF],
-    [0.55, 0.965, 0.82, ROOF],
-    [1.2, 0.98, 0.93, BELT + 0.04],
+    [CAB_BACK, 0.965, 0.87, ROOF - 0.04],
+    [CAB_BACK + 0.05, 0.97, 0.87, ROOF],
+    [0.78, 0.97, 0.87, ROOF],
+    [SCREEN_BASE, 0.985, 0.95, BELT + 0.06],
   ];
   k.skin(rows.map(([z, wb, wt, top]) => [[-wb, BELT, z], [wb, BELT, z], [wt, top, z], [-wt, top, z]]), body);
   const side = (z: number, y: number, s: number, lift = 0.008) => {
@@ -121,15 +122,15 @@ function cab(k: FaceKit) {
     return [x * wt, h + 0.006, z];
   };
   // Windshield across the raked front of the greenhouse.
-  k.panel([top(1.17, -0.93), top(1.17, 0.93), top(0.6, 0.93), top(0.6, -0.93)], wind, [0, BELT, 0.5]);
+  k.panel([top(SCREEN_BASE - 0.03, -0.94), top(SCREEN_BASE - 0.03, 0.94), top(0.82, 0.94), top(0.82, -0.94)], wind, [0, BELT, 0.7]);
   for (const s of [-1, 1]) {
     // Front door glass under the A-pillar, black B-pillar, rear door glass to the C-pillar.
     // SuperCrew: front door glass under the A-pillar, a near-vertical black B-pillar, then the long
     // rear door's own glass, and a body-colour C-pillar to the back of the cab.
-    const lo = BELT + 0.05, hi = GLASS_TOP;
-    k.panel([side(1.1, lo, s), side(0.24, lo, s), side(0.24, hi, s), side(0.64, hi, s)], glass, [0, 1.6, 0.7]);
-    k.panel([side(0.24, BELT + 0.02, s), side(0.14, BELT + 0.02, s), side(0.15, ROOF - 0.03, s), side(0.25, ROOF - 0.03, s)], dark, [0, 1.6, 0.2]);
-    k.panel([side(0.14, lo, s), side(-0.62, lo, s), side(-0.74, lo + 0.12, s), side(-0.74, hi, s), side(0.14, hi, s)], glass, [0, 1.6, -0.3]);
+    const lo = BELT + 0.04, hi = GLASS_TOP;
+    k.panel([side(1.36, lo, s), side(0.3, lo, s), side(0.3, hi, s), side(0.86, hi, s)], glass, [0, 1.6, 0.8]);
+    k.panel([side(0.3, BELT + 0.02, s), side(0.2, BELT + 0.02, s), side(0.2, ROOF - 0.025, s), side(0.3, ROOF - 0.025, s)], dark, [0, 1.6, 0.25]);
+    k.panel([side(0.2, lo, s), side(-0.6, lo, s), side(-0.74, lo + 0.14, s), side(-0.74, hi, s), side(0.2, hi, s)], glass, [0, 1.6, -0.3]);
   }
   k.lamp(0, 1.66, CAB_BACK - 0.004, 1.4, 0.4, '-z', glass);
 }
@@ -221,7 +222,7 @@ function details(k: FaceKit, near: boolean, trim: PickupTrim) {
     // Headlamp pod at the grille's top corners, ringed by the C-clamp running lamp: along the top,
     // down the outboard edge and back in under the lamp (lit at night with the headlamps).
     k.box(s * 0.82, 1.2, FRONT - 0.065, 0.36, 0.38, 0.08, dark);
-    k.lamp(s * 0.8, 1.21, FRONT - 0.023, 0.2, 0.17, 'z', lens);
+    k.lamp(s * 0.8, 1.23, FRONT - 0.023, 0.13, 0.1, 'z', lens);
     k.lamp(s * 0.83, 1.375, FRONT - 0.021, 0.33, 0.035, 'z', lens);
     k.lamp(s * 0.98, 1.2, FRONT - 0.021, 0.035, 0.36, 'z', lens);
     k.lamp(s * 0.91, 1.035, FRONT - 0.021, 0.17, 0.035, 'z', lens);
@@ -231,16 +232,16 @@ function details(k: FaceKit, near: boolean, trim: PickupTrim) {
     k.lamp(s * 0.78, 0.6, FRONT - 0.037, 0.18, 0.04, 'z', lens);
     // Mirror arm and head, door handles and running board.
     // Door-mounted mirror: a short arm and a dark housing, so it reads as a mirror and not a block.
-    k.box(s * 1.06, 1.47, 1.06, 0.1, 0.04, 0.08, plastic);
-    k.box(s * 1.13, 1.55, 1.04, 0.045, 0.22, 0.2, plastic);
-    k.box(s * 1.0, SILL - 0.12, (CAB_BACK + 1.2) / 2, 0.16, 0.05, 1.2 - CAB_BACK - 0.1, plastic);
+    k.box(s * 1.06, 1.44, 1.3, 0.1, 0.04, 0.08, plastic);
+    k.box(s * 1.13, 1.53, 1.28, 0.045, 0.22, 0.2, plastic);
+    k.box(s * 1.0, SILL - 0.12, (CAB_BACK + 1.42) / 2, 0.16, 0.05, 1.42 - CAB_BACK - 0.1, plastic);
     // Tail lamps on the box corners, facing back and wrapping the side.
     k.lamp(s * (HALF + INNER) / 2, 1.1, TAILGATE - 0.003, HALF - INNER - 0.01, 0.44, '-z', red);
     k.lamp(s * (HALF + 0.002), 1.1, TAILGATE + 0.08, 0.1, 0.44, 'x', red);
     if (!near) continue;
     // Door cuts: a front door to the B-pillar and a long rear door to the C-pillar.
-    for (const z of [1.17, 0.19, -0.86]) k.box(s * (HALF + 0.004), (SILL + 0.04 + BELT) / 2, z, 0.008, BELT - SILL - 0.08, 0.012, shadow);
-    for (const z of [0.42, -0.62]) k.box(s * (HALF + 0.012), 1.22, z, 0.02, 0.04, 0.2, trim === 'xl' ? plastic : body);
+    for (const z of [1.42, 0.25, -0.86]) k.box(s * (HALF + 0.004), (SILL + 0.04 + BELT) / 2, z, 0.008, BELT - SILL - 0.08, 0.012, shadow);
+    for (const z of [0.55, -0.55]) k.box(s * (HALF + 0.012), 1.2, z, 0.02, 0.04, 0.2, trim === 'xl' ? plastic : body);
     k.box(s * (HALF + 0.004), (SILL + 0.04 + BED_TOP) / 2, BED_FRONT - 0.006, 0.008, BED_TOP - SILL - 0.08, 0.012, shadow);
   }
   // Rear step bumper, plate recess, and the frame and fuel tank that fill the underside.

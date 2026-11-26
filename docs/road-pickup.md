@@ -46,4 +46,4 @@ Links only; the photographs are not committed.
 
 ## Stills
 
-[Close form, day and night](log/road-pickup/f150-lab-day-night.jpg) · [Trim, scale and traffic form](log/road-pickup/f150-lab-trim-traffic.jpg)
+[Cab side and night lamps, close](log/road-pickup/f150-closeups.jpg) · [Close form, day and night](log/road-pickup/f150-lab-day-night.jpg) · [Trim, scale and traffic form](log/road-pickup/f150-lab-trim-traffic.jpg)
