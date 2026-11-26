@@ -21,13 +21,14 @@ const HALF = 2.029 / 2; // 79.9 in without mirrors
 const TYRE_R = 0.412; // 275/65R18, 32.1 in, on a 4x4's ride height
 const TRACK = 1.725; // 67.9 in front, 68.3 in rear
 const ROOF = 1.955; // 4x2 1.915, 4x4 1.958
-const BELT = 1.33; // side-window sill, just under the hood line (estimated)
+const BELT = 1.24; // side-window sill: the glass is the top third of the side (estimated)
 const GLASS_TOP = 1.92; // tall door glass (estimated)
-const SCREEN_BASE = 1.45; // windshield base: the SuperCrew cab runs about 2.45 m from here to the back (estimated)
-const BED_TOP = 1.34; // box rail, just under the belt (estimated)
-const SILL = 0.64; // rocker bottom; 9.8 in ground clearance on a 4x4
-const ARCH = 0.52; // wheel-opening radius (estimated)
-const FLARE = 0.09; // arch flare lip, radial depth (estimated)
+const SCREEN_BASE = 1.4; // windshield base at the hood line; the cab runs about 2.4 m from here to the back (estimated)
+const HOOD = 1.44; // hood height at the cowl, rising slightly to the front (estimated)
+const BED_TOP = 1.3; // box rail (estimated)
+const SILL = 0.58; // rocker bottom; 9.8 in ground clearance on a 4x4
+const ARCH = 0.47; // wheel-opening radius: the tyre fills it (estimated)
+const FLARE = 0.08; // arch flare lip, radial depth (estimated)
 const BED_FRONT = CAB_BACK - 0.03;
 const TAILGATE = FRONT - PICKUP_LENGTH + 0.11; // box and gate end, 11 cm ahead of the step bumper's face
 const FLOOR = 0.866; // open tailgate to ground, 4x4
@@ -79,10 +80,11 @@ function frontBody(k: FaceKit, near: boolean) {
   // z, half width at the shoulder, top (hood, then belt), sill
   const rows = [
     [CAB_BACK, HALF, BELT, SILL],
-    [SCREEN_BASE - 0.02, HALF, BELT + 0.03, SILL],
-    [2.25, HALF, 1.39, SILL + 0.02],
-    [FRONT - 0.08, HALF - 0.015, 1.41, SILL + 0.04],
-    [FRONT - 0.03, HALF - 0.05, 1.395, SILL + 0.06],
+    [SCREEN_BASE - 0.06, HALF, BELT + 0.02, SILL],
+    [SCREEN_BASE + 0.06, HALF, HOOD, SILL],
+    [2.25, HALF, HOOD + 0.01, SILL + 0.02],
+    [FRONT - 0.08, HALF - 0.012, HOOD + 0.02, SILL + 0.04],
+    [FRONT - 0.03, HALF - 0.04, HOOD, SILL + 0.06],
   ];
   const zs = withArch(rows.map((r) => r[0]), FRONT_AXLE, near ? 10 : 5);
   const rings = zs.map((z) => {
@@ -109,7 +111,7 @@ function cab(k: FaceKit) {
     [CAB_BACK, 0.965, 0.87, ROOF - 0.04],
     [CAB_BACK + 0.05, 0.97, 0.87, ROOF],
     [0.78, 0.97, 0.87, ROOF],
-    [SCREEN_BASE, 0.985, 0.95, BELT + 0.06],
+    [SCREEN_BASE, 0.985, 0.95, HOOD + 0.02],
   ];
   k.skin(rows.map(([z, wb, wt, top]) => [[-wb, BELT, z], [wb, BELT, z], [wt, top, z], [-wt, top, z]]), body);
   const side = (z: number, y: number, s: number, lift = 0.008) => {
@@ -122,13 +124,13 @@ function cab(k: FaceKit) {
     return [x * wt, h + 0.006, z];
   };
   // Windshield across the raked front of the greenhouse.
-  k.panel([top(SCREEN_BASE - 0.03, -0.94), top(SCREEN_BASE - 0.03, 0.94), top(0.82, 0.94), top(0.82, -0.94)], wind, [0, BELT, 0.7]);
+  k.panel([top(SCREEN_BASE - 0.03, -0.94), top(SCREEN_BASE - 0.03, 0.94), top(0.78, 0.94), top(0.78, -0.94)], wind, [0, BELT, 0.7]);
   for (const s of [-1, 1]) {
     // Front door glass under the A-pillar, black B-pillar, rear door glass to the C-pillar.
     // SuperCrew: front door glass under the A-pillar, a near-vertical black B-pillar, then the long
     // rear door's own glass, and a body-colour C-pillar to the back of the cab.
     const lo = BELT + 0.04, hi = GLASS_TOP;
-    k.panel([side(1.36, lo, s), side(0.3, lo, s), side(0.3, hi, s), side(0.86, hi, s)], glass, [0, 1.6, 0.8]);
+    k.panel([side(1.3, lo, s), side(0.3, lo, s), side(0.3, hi, s), side(0.82, hi, s)], glass, [0, 1.6, 0.8]);
     k.panel([side(0.3, BELT + 0.02, s), side(0.2, BELT + 0.02, s), side(0.2, ROOF - 0.025, s), side(0.3, ROOF - 0.025, s)], dark, [0, 1.6, 0.25]);
     k.panel([side(0.2, lo, s), side(-0.6, lo, s), side(-0.74, lo + 0.14, s), side(-0.74, hi, s), side(0.2, hi, s)], glass, [0, 1.6, -0.3]);
   }
@@ -158,8 +160,10 @@ function bed(k: FaceKit, near: boolean) {
   for (const s of [-1, 1]) k.box(s * (inner - 0.12), FLOOR + 0.13, REAR_AXLE, 0.24, 0.26, 2 * ARCH, liner);
 }
 
-/** Body-colour flare lips standing proud of each wheel opening, from sill to sill over the tyre. */
-function flares(k: FaceKit, near: boolean) {
+/** Flare lips standing proud of each wheel opening, from sill to sill over the tyre: body colour, or
+ * black plastic on the work trim. */
+function flares(k: FaceKit, near: boolean, trim: PickupTrim) {
+  const lip = trim === 'xl' ? plastic : body;
   const a0 = Math.asin((SILL - TYRE_R) / ARCH), segs = near ? 10 : 5, out = 0.035;
   for (const axle of [FRONT_AXLE, REAR_AXLE])
     for (const s of [-1, 1])
@@ -167,12 +171,12 @@ function flares(k: FaceKit, near: boolean) {
         const ang = (j: number) => a0 + ((Math.PI - 2 * a0) * j) / segs;
         const p = (j: number, x: number, r: number) => [s * x, TYRE_R + r * Math.sin(ang(j)), axle - r * Math.cos(ang(j))];
         const hub = [s * (HALF - 0.3), TYRE_R, axle];
-        k.panel([p(i, HALF + out, ARCH), p(i + 1, HALF + out, ARCH), p(i + 1, HALF + out, ARCH + FLARE), p(i, HALF + out, ARCH + FLARE)], body, [0, TYRE_R, axle]);
-        k.panel([p(i, HALF - 0.01, ARCH + FLARE), p(i + 1, HALF - 0.01, ARCH + FLARE), p(i + 1, HALF + out, ARCH + FLARE), p(i, HALF + out, ARCH + FLARE)], body, hub);
+        k.panel([p(i, HALF + out, ARCH), p(i + 1, HALF + out, ARCH), p(i + 1, HALF + out, ARCH + FLARE), p(i, HALF + out, ARCH + FLARE)], lip, [0, TYRE_R, axle]);
+        k.panel([p(i, HALF - 0.01, ARCH + FLARE), p(i + 1, HALF - 0.01, ARCH + FLARE), p(i + 1, HALF + out, ARCH + FLARE), p(i, HALF + out, ARCH + FLARE)], lip, hub);
         k.panel([p(i, HALF - 0.01, ARCH), p(i + 1, HALF - 0.01, ARCH), p(i + 1, HALF + out, ARCH), p(i, HALF + out, ARCH)], liner, [s * (HALF + 1), TYRE_R + 3, axle]);
         // Close the lip at the sill on both ends.
         for (const [j, next] of [[0, 1], [segs, segs - 1]] as const)
-          if (i === 0) k.panel([p(j, HALF - 0.01, ARCH), p(j, HALF + out, ARCH), p(j, HALF + out, ARCH + FLARE), p(j, HALF - 0.01, ARCH + FLARE)], body, p(next, HALF + out / 2, ARCH + FLARE / 2));
+          if (i === 0) k.panel([p(j, HALF - 0.01, ARCH), p(j, HALF + out, ARCH), p(j, HALF + out, ARCH + FLARE), p(j, HALF - 0.01, ARCH + FLARE)], lip, p(next, HALF + out / 2, ARCH + FLARE / 2));
       }
 }
 
@@ -212,36 +216,40 @@ function details(k: FaceKit, near: boolean, trim: PickupTrim) {
   // A chrome (or dark) bar over a dark lower valance; the grille stands tall between the lamp pods.
   k.box(0, 0.78, FRONT - 0.07, 2 * HALF - 0.04, 0.16, 0.14, bright);
   k.box(0, 0.58, FRONT - 0.09, 2 * HALF - 0.12, 0.24, 0.1, plastic);
-  // Tall, blunt grille from the bumper to the hood line.
-  k.box(0, 1.12, FRONT - 0.035, 1.22, 0.58, 0.05, grilleDark);
-  for (const y of [1.0, 1.2]) k.box(0, y, FRONT - 0.008, 1.22, 0.06, 0.02, grilleBar);
-  for (const x of [-0.62, 0.62]) k.box(x, 1.12, FRONT - 0.008, 0.05, 0.6, 0.02, grilleBar);
-  k.box(0, 1.405, FRONT - 0.008, 1.26, 0.05, 0.02, grilleBar);
+  // One tall grille across the whole front, bumper to hood line, framed in chrome (or dark on the work
+  // trim); the headlamps sit in its top outboard corners.
+  const gTop = HOOD - 0.02, gBot = 0.86, gHalf = HALF - 0.02;
+  k.box(0, (gTop + gBot) / 2, FRONT - 0.035, 2 * gHalf, gTop - gBot, 0.05, grilleDark);
+  for (const y of [gTop, gBot]) k.box(0, y, FRONT - 0.008, 2 * gHalf + 0.02, 0.045, 0.02, grilleBar);
+  for (const x of [-gHalf, -0.62, 0.62, gHalf]) k.box(x, (gTop + gBot) / 2, FRONT - 0.008, 0.045, gTop - gBot, 0.02, grilleBar);
+  for (const y of [1.0, 1.2]) k.box(0, y, FRONT - 0.008, 1.24, 0.05, 0.02, grilleBar);
   for (const s of [-1, 1]) {
     // Headlamp housing, its lens, the C-shaped running-lamp bar (top and outboard) and an amber marker.
     // Headlamp pod at the grille's top corners, ringed by the C-clamp running lamp: along the top,
     // down the outboard edge and back in under the lamp (lit at night with the headlamps).
-    k.box(s * 0.82, 1.2, FRONT - 0.065, 0.36, 0.38, 0.08, dark);
-    k.lamp(s * 0.8, 1.23, FRONT - 0.023, 0.13, 0.1, 'z', lens);
-    k.lamp(s * 0.83, 1.375, FRONT - 0.021, 0.33, 0.035, 'z', lens);
-    k.lamp(s * 0.98, 1.2, FRONT - 0.021, 0.035, 0.36, 'z', lens);
-    k.lamp(s * 0.91, 1.035, FRONT - 0.021, 0.17, 0.035, 'z', lens);
-    k.lamp(s * 0.8, 1.085, FRONT - 0.023, 0.16, 0.045, 'z', amber);
+    // Headlamp in the grille's top outboard corner. The C-clamp running lamp wraps its outer edge:
+    // along the top, down the outboard side and back in underneath (lit at night with the headlamps).
+    k.box(s * 0.81, 1.27, FRONT - 0.03, 0.3, 0.26, 0.04, dark);
+    k.lamp(s * 0.79, 1.29, FRONT - 0.008, 0.13, 0.09, 'z', lens);
+    k.lamp(s * 0.79, 1.19, FRONT - 0.008, 0.15, 0.04, 'z', amber);
+    k.lamp(s * 0.84, 1.385, FRONT - 0.006, 0.26, 0.03, 'z', lens);
+    k.lamp(s * 0.955, 1.26, FRONT - 0.006, 0.03, 0.26, 'z', lens);
+    k.lamp(s * 0.9, 1.14, FRONT - 0.006, 0.14, 0.03, 'z', lens);
     k.lamp(s * (HALF + 0.002), 1.15, FRONT - 0.2, 0.08, 0.05, 'x', amber);
     // Fog lamp bar in the bumper.
     k.lamp(s * 0.78, 0.6, FRONT - 0.037, 0.18, 0.04, 'z', lens);
     // Mirror arm and head, door handles and running board.
     // Door-mounted mirror: a short arm and a dark housing, so it reads as a mirror and not a block.
-    k.box(s * 1.06, 1.44, 1.3, 0.1, 0.04, 0.08, plastic);
-    k.box(s * 1.13, 1.53, 1.28, 0.045, 0.22, 0.2, plastic);
+    k.box(s * 1.06, BELT + 0.1, 1.26, 0.1, 0.04, 0.08, plastic);
+    k.box(s * 1.13, BELT + 0.19, 1.24, 0.045, 0.22, 0.2, plastic);
     k.box(s * 1.0, SILL - 0.12, (CAB_BACK + 1.42) / 2, 0.16, 0.05, 1.42 - CAB_BACK - 0.1, plastic);
     // Tail lamps on the box corners, facing back and wrapping the side.
-    k.lamp(s * (HALF + INNER) / 2, 1.1, TAILGATE - 0.003, HALF - INNER - 0.01, 0.44, '-z', red);
-    k.lamp(s * (HALF + 0.002), 1.1, TAILGATE + 0.08, 0.1, 0.44, 'x', red);
+    k.lamp(s * (HALF + INNER) / 2, 1.06, TAILGATE - 0.003, HALF - INNER - 0.01, 0.42, '-z', red);
+    k.lamp(s * (HALF + 0.002), 1.06, TAILGATE + 0.08, 0.1, 0.42, 'x', red);
     if (!near) continue;
     // Door cuts: a front door to the B-pillar and a long rear door to the C-pillar.
     for (const z of [1.42, 0.25, -0.86]) k.box(s * (HALF + 0.004), (SILL + 0.04 + BELT) / 2, z, 0.008, BELT - SILL - 0.08, 0.012, shadow);
-    for (const z of [0.55, -0.55]) k.box(s * (HALF + 0.012), 1.2, z, 0.02, 0.04, 0.2, trim === 'xl' ? plastic : body);
+    for (const z of [0.55, -0.55]) k.box(s * (HALF + 0.012), BELT - 0.12, z, 0.02, 0.04, 0.2, trim === 'xl' ? plastic : body);
     k.box(s * (HALF + 0.004), (SILL + 0.04 + BED_TOP) / 2, BED_FRONT - 0.006, 0.008, BED_TOP - SILL - 0.08, 0.012, shadow);
   }
   // Rear step bumper, plate recess, and the frame and fuel tank that fill the underside.
@@ -261,7 +269,7 @@ export function roadPickupGeometry({ near = false, paint = body, trim = 'xlt' as
   cab(k);
   bed(k, near);
   for (const s of [-1, 1]) for (const z of [FRONT_AXLE, REAR_AXLE]) wheel(k, (s * TRACK) / 2, z, s, near, trim);
-  flares(k, near);
+  flares(k, near, trim);
   details(k, near, trim);
   return packFaces(k.faces, kindOf, paint);
 }
