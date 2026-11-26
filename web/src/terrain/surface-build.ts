@@ -1,5 +1,5 @@
 import { seatLandingEdges } from '../../../pipeline/prototypes/highway-four-ground/landing';
-import { gradeSouthboundBoard } from '../../../pipeline/prototypes/highway-four-ground/grade';
+import { gradeSouthboundSteps } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import { runSync, type Build } from '../core/slice';
 /**
  * The ground surface's geometry as pure functions over typed arrays: no DOM, no three.js objects,
@@ -7,7 +7,7 @@ import { runSync, type Build } from '../core/slice';
  * GroundSurface (surface.ts) calls the same code, so both paths draw the same triangles.
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
-import { conformCutEdges } from './conform-cut-edges';
+import { conformCutEdgesSteps } from './conform-cut-edges';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
@@ -304,7 +304,8 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     if (yieldList.some(y=>y.conformEdges)) {
       const blocks = new Set<number>();
       for (const [k,ys] of yieldBlocks) if (ys.some(y=>y.conformEdges)) blocks.add(k);
-      conformCutEdges(result, blocks, (x,z)=>{
+      yield 'ground rows';
+      yield* conformCutEdgesSteps(result, blocks, (x,z)=>{
         let floor=Infinity;
         for (const y of nearYields(x,z)) if (y.conformEdges && contains(y,x,z,1e-6)) {
           floor=Math.min(floor,y.floor(x,z));
@@ -312,8 +313,10 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
         return floor;
       });
     }
-    const graded = gradeSouthboundBoard(result, spec.bounds);
-    seatLandingEdges(graded.pos, yieldList);
+    yield 'ground rows';
+    const graded = yield* gradeSouthboundSteps(result, spec.bounds);
+    yield 'ground rows';
+    yield* seatLandingEdges(graded.pos, yieldList);
     return graded;
 }
 
@@ -450,7 +453,7 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
     if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds, {settled: lower});
+    return yield* gradeSouthboundSteps({pos, uv, indices}, spec.bounds, {settled: lower});
 }
 
 /**

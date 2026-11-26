@@ -1,4 +1,5 @@
 import { cornerReach, type GroundYield } from '../../../web/src/terrain/surface-build';
+import type { Build } from '../../../web/src/core/slice';
 
 type Vertex = readonly [number, number, number];
 const landingFloors = new WeakSet<GroundYield>();
@@ -34,7 +35,7 @@ export function eastLandingYields(triangles: readonly LandingTriangle[]): Ground
 // A clipped face can have zero area in double precision and acquire a thin
 // footprint when its coordinates are uploaded as floats. Its unlowered boundary
 // vertices then reappear above the tread. Seat those vertices on the same plane.
-export function seatLandingEdges(pos: number[], footprints: readonly GroundYield[]) {
+export function* seatLandingEdges(pos: number[], footprints: readonly GroundYield[]): Build<void> {
   const buckets = new Map<string, { face: GroundYield; minX: number; maxX: number; minZ: number; maxZ: number }[]>();
   const cell = (v: number) => Math.floor(v / 5);
   for (const face of footprints) {
@@ -59,6 +60,7 @@ export function seatLandingEdges(pos: number[], footprints: readonly GroundYield
   }
   if (!buckets.size) return;
   for (let i=0; i<pos.length; i+=3) {
+    if (i % 12288 === 12285) yield 'ground rows';
     const x = Math.fround(pos[i]), z = Math.fround(pos[i+2]);
     if (x < 1470 || x > 1545 || z < -6300 || z > -6190) continue;
     for (const { face, minX, maxX, minZ, maxZ } of buckets.get(cell(x)+','+cell(z)) ?? []) {

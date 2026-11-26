@@ -1,7 +1,14 @@
+import { runSync, type Build } from '../core/slice';
 // Split a long terrain edge at the existing vertices of its neighbours while
 // positions are still doubles. Both sides then round to the same Float32 chain.
 type Mesh = { pos:number[]; uv:number[]; indices:number[]; starts:Uint32Array };
 export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, formationFloor?: (x:number,z:number)=>number) {
+  runSync(conformCutEdgesSteps(mesh, touched, formationFloor));
+}
+
+/** conformCutEdges as a build that yields every few hundred blocks (same triangles). The mesh is
+ * the tessellation's own until it returns. */
+export function* conformCutEdgesSteps(mesh: Mesh, touched: ReadonlySet<number>, formationFloor?: (x:number,z:number)=>number): Build<void> {
   const {pos,uv,indices,starts}=mesh;
   const cells=new Map<string,number[]>(), seen=new Set<string>();
   const key=(x:number,z:number)=>Math.floor(x)+','+Math.floor(z);
@@ -46,7 +53,9 @@ export function conformCutEdges(mesh: Mesh, touched: ReadonlySet<number>, format
     cuts.set(edgeKey,chain);cuts.set(b+','+a,[...chain].reverse());
     return chain;
   }
+  yield 'ground rows';
   for(let block=0;block<starts.length-1;block++) {
+    if(block%256===255) yield 'ground rows';
     starts[block]=output.length;
     if (!touched.has(block)) {
       for(let i=oldStarts[block];i<oldStarts[block+1];i++)output.push(indices[i]);
