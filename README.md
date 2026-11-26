@@ -115,6 +115,9 @@ choose a tier yourself.
   `x74y374.tif` and `x74y375.tif`. Extract `UTCMosaic2023.tif` from the Georgia Tech
   archive linked in the source manifest. Run
   `.venv/bin/python pipeline/prototypes/combined-canopy/rebuild.py DEM_DIRECTORY UTCMosaic2023.tif NEW_OUTPUT_DIRECTORY`.
+  The R16 tree bake downloads two Meta and WRI canopy-height crops on its first run and caches
+  them in `data/raw/meta_chm`; their digests are in the
+  [R16 canopy audit](pipeline/prototypes/combined-canopy/r16-canopy-audit.json).
 - The highway section tables use the USGS Georgia Statewide B2 2018 point cloud,
   with class 2 ground and class 17 deck returns. The east bridge profiles sample
   1.7 m neighborhoods at the centerline and 7 m either side. Individual LAZ filenames

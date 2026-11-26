@@ -4,7 +4,7 @@
  * its triangles per tree are the budget a species must stay within.
  */
 import * as THREE from 'three';
-import { World } from '../vignette/world';
+import { CITY_LOW_CLUMP_SCALE, World } from '../vignette/world';
 import type { SizeClass, TreeQuality } from './species';
 
 /** Height and crown RADIUS, metres, of the canopy-map crowns the lab shows for each class. */
@@ -22,7 +22,7 @@ export function createGenericTrees(trees: { x: number; z: number; size: SizeClas
   const pad = 40;
   const xs = trees.map(t => t.x), zs = trees.map(t => t.z);
   const bounds = { minX: Math.min(...xs) - pad, maxX: Math.max(...xs) + pad, minZ: Math.min(...zs) - pad, maxZ: Math.max(...zs) + pad };
-  const world = new World({ bounds, buildings: [], roads: [], rail: [] }, null, { terrain: 'flat', clumps: CLUMPS[quality], lightMapMax: 256 });
+  const world = new World({ bounds, buildings: [], roads: [], rail: [] }, null, { terrain: 'flat', clumps: CLUMPS[quality], clumpScale: quality === 'low' ? CITY_LOW_CLUMP_SCALE : 1, lightMapMax: 256 });
   world.realTrees = trees.map(t => [t.x, t.z, GENERIC_SIZES[t.size].heightM, GENERIC_SIZES[t.size].crownM]);
   world.buildTrees(new THREE.OctahedronGeometry(1));
   // World draws a tree's kind from its colour seed; pin every one to a broadleaf (c ≥ 0.26).

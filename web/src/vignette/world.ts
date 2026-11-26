@@ -105,6 +105,9 @@ export interface WorldOptions {
   /** Largest side of the night light map in texels. */
   lightMapMax: number;
 }
+/** City's phone clump size: three clumps filled under half of each crown's circle. */
+export const CITY_LOW_CLUMP_SCALE = 1.35;
+
 export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightMapMax: 4096 };
 
 /** The MARTA alignment through the vignette: centreline + elevation (m) by distance. */
