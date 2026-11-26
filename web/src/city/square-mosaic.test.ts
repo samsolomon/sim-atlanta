@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { bounds } from '../square-board/sections';
-import { mosaicPlinth, mountedBounds, nearestPoint, nearSection } from './square-mosaic';
+import { frameToEdge, looksNorth, mosaicPlinth, mountedBounds, nearestPoint, nearSection, northLookM } from './square-mosaic';
 
 it('clamps the camera and walnut base to the same available ground during a partial load', () => {
   const rects = [bounds.downtown, bounds['north-band'], bounds['north-corner']];
@@ -48,4 +48,33 @@ it('requests only the section within reach of the camera, including the short Ki
     expect(nearSection('north', x, z)).toBe(direction === 'north');
     expect(nearSection('south', x, z)).toBe(direction === 'south');
   }
+});
+
+it('frames the default board with nothing past its loaded north edge, on wide and tall windows', () => {
+  const south = 1100, north = bounds['brookwood-station'].minZ, fov = 22, tilt = 35;
+  for (const aspect of [16 / 9, 1.6, 1, 390 / 844, 0.25]) {
+    const { distance, targetZ } = frameToEdge(south, north, 1400, aspect, fov, tilt);
+    const camera = new THREE.PerspectiveCamera(fov, aspect, 20, 80_000);
+    const t = tilt * Math.PI / 180;
+    camera.position.set(400, distance * Math.cos(t), targetZ + distance * Math.sin(t));
+    camera.lookAt(400, 0, targetZ);
+    camera.updateMatrixWorld();
+    // Ground on the frame's top edge is at the loaded edge: the unloaded row is above the frame.
+    for (const x of [-1, 0, 1]) {
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2(x, 1), camera);
+      const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3())!;
+      expect(hit.z, `aspect ${aspect}`).toBeCloseTo(north, 0);
+    }
+    // The south edge clears the toolbar.
+    expect(new THREE.Vector3(400, 0, south).project(camera).y, `aspect ${aspect}`).toBeGreaterThanOrEqual(-0.7201);
+    // The whole loaded board is in the frame.
+    for (const x of [-1000, 1800]) for (const z of [north, south]) {
+      const p = new THREE.Vector3(x, 0, z).project(camera);
+      expect(Math.abs(p.x), `aspect ${aspect} at ${x},${z}`).toBeLessThanOrEqual(1.0001);
+      expect(Math.abs(p.y), `aspect ${aspect} at ${x},${z}`).toBeLessThanOrEqual(1.0001);
+    }
+    expect(looksNorth(distance, () => true)).toBe(false);
+  }
+  expect(looksNorth(northLookM, () => true)).toBe(true);
 });

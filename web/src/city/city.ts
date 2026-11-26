@@ -177,6 +177,8 @@ export interface CityView {
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
+  /** Load the area a vehicle stands in, without moving the camera. */
+  seek(x: number, z: number): void;
   camera(): GroundCamera & { tilt: number };
   /** Orbit distance in metres, the last field of a `cam` link. */
   distance(): number;
@@ -1144,7 +1146,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
     }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`),
-      () => !!square?.looksNorth(camera.position.distanceTo(controls.target), northVisible));
+      () => ({ orbitM: camera.position.distanceTo(controls.target), inView: northVisible }));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1608,6 +1610,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const frameFullBoard = (includeNorth = false) => {
       const aspect = Math.max(.25, camera.aspect);
       const edge = mosaic.framedNorthEdge(includeNorth);
+      if (edge > mosaic.northEdge) {
+        // An unloaded row lies beyond the edge: keep it out of the frame, so no bare table stands in for it.
+        const { distance, targetZ } = square!.frameToEdge(1100, edge, 1400, aspect, camera.fov, 35);
+        mosaic.remember(400, targetZ);
+        setView(0, 35, Math.min(controls.maxDistance, distance), 400, targetZ);
+        return;
+      }
       const depth = 1100 - edge;
       const distance = midtown ? Math.max(depth * 2.95, 11700 / aspect) : Math.max(9200, 9600 / aspect);
       const centerZ = (1100 + edge) / 2;
@@ -2033,10 +2042,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // (as "out of view") while King Memorial and its rail load, then falls back to downtown.
     let followBounds: typeof trainBounds | ((p: { x: number; z: number }) => boolean) = trainBounds;
     if (fix && mosaic) {
+      mosaic.seek(fix);
       approachMosaic(fix.x, fix.z);
-      // Per mounted area, so a row that failed or is still loading counts as off the board.
+      // Per mounted area, so a failed row counts as off the board. A row still on its way to the
+      // vehicle keeps the trip, as the east board does.
       const rects = Array.from(mosaic.areas.values(), a => a.bounds);
-      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
+      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ) || mosaic.pending(p);
     } else if (fix && previewEast) {
       approachEast(fix.x, fix.z);
       if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
@@ -2327,6 +2338,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
     distance: () => camera.position.distanceTo(controls.target),
+    seek(x, z) {
+      mosaic?.seek({ x, z });
+      approachMosaic(controls.target.x, controls.target.z);
+    },
     onBoard(x, z, eventually = false) {
       if (eventually && mosaic) {
         const r = mosaic.bounds;

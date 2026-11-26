@@ -11,6 +11,29 @@ export const northStudyBounds = bounds.r16;
  */
 export const northLookM = 5000;
 export const looksNorth = (orbitM: number, inView: () => boolean) => orbitM <= northLookM && inView();
+/** The camera as the north-row gate reads it. */
+export interface NorthView { orbitM: number; inView: () => boolean }
+/** A vehicle this close to an unmounted row loads it, so a follow has ground to run onto. */
+const seekMarginM = 600;
+
+/** How far down the frame, from its middle to its bottom edge, the board may reach. */
+const clearOfToolbar = 0.72;
+/**
+ * The orbit that shows the board from `south` to `north` and nothing beyond that north edge:
+ * looking due north, the top of the frame lands on the edge. A narrow window stands farther
+ * back to fit the width, still with the edge at the top.
+ */
+export function frameToEdge(south: number, north: number, halfWidth: number, aspect: number, fovDeg: number, tiltDeg: number) {
+  const tilt = tiltDeg * Math.PI / 180, half = fovDeg * Math.PI / 360;
+  // Ground ahead of and behind the target covered by the frame, per metre of orbit.
+  const ahead = Math.cos(tilt) * Math.tan(tilt + half) - Math.sin(tilt);
+  // The south edge stops short of the bottom of the frame, above the toolbar.
+  const behind = Math.sin(tilt) - Math.cos(tilt) * Math.tan(tilt - Math.atan(clearOfToolbar * Math.tan(half)));
+  const length = south - north;
+  const wide = (1.04 * halfWidth / (Math.tan(half) * aspect) + length * Math.sin(tilt)) / (1 + ahead * Math.sin(tilt));
+  const distance = Math.max(length / (ahead + behind), wide);
+  return { distance, targetZ: north + ahead * distance };
+}
 
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
@@ -90,6 +113,9 @@ export class SquareMosaic {
   private inflight = new Set<Promise<void>>();
   private failed = new Set<Section>();
   private wanted?: Point;
+  private seeking?: Point;
+  /** The newest request, which follow-up loads continue from. */
+  private latest?: () => void;
 
   mount(id: 'king' | 'auburn', area: TrafficArea) {
     try { connect(this.areas, new Map([[id, area]])); }
@@ -114,19 +140,30 @@ export class SquareMosaic {
   }
   requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
   cancelTarget() { this.wanted = undefined; }
+  /** A vehicle's position: its rows load although the camera is not asking, and the camera stays. */
+  seek(point: Point) { this.seeking = point; }
+  /** True while a sought vehicle stands in a row that is still on its way. */
+  pending(p: Point) {
+    const s = this.seeking;
+    return this.midtown && !!s && midtownRows.some(id => !this.areas.has(id) && !this.failed.has(id) &&
+      inside(bounds[id], p.x, p.z) && inside(bounds[id], s.x, s.z, seekMarginM));
+  }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,
-    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void, northVisible?: () => boolean) {
+    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void, northView?: () => NorthView) {
+    this.latest = () => this.approach(x, z, quality, signal, mounted, failure, northView);
     const target = this.wanted ?? { x, z };
-    const showNorth = this.fullNorth || (this.areas.has('brookwood-station') && !this.areas.has('r16') && northVisible?.());
+    const looking = () => { const v = northView?.(); return !!v && looksNorth(v.orbitM, v.inView); };
+    const showNorth = this.fullNorth || (this.areas.has('brookwood-station') && !this.areas.has('r16') && looking());
+    const sought = (id: Board) => !!this.seeking && inside(bounds[id], this.seeking.x, this.seeking.z, seekMarginM);
     const lastRow = this.midtown ? (this.fullBoard || showNorth ? midtownRows.length - 1 :
-      midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) ? i : last, -1)) : -1;
+      midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) || sought(id) ? i : last, -1)) : -1;
     const requested: Section[] = [];
     if (lastRow >= 0 || this.fullBoard || nearSection('north', x, z)) requested.push('north');
     if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
     if (lastRow >= 0 && this.areas.has('north-band')) {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
-      if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100))) requested.push(next);
+      if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100) || sought('r16'))) requested.push(next);
     }
     for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
     for (const direction of requested) {
@@ -140,7 +177,7 @@ export class SquareMosaic {
         const reached = p && [...added.values()].some(a => inside(a.bounds, p.x, p.z));
         if (reached) this.wanted = undefined;
         mounted(added, reached ? p : undefined);
-        if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure, northVisible);
+        if (this.fullBoard || this.wanted || this.seeking) this.latest?.();
       }).catch(error => {
         if (!signal.aborted) {
           this.failed.add(direction);

@@ -262,7 +262,10 @@ function startPendingFollow() {
   // end at a loading edge.
   const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
   p.since ??= performance.now();
-  if (!diorama.onBoard(x, z) && performance.now() - p.since < 20_000) return;
+  if (!diorama.onBoard(x, z)) {
+    diorama.seek(x, z);
+    if (performance.now() - p.since < 20_000) return;
+  }
   pendingFollow = null;
   if (p.kind === 'train') {
     const t = source.find(p.id);
@@ -349,7 +352,10 @@ function followFromLink() {
   // Wait for that train's area to mount, so follow does not end at a loading edge.
   // If it never mounts, the follow starts anyway and ends at the edge as usual.
   if (best) followLinkAt ??= performance.now();
-  if (best && !diorama.onBoard(best.x, best.z) && performance.now() - followLinkAt! < 20_000) return;
+  if (best && !diorama.onBoard(best.x, best.z)) {
+    diorama.seek(best.x, best.z);
+    if (performance.now() - followLinkAt! < 20_000) return;
+  }
   const train = best && source.find(best.id);
   if (!train) return;
   followRoute = null;

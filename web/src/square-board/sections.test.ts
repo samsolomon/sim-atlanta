@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { BufferGeometry, InstancedMesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { looksNorth, midtownBaseNavd88M, northLookM, SquareMosaic } from '../city/square-mosaic';
+import { midtownBaseNavd88M, northLookM, SquareMosaic, type NorthView } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { addSection, bounds, midtownRows, connect, joins, seam, verifySeam, type Area, type Board } from './sections';
@@ -253,9 +253,9 @@ it('leaves R16 out of the default full board until the camera looks north', asyn
   mosaic.areas.set('downtown', downtown);
   const signal = new AbortController().signal;
   const errors: string[] = [];
-  // The framed full board stands far past the look distance, with R16 inside its view.
-  const view = (orbitM: number, inView: boolean) => () => looksNorth(orbitM, () => inView);
-  const advance = (look: () => boolean) =>
+  // A far orbit keeps R16 unloaded even with the row in view; the mosaic applies the distance.
+  const view = (orbitM: number, inView: boolean) => (): NorthView => ({ orbitM, inView: () => inView });
+  const advance = (look: () => NorthView) =>
     mosaic.approach(400, -1500, 'low', signal, () => {}, d => errors.push(d), look);
   try {
     mosaic.requestFullBoard(false);
@@ -274,6 +274,43 @@ it('leaves R16 out of the default full board until the camera looks north', asyn
     await mosaic.idle();
     expect(requested.filter(id => id === 'r16')).toEqual(['r16']);
     expect(mosaic.framedNorthEdge()).toBe(-6500);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+}, 20_000);
+
+it('loads R16 for a followed vehicle near it, from loads already under way, without moving the camera', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/north-seek/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/north-seek', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const reached: unknown[] = [];
+  const train = { x: -81, z: -6100 };
+  try {
+    // The default full board is under way when the follow arrives.
+    mosaic.requestFullBoard(false);
+    mosaic.approach(400, -1500, 'low', signal, (_, point) => { if (point) reached.push(point); }, () => {});
+    mosaic.seek(train);
+    expect(mosaic.pending(train)).toBe(true);
+    mosaic.approach(train.x, train.z, 'low', signal, (_, point) => { if (point) reached.push(point); }, () => {});
+    await mosaic.idle();
+    expect(requested.filter(id => id === 'r16')).toEqual(['r16']);
+    expect(mosaic.areas.has('r16')).toBe(true);
+    expect(mosaic.pending(train)).toBe(false);
+    expect(reached).toEqual([]);
   } finally { mosaic.dispose(); downtown.dispose(); }
 }, 20_000);
 
