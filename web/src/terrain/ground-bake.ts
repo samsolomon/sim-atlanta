@@ -184,4 +184,15 @@ export const bakeOff = (() => {
 
 /** Areas with a bake (slice 1: the Midtown row with the most carving, Ansley Park's). */
 export const BAKED_AREAS: ReadonlySet<string> = new Set(['brookwood-south']);
-export const bakeFile = (quality: string) => `ground-bake-${quality}.bin`;
+/**
+ * Stored gzipped: the host sends binary files as they are (atlanta.solomon.io adds no
+ * Content-Encoding to .i16 or .bin), and gzip is what DecompressionStream inflates everywhere.
+ */
+export const bakeFile = (quality: string) => `ground-bake-${quality}.bin.gz`;
+
+/** A fetched bake's bytes, inflated unless the server already did (dev servers may send .gz encoded). */
+export async function bakeBytes(r: Response): Promise<ArrayBuffer> {
+  const raw = await r.arrayBuffer(), head = new Uint8Array(raw, 0, Math.min(2, raw.byteLength));
+  if (head[0] !== 0x1f || head[1] !== 0x8b) return raw;
+  return new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}

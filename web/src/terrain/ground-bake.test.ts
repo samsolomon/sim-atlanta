@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, expect, it } from 'vitest';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { bakeFile, bakeStats, decodeBake, encodeBake } from './ground-bake';
 import { bakeRow, dataRoot, mountRows, stubPage } from './ground-bake.node';
 import type { TerrainQuality } from './surface';
@@ -52,7 +53,7 @@ it.skipIf(!staged).each([['low', 'smaller'], ['high', 'smaller'], ['high', 'alwa
   restore();
   // The mount re-cuts its ground (golf, yards, decks...) at least once.
   expect(baked.stages.length).toBeGreaterThanOrEqual(1);
-  expect(decodeBake(file.slice().buffer)).toEqual(baked);
+  expect(decodeBake(Uint8Array.from(gunzipSync(file)).buffer)).toEqual(baked);
   const path = `scene/square-board/${ROW}/${bakeFile(quality)}`;
   const plain = await fingerprint(quality);
   const before = { ...bakeStats, reasons: [...bakeStats.reasons] };
@@ -66,7 +67,7 @@ it.skipIf(!staged).each([['low', 'smaller'], ['high', 'smaller'], ['high', 'alwa
   const taped = stages.find(st => st.tape?.length);
   if (taped) taped.tape![3] += 0.25; else stages[stages.length - 1].yieldRingSum += 1;
   const stale = { ...baked, stages };
-  const withStale = await fingerprint(quality, new Map([[path, encodeBake(stale)]]));
+  const withStale = await fingerprint(quality, new Map([[path, gzipSync(encodeBake(stale))]]));
   expect(bakeStats.fallbacks).toBe(before.fallbacks + 1);
   expect(bakeStats.adopted).toBe(before.adopted + 1);
   expect(withStale).toBe(plain);

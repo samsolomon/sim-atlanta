@@ -36,7 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
 import { runBudgeted, runSync, sliceBudget, sliceInput, sectionWorkMs, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
-import { BAKED_AREAS, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
+import { BAKED_AREAS, bakeBytes, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
 /**
@@ -182,7 +182,8 @@ async function readBake(path: string, id: string, quality: TerrainQuality, grid:
   let r: Response;
   try { r = await fetch(`${path}/${bakeFile(quality)}`, { signal }); } catch (e) { if (signal.aborted) throw e; return miss('bake not fetched'); }
   if (!r.ok) return miss(`bake ${r.status}`);
-  const baked = decodeBake(await r.arrayBuffer());
+  let baked: BakedGround | null = null;
+  try { baked = decodeBake(await bakeBytes(r)); } catch (e) { if (signal.aborted) throw e; }
   if (!baked) return miss('bake unreadable');
   if (baked.id !== id || baked.quality !== quality || baked.gridSha256 !== grid.manifest.sha256) return miss('bake for another grid');
   return baked;

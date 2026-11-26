@@ -4,6 +4,7 @@
  * Not imported by the site.
  */
 import { readFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { brookwoodGrid } from '../city/brookwood';
 import { addSection, bounds, joins, midtownRows, type Area, type Board, type MidtownRow } from '../square-board/sections';
 import { GroundGrid } from './grid';
@@ -60,6 +61,6 @@ export async function bakeRow(quality: TerrainQuality, row: MidtownRow, tapes: '
   try {
     const manifest = JSON.parse(readFileSync(new URL(`scene/square-board/${row}/ground.json`, dataRoot), 'utf8'));
     const baked = recorder.bake({ id: row, quality, gridSha256: manifest.sha256 }, tapes);
-    return { baked, file: encodeBake(baked) };
+    return { baked, file: gzipSync(encodeBake(baked), { level: 9 }) };
   } finally { for (const a of mounted.values()) a.dispose(); }
 }
