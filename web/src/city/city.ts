@@ -50,6 +50,7 @@ import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
 import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
+import { applyRampDecks } from '../terrain/ramp-decks';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
@@ -269,6 +270,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     optionalJSON<unknown>('arterials.json'),
   ]);
   perf.phase('city:data');
+  // Downtown halves of the stacked Connector ramps take their measured spans too.
+  applyRampDecks(vd);
   let grid: GroundGrid | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
     try {

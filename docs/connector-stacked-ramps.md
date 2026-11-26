@@ -80,3 +80,40 @@ The order is unambiguous from the other ways' heights. The lower way's own level
    - The phase-1 B witnesses all close: the 38974038 open start, the 38974034 → 1450884828 step, and the north-corner ramp ends.
    - Matched before/after stills at B1/B2/B5 and the three-level stack (1115.8, −591.0).
 5. **Order of work.** First the NB/SB Baker flyovers (38974028/34 and their legs) and the Baker exit, then 38974058 with its three-level stack, then the MLK SB ramp tree, then the north-corner part of 38970413.
+
+## Built
+
+### Step 1: the Baker flyovers and the Baker exit
+
+`ramp-decks.py` turns each listed way's tracked `own` stations into deck spans and writes `ramp-decks.json`, in metres along the full OSM way. Step 1 lists 38974028, 38974034, 38974051, 1450884828, 1450884829, the first 60 m of 38974031 and the last 74 m of 39169033. `web/src/terrain/ramp-decks.ts` applies the spans. Boards clip ways at their seams, so it matches runs to ways by geometry (every vertex within 5 cm of the way):
+
+- On north-corner, `auburnTransport` looks up `rampSpans(road.pts)` when a motorway road has no Sweet Auburn profile, then slices it like any other profiled road.
+- Downtown, `applyRampDecks(vd)` slices the baked `vignette.json` runs before `createSurfaceTransport` and `cityRoadHeight` read them.
+
+Runs that already carry a profile keep it. Span ends that round to within 5 cm of a run vertex snap to that vertex, so no sliver piece opens a joint.
+
+**Ties.** A span starts and ends one station beyond its elevated stations, at a tie row flagged in the JSON. The City gives that vertex `deckWeight` 0, so the deck meets the terrain it actually draws there, not the lidar sample of it. One extra row, 0.25 m inside each tie, keeps the blend that short. Without it, the 5 m blend followed the ground falling away toward the freeway and sagged the 38974034 tread by 0.555 m.
+
+**Measured (both tiers identical; probe scripts and outputs in [b2-baker](log/ui/connector-repairs/b2-baker/)):**
+
+| Check | Result |
+|---|---|
+| Drawn tread minus profile, centreline, every 0.25 m | 0.117–0.122 m on every way (the 0.12 m deck lift), except the 0.25 m tie blends |
+| Drawn tread minus register `own` at measured stations | ≤ 0.13 m (shared endpoints are averaged) |
+| Shared vertices of the Baker chain | One height. The phase-1 38974034 → 1450884828 step (−0.291 m High, −0.307 m Low) is closed |
+| x = 1000 seam, 38974028 and 38974034 | Downtown and north-corner treads within 1 mm. Before: the downtown half stood 7.4 m above the north-corner half |
+| Ground through the tread, centreline and ±1.6 m | None |
+| Ties | Tread = drawn terrain + 0.12 m at all five, as at Sweet Auburn abutments. 38974034's start was 0.216 m |
+| Soffit to lower tread over 9235707 and 337901399 | 8.12, 8.57, 8.65 and 9.08 m (≥ 4.5 m), with the crossing order kept |
+| 439abf84 gate, warm, Low and High | Byte-identical to the reference |
+| Triangles, whole scene at the Baker camera | +4,494 High, +4,510 Low, all deck geometry |
+
+**Still open after step 1.**
+
+- **Plan gap at the x = 1000 seam.** Both carriageways stop 0.6–0.7 m short of each other across the seam. It is pre-existing: `transport.ts` clamps a perpendicular end row to the board bounds, which leaves a wedge on each side wherever a deck crosses a seam obliquely. Before this step the 7.4 m step hid it; it is now the only defect visible in K1 and K2. It gets its own commit.
+- **38974038 open start.** It is not a Baker way. It sits on the NB-to-Freedom-Parkway chain at the auburn edge (1450884836 → 38974038), so step 1 leaves it as phase 1 found it.
+- **Tie edges.** At the 38974031 tie, the drawn terrain rises 2–3 cm through the tread 0.15 m inside the slab edge, between grid nodes. A shallow yield could not reach it (the nodes were already below the tread), so none is applied.
+
+**Stills** (day, matched frozen cameras, BEFORE | AFTER): [K1 High: the flyovers over the Connector](log/ui/connector-repairs/b2-baker/K1-high-before-after.jpg) · [K1 Low](log/ui/connector-repairs/b2-baker/K1-low-before-after.jpg) · [K2 High: side-on near the seam](log/ui/connector-repairs/b2-baker/K2-high-before-after.jpg) · [K2 Low](log/ui/connector-repairs/b2-baker/K2-low-before-after.jpg) · [K3 High: 38974034 into 1450884828](log/ui/connector-repairs/b2-baker/K3-high-before-after.jpg) · [K3 Low](log/ui/connector-repairs/b2-baker/K3-low-before-after.jpg) · [K4 High: the Baker exit](log/ui/connector-repairs/b2-baker/K4-high-before-after.jpg) · [K4 Low](log/ui/connector-repairs/b2-baker/K4-low-before-after.jpg). Cameras: `cam=1000,-790,150,60,220`, `1020,-785,200,70,90`, `1045,-772,120,65,60`, `895,-835,250,30,170`, with `&dev&mindist=20`, matrices in `cameras/`.
+
+**Deploy.** This needs a `web/dist` rebuild only. `ramp-decks.json` is imported at build time, and no `pnpm data` is needed.
