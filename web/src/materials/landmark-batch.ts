@@ -265,16 +265,20 @@ function pack(g: BufferGeometry): Packing | null {
   g.computeBoundingBox();
   const b = g.boundingBox!, c = b.getCenter(new Vector3()), size = b.getSize(new Vector3());
   const s = Math.max(size.x, size.y, size.z, 0.02) / 2;
-  const P = pos.array as Float32Array, q = new Int16Array(P.length);
-  for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) {
-    const v = (P[i + a] - (a === 0 ? c.x : a === 1 ? c.y : c.z)) / s;
-    q[i + a] = Math.round(Math.max(-1, Math.min(1, v)) * 32767);
+  // Four components per vertex (the fourth unused, read by no shader) keep every vertex 4-byte
+  // aligned: 8 bytes of position, 4 of normal. Metal fetches 3-component 16- and 8-bit vertex data
+  // poorly, and WebKit's WebGL on an iPhone lost about 20 ms a frame to #575's 6- and 3-byte strides.
+  const ps = alignedVerticesOff ? 3 : 4, n = pos.count;
+  const P = pos.array as Float32Array, q = new Int16Array(n * ps);
+  for (let v = 0; v < n; v++) for (let a = 0; a < 3; a++) {
+    const x = (P[v * 3 + a] - (a === 0 ? c.x : a === 1 ? c.y : c.z)) / s;
+    q[v * ps + a] = Math.round(Math.max(-1, Math.min(1, x)) * 32767);
   }
-  g.setAttribute('position', new BufferAttribute(q, 3, true));
+  g.setAttribute('position', new BufferAttribute(q, ps, true));
   if (nor) {
-    const N = nor.array as Float32Array, n8 = new Int8Array(N.length);
-    for (let i = 0; i < N.length; i++) n8[i] = Math.round(Math.max(-1, Math.min(1, N[i])) * 127);
-    g.setAttribute('normal', new BufferAttribute(n8, 3, true));
+    const N = nor.array as Float32Array, n8 = new Int8Array(n * ps);
+    for (let v = 0; v < n; v++) for (let a = 0; a < 3; a++) n8[v * ps + a] = Math.round(Math.max(-1, Math.min(1, N[v * 3 + a])) * 127);
+    g.setAttribute('normal', new BufferAttribute(n8, ps, true));
   }
   g.boundingBox = null;
   g.boundingSphere = null;
@@ -338,8 +342,8 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       for (let v = 0; v < count; v += COPY_CHUNK / 4) {
         const e = Math.min(count, v + COPY_CHUNK / 4);
         if (k0) {
-          const c = [k0.cx, k0.cy, k0.cz];
-          for (let i = v * 3; i < e * 3; i++) P[i] = Math.max(-1, src[start * 3 + i] / 32767) * k0.s + c[i % 3];
+          const c = [k0.cx, k0.cy, k0.cz], ps = pos.itemSize;
+          for (let w = v; w < e; w++) for (let a = 0; a < 3; a++) P[w * 3 + a] = Math.max(-1, src[(start + w) * ps + a] / 32767) * k0.s + c[a];
         } else P.set(src.subarray((start + v) * 3, (start + e) * 3), v * 3);
         C.set(cs.subarray((start + v) * k, (start + e) * k), v * k);
         if (e < count) await slice();
@@ -758,6 +762,13 @@ const compactColoursOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
+})();
+
+/** `?perf&align=0` keeps #575's 3-component packed positions and normals (6- and 3-byte strides). */
+const alignedVerticesOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('align') === '0';
 })();
 
 /** `?perf&quant=off` keeps landmark batch positions and normals as floats, for A/B runs. */

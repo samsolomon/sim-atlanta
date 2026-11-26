@@ -247,6 +247,10 @@ describe('batchLandmarks', () => {
     const p = body.geometry.attributes.position, n = body.geometry.attributes.normal;
     expect(p.array).toBeInstanceOf(Int16Array);
     expect(n.array).toBeInstanceOf(Int8Array);
+    // Four components each, so every vertex starts on a 4-byte boundary (8 and 4 bytes): Metal
+    // fetches 3-component 16- and 8-bit data slowly, which cost WebKit about 20 ms a frame.
+    expect([p.itemSize, n.itemSize]).toEqual([4, 4]);
+    expect([p.itemSize * 2 % 4, n.itemSize % 4]).toEqual([0, 0]);
     const step = body.scale.x / 32767;
     const near = Math.min(...Array.from({ length: p.count }, (_, i) => body.localToWorld(new Vector3().fromBufferAttribute(p, i)).distanceTo(before)));
     expect(near).toBeLessThan(step * 2);
