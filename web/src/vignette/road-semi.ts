@@ -270,12 +270,13 @@ function dryVan(k: Kit, near: boolean) {
     h = VAN_TOP - VAN_FLOOR;
   // Plain composite-panel box; the rear frame and rails are separate so the ink finds the edges.
   box(0, VAN_FLOOR + h / 2, mid, VAN_WIDTH, h, VAN_LENGTH, van);
-  for (const y of [VAN_FLOOR + 0.06, VAN_TOP - 0.05]) box(0, y, mid, VAN_WIDTH + 0.02, y < 2 ? 0.12 : 0.1, VAN_LENGTH + 0.01, vanRail);
+  // Rails stand proud of the sides but stop short of the roof and floor faces, so no face is coplanar.
+  for (const y of [VAN_FLOOR + 0.07, VAN_TOP - 0.065]) box(0, y, mid, VAN_WIDTH + 0.02, y < 2 ? 0.12 : 0.1, VAN_LENGTH + 0.01, vanRail);
   // Rear frame: header, sill and corner posts around the swing doors.
   const rear = VAN_REAR - 0.02;
-  box(0, VAN_TOP - 0.11, rear, VAN_WIDTH + 0.02, 0.22, 0.05, vanFrame);
-  box(0, VAN_FLOOR + 0.1, rear, VAN_WIDTH + 0.02, 0.2, 0.05, vanFrame);
-  for (const s of [-1, 1]) box(s * (half - 0.07), (VAN_FLOOR + VAN_TOP) / 2, rear, 0.14, h, 0.05, vanFrame);
+  box(0, VAN_TOP - 0.115, rear, VAN_WIDTH + 0.02, 0.21, 0.05, vanFrame);
+  box(0, VAN_FLOOR + 0.105, rear, VAN_WIDTH + 0.02, 0.2, 0.05, vanFrame);
+  for (const s of [-1, 1]) box(s * (half - 0.07), (VAN_FLOOR + VAN_TOP) / 2, rear, 0.14, h - 0.01, 0.05, vanFrame);
   // Tail and stop lamps in the sill, three red ID lamps in the header.
   for (const s of [-1, 1]) for (const x of [0.92, 1.05]) box(s * x, VAN_FLOOR + 0.1, rear - 0.03, 0.09, 0.09, 0.02, red);
   for (const x of [-0.3, 0, 0.3]) box(x, VAN_TOP - 0.11, rear - 0.03, 0.08, 0.05, 0.02, red);

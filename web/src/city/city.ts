@@ -2124,7 +2124,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;
-      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z));
+      // A dev close-up orbit (?dev&mindist) keeps its shorter near plane; the default 150 m orbit keeps 20 m.
+      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z), Math.min(20, controls.minDistance / 4));
       if (Math.abs(near - camera.near) > 0.05 * camera.near) {
         camera.near = near;
         camera.updateProjectionMatrix();
@@ -2308,7 +2309,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.zoom = zoom;
       camera.updateProjectionMatrix();
     };
-    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
+    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, controls, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
     // Dev-only: which landmark meshes draw on their own, and why (materials/landmark-batch.ts).
     (window as unknown as Record<string, unknown>).__landmarkBatchReport = landmarkBatchReport;
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
