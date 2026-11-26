@@ -44,7 +44,8 @@ High 435 / 100 / 270.3 MB / 536 MB; High night 622 calls / 100 programs; `low-no
   `__perf.captureDraws()` with and without a forced shadow redraw, `__perf.programs()` and
   `programOwners()`, a scene walk of geometry by its first two named ancestors (with arrays
   de-duplicated exactly as `perf.ts` does, so the totals match `geometryMB` to 0.1 MB), and texture
-  sizes by slot. CPU profiles came from a CDP profiler started at navigation on an unminified build,
+  sizes by slot. `tools/probe.js` is that combined probe; an earlier version without array
+  de-duplication over-counted shared arrays, and no figure here comes from it. CPU profiles came from a CDP profiler started at navigation on an unminified build,
   with samples bucketed by call chain. The scripts are in `docs/log/perf-architecture/tools/`.
 - **Views.** Opening (default camera), Midtown street (`cam=640,-3150,250,68,220`, docs/perf.md
   camera 3), R16 (`cam=-120,-6100,-58,55,900`, #682), a matched pair at 5.6 km orbit that differs
@@ -63,11 +64,19 @@ High 435 / 100 / 270.3 MB / 536 MB; High night 622 calls / 100 programs; `low-no
     1550d9d0 figures are quoted above.
   - **No A16 run exists on this head.** The A16 figures quoted (about 25–27 fps steady, 10.6 s
     ready) are from before #682.
-- **iPhone 15 Pro (Safari, Low, coordinator, release 16).** It measured 59.7 fps steady but boot
-  freezes of 8.1 s and 4.8 s, with ready at about 21 s. The run reported `areas = 1`, though, and in
-  `city.ts` that only happens when City built **no** square mosaic (ground grid unavailable or the
-  `square-mosaic` import failed). Its 141 calls and 67.8 MB fit a downtown-only board. Treat those
-  numbers as unverified until the Safari console is checked (§7, Q6).
+- **iPhone 15 Pro baseline** (coordinator, release 16, Safari, Low, opening view, 12 areas):
+  - 25.6 fps steady, p50 37 ms and p95 53 ms.
+  - 375 calls, 1.91M triangles, 80 programs, geometry 180.7 MB, textures 105.2 MB.
+  - Areas finish mounting at about 75 s, with 25 freezes over 100 ms. The worst are 8.7, 8.6, 7.8,
+    6.6, 5.6 and 5.0 s.
+
+  Like the A16, the steady state is draw-bound. Loading is the worst experience. The freezes are
+  about 2.3× the longest task in Studio Chrome at 6× (3.7 s), so a throttled-Chrome proxy
+  understates Safari. The iPhone route stays a device run (§4.5).
+
+  An earlier run reported `areas = 1`. That came from the coordinator's plain-HTTP test origin, where
+  `crypto.subtle` is undefined and the board hash checks threw. Production is HTTPS, so it isn't a
+  production bug.
 
 ## 2. Today's cost, measured
 
@@ -78,16 +87,17 @@ High 435 / 100 / 270.3 MB / 536 MB; High night 622 calls / 100 programs; `low-no
 | Low, opening, 14:00 | 366 | 1.79M | 85 | 108.7 | 148.9 | 413 |
 | Low, opening, 22:00 | 543 | 2.13M | 85 | 108.7 | 148.9 | 413 |
 | Low, Midtown street | 64 | 1.32M | 86 | 108.7 | **209.5** | 444 |
-| Low, R16 (13 areas) | 56 | 1.09M | 86 (89 at 22:00) | 115.0 | **225.8** | **495** |
+| Low, R16 (13 areas) | 56 | 1.09M | 86 (**89** at 22:00) | 115.0 | **225.8** | **495** |
 | Low, after `route:north` | 105 | 1.74M | 86 | 108.7 | **227.6** | **473** |
 | High, opening, 14:00 | 434 | 6.45M | 100 | 772 | 270.3 | 537 |
 | High, opening, 22:00 | **622** | 6.82M | 100 | 772 | 270.3 | 536 |
 | High, Midtown street | 92 | 3.35M | **103** | 772 | **319.1** | **585** |
 | High, R16 (13 areas) | 85 | 2.73M | **106** (107 at 22:00) | 820.8 | **353.1** | **644** |
-| High, after `route:north` | 269 | 8.10M | **104** | 772 | **359.8** | **627** |
+| High, after `route:north` | 269 | **8.10M** | **104** | 772 | **359.8** | **627** |
 
 Bold marks a figure over today's opening-view ceiling (Low 190 MB geometry / 460 MB heap / 86
-programs; High 300 / 570 / 100; High night 630 calls).
+programs; High 300 / 570 / 100 and 6.85M triangles; High night 630 calls). Low 22:00 has no
+ceiling; its 543 calls would exceed the day ceiling of 435.
 
 **What R16 itself costs** (the matched pair at 5.6 km orbit, same camera distance): Low +17.6 MB
 geometry, +6.3 MB texture, +56 MB heap, +1 program. High +40.0 MB geometry, +48.8 MB texture (its
@@ -172,8 +182,10 @@ The A16 is triangle- and draw-bound (docs/perf.md, #613): #613's far boxes took 
 | Shadow depth variants | 12 | 12 | Depth programs split by instancing, alpha test, side and vertex textures |
 | Post passes and ShaderMaterials | 17 | 5 | Tilt-shift, grade, glass blur, AO blend, bloom, GTAO and ink stages, sky, underpass light |
 
-R16 adds one program (Mayson's inferred carriers) on both tiers. The street and route cameras add
-three to four on High as near forms compile. Per-landmark programs are 17 of the 100. The other
+R16 adds one program (Mayson's inferred carriers) on both tiers. The street, R16 and route cameras
+add another 3–7 on High. Their owners weren't resolved: three's ShaderMaterial cache keys differ
+between runs, so they may be near forms or late compiles that prewarm misses. Increment 0's sweep
+names them. Per-landmark programs are 17 of the 100. The other
 programs come from define fan-out, which the program rule has to cover too.
 
 ### 2.6 Main thread: boot and mount
@@ -200,10 +212,23 @@ CPU profiles, 1× CPU, A16 canvas, Low, unminified build (provisional, §1):
 - **Boot at 6× (A16 proxy):** 40 long tasks totalling 22.1 s, the longest 3.74 s. Ready at 7.5 s,
   the last area at 22.4 s, prewarm done at 24.3 s.
 
-> **To fill when the integrator returns the perf window:** per-task attribution of the 6× boot (each
-> task over 300 ms mapped to its phase and bucket, `tools/tasks.mjs`), repeated twice. This answers
-> the coordinator's question about which steps make up the iPhone's 8.1 s and 4.8 s stalls, once
-> that run is confirmed to have built the mosaic.
+**Which steps make the long tasks** (6× CPU, A16 canvas, Low, single run, provisional). Each task
+over 700 ms is matched to the City phase that lands inside it in the same run:
+
+| Task (start, length) | Phase landing in it | Step |
+|---|---|---|
+| 0.9 s, **2.4 s** | `stage:terrain` | Downtown ground: grid, cut and carve (`buildDowntownTerrain`) |
+| 3.6 s, 1.3 s | `stage:streets and freight` | Surface transport and its ground carve |
+| 5.3 s, 0.7 s | `city:built` (lights, renderer, placement) | City assembly and the first compiles |
+| 8.4–13.6 s, 0.8–1.6 s each | `area:south-band`, `midtown-south`, `midtown-central`, `midtown-upper` | One Midtown row mount each |
+| 15.7 s, **3.7 s** | `area:brookwood-south` | Row mount (the densest canopy and Ansley ground) |
+| 20.0 s, **2.9 s** | `area:brookwood-station` | Row mount (station, rail cut, highway ground) |
+| 23.6 s, **27.7 s** | `area:r16` (R16 camera only) | R16 mount, 98% ground at 1× (above) |
+
+Every long task over 700 ms is a ground-and-board build: the downtown stage or one area's mount. The
+iPhone's 5–9 s freezes fit these same mounts at Safari's speed. The 1× bucket split above holds for
+these tasks as a whole. A per-task split at 6×, repeated twice, waits for the integrator's perf window
+(`tools/tasks.mjs`). It refines the shares and doesn't change the conclusion.
 
 ## 3. Projection to the full extent
 
@@ -270,8 +295,16 @@ A manifest records each file's sha256, the source-data hashes and a hash of the 
 
 Bake what is expensive **per byte**, not everything:
 
-- **Bake:** ground cut, carve, yields and normals (2.1 s at boot and 4 s for R16, for about 3 MB
-  compressed for the whole board) and the near-ring ground detail.
+- **Bake:** ground cut, carve, yields and normals (2.1 s at boot and 4 s for R16) and the near-ring
+  ground detail. **Bytes, estimate (not measured):**
+  - Ground arrays today are Float32 at about 32 B per vertex (position, UV, normal). Packed like
+    #575 at about 16 B and then Brotli-compressed, they are roughly a quarter of today's array size.
+  - Low: 14 MB at the opening view → about 3–5 MB to download.
+  - High: 70.5 MB → about 15–20 MB, unless High downloads Low's ground and refines only the near
+    ring in the browser.
+  - Near-ring detail (29 MB on Low for one Midtown neighbourhood) → about 5–8 MB per neighbourhood,
+    fetched on approach.
+  - Increment 5's first output is the measured byte count per tier, before any wiring.
 - **Maybe later:** transport decks (0.43 s, about 8 MB).
 - **Never:** generic buildings (0.08 s; extruding footprints is cheaper than downloading them).
 
@@ -313,7 +346,7 @@ Both run V8 with the same float32 rounding, so a mismatch is a bug, not noise.
 - Builders that read the DOM or canvas need splitting. Ground-map painting stays in the browser.
 - The joined-seam bake must equal today's mount for the default visit. The parity hash runs on the
   joined board, both tiers.
-- Download grows by the baked ground bytes (estimated at about 3 MB compressed for today's board).
+- Download grows by the baked ground bytes (above). High is the risk, and Q4 asks Sam.
 - Bake time is about 5 s for today's board on the Studio, and roughly 3 minutes for the hull.
 - Hand-written per-area branches (`id === 'r16'` in `square-board/sections.ts`) don't scale to 1,218
   tiles. The bake has to emit them as data: yields, special profiles, overrides.
@@ -430,7 +463,8 @@ level ships without Sam seeing that sheet.
 Sam's call takes 4–6 hours.
 
 **Reuse.** #613 (`city/far-board.ts`), #450 (`trees/far-canopy.ts`, far form, 400 m cells), #538 and
-#586 (very-far ground, opt-in), the houses far-far boxes already on main, and #435's
+#586 (very-far ground, opt-in), #442's far house blocks and the houses far-far boxes already on main,
+and #435's
 `stream/lod-build.ts` (replaced by the shared builders).
 
 ### 4.4 Material consolidation (programs)
@@ -455,7 +489,7 @@ adds a showcase camera to the list (`docs/expansion-checklist.md`).
 
 | View | Camera | Tiers | Checks |
 |---|---|---|---|
-| Opening | Default | Low, High, High 22:00 | Calls, triangles, programs, texture, geometry, heap |
+| Opening | Default | Low, Low 22:00, High, High 22:00 | Calls, triangles, programs, texture, geometry, heap |
 | Street | Midtown, docs/perf.md camera 3 | Low, High | Same |
 | North edge | R16, `cam=-120,-6100,-58,55,900` | Low, High 22:00 | Same, with the newest area mounted |
 | Each area's showcase | Per area | Low, High | Same |
@@ -468,7 +502,7 @@ adds a showcase camera to the list (`docs/expansion-checklist.md`).
 
 | Measure | Low | High |
 |---|---:|---:|
-| Calls | 250 | 450 (night included) |
+| Calls (day and 22:00) | 250 | 450 |
 | Triangles | 1.5M | 6M |
 | Programs | 45 | 55 |
 | Geometry | 150 MB | 250 MB |
@@ -487,7 +521,9 @@ a second sample after a route for the growth check, in `perf.ts`'s `run()`.
 
 ## 5. Programs: the consolidation design
 
-**Phase A: normalise the define fan-out.** No visual change; 8–12 hours.
+**Phase A: normalise the define fan-out.** 8–12 hours. It aims at no visible change, but side
+policy, flat shading and alpha-test moves can shift pixels. Each step needs a matched-frame pixel
+diff by day and night against main.
 
 - **Vertex colours always on** for static kit materials. Untinted meshes get a white Uint8 colour,
   which packing makes 3–4 bytes per vertex.
@@ -560,9 +596,9 @@ touches the look. "Gate" marks what must land before the next expansion.
 |---:|---|---|---:|---|---|
 | 0 | Per-view budgets: street and north-edge views, the growth check, the A16 and iPhone proxies; ceilings at today's figures | 5 | 6–10 | perf-run, program-sweep | **Gate** |
 | 1 | Area slicing lands: R16 mount in the budgeted build | 1 | (in flight) | #611, #621, `area-build-slicing` | **Gate** |
-| 2 | Dispose near house tiles outside the near band; pack generic buildings and houses like #575 | 2 | 6–10 | #575 | **Gate** (gets street and route back under ceilings) |
+| 2 | Dispose near house tiles outside the near band; pack generic buildings and houses like #575 | 2 | 6–10 | #575, #442 | **Gate** (gets street and route back under ceilings) |
 | 3 | Programs phase A plus the program-rule lint | 4 | 8–12 | library, prewarm | **Gate** (High is at 100/100) |
-| 4 | Night windows and lit panes ride the wall draw | 4 | 6–10 | #441 | **Gate** (High night is at 622/630) |
+| 4 | Night windows and lit panes ride the wall draw | 4 | 6–10 | #441 | **Gate** (High night is at 622/630; Low 22:00 is at 543 calls, unbudgeted, on draw-bound phones) |
 | 5 | Bake ground in Node for today's areas with seams joined, browser fallback, parity hash | 1 | 15–25 | sliced-build tests, #611, #621, #575 | Before the second expansion |
 | 6 | Unload baked areas by distance, drop CPU arrays where nothing reads them, follow and deep links into evicted areas | 2 | 15–20 | #682 R16 rules, #435 rings | Before the second expansion |
 | 7 | Far LOD L1 per area (boxes plus canopy plus coarse ground) behind a flag, blink harness, then Sam's call; distance-tiered High ground maps | 3 | 20–30 | #613, #450 | Before the second expansion |
@@ -586,13 +622,14 @@ touches the look. "Gate" marks what must land before the next expansion.
    the hull as horizon? This sets the coarse-level budget.
 3. **Far LOD look:** may the coarse levels differ from near forms within the blink-test thresholds
    (boxes at 9 km or more, #613), or must they be indistinguishable at the switch?
-4. **Baking ground into data files** adds about 3 MB compressed for today's board and makes `pnpm
-   data` part of more PRs. Acceptable?
+4. **Baking ground into data files** adds an estimated 3–5 MB (Low) to 15–20 MB (High) of
+   compressed download for today's board, and makes `pnpm data` part of more PRs. Is that acceptable,
+   or should High refine Low's baked ground in the browser?
 5. **Phase B touches approved landmarks** (skyline reflections, One Atlantic, 1180, the Capitol).
    Will you review them as one batch sheet?
-6. **iPhone run:** please check that run's Safari console. `areas = 1` means no mosaic was built
-   (ground grid unavailable, or the square-mosaic import threw). If it was the import, that is a
-   Safari-only bug on production.
+6. **Loading versus look:** the iPhone's worst experience is 75 s of mounting with freezes up to
+   8.7 s. Until baking lands, should areas past the fog mount only on approach (as R16 does), even
+   if the opening view briefly shows bare table at the far edge?
 
 ## Appendix: reproducing
 

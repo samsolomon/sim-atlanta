@@ -1,3 +1,6 @@
+// City perf probe for scripts/perf-run.mjs --eval: long tasks, draws (with and without a forced shadow
+// redraw), programs with owners, texture sizes by slot, and geometry by layer with arrays de-duplicated
+// as perf.ts does (totals equal summary.geometryMB). Needs the local __cityScene hook (see the plan's appendix).
 (async () => {
   const lt = await new Promise(res => { const out = []; const po = new PerformanceObserver(l => { out.push(...l.getEntries()); }); try { po.observe({ type: 'longtask', buffered: true }); } catch (e) { res('unsupported'); return; } setTimeout(() => { po.disconnect(); res(out.map(e => [Math.round(e.startTime), Math.round(e.duration)])); }, 300); });
   const draws = await __perf.captureDraws();
@@ -15,9 +18,6 @@
     names.reverse();
     const mat = Array.isArray(o.material) ? o.material[0] : o.material;
     const k = names.slice(0, 2).join(' / ') || `(unnamed ${o.type} ${mat?.name || mat?.type || ''})`;
-    if (o.geometry && !seen.has(o.geometry.uuid)) { seen.add(o.geometry.uuid);
-      let b = bytes(o.geometry); if (o.isInstancedMesh) b += o.instanceMatrix.array.byteLength + (o.instanceColor?.array.byteLength ?? 0);
-      geo[k] = (geo[k] ?? 0) + b; }
     for (const m of (Array.isArray(o.material) ? o.material : o.material ? [o.material] : [])) for (const [slot, t] of Object.entries(m)) {
       if (!t || !t.isTexture || texSeen.has(t.uuid)) continue; texSeen.add(t.uuid);
       const img = t.image; const w = img?.width ?? 0, h = img?.height ?? 0, d = img?.depth ?? 1;
@@ -31,5 +31,14 @@
     draws: draws && { total: draws.total, byPass: draws.byPass, byCategory: draws.byCategory, top: draws.top.slice(0, 40) },
     shadow: shadow && { byPass: shadow.byPass },
     programs: progs.map(p => ({ id: p.id, name: p.name, used: p.used, key: p.key.slice(0, 400), owners: (byProg[p.id] ?? []).slice(0, 5), nOwners: (byProg[p.id] ?? []).length })),
-    top: __perf.top(30), marks, geoTop: mb(geo), texTop: mb(tex) };
+    top: __perf.top(30), marks, geometryByLayer: (() => { const sc = window.__cityScene; const arr = new Set(); const geo = {}; const cat = {};
+ const add = (k, a) => { if (!a || arr.has(a)) return 0; arr.add(a); geo[k] = (geo[k] ?? 0) + a.byteLength; return a.byteLength; };
+ sc.traverse(o => { if (!o.geometry) return; const names = []; for (let p = o; p && p !== sc; p = p.parent) if (p.name) names.push(p.name); names.reverse();
+  const mat = Array.isArray(o.material) ? o.material[0] : o.material; const g = o.geometry;
+  let k = names.slice(0, 2).join(' / ');
+  if (!k) k = g.attributes.aStyle ? '(generic buildings: unnamed, aStyle/aBase)' : `(unnamed ${o.type} ${mat?.type ?? ''})`;
+  for (const a of Object.values(g.attributes)) add(k, a.array ?? a.data?.array); if (g.index) add(k, g.index.array);
+  if (o.isInstancedMesh) { add(k, o.instanceMatrix.array); add(k, o.instanceColor?.array); } });
+ const tot = Object.values(geo).reduce((a, b) => a + b, 0);
+ return { totalMB: +(tot / 1048576).toFixed(1), top: Object.entries(geo).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, b]) => [k, +(b / 1048576).toFixed(1)]) }; })(), texTop: mb(tex) };
 })()
