@@ -68,7 +68,7 @@
     "motion": "route:north",
     "ceiling": {
       "longestTaskMs": 650,
-      "loadLongestTaskMs": 400
+      "loadLongestTaskMs": 300
     },
     "target": {
       "longestTaskMs": 150,
