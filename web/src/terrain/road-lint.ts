@@ -325,7 +325,11 @@ export function roadLint(root: THREE.Object3D, boards: LintBoard[], o: RoadLintO
       if (metric === 'open') s.openSites = found.length;
       all.push(...found.map(f => ({ ...f, board })));
     }
-    sites[metric] = all.sort((p, q) => q.cells - p.cells).slice(0, 40);
+    // The largest 40 City-wide, and the largest 8 on every board, so a regression on a small
+    // board still shows where it is.
+    const top = all.sort((p, q) => q.cells - p.cells), keep = new Set(top.slice(0, 40));
+    for (const board of Object.keys(byBoard)) top.filter(t => t.board === board).slice(0, 8).forEach(t => keep.add(t));
+    sites[metric] = top.filter(t => keep.has(t));
   }
   for (const s of Object.values(out)) for (const k of Object.keys(s) as (keyof BoardCounts)[]) s[k] = Math.round(s[k]);
   return { boards: out, sites, meshes };
