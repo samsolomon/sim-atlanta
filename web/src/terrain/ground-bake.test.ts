@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, expect, it } from 'vitest';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -55,6 +55,9 @@ it.skipIf(!staged).each([['low', 'smaller'], ['high', 'smaller'], ['high', 'alwa
   expect(baked.stages.length).toBeGreaterThanOrEqual(1);
   expect(decodeBake(Uint8Array.from(gunzipSync(file)).buffer)).toEqual(baked);
   const path = `scene/square-board/${ROW}/${bakeFile(quality)}`;
+  // A staged bake must be today's: one left from before a ground change only falls back (and is downloaded for nothing).
+  const disk = new URL(path, dataRoot);
+  if (tapes === 'smaller' && existsSync(disk)) expect(Buffer.compare(readFileSync(disk), Buffer.from(file)), 'staged bake is stale: run pnpm data:bake').toBe(0);
   const plain = await fingerprint(quality);
   const before = { ...bakeStats, reasons: [...bakeStats.reasons] };
   const withBake = await fingerprint(quality, new Map([[path, file]]));
