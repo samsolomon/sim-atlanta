@@ -1,0 +1,178 @@
+[
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 9235920,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1078.85,
+   -603.67
+  ],
+  "f": 0.7,
+  "xz": [
+   1077.43,
+   -603.64
+  ],
+  "tread": -32.027,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.021,
+  "treadAboveBoard1m": 0.021,
+  "drop": 0.021149905758292675
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 9236432,
+  "kind": "bridge",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1248.16,
+   -493.27
+  ],
+  "f": 0.9,
+  "xz": [
+   1249.58,
+   -493.37
+  ],
+  "tread": -19.55,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.008,
+  "treadAboveBoard1m": 6.603,
+  "drop": 0.007826747328667949
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 28686579,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1235.55,
+   -512.83
+  ],
+  "f": 0.9,
+  "xz": [
+   1238.01,
+   -514.25
+  ],
+  "tread": -22.12,
+  "beyond1mm": -0.001,
+  "beyond1m": -0.622,
+  "treadAboveBoard1m": 0.622,
+  "drop": 0.6224294969037985
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 28852664,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1207.22,
+   -647.2
+  ],
+  "f": 0.3,
+  "xz": [
+   1205.92,
+   -646.61
+  ],
+  "tread": -22.083,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.027,
+  "treadAboveBoard1m": 0.027,
+  "drop": 0.02712789431316054
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 38974038,
+  "kind": "bridge",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1045.81,
+   -497.53
+  ],
+  "f": 0.9,
+  "xz": [
+   1046.05,
+   -494.7
+  ],
+  "tread": -19.57,
+  "beyond1mm": -7.58,
+  "beyond1m": -6.864,
+  "treadAboveBoard1m": 6.864,
+  "drop": 6.864089933550677
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 38974039,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1137.8,
+   -467.32
+  ],
+  "f": 0.9,
+  "xz": [
+   1135.66,
+   -465.46
+  ],
+  "tread": -23.38,
+  "beyond1mm": -0.266,
+  "beyond1m": -0.261,
+  "treadAboveBoard1m": 0.261,
+  "drop": 0.2614941118541232
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 38974058,
+  "kind": "bridge",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1229.87,
+   -653.3
+  ],
+  "f": 0.9,
+  "xz": [
+   1231.25,
+   -650.82
+  ],
+  "tread": -16.754,
+  "beyond1mm": -0.117,
+  "beyond1m": 0.298,
+  "treadAboveBoard1m": -0.298,
+  "drop": -0.297972212214642
+ },
+ {
+  "site": "B",
+  "tier": "low",
+  "way": 949978958,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1158.61,
+   -669.41
+  ],
+  "f": 0.1,
+  "xz": [
+   1157.3,
+   -668.87
+  ],
+  "tread": -30.678,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.053,
+  "treadAboveBoard1m": 0.053,
+  "drop": 0.05302761025090419
+ }
+]
