@@ -101,6 +101,10 @@ jobs:
           pnpm test:release
         env:
           SKIP_BROWSER_TESTS: '1'
+          # Board-building tests take several times longer on the 4-core runner than on a Mac, and
+          # four busy workers starve Vitest's own messaging.
+          VITEST_TEST_TIMEOUT: '60000'
+          VITEST_MAX_WORKERS: '3'
 
       - name: Type check and build
         run: pnpm --filter web build:app

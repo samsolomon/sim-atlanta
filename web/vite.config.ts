@@ -31,7 +31,11 @@ export default defineConfig(({ command }) => {
     // default of one thread per core then starves its own worker RPC ("Timeout calling
     // onTaskUpdate") even though every test passes. Forked workers, capped, finish cleanly;
     // VITEST_MAX_WORKERS raises the cap on a quiet machine or CI.
-    test: { pool: 'forks', maxWorkers: Number(process.env.VITEST_MAX_WORKERS) || 4 },
+    test: {
+      pool: 'forks', maxWorkers: Number(process.env.VITEST_MAX_WORKERS) || 4,
+      // Slower machines (CI) raise the per-test limit; unset, Vitest's 5 s stands.
+      ...(process.env.VITEST_TEST_TIMEOUT ? { testTimeout: Number(process.env.VITEST_TEST_TIMEOUT) } : {}),
+    },
     build: {
       target: 'es2022',
       chunkSizeWarningLimit: 1200,
