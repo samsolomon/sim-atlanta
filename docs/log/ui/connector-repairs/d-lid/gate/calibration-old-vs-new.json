@@ -1,0 +1,30 @@
+{
+ "oldChecker": "439abf84",
+ "newChecker": "846cb5b8 (samsolomon/crossing-check-lid)",
+ "runs": [
+  {
+   "export": "/tmp/four-city-study/step0",
+   "expect": "baseline",
+   "identical": true,
+   "sha256": "f7aefbe577a8fbbb894b6d800d26c8d7810f28e52410ed8504ee5441f626a2ee"
+  },
+  {
+   "export": "/tmp/four-city-study/step0-beb9b2d0",
+   "expect": "peachtree",
+   "identical": true,
+   "sha256": "175281df913d4b2be7b65182a5b0efe82c8c18bc4998af9e68e0e5f4cbeb0086"
+  },
+  {
+   "export": "/tmp/four-city-study/step0-1d04eadc",
+   "expect": "combined",
+   "identical": true,
+   "sha256": "62290ed4c01e367528120978cb0362a098936dc5b318cd97168b0d4d9f981d48"
+  },
+  {
+   "export": "connector-b2-ramps 70cdd4af",
+   "expect": "combined",
+   "identical": true,
+   "sha256": "62290ed4c01e367528120978cb0362a098936dc5b318cd97168b0d4d9f981d48"
+  }
+ ]
+}
