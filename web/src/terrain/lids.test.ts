@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { southConnectorTransport } from '../square-board/south-connector-decks';
 import type { P2 } from '../vignette/geom';
+import { GroundGrid } from './grid';
 import { applyLids, lidRoads, onLid } from './lids';
+import { GroundSurface } from './surface';
 import type { TerrainCity } from './transport-data';
 
 const band = new URL('../../../pipeline/prototypes/square-board/south-band/context.json', import.meta.url);
@@ -37,4 +39,20 @@ it('cuts a baked bridge run at the lid outline and keeps the part off the lid a 
   // A run that only touches a lid corner stays a bridge.
   const corner = { roads: [], terrainTransport: { version: 1, rail: [], roads: [{ kind: 'bridge', cls: 'footway', pts: [[376.16, 671.81], [376.39, 711.18]] }] } } as unknown as TerrainCity;
   expect(applyLids(corner).terrainTransport!.roads.map(r => r.kind)).toEqual(['bridge']);
+});
+
+it.each(['low', 'high'] as const)('draws the lid top, not its DEM spikes or the cut, under its streets on %s', quality => {
+  // Something overhead was classified as ground near (375, 760): the grid read up
+  // to 316.0 m over a 310.3 m lid. At the south portal a 5 m node sat in the cut,
+  // and service road 561694954 dropped into it (lids.py, underpass-floors.json).
+  const dir = new URL('../../../pipeline/prototypes/square-board/south-band/', import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', dir))).buffer);
+  const ground = new GroundSurface(grid, quality);
+  const zero = manifest.vertical.sceneZeroNavd88M;
+  try {
+    for (const [x, z, lid] of [[375, 760, 310.33], [370, 760, 310.34], [365, 760, 310.42], [375, 765, 309.92], [330, 875, 310.27]]) {
+      expect(Math.abs(ground.sampleScene(x, z)! + zero - lid), `${x}, ${z}`).toBeLessThan(.05);
+    }
+  } finally { ground.geometry.dispose(); }
 });

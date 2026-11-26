@@ -126,3 +126,26 @@ The concealed lower lanes are unchanged.
 
 **Deploy.** A `web/dist` rebuild only.
 
+### D2: the lid's ground edits
+
+`lids.py` checks every south-band grid node inside the lid outline against the class-2 returns within 2.5 m of it. `underpass-floors.py` merges the results into `underpass-floors.json`, which the City already applies before tessellation:
+
+- **Spikes.** A node more than 1 m above the median, or more than 0.5 m above it where the returns are contaminated (90th percentile 3 m above the median), takes the median. That catches five nodes near (365–375, 760–765). Something overhead was classified as ground there, so the grid read 311.3–316.0 m over a 310.3–310.5 m lid.
+- **Edge sags.** Within 5 m of a lid street or walk, a node more than 0.5 m below the median, where some returns come from the cut (10th percentile 2 m under the median), takes the median. That catches two nodes at the south portal, (330, 875) and (340, 885). A 5 m grid cannot resolve the lid's edge, and service road 561694954 had dropped 1.9 m into the cut there.
+
+**(460, 760) is not a spike.** The phase-1 note listed it, but that node matches the lid top (class-2 median 309.2 m). It only stands out beside the cut at the lid's east edge.
+
+**Measured (both tiers; [d-lid/d2](log/ui/connector-repairs/d-lid/d2/)):**
+
+| Check | D1 | D2 |
+|---|---|---|
+| Lid ways: drawn surface minus own lidar surface (1,005 samples) | p5 −0.10 / median 0.00 / p95 +0.15 m. Max +5.3 m, min −1.9 m | p5 −0.09 / median 0.00 / p95 +0.09 m (High). p99 0.19 m, range −0.43 to +0.37 m |
+| Samples beyond ±0.3 m | 35 | 7, at two places the 5 m grid cannot resolve: walk 1451206629 near (287, 788) on a node 0.6 m below uniform returns, and walk 1451206638 near (390, 762) |
+| Checker's Capitol method on the lid | All joints inside, no walk gap | Unchanged: all six joints inside, steps ≤ 0.1 mm, no walk gap |
+| 439abf84 gate, 17th Street and Peachtree | Byte-identical | Byte-identical |
+| `underpass-floors.json` | — | 7 nodes added on the south-band grid; every other edit unchanged |
+
+**Stills** (day and night, matched frozen cameras; BEFORE is D1): [L4 High: Memorial and Capitol](log/ui/connector-repairs/d-lid/d2/L4-high-before-after.jpg) · [L4 night High](log/ui/connector-repairs/d-lid/d2/L4-night-high-before-after.jpg) · [P1 High: the spike cluster](log/ui/connector-repairs/d-lid/d2/P1-high-before-after.jpg) · [P2 High: the south portal](log/ui/connector-repairs/d-lid/d2/P2-high-before-after.jpg), with the Low versions beside them. Cameras: `cam=372,763,200,62,45` and `335,878,20,62,70`, with `&dev&mindist=20`.
+
+**Deploy.** A `web/dist` rebuild only. `underpass-floors.json` is bundled, and the staged ground files do not change.
+
