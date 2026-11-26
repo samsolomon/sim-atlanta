@@ -4,7 +4,7 @@ import tunnelRuns from './fixtures/midtown-tunnel.json';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Plane, Vector3 } from 'three';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { NORTH_LINE_VANISH_DEPTH } from './midtown-marta-rail';
-import { downtownCoverAt, drawnCar, inMappedTunnel, needsHandoff, pickHandoff, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
+import { downtownCoverAt, drawnCar, inMappedTunnel, leadFirst, needsHandoff, pickHandoff, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
 
 const bounds = {minX:0,maxX:500,minZ:0,maxZ:100};
 const train: Followed = {kind:'train',id:'trip-1',pathId:'blue-east',tier:'scheduled'};
@@ -17,7 +17,7 @@ const rail: RailData = {version:1,datum:'track-bed',evidence:{},paths:{'blue-eas
 describe('vehicle follow', () => {
   it('follows the same trip through the last car, full cover and first car of the next opening', () => {
     const f = new VehicleFollow(); f.start(train);
-    expect(f.frame(fix(20,[car(21),car(31)]),bounds,0,false)).toEqual({x:26,z:36});
+    expect(f.frame(fix(20,[car(31),car(21)]),bounds,0,false)).toEqual({x:31,z:36});
     expect(f.phase).toBe('drawn');
     const covered = f.frame(fix(60,[],'covered'),bounds,200,false)!;
     expect(f.phase).toBe('covered');
@@ -270,4 +270,63 @@ it('does not count a car as drawn when two planes leave none of its length', () 
   expect(drawnCar(car)).toBeNull();
   car.material.clippingPlanes = [keepFront, new Plane(new Vector3(0, 0, -1), 8)];   // 5 <= z <= 8
   expect(drawnCar(car)).not.toBeNull();
+});
+
+describe('following a long train', () => {
+  const long: Followed = {kind:'freight',id:'illustrative:freight:norcross',tier:'illustrative'};
+  const consist = (cars: {x:number;z:number}[]): Fix => ({id:long.id,tier:long.tier,x:cars[0].x,z:36,cars,hidden:null});
+  const aim = (cars: {x:number;z:number}[]) => {
+    const f = new VehicleFollow(); f.start(long);
+    return f.frame(consist(cars),bounds,0,false);
+  };
+
+  it('frames the front car, not the middle of the consist, in either direction', () => {
+    expect(aim([car(400),car(300),car(200),car(100)])).toEqual({x:400,z:36});
+    expect(aim([car(100),car(200),car(300),car(400)])).toEqual({x:100,z:36});
+  });
+
+  it('frames the car on the board nearest the lead, and keeps following while any car is on it', () => {
+    expect(aim([car(560),car(520),car(480),car(440)])).toEqual({x:480,z:36});
+    expect(aim([car(-60),car(-20),car(20),car(60)])).toEqual({x:20,z:36});
+  });
+
+  it.each([['a mouth', bounds], ['the board edge', {...bounds,maxX:300}]])(
+    'waits at %s as the front car is cut away, then takes the next without a step', (_, board) => {
+    // 20 m cars nose to tail, running +x into a clipping plane at x = 300.
+    const material = new MeshBasicMaterial({ clippingPlanes: [new Plane(new Vector3(-1, 0, 0), 300)] });
+    const cars = [0, 1, 2, 3].map(i => {
+      const mesh = new Mesh(new BoxGeometry(3, 4, 20), material);
+      mesh.rotation.y = Math.PI / 2;
+      Object.assign(mesh.userData, { lengthM: 20, consistIndex: i });
+      return mesh;
+    });
+    const f = new VehicleFollow(); f.start(long);
+    for (let nose = 300; nose <= 340; nose++) {
+      cars.forEach((mesh, i) => mesh.position.set(nose - 10 - 20 * i, 0, 36));
+      // Undefined means the camera stayed where it was.
+      const goal = f.frame(consist(leadFirst(cars)),board,nose * 16,false);
+      expect(goal?.x ?? 290, `nose at ${nose}`).toBeCloseTo(290);
+    }
+    expect(f.phase).toBe('drawn');
+  });
+
+  it('barely moves when a car first appears or last shows ahead of other cut cars', () => {
+    // Unit 3 is itself half under cover when the lead reappears far ahead of it.
+    const behind = [{...car(200),shown:.1},car(180),car(160)];
+    const without = aim(behind)!;
+    const sliver = aim([{...car(400),shown:.001},...behind])!;
+    expect(Math.abs(sliver.x - without.x)).toBeLessThan(.5);
+  });
+
+  it('orders drawn cars by their place in the consist, not by child order', () => {
+    const made = [2, 0, 3, 1].map(i => {
+      const mesh = new Mesh(new BoxGeometry(3, 4, 20), new MeshBasicMaterial());
+      mesh.position.set(400 - 30 * i, 0, 36);
+      mesh.userData.consistIndex = i;
+      return mesh;
+    });
+    expect(leadFirst(made).map(c => c.x)).toEqual([400, 370, 340, 310]);
+    made[1].visible = false; // the lead is hidden: the car behind it is in front
+    expect(leadFirst(made)[0].x).toBe(370);
+  });
 });

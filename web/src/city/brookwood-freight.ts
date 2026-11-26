@@ -79,6 +79,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number, distance:
       car.visible = show;
       if (!show) return;
       car.userData.lengthM = length;
+      car.userData.consistIndex = i;
       car.userData.kind = unit.kind;
       car.userData.consist = summary;
       car.userData.lead = units[0].kind;

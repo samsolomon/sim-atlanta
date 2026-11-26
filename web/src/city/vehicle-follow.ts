@@ -8,6 +8,8 @@ import downtownCover from './fixtures/downtown-rail-cover.json';
 export const FOLLOW_CAMERA = { bearing: -148, tilt: 26, distance: 300 };
 export type FollowKind = 'train' | 'bus' | 'freight';
 type Point = { x: number; z: number };
+/** A drawn car's centre, and the share of its length on show when cover or a clipping plane cuts it. */
+export type CarPoint = Point & { shown?: number };
 type Bounds = SceneManifest['bounds'];
 /** Why a followed vehicle has no drawn car: a mapped tunnel, a roof or deck over the track,
  * or nothing known (a row without a modelled track, or a vehicle clipped at its own edge). */
@@ -24,8 +26,9 @@ export type Fix = {
   routeId?: string; heading?: number;
   /** Source position in scene metres. */
   x: number; z: number;
-  /** Cars that are drawn and inside their own clipping planes this frame. */
-  cars: readonly Point[];
+  /** Cars that are drawn and inside their own clipping planes this frame, front first in the
+   * direction of travel. */
+  cars: readonly CarPoint[];
   hidden: Hidden;
 };
 
@@ -119,26 +122,33 @@ export class VehicleFollow {
     }
     this.last = fix;
     this.phase = cars.length ? 'drawn' : fix.hidden ?? 'unseen';
-    const goal = cars.length
-      ? { x: cars.reduce((s, c) => s + c.x, 0) / cars.length, z: cars.reduce((s, c) => s + c.z, 0) / cars.length }
-      : { x: fix.x, z: fix.z };
+    // Frame the front car on the board. While cover or an edge cuts it, it gives way to the cars
+    // behind by the share it has lost, so a car appearing or vanishing never moves the aim in one
+    // step. A cut car therefore counts until it is gone, even with its centre past the edge.
+    const framed = cars.length ? fix.cars.filter(c => c.shown !== undefined || inside(c)) : cars;
+    const goal = framed.reduceRight<Point>((behind, c) => {
+      const w = c.shown ?? 1;
+      return { x: c.x * w + behind.x * (1 - w), z: c.z * w + behind.z * (1 - w) };
+    }, framed[framed.length - 1] ?? fix);
+    // A fresh object: easing below writes to it.
+    const target = { x: goal.x, z: goal.z };
     const dt = Math.min(100, Math.max(0, now - (this.lastTime ?? now)));
     this.lastTime = now;
     if (!this.requested && reducedMotion) return;
     const previous = this.focus && (current ?? this.focus);
     if (!this.requested && previous) {
-      const gap = Math.hypot(previous.x - goal.x, previous.z - goal.z);
+      const gap = Math.hypot(previous.x - target.x, previous.z - target.z);
       if (gap < 8) this.easing = false;
       if (gap < .02) return;
       // A fast clock or scrub can cross a whole block in one frame. Keep the
       // selected vehicle in shot without flying through all the intervening streets.
       // After a handoff the target is a different train, so ease over to it instead.
       const k = this.easing ? -Math.expm1(-dt / 160) : Math.max(-Math.expm1(-dt / 160), 1 - 8 / gap);
-      goal.x = previous.x + (goal.x - previous.x) * k;
-      goal.z = previous.z + (goal.z - previous.z) * k;
+      target.x = previous.x + (target.x - previous.x) * k;
+      target.z = previous.z + (target.z - previous.z) * k;
     }
     this.requested = false;
-    return this.focus = goal;
+    return this.focus = target;
   }
 }
 
@@ -169,7 +179,7 @@ const front = new THREE.Vector3(), rear = new THREE.Vector3();
  * its material: a board edge, or a tunnel mouth such as the North Line portal, which clips
  * NORTH_LINE_VANISH_DEPTH inside the mouth. Follow's "Underground" therefore starts exactly
  * when the last car vanishes and ends when the first car reappears. */
-export function drawnCar(car: THREE.Object3D): Point | null {
+export function drawnCar(car: THREE.Object3D): CarPoint | null {
   if (!car.visible) return null;
   const material = (car as THREE.Mesh).material;
   const planes = (Array.isArray(material) ? material[0] : material)?.clippingPlanes ?? [];
@@ -187,7 +197,18 @@ export function drawnCar(car: THREE.Object3D): Point | null {
     else if (b < 0) t1 = Math.min(t1, a / (a - b));
   }
   if (t0 >= t1) return null;
-  return { x: (front.x + rear.x) / 2, z: (front.z + rear.z) / 2 };
+  const centre = { x: (front.x + rear.x) / 2, z: (front.z + rear.z) / 2 };
+  const shown = (t1 - t0) * (car.userData.daylight ?? 1);
+  return shown < 1 ? { ...centre, shown } : centre;
+}
+
+/** One train's drawn cars, front first in the direction of travel. Every rail source stamps
+ * `userData.consistIndex` (0 = leading) as it places a car: child order is mesh pool order,
+ * which says nothing about the consist. */
+export function leadFirst(cars: readonly THREE.Object3D[]) {
+  // A pooled mesh that has never been placed has no index, so drop hidden ones before sorting.
+  return cars.filter(c => c.visible).sort((a, b) => a.userData.consistIndex - b.userData.consistIndex)
+    .flatMap(c => drawnCar(c) ?? []);
 }
 
 type Run = { pts: number[][] };

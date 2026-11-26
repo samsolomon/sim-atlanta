@@ -75,6 +75,14 @@ it('draws the same source identity at a live or scheduled fix and retires cars w
     } as TrainState;
     const snapshot = JSON.stringify(state);
     expect(update([state], 1)).toBe(4);
+    // Follow's lead is the car furthest along the path, here toward the mapped chainage it climbs.
+    expect(cars.children.filter((c) => c.visible).map((c) => c.userData.consistIndex)).toEqual([0, 1, 2, 3]);
+    {
+      const [lead, ...rest] = cars.children.filter((c) => c.visible).map((c) => c.position.clone());
+      update([{ ...state, s: { ...state.s, value: 160 } }], 1);
+      const travel = cars.children.filter((c) => c.visible)[0].position.clone().sub(lead);
+      for (const p of rest) expect(p.sub(lead).dot(travel)).toBeLessThan(0);
+    }
     expect(
       cars.children
         .filter((c) => c.visible)
