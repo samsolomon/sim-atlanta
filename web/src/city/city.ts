@@ -1141,7 +1141,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
       if (atl) {
-        const disposeFragments = mountStationFragments(atl, quality);
+        const disposeFragments = mountStationFragments(atl, quality, perimeter ? group => clipScenery(group, perimeter) : undefined);
         const dispose = atl.dispose.bind(atl);
         atl.dispose = () => { disposeFragments(); dispose(); };
         const prepared = northLines.get(atl);
