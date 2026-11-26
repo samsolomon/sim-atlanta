@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { POOL, type PoolSink } from './headlight-pools';
 import { makeProjector } from '../core/scene-data';
 import type { TrainState } from '../model/types';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
@@ -657,6 +658,7 @@ export function* createBrookwoodSteps(sceneZero: number, instanceFreight = true,
     [freightEdge, westEdge, ...neverClip(2)], instanceFreight, northFreight ? 3 : 0);
   group.add(freight.group);
   let crescentOnCorridor = false;
+  let poolSink: PoolSink | null = null;
   function update(states: TrainState[], dark: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
     litSlab.material.emissiveIntensity = dark * 0.35;
@@ -690,6 +692,12 @@ export function* createBrookwoodSteps(sceneZero: number, instanceFreight = true,
         car.position.set((fore.x + aft.x) / 2, (bed(fore.x) + bed(aft.x)) / 2 + 0.32, (fore.z + aft.z) / 2);
         car.rotation.y = Math.atan2(fore.x - aft.x, fore.z - aft.z);
         car.rotation.x = -Math.atan2(bed(fore.x) - bed(aft.x), Math.hypot(fore.x - aft.x, fore.z - aft.z));
+        // The lead's headlamps on the track ahead, within the drawn corridor.
+        const s0 = s + run.dir * length / 2, s1 = s0 + run.dir * POOL.rail.length;
+        if (index === 0 && poolSink?.active && Math.min(s0, s1) >= corridorChainage.min && Math.max(s0, s1) <= corridorChainage.max) {
+          const a = brookwoodTruckAt(s0), b = brookwoodTruckAt(s1), ay = bed(a.x) + 0.27;
+          if (poolSink.inRange(a.x, ay, a.z)) poolSink.add(a.x, ay, a.z, b.x, bed(b.x) + 0.27, b.z, POOL.rail.width, POOL.rail.power);
+        }
       }
     }
     for (let j = count; j < cars.children.length; j++) cars.children[j].visible = false;
@@ -708,6 +716,8 @@ export function* createBrookwoodSteps(sceneZero: number, instanceFreight = true,
     cars,
     structure,
     update,
+    /** Headlight pools at night on High (city/headlight-pools.ts) for the Crescent and the Norcross freight. */
+    setLights(sink: PoolSink | null) { poolSink = sink; freight.lights = sink; },
     /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
     updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor, northernHeight ? undefined : seam),
     freight: freight.group,

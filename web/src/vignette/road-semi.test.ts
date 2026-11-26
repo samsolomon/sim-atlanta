@@ -57,5 +57,5 @@ describe('road semi', () => {
       geometry.dispose();
       expect(inward.slice(0, 12), `${near ? 'near' : 'distant'}: ${inward.length} back faces`).toEqual([]);
     }
-  });
+  }, 30_000); // about 5 s of raycasts alone; more under the full suite's load
 });

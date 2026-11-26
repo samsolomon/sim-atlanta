@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import { makeProjector } from '../core/scene-data';
 import type { TerrainCity } from '../terrain/transport-data';
 import { BUS_STREETS, CityBuses, busRuns } from './buses';
+import { POOL } from './headlight-pools';
 
 // A 5 × 5 grid, 100 m apart, flat at 300 m except a 10 m dip under the bridge's midpoint.
 const gm: GroundManifest = { version: 1, rows: 5, cols: 5, stepM: 100, bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, scaleM: 0.1, offsetM: 0, noData: -32768, encoding: 'signed int16 little-endian', vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 300 }, sha256: '' };
@@ -141,4 +142,31 @@ describe.skipIf(!existsSync(vjson) || !existsSync(sjson))('CityBuses on the ship
       expect(b.snap(bus), name).not.toBeNull();
     }
   });
+
+  it('lights the street ahead of a bus at night, on its own street, and none by day or past the drawn ground', () => {
+    const b = make();
+    const pools: { near: THREE.Vector3; far: THREE.Vector3; power?: number }[] = [];
+    let active = true;
+    b.lights = { get active() { return active; }, inRange: () => true,
+      add: (nx, ny, nz, fx, fy, fz, _w, power) => { pools.push({ near: new THREE.Vector3(nx, ny, nz), far: new THREE.Vector3(fx, fy, fz), power }); return true; } };
+    // Eastbound (bearing 90) on the flat street: the pool starts at the front bumper and runs east on the ground.
+    b.update([fix('east', -100, 0, t, 90)], 0);
+    expect(pools).toHaveLength(1);
+    const [{ near, far }] = pools;
+    expect(far.x).toBeGreaterThan(near.x);
+    // From 0.5 m under the bumper to the full reach ahead of the bumper, at street power.
+    expect(far.distanceTo(new THREE.Vector3(near.x, far.y, near.z))).toBeCloseTo(POOL.bus.length + 0.5, 3);
+    expect(pools[0].power).toBe(POOL.bus.power);
+    expect(near.y).toBeCloseTo(groundAt(near.x, near.z)!, 5);
+    expect(far.y).toBeCloseTo(groundAt(far.x, far.z)!, 5);
+    // Near the board edge the pool would run off the drawn ground: none, though the bus shows.
+    pools.length = 0;
+    b.update([fix('edge', 185, 0, t + 1, 90)], 0);
+    expect(b.summary().count).toBe(1);
+    expect(pools).toHaveLength(0);
+    active = false;
+    b.update([fix('east', -100, 0, t + 2, 90)], 0);
+    expect(pools).toHaveLength(0);
+  });
 });
+

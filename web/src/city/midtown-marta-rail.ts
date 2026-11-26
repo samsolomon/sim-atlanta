@@ -1,4 +1,5 @@
 import { roadsideWalls } from '../../../pipeline/prototypes/paired-span-walls/walls';
+import { POOL, type PoolSink } from './headlight-pools';
 import { articulate, RailTops } from './north-running-gear';
 import { extensions } from './north-profile-study';
 import axes from './fixtures/north-axes-study.json';
@@ -390,6 +391,19 @@ export function* createNorthLineSteps(
         car.userData.inferredTrack = true;
         car.visible = true;
         total++;
+        const lights = api.lights;
+        if (i === 0 && lights?.active && lights.inRange(place.x, y, place.z)) {
+          // Ahead of the lead cab on its own track. A pool that runs into the portal lies under the
+          // hood and the ground, which hide it, as they hide the cars.
+          const a0 = place.along + run.dir * CAR_LENGTH / 2, a1 = a0 + run.dir * POOL.rail.length;
+          if (a0 > 0.05 && a1 > 0.05 && a0 < run.line.length - 2 && a1 < run.line.length - 2) {
+            const p0 = run.line.at(a0), p1 = run.line.at(a1);
+            cars.updateWorldMatrix(true, false); // the cars' group is the pool's frame of reference
+            const n = new THREE.Vector3(p0.x, height(run.line, a0) - 0.05, p0.z).applyMatrix4(cars.matrixWorld);
+            const f = new THREE.Vector3(p1.x, height(run.line, a1) - 0.05, p1.z).applyMatrix4(cars.matrixWorld);
+            lights.add(n.x, n.y, n.z, f.x, f.y, f.z, POOL.rail.width, POOL.rail.power);
+          }
+        }
       }
     }
     for (const pool of pools.values())
@@ -417,5 +431,7 @@ export function* createNorthLineSteps(
     }
     pools.clear();
   }
-  return Object.assign(update, { extend, bounds: planes.size ? bounds : null, cars: shown, dispose });
+  /** Headlight pools at night on High (city/headlight-pools.ts); City sets it, unset on Low. */
+  const api = Object.assign(update, { extend, bounds: planes.size ? bounds : null, cars: shown, dispose, lights: null as PoolSink | null });
+  return api;
 }

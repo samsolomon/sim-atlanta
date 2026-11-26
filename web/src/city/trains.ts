@@ -6,6 +6,7 @@ import { PlacementIndex } from '../vignette/spatial';
 import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '../vignette/world';
 
 import type { prepareEastCut, ServiceTrack } from './east-cut';
+import { POOL, type PoolSink } from './headlight-pools';
 
 type Segment = { al: Alignment; i: number };
 
@@ -90,6 +91,10 @@ export function daylightShare(al: Alignment, s: number) {
 
 export class CityTrains {
   readonly group = new THREE.Group();
+  /** Headlight pools at night on High (city/headlight-pools.ts); unset on Low. Lead cab only. */
+  lights: PoolSink | null = null;
+  private readonly poolNear = new THREE.Vector3();
+  private readonly poolFar = new THREE.Vector3();
   private tracks: CityTracks;
   private project: ReturnType<typeof makeProjector>;
   private night = { value: 0 };
@@ -150,6 +155,25 @@ export class CityTrains {
     return mesh;
   }
 
+  /** A pool ahead of the lead cab on its own track, only where that track shows (not in tunnels). */
+  private light(al: Alignment, sc: number, dir: number, off: number) {
+    const lights = this.lights;
+    if (!lights?.active) return;
+    const s0 = sc + dir * CAR_LENGTH / 2, s1 = s0 + dir * POOL.rail.length;
+    // Exact track cover at both ends (carInDaylight judges a whole car, which is too lenient here).
+    if (!trackVisible(al, s0) || !trackVisible(al, s1)) return;
+    const a = al.line.at(s0), b = al.line.at(s1), box = this.bounds;
+    const ax = a.x - a.nx * off, az = a.z - a.nz * off, bx = b.x - b.nx * off, bz = b.z - b.nz * off;
+    if (bx < box.minX || bx > box.maxX || bz < box.minZ || bz > box.maxZ) return;
+    // The car stands 0.55 m above the alignment, on the rail heads; the pool lies just over them.
+    // Track coordinates are the group's; the pool batch is in world space.
+    this.group.updateWorldMatrix(true, false);
+    const near = this.poolNear.set(ax, al.elev(s0) + 0.57, az).applyMatrix4(this.group.matrixWorld);
+    if (!lights.inRange(near.x, near.y, near.z)) return;
+    const far = this.poolFar.set(bx, al.elev(s1) + 0.57, bz).applyMatrix4(this.group.matrixWorld);
+    lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width, POOL.rail.power);
+  }
+
   update(states: TrainState[], darkness: number) {
     this.night.value = darkness;
     this.surfaceCars = 0;
@@ -182,6 +206,15 @@ export class CityTrains {
           car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
           if (i >= units / 2) car.rotateY(Math.PI);
           this.surfaceCars++;
+          if (i === 0 && this.lights?.active && this.lights.inRange(placement.x, this.cut!.treadY, placement.z)) {
+            // The cut's tread is level; aim along the car's own heading, which leads in the travel direction.
+            const n = Math.hypot(placement.dx, placement.dz) || 1, fx = placement.dx / n, fz = placement.dz / n;
+            const y = this.cut!.treadY + 0.1, nx = placement.x + fx * CAR_LENGTH / 2, nz = placement.z + fz * CAR_LENGTH / 2;
+            this.group.updateWorldMatrix(true, false);
+            const near = this.poolNear.set(nx, y, nz).applyMatrix4(this.group.matrixWorld);
+            const far = this.poolFar.set(nx + fx * POOL.rail.length, y, nz + fz * POOL.rail.length).applyMatrix4(this.group.matrixWorld);
+            this.lights.add(near.x, near.y, near.z, far.x, far.y, far.z, POOL.rail.width, POOL.rail.power);
+          }
           continue;
         }
         if (!track) continue;
@@ -203,6 +236,7 @@ export class CityTrains {
         car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
         if (i >= units / 2) car.rotateY(Math.PI);
         this.surfaceCars++;
+        if (i === 0) this.light(al, sc, dir, off);
       }
     }
     for (const p of this.pools.values()) {

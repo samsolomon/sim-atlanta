@@ -178,3 +178,31 @@ it('frees every mesh and car pool it added when disposed', () => {
   expect(cars.children).toHaveLength(0);
   expect(disposed).toBeGreaterThan(3);
 });
+
+it('lights the track ahead of the North Line lead at night, in its direction of travel', () => {
+  const line = tracks[1],
+    coords = line.pts.flatMap((p) => sceneToLonLat(origin, ...p));
+  const rf = {
+    paths: [{ id: 'test', coords, cum: [...line.cum], routeId: 'marta:route:RED' }],
+    routes: [{ id: 'marta:route:RED', color: '#d1282f' }],
+  } as unknown as RoutesFile;
+  const cars = new Group();
+  const update = createNorthLine({ group: new Group(), groundAt: () => -8.13 }, rf, origin, cars)!;
+  const pools: { near: number[]; far: number[] }[] = [];
+  let active = true;
+  update.lights = { get active() { return active; }, inRange: () => true,
+    add: (nx, ny, nz, fx, fy, fz) => { pools.push({ near: [nx, ny, nz], far: [fx, fy, fz] }); return true; } };
+  const state = (s: number) => ({ id: 't', pathId: 'test', routeId: 'marta:route:RED', s: { value: s, tier: 'scheduled' }, lengthM: { value: 90 } } as TrainState);
+  update([state(150)], 1);
+  const lead = cars.children.find((c) => c.visible && c.userData.consistIndex === 0)!.position.clone();
+  expect(pools).toHaveLength(1);
+  update([state(160)], 1);
+  const travel = cars.children.find((c) => c.visible && c.userData.consistIndex === 0)!.position.clone().sub(lead);
+  const { near, far } = pools[0];
+  expect((far[0] - near[0]) * travel.x + (far[2] - near[2]) * travel.z).toBeGreaterThan(0);
+  pools.length = 0;
+  active = false;
+  update([state(150)], 0);
+  expect(pools).toHaveLength(0);
+});
+

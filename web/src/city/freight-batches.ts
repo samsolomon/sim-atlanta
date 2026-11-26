@@ -28,13 +28,27 @@ const palette = { value: CONTAINER_PALETTE.map((hex) => new THREE.Color(hex)) };
  * top length); a colour of 0 hides that box, and a length of BOX_40_SCALE shortens it to 40 ft about
  * the car's centre. Vertices with aSlot 0 (the car itself) are untouched.
  */
+/** City's darkness for every freight material: locomotive headlamps and ditch lights glow at night. */
+export const freightNight = { value: 0 };
+
 function patchFreight(shader: THREE.WebGLProgramParametersWithUniforms) {
   shader.uniforms.containerPalette = palette;
+  shader.uniforms.freightNight = freightNight;
+  // stockLight 2 marks lamps (vignette/crescent-stock.ts finishStockGeometry); cars carry zeros. Only the
+  // lead's lamps light: its instance carries aLoad.x = 1, which locomotives use for nothing else.
+  shader.fragmentShader = 'uniform float freightNight; varying float vStockLight; varying float vLit;\n' + shader.fragmentShader.replace(
+    '#include <emissivemap_fragment>',
+    '#include <emissivemap_fragment>\nif (vStockLight > 1.5 && vLit > 0.5) totalEmissiveRadiance += diffuseColor.rgb * (0.35 + 1.8 * freightNight);');
   shader.vertexShader = `attribute float aSlot;
+attribute float stockLight;
+varying float vStockLight;
+varying float vLit;
 attribute float aShade;
 attribute vec4 aLoad;
 uniform vec3 containerPalette[${CONTAINER_PALETTE.length}];
 ` + shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+vStockLight = stockLight;
+vLit = aSlot > 0.5 ? 0.0 : aLoad.x;
 if (aSlot > 0.5) {
   bool topBox = aSlot > 1.5;
   float paint = topBox ? aLoad.y : aLoad.x;
@@ -111,7 +125,8 @@ export class FreightBatches {
 
   private shape(kind: FreightUnit) {
     let shape = this.shapes.get(kind);
-    if (!shape) this.shapes.set(kind, (shape = freightGeometry(kind, { low: this.low })));
+    // Locomotives carry their front lamps (stockLight 2); a flipped trailing unit turns them to the rear.
+    if (!shape) this.shapes.set(kind, (shape = freightGeometry(kind, { low: this.low, leadFront: true })));
     return shape;
   }
 
@@ -130,7 +145,8 @@ export class FreightBatches {
     return view;
   }
 
-  append(kind: FreightUnit, pose: THREE.Object3D & { material: THREE.Material }, load?: WellLoad) {
+  /** `lit`: the train's lead unit, whose headlamps and ditch lights glow at night. */
+  append(kind: FreightUnit, pose: THREE.Object3D & { material: THREE.Material }, load?: WellLoad, lit = false) {
     const material = pose.material;
     if (!this.batches.has(material)) this.batches.set(material, new Map());
     const kinds = this.batches.get(material)!;
@@ -144,7 +160,8 @@ export class FreightBatches {
       kinds.set(kind, mesh);
     }
     pose.updateMatrix();
-    const [a, b, c, d] = encode(load);
+    const [a0, b, c, d] = encode(load);
+    const a = lit && !load ? 1 : a0;
     const loads = mesh.geometry.getAttribute('aLoad') as THREE.InstancedBufferAttribute;
     if (loads.getX(mesh.count) !== a || loads.getY(mesh.count) !== b || loads.getZ(mesh.count) !== c || loads.getW(mesh.count) !== d) {
       loads.setXYZW(mesh.count, a, b, c, d);
