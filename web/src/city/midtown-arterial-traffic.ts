@@ -7,6 +7,7 @@ import bake from './fixtures/midtown-arterials.json';
 import northBake from '../../../pipeline/prototypes/north-arterials/runs.json';
 import signalPoints from './fixtures/midtown-signals.json';
 import { arterialTurns } from './arterial-turns';
+import { perfOverrides } from '../core/perf';
 
 /** A mounted Midtown row: its drawn roads and the sampler that seats a car on them. */
 export interface MidtownTrafficBoard {
@@ -85,7 +86,7 @@ export class MidtownArterialTraffic extends RoadTraffic {
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
     const signals = hasNorth ? [...signalPoints, ...northBake.signals] : signalPoints;
     const courses = bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signals as [number, number][]) : [];
-    if (hasNorth) {
+    if (hasNorth && !perfOverrides.sampleWeightOff) {
       // Reserve a larger share for the two continuous US 19 paths on the
       // northern rows. The fixed fleet still uses the published directional flow.
       const northernRoads = new Set(corridors.find(c => c.id === 'Peachtree Street')?.runs
