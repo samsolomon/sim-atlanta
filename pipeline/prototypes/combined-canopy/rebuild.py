@@ -35,13 +35,14 @@ shutil.copytree(base / rows, detail / rows)
 course = prototypes / "ansley-mounted"
 run(course / "stage.py", base, detail, course / "ansley-mounted-source.json",
     course / "ansley-tree-map.json", base / rows / "proof.json")
-fallback = args.output / "fallback.json"
-run(pack / "bake_fallback.py", args.canopy, inputs / "r16.json.gz", pack / "source/nr-path.json",
-    detail / rows, fallback, args.output / "fallback-audit.json")
+crowns = args.output / "r16-crowns.json"
+run(pack / "bake_r16.py", args.canopy, inputs / "r16.json.gz", pack / "source/nr-path.json",
+    detail / rows, crowns, args.output / "r16-canopy-audit.json")
 path = detail / rows / "r16/context.json"
 context = json.loads(path.read_bytes())
-context.update(json.loads(fallback.read_bytes()))
-context.update(treePlan="fallback", treeSource="Atlanta 2023 UTC mapped cover; deterministic fallback. Centers, radii, heights and tier selection inferred.")
+context.update(json.loads(crowns.read_bytes()))
+context.pop("treePlan", None)
+context.update(treeSource="City of Atlanta / Georgia Tech 2023 Urban Tree Canopy; Meta & WRI canopy heights (Tolan et al., 2024, CC BY 4.0). Crown centers, radii, heights and tier selection inferred.")
 path.write_text(json.dumps(context, separators=(",", ":")) + "\n")
 for row, expected in json.loads((pack / "rows.sha256.json").read_bytes()).items():
     for name, digest in expected.items():

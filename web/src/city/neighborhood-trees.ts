@@ -3,7 +3,6 @@ import type { TerrainQuality } from '../terrain/surface';
 export interface NeighborhoodCanopy {
   trees: [number, number, number, number][];
   treeLowCount?: number;
-  treePlan?: 'fallback';
 }
 
 // The offline bake puts a representative crown from each occupied cell first.

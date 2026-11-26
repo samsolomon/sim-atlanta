@@ -227,7 +227,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         extraSlots: slots,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
-        rollout: canopy.treeLowCount !== undefined && canopy.treePlan !== 'fallback' ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
+        rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
         surface: takeSurface(patchIndex),
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
