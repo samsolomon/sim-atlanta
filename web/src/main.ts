@@ -26,7 +26,7 @@ import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
 import { carries, followLabel, inCityArea, type Selection } from './core/carry';
 import { mountGlassDebug, setGlassMode } from './ui/glass';
-import { viewUrl } from './models/variants';
+import { labOpenRequest, viewUrl } from './models/variants';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -1065,10 +1065,8 @@ async function openModels() {
   // Through the Lab, not a picker click: a former per-state id (City's "See the model" names lead
   // units like es44acNs) has no button of its own, only a family entry and a control preset.
   // A City request opens that model's own preset; a plain return keeps the Lab's state.
-  const here = new URL(location.href);
-  const target = here.searchParams.get('model');
-  if (requested) labApi?.open(requested, undefined, true);
-  else if (target) labApi?.open(target, here.searchParams);
+  const request = labOpenRequest(requested, location.href);
+  if (request) labApi?.open(request);
   setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }

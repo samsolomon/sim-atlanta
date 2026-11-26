@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { FOLDED_IDS, VARIANT_FAMILIES, WELL_CONTAINER_SETS, entryFor, familyOf, nextEntry, resolveModel, viewUrl, writeEntryParams } from './variants';
+import { FOLDED_IDS, VARIANT_FAMILIES, WELL_CONTAINER_SETS, entryFor, familyOf, labOpen, labOpenRequest, nextEntry, resolveModel, viewUrl, writeEntryParams } from './variants';
 import { WELL_LOADS } from '../vignette/intermodal';
 
 describe('Model Lab families', () => {
@@ -51,42 +51,56 @@ describe('Model Lab families', () => {
 });
 
 describe('the app opens Lab ids through the Lab', () => {
-  it('routes openModels through lab.open, not a picker click by raw id (a folded id has no button)', () => {
+  it('keeps both call sites on the tested functions', () => {
     const app = readFileSync(new URL('../main.ts', import.meta.url), 'utf8');
     const open = app.slice(app.indexOf('async function openModels'), app.indexOf('function leaveModels'));
-    expect(open).toContain('labApi?.open(target, here.searchParams)');
-    expect(open).not.toMatch(/data-model="\$\{CSS\.escape\(target\)\}"/);
+    // openModels: capture City's request before the first await, then delegate the decision.
+    expect(open.indexOf('const requested = pendingModel;')).toBeLessThan(open.indexOf('(await import('));
+    expect(open).toContain('const request = labOpenRequest(requested, location.href);');
+    expect(open).toContain('if (request) labApi?.open(request);');
+    expect(open).not.toMatch(/labApi\?\.open\((?!request\))/);
     const lab = readFileSync(new URL('./main.ts', import.meta.url), 'utf8');
+    const api = lab.slice(lab.indexOf('export const lab = {'));
+    // lab.open: always show labOpen's URL, then move only when there is somewhere to go.
+    expect(api).toMatch(/const \{ next, url \} = labOpen\(\{ entry, state: variantState \}, request, location\.href, embedded\);\s+history\.replaceState\(history\.state, '', url\);\s+if \(next\) applyEntry/);
     // Reset view re-selects the current entry; that keeps its controls.
     expect(lab).toMatch(/if \(id === entry\) applyEntry\(entry, variantState\);/);
   });
 });
 
 describe('no control state leaks from one Models visit into the next', () => {
-  // The app's sequence: setViewParam (viewUrl) on each view change, then openModels asks the loaded
-  // Lab to open the URL's model (nextEntry), with `preset` when City's "See the model" named it.
+  // The app's sequence, through the same functions it calls: setViewParam → viewUrl on each view
+  // change; openModels → labOpenRequest; the Lab's lab.open → labOpen, whose URL it always shows.
   const visit = (href: string, lab: { entry: string; state: Record<string, string> }, view: string, pending: string | null) => {
-    const url = viewUrl(href, view, pending, lab.entry);
+    let url = viewUrl(href, view, pending, lab.entry);
     if (view !== 'models') return { url, lab };
-    const next = pending ? nextEntry(lab, pending, undefined, true) : nextEntry(lab, url.searchParams.get('model')!, url.searchParams);
-    return { url, lab: next ?? lab };
+    const request = labOpenRequest(pending, url.href);
+    if (!request) return { url, lab };
+    const opened = labOpen(lab, request, url.href, true);
+    url = opened.url;
+    return { url, lab: opened.next ?? lab };
   };
   it('a CSX lead after the ES44 in NS-like opens CSX-like', () => {
     let s = visit('https://sim.example/?view=models&model=es44&scheme=ns', { entry: 'es44', state: { scheme: 'ns' } }, 'city', null);
     expect(s.url.searchParams.has('scheme')).toBe(false);
     s = visit(s.url.href, s.lab, 'models', 'cm44ac'); // CSX CM44AC lead card
-    expect(s.url.searchParams.has('scheme')).toBe(false);
+    expect(s.url.searchParams.get('scheme')).toBe('csx');
     expect(s.lab).toEqual({ entry: 'cm44ac', state: { scheme: 'csx' } });
   });
   it('a City bus after the XN40 in Rapid A-Line paint opens the MARTA paint', () => {
     let s = visit('https://sim.example/?view=models&model=xn40&paint=rapid', { entry: 'xn40', state: { paint: 'rapid' } }, 'city', null);
     s = visit(s.url.href, s.lab, 'models', 'xn40'); // the bus card's "See the model"
     expect(s.lab).toEqual({ entry: 'xn40', state: { paint: 'marta' } });
+    expect(s.url.searchParams.get('paint')).toBe('marta');
   });
   it('a plain return to Models keeps the state the Lab was left in', () => {
     let s = visit('https://sim.example/?view=models&model=es44&scheme=ns', { entry: 'es44', state: { scheme: 'ns' } }, 'map', null);
+    expect(s.url.searchParams.has('scheme')).toBe(false); // leaving Models cleared it
     s = visit(s.url.href, s.lab, 'models', null);
     expect(s.lab).toEqual({ entry: 'es44', state: { scheme: 'ns' } });
+    // …and the Lab writes the kept state back, so a reload or Share shows NS-like.
+    expect(s.url.searchParams.get('model')).toBe('es44');
+    expect(s.url.searchParams.get('scheme')).toBe('ns');
   });
 });
 

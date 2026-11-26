@@ -17,7 +17,7 @@ import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-cons
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { roadSemiGeometry, SEMI_LENGTH } from '../vignette/road-semi';
-import { VARIANT_FAMILIES, entryFor, familyOf, nextEntry, resolveModel, writeEntryParams, type VariantState } from './variants';
+import { VARIANT_FAMILIES, entryFor, familyOf, labOpen, resolveModel, writeEntryParams, type VariantState } from './variants';
 import { LENGTH, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -1384,17 +1384,11 @@ Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame =
  */
 export const lab = {
   current: () => ({ entry, state: { ...variantState } }),
-  open(id: string, params?: URLSearchParams, preset = false) {
-    const next = nextEntry({ entry, state: variantState }, id, params, preset);
-    if (!next) {
-      // Staying put: still write the kept state back, since leaving Models cleared it from the URL.
-      const url = new URL(location.href);
-      writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
-      if (embedded) url.searchParams.delete('v');
-      history.replaceState(history.state, '', url);
-      return false;
-    }
-    applyEntry(next.entry, next.state);
-    return true;
+  /** Open a request from the app (models/variants.ts labOpenRequest); the URL is always rewritten. */
+  open(request: { id: string; params?: URLSearchParams; preset: boolean }) {
+    const { next, url } = labOpen({ entry, state: variantState }, request, location.href, embedded);
+    history.replaceState(history.state, '', url);
+    if (next) applyEntry(next.entry, next.state);
+    return !!next;
   },
 };

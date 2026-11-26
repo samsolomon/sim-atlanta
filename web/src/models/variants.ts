@@ -168,6 +168,33 @@ export function viewUrl(href: string, view: string, pending: string | null, curr
   return u;
 }
 
+/**
+ * What the app's openModels asks a loaded Lab to do: City's "See the model" (`requested`) opens that
+ * model's own preset; otherwise the URL's model opens with the URL's control keys.
+ */
+export function labOpenRequest(requested: string | null, href: string): { id: string; params?: URLSearchParams; preset: boolean } | null {
+  if (requested) return { id: requested, preset: true };
+  const url = new URL(href);
+  const target = url.searchParams.get('model');
+  return target ? { id: target, params: url.searchParams, preset: false } : null;
+}
+
+/**
+ * The Lab's response to an open request: where to go (null to stay) and the URL to show, which
+ * always carries the resulting entry and state (a plain return writes back the kept state that
+ * leaving Models cleared).
+ */
+export function labOpen(current: { entry: string; state: VariantState }, request: { id: string; params?: URLSearchParams; preset: boolean },
+  href: string, embedded: boolean): { next: { entry: string; state: VariantState } | null; url: URL } {
+  const next = nextEntry(current, request.id, request.params, request.preset);
+  const shown = next ?? current;
+  const url = new URL(href);
+  if (familyOf(shown.entry)) writeEntryParams(url, embedded ? 'model' : 'v', shown.entry, shown.state);
+  else url.searchParams.set(embedded ? 'model' : 'v', shown.entry);
+  if (embedded) url.searchParams.delete('v');
+  return { next, url };
+}
+
 /** Write the entry and its control state into a URL, dropping keys that belong to other families. */
 export function writeEntryParams(url: URL, idKey: 'v' | 'model', entry: string, state: VariantState) {
   url.searchParams.set(idKey, entry);
