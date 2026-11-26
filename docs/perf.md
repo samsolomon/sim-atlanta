@@ -122,7 +122,8 @@ and house blocks, against a 630-call ceiling.
 The low entry also bounds traffic at the default view. `trafficMean` is the CPU ms per frame that every
 road-traffic layer spends in `update()`, and `trafficSamples` is how many road-surface heights they sample per
 frame. `?perf` also reports `trafficCars` (cars posed) and `trafficLanes` (lanes stepped). Release 17 measured
-0.69–0.78 ms and 38.6 samples on the Studio at 1×, and the ceilings are 1.0 ms and 60. The sample count is the
+0.54 ms, 117 samples, 88 cars and 103 lanes per frame on the Studio at 1× in the phone viewport, and the
+ceilings are 0.8 ms and 160. The sample count is the
 stable check because machine load doesn't change it. A/B switches: `&wheelplane=0` turns off the fitted wheel
 plane, `&sampleweight=1` drops the northern US 19 weight, and `&traffic=legacy` runs the pre-2026-11-24 path.
 
