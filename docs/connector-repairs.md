@@ -52,6 +52,41 @@ Before counting mechanism 2 outside Civic Center, check each site with a close s
 - Add a drawn-surface test: sample `GroundSurface.sampleScene` on every ground lane centre of the north-band ribbons on both tiers, and fail on a residual over 0.5 m against the floor profile. The existing test checks only `grid.sample`.
 - Rebuild only; no `pnpm data` (the patch JSON is tracked).
 
+### C repair (branch `samsolomon/connector-c-floors`)
+
+**Ownership rule.** The covered-pavement patch blends from the grid, so it must be baked over the grid it is applied to. The Civic Center and Spring/Techwood floors moved from `connector-ground.ts` into [`north-band-floors.json`](../pipeline/prototypes/connector-footprint/north-band-floors.json). The TS loader floors the grid from that file. `underpass-floors.py` applies the same floors (an exact port, guarded at 224 floored nodes) before it blends. The patch is applied after the grid, so it no longer restores roof returns.
+
+**Generator check.** The unmodified generator, rerun from the USGS EPT cache, reproduced the committed `underpass-floors.json` byte for byte. After the change, the downtown (3,128 entries) and south-band (282) patches are byte-identical. North-band changes 39 entries: 33 rebaked and 6 dropped because they now equal the floored grid. Node (375, −1425) goes from 307.0 to **294.5 m**.
+
+**The 30 override nodes.** 28 now sit within 0.5 m of the floor. The other 2 sit 0.51–0.73 m above it, where the class-2 covered-pavement plane meets the inferred floor grade. Those are two surveys meeting, not roof returns.
+
+**Floor joint hole.** The two Spring/Techwood feeder floors share an endpoint at (244, −1451). Node (245, −1455), on the outside of the bend, lay beyond both segments and kept its raw 291.6 m. That left a +1.9 m peak beside the feeder lane. Nodes that only the shared joint reaches now take its floor (289.7 m) in both TS and Python. The floored count moves from 223 to 224.
+
+**The 31 taper candidates: none is a spike.** Drawn along-lane profiles on both tiers (the line through each node's neighbours 6–20 m away on the same lane), plus close stills:
+- **Decatur (8):** residuals ≤ 0.26 m.
+- **MLK 755543582 (8):** ≤ 0.31 m on an 11–13% ramp.
+- **MLK 436808889 (5):** 0.19–1.74 m of curvature on an 8–15% ramp; smooth in close view.
+- **Baker 38974051 (2):** −0.59 and +1.20 m on a 28% descent; smooth in close view.
+- **8 MLK gore nodes:** one-sided profiles, smooth in close view.
+
+Those boards are unchanged by this repair.
+
+**Test.** `connector-ground.test.ts` now samples the **drawn** `GroundSurface` on Low and High. Inside the floor footprints, every ground-ribbon lane centre must sit within 0.75 m of the floored grid; the worst after the fix is 0.508 m. The three Civic Center mains must stay between 292 and 297 m. Nodes (375, −1425) and (245, −1455) are pinned. With the old patch the test fails on both tiers (first sample +1.36 m, worst +10.75 m).
+
+**Verification.**
+- Full web suite: 1,428 passed. tsc is clean. Cargo and pipeline checks pass.
+- The 439abf84 calibration with `--expect combined` passes on Low and High, byte-identical to 1d04eadc: [result](log/ui/connector-repairs/c-floors/calibration-combined.json).
+- Rendered isolated peaks near motorway axes go from 4 to 2. Both remaining peaks are on the Capitol Gateway cover top, in D's scope.
+- North-band board triangles: Low 63,612 → 63,564; High unchanged at 89,600.
+- Deploy: rebuild `web/dist` only. No `pnpm data`, because the floors and patch are bundled from `pipeline/prototypes`.
+
+**Before and after, identical camera matrices.** The "after" frames reuse the "before" matrices. Re-entering the same `cam=` moves the camera, because the orbit target sits on the ground and that ground dropped 12.5 m.
+- [C2 spike, High](log/ui/connector-repairs/c-floors/C2-civic-center-spike-high-before-after.jpg) · [Low](log/ui/connector-repairs/c-floors/C2-civic-center-spike-low-before-after.jpg)
+- [C1 wide, High](log/ui/connector-repairs/c-floors/C1-civic-center-high-before-after.jpg) · [Low](log/ui/connector-repairs/c-floors/C1-civic-center-low-before-after.jpg)
+- [C3 feeder joint, High](log/ui/connector-repairs/c-floors/C3-feeder-joint-high-before-after.jpg) · [Low](log/ui/connector-repairs/c-floors/C3-feeder-joint-low-before-after.jpg)
+
+Matrices: `c-floors/cameras/`.
+
 ## A. Sweet Auburn (priority 2)
 
 **Site.** The Connector viaduct over Auburn Ave (z ≈ −180), Edgewood Ave (z ≈ −58) and Leonard Tate St, on the `auburn` board (x 1000–1800, z −520..280).
