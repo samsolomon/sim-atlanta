@@ -25,7 +25,7 @@ import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
-import { createNorthLineSteps, type createNorthLine } from './midtown-marta-rail';
+import { prepareNorthLine, type createNorthLine } from './midtown-marta-rail';
 import { drawnAt } from './drawn-at';
 import { FOLLOW_CAMERA, leadFirst, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
@@ -327,12 +327,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const nextFrame = () => sliceBudget() ? new Promise<unknown>(resolve => requestAnimationFrame(resolve)) : Promise.resolve();
   // The North Line is built with its row, aside, and joins the row's group when City mounts it.
   const northLines = new WeakMap<object, { holder: THREE.Group; line: ReturnType<typeof createNorthLine> }>();
-  function prepareRow(id: string, area: { groundAt: (x: number, z: number) => number | null; terrainAt: (x: number, z: number) => number | null; connectorBoard: ConnectorBoard }): Build<void> | undefined {
+  function prepareRow(id: string, area: Parameters<typeof prepareNorthLine>[0]): Build<void> | undefined {
     if (id !== 'brookwood-station') return;
     return (function* () {
-      const holder = new THREE.Group();
-      const line = yield* createNorthLineSteps({ group: holder, groundAt: area.groundAt, terrainAt: area.terrainAt, connectorBoard: area.connectorBoard }, rf, manifest.origin, trains.group);
-      northLines.set(area, { holder, line });
+      northLines.set(area, yield* prepareNorthLine(area, rf, manifest.origin, trains.group, line => { if (northLine === line) northLine = undefined; }));
     })();
   }
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
@@ -1142,11 +1140,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         atl.dispose = () => { disposeFragments(); dispose(); };
         const prepared = northLines.get(atl);
         if (prepared?.holder.children.length) atl.group.add(...prepared.holder.children);
-        const line = prepared?.line;
-        northLine = line;
-        // The area's dispose clears its group without freeing it; free the North Line too.
-        const disposeArea = atl.dispose.bind(atl);
-        atl.dispose = () => { line?.dispose(); if (northLine === line) northLine = undefined; disposeArea(); };
+        northLine = prepared?.line;
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
@@ -1181,16 +1175,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (signal.aborted) { area.dispose(); return; }
       // The streetcar's track and stops are ready before the board shows, a frame apart.
       const board = area.connectorBoard;
-      await nextFrame();
-      const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
-      const lines = streetcarLines(rf, manifest.origin);
-      const sites = platformSites(streetcarStopList(), lines, board.city.roads);
-      const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
-      await nextFrame();
-      const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
-      await nextFrame();
-      const stops = buildStreetcarStops(sites, area.bounds, surface);
-      await nextFrame();
+      const { surface, track, stops } = await (async () => {
+        await nextFrame();
+        const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
+        const lines = streetcarLines(rf, manifest.origin);
+        const sites = platformSites(streetcarStopList(), lines, board.city.roads);
+        const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
+        await nextFrame();
+        const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
+        await nextFrame();
+        const stops = buildStreetcarStops(sites, area.bounds, surface);
+        await nextFrame();
+        return { surface, track, stops };
+      })().catch(error => { area.dispose(); throw error; });
       const discard = () => { track.dispose(); stops.dispose(); };
       if (signal.aborted) { discard(); area.dispose(); return; }
       try { mosaic?.mount('auburn', area); }

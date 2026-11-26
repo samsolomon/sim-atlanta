@@ -202,6 +202,20 @@ export function northLinePortalSlots(grid: { sample(x: number, z: number): numbe
   ];
 }
 
+/**
+ * The North Line as the last steps of its row's build: built into a group of its own, which City
+ * adds to the row's group when it mounts the row, and freed whenever the row is, mounted or not.
+ */
+export function* prepareNorthLine(area: Parameters<typeof createNorthLineSteps>[0] & { dispose(): void },
+  rf: RoutesFile, origin: Origin, cars: THREE.Group, freed: (line: unknown) => void = () => { }) {
+  const holder = new THREE.Group();
+  const line = yield* createNorthLineSteps({ group: holder, groundAt: area.groundAt, terrainAt: area.terrainAt, connectorBoard: area.connectorBoard }, rf, origin, cars);
+  const disposeArea = area.dispose.bind(area);
+  // The row's dispose clears its group without freeing it, and an abandoned row never mounts.
+  area.dispose = () => { line?.dispose(); freed(line); disposeArea(); };
+  return { holder, line };
+}
+
 export function createNorthLine(...args: Parameters<typeof createNorthLineSteps>) {
   return runSync(createNorthLineSteps(...args));
 }
