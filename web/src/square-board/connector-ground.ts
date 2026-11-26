@@ -1,24 +1,15 @@
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import type { TerrainCity } from '../terrain/transport-data';
 import { auburnTransport } from '../city/sweet-auburn-transport';
+import northBandFloors from '../../../pipeline/prototypes/connector-footprint/north-band-floors.json';
 
-type Anchor = [x: number, z: number, navd88M: number];
-type Floor = [start: Anchor, end: Anchor, halfWidth: number, crossfall: number];
-
-// Exposed 2019 class-2 returns bracket each obstruction in the north-band DEM.
-// The straight grade between them is inferred. Widths include the shoulder and
-// one grid interval so the 5 m terrain triangles clear the outside wheel tracks.
-const floors: Floor[] = [
-  [[343.4,-1411.1,292.87], [415.8,-1362.5,296.07], 17, .015], // Civic Center SB
-  [[342.5,-1446.8,293.91], [416.7,-1399.1,295.50], 17, .035], // Civic Center NB
-  [[344,-1396,293.41], [406,-1361,295.88], 7, .015], // SB feeder enters at the station
-  [[224,-1450,289.28], [244,-1451,289.69], 6, .02], // same feeder below Spring/Techwood
-  [[244,-1451,289.69], [265,-1443,290.14], 6, .02],
-  [[233,-1488,288.29], [262,-1468,289.30], 14, .035], // SB outer lanes below Spring
-];
+// Connector pavement floors where the north-band DEM keeps Civic Center deck and
+// station-roof returns. The same file feeds underpass-floors.py, which bakes the
+// covered pavement over these floored nodes; see north-band-floors.json.
+const floors = northBandFloors.floors.map(f => [f.start, f.end, f.halfWidthM, f.crossfall] as const);
 
 export function northConnectorGround(m: GroundManifest, bytes: ArrayBuffer) {
-  if (m.sha256 !== 'b0d6067e203525b424c91e5d05b2d1aa189ebbd1cf9d2559a20f13f6ce2b5650')
+  if (m.sha256 !== northBandFloors.groundSha256)
     return new GroundGrid(m, bytes);
   const copy = bytes.slice(0), data = new DataView(copy), source = new DataView(bytes);
   for (const [[x0,z0,h0],[x1,z1,h1],width,crossfall] of floors) {
@@ -42,7 +33,32 @@ export function northConnectorGround(m: GroundManifest, bytes: ArrayBuffer) {
       data.setInt16(index, Math.min(data.getInt16(index,true),lower),true);
     }
   }
+  // Where two floors share an endpoint, the outside of the bend lies beyond both
+  // segments' ends. Give those nodes the joint's floor, or one raw node is left
+  // standing 1.9 m above the feeder lanes below Spring/Techwood.
+  for (const [i, a] of floors.entries()) for (const b of floors.slice(i+1)) {
+    const joint = [a[0], a[1]].find(p => [b[0], b[1]].some(q => q[0] === p[0] && q[1] === p[1]));
+    if (!joint) continue;
+    const [jx, jz, jh] = joint, pad = Math.min(a[2], b[2]) + m.stepM;
+    for (let row = Math.max(1, Math.floor((jz-pad-m.bounds.minZ)/m.stepM)); row <= Math.min(m.rows-2, Math.ceil((jz+pad-m.bounds.minZ)/m.stepM)); row++)
+      for (let col = Math.max(1, Math.floor((jx-pad-m.bounds.minX)/m.stepM)); col <= Math.min(m.cols-2, Math.ceil((jx+pad-m.bounds.minX)/m.stepM)); col++) {
+        const x = m.bounds.minX+col*m.stepM, z = m.bounds.minZ+row*m.stepM, distance = Math.hypot(x-jx, z-jz);
+        if (distance >= pad || floors.some(f => covers(f, x, z, m.stepM))) continue;
+        const index = 2*(row*m.cols+col), raw = source.getInt16(index,true);
+        if (raw === m.noData) continue;
+        const old = m.offsetM + m.scaleM*raw;
+        if (old-jh < .45) continue;
+        const weight = Math.min(1, (pad-distance)/m.stepM);
+        data.setInt16(index, Math.min(data.getInt16(index,true), Math.round((old-weight*(old-jh)-m.offsetM)/m.scaleM)), true);
+      }
+  }
   return new GroundGrid(m, copy);
+}
+
+function covers([[x0,z0],[x1,z1],width]: typeof floors[number], x: number, z: number, step: number) {
+  const dx = x1-x0, dz = z1-z0, length = Math.hypot(dx,dz);
+  const t = ((x-x0)*dx+(z-z0)*dz)/(length*length), side = ((z-z0)*dx-(x-x0)*dz)/length;
+  return t >= 0 && t <= 1 && Math.abs(side) < width + step;
 }
 
 type Road = TerrainCity['roads'][number];

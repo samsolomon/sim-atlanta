@@ -1,0 +1,12 @@
+{
+  "groundSha256": "b0d6067e203525b424c91e5d05b2d1aa189ebbd1cf9d2559a20f13f6ce2b5650",
+  "note": "Connector pavement floors on the north-band DEM, where the 1 m 'bare-earth' grid keeps Civic Center deck and station-roof returns. Each floor is [start [x, z, NAVD88 m], end [x, z, NAVD88 m], half width m, crossfall]. Exposed 2019 class-2 returns bracket each obstruction; the straight grade between them is inferred. Read by web/src/square-board/connector-ground.ts (applied to the grid) and by underpass-floors.py (which blends its covered pavement over the floored grid, so the two never disagree).",
+  "floors": [
+    { "label": "Civic Center SB", "start": [343.4, -1411.1, 292.87], "end": [415.8, -1362.5, 296.07], "halfWidthM": 17, "crossfall": 0.015 },
+    { "label": "Civic Center NB", "start": [342.5, -1446.8, 293.91], "end": [416.7, -1399.1, 295.50], "halfWidthM": 17, "crossfall": 0.035 },
+    { "label": "SB feeder enters at the station", "start": [344, -1396, 293.41], "end": [406, -1361, 295.88], "halfWidthM": 7, "crossfall": 0.015 },
+    { "label": "same feeder below Spring/Techwood", "start": [224, -1450, 289.28], "end": [244, -1451, 289.69], "halfWidthM": 6, "crossfall": 0.02 },
+    { "label": "same feeder below Spring/Techwood", "start": [244, -1451, 289.69], "end": [265, -1443, 290.14], "halfWidthM": 6, "crossfall": 0.02 },
+    { "label": "SB outer lanes below Spring", "start": [233, -1488, 288.29], "end": [262, -1468, 289.30], "halfWidthM": 14, "crossfall": 0.035 }
+  ]
+}
