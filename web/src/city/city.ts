@@ -855,7 +855,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Headlight pools on the road and track ahead of every lit vehicle at night, High only (Low is at its
   // program budget). One instanced draw for all producers; the hidden template compiles it at boot.
   // Capacity covers every producer's maximum: road traffic caps, 64 buses, trains, streetcars, freight.
-  const lightPools = low ? null : new HeadlightPools(640);
+  // Dev: ?pools=0 turns them off for matched before/after stills from one build.
+  const lightPools = low || (import.meta.env.DEV && query.get('pools') === '0') ? null : new HeadlightPools(640);
   if (lightPools) scene.add(lightPools.mesh, lightPools.template);
   if (freight) scene.add(freight.group);
   // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
