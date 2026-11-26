@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Vector3 } from 'three';
+import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, MeshPhongMaterial, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { batchLandmarks, buildLandmarkBatches, landmarkBatchReport, StaticLandmarkMaterial } from './landmark-batch';
 
@@ -253,5 +253,100 @@ describe('batchLandmarks', () => {
     // Uniform scale, so normals come back as stored.
     expect(body.scale.x).toBe(body.scale.y);
     for (let i = 0; i < n.count; i++) expect(new Vector3().fromBufferAttribute(n, i).length()).toBeCloseTo(1, 1);
+  });
+  it('draws an area far mesh per look past the far-board switch, triangle for triangle, and steps back at night', async () => {
+    // Two 500 m cells of two landmarks each, plus a plain mesh alone in its cell.
+    const make = () => {
+      const container = new Group();
+      const sites = [10, 60, 810, 860].map(x => landmark(x));
+      const lone = new Mesh(new BoxGeometry(4, 9, 4).toNonIndexed(), new MeshPhongMaterial({ color: '#8a7f70' }));
+      lone.position.set(1600, 4, 30);
+      const loner = new Group();
+      loner.add(lone);
+      for (const s of sites) container.add(s.group);
+      container.add(loner);
+      return { container, sites, lone, entries: [...sites, { group: loner }] };
+    };
+    // Where every view draw puts its triangles (container frame), as sorted rounded coordinates.
+    const drawn = (list: Mesh[]) => {
+      const out: string[] = [];
+      for (const m of list) {
+        m.updateMatrixWorld(true);
+        const g = m.geometry, pos = g.attributes.position, idx = g.index;
+        const n = idx ? idx.count : Math.min(pos.count - g.drawRange.start, g.drawRange.count);
+        for (let i = 0; i < n; i++) {
+          const v = new Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : g.drawRange.start + i).applyMatrix4(m.matrixWorld);
+          out.push(`${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)}`);
+        }
+      }
+      return out.sort();
+    };
+    const lod = { farM: 700, nearM: 600, minArea: 4 };
+    const off = make();
+    const plain = batchLandmarks(off.entries, off.container, { lod, syncFar: true, areaFar: false });
+    await plain.areaFarReady;
+    expect(plain.group.getObjectByName('landmark batch (area far)')).toBeUndefined();
+
+    const { container, sites, lone, entries } = make();
+    const b = batchLandmarks(entries, container, { lod, syncFar: true, areaFar: true });
+    container.add(b.group);
+    await b.areaFarReady;
+    const area = meshes(b.group).filter(m => m.name === 'landmark batch (area far)');
+    expect(area.length).toBeGreaterThan(0);
+    expect(b.stats.areaFarAlone).toBe(1);
+    expect(area.every(m => !m.visible)).toBe(true);
+    // Far from the area's cells, as the far board would be.
+    const camera = new PerspectiveCamera();
+    camera.position.set(400, 10, 20000);
+    camera.updateMatrixWorld();
+    for (const c of b.cells.values()) c.update(camera);
+    const viewDraws = () => meshes(b.group).filter(m => {
+      for (let p: typeof m.parent = m; p; p = p.parent) if (!p.visible) return false;
+      return m.onBeforeRender === Mesh.prototype.onBeforeRender;
+    });
+    const all = () => drawn([...viewDraws(), ...(lone.onBeforeRender === Mesh.prototype.onBeforeRender ? [lone] : [])]);
+    const before = all();
+    const drawsBefore = viewDraws().length + 1;
+    b.setAreaFar(true);
+    expect(area.every(m => m.visible)).toBe(true);
+    // The same triangles, in fewer draws; the members' own draws are hidden from the view only.
+    expect(all()).toEqual(before);
+    expect(viewDraws().length).toBeLessThan(drawsBefore);
+    expect(lone.onBeforeRender).not.toBe(Mesh.prototype.onBeforeRender);
+    expect(meshes(b.group).filter(m => m.name === 'landmark batch (far)').every(m => !m.visible)).toBe(true);
+    // At night the lit windows differ from their walls: those looks step back to their members,
+    // and what is drawn is what is drawn without area far meshes. Still looks (bodies, the alone
+    // mesh) stay merged.
+    for (const s of sites) s.setNight(1);
+    b.sync();
+    const night = all();
+    expect(area.some(m => !m.visible)).toBe(true);
+    expect(area.some(m => m.visible)).toBe(true);
+    b.setAreaFar(false);
+    expect(all()).toEqual(night);
+    b.setAreaFar(true);
+    for (const s of sites) s.setNight(0);
+    b.sync();
+    expect(area.every(m => m.visible)).toBe(true);
+    expect(all()).toEqual(before);
+    // Back inside the switch.
+    b.setAreaFar(false);
+    expect(area.every(m => !m.visible)).toBe(true);
+    expect(lone.onBeforeRender).toBe(Mesh.prototype.onBeforeRender);
+    expect(all()).toEqual(before);
+  });
+
+  it('stops an area far build when its area is disposed', async () => {
+    const container = new Group();
+    const sites = [10, 60].map(x => landmark(x));
+    for (const s of sites) container.add(s.group);
+    const b = batchLandmarks(sites, container, { lod: { farM: 700, nearM: 600, minArea: 4 }, syncFar: true, areaFar: true });
+    b.dispose();
+    await b.areaFarReady;
+    const area = meshes(b.group).filter(m => m.name === 'landmark batch (area far)');
+    expect(area.length).toBeGreaterThan(0);
+    expect(area.every(m => !m.geometry.getAttribute('position'))).toBe(true);
+    b.setAreaFar(true);
+    expect(area.every(m => !m.visible)).toBe(true);
   });
 });

@@ -718,7 +718,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
-          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high,
+            // Past the downtown area's far-board switch, one far mesh per class look (terrain addFar).
+            areaFar: low && !FAR_LANDMARKS });
           world.group.add(batches.group);
           if (FAR_LANDMARKS) farRoots.push(batches.group);
           if (import.meta.env.DEV) {
@@ -728,7 +730,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             void batches.farReady.then(() => console.info('City landmark far versions (downtown)', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
           }
         }
-        terrain!.addFar(farBoxesDowntown, farRoots);
+        terrain!.addFar(farBoxesDowntown, farRoots, downtownBatches);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -2440,6 +2442,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      downtownBatches?.dispose();
       prewarmer?.dispose();
       perf.setPrewarmPending(null);
       perf.detach(perfContext);

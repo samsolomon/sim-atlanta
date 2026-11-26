@@ -589,11 +589,14 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     if (import.meta.env.DEV) console.info('City far-board landmark boxes', JSON.stringify({ landmarks: landmarks.length, slowestStepMs: Math.round(Math.max(slowest, performance.now() - t1)) }));
   }
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
-  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? yield* buildLandmarkBatches(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? yield* buildLandmarkBatches(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'],
+    // Past the far-board switch, one far mesh per class look stands in for the batches' far versions.
+    areaFar: farBoard && options.quality === 'low' && !FAR_LANDMARKS }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
     if (import.meta.env.DEV) void batches.farReady.then(() => console.info('City landmark far versions', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
+    if (import.meta.env.DEV) void batches.areaFarReady.then(() => { const st = batches.stats; console.info('City landmark area far meshes', JSON.stringify({ meshes: st.areaFarMeshes, groups: st.areaFarGroups, alone: st.areaFarAlone, tris: st.areaFarTris, ms: st.areaFarMs, maxStepMs: st.areaFarMaxStepMs })); });
   }
   yield 'landmark batches';
   const carved: GroundYield[] = [];
@@ -625,6 +628,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // The far boxes draw with the generic buildings' material (city/far-board.ts styledBoxMesh).
   const buildingMaterial = scenery.group.children.find((o): o is THREE.Mesh => o.userData.building && (o as THREE.Mesh).isMesh && !(o as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
   const farHidden: THREE.Object3D[] = [];
+  /** Landmark batches that swap to their area far meshes with the far board (this area's, and downtown's from City). */
+  const farBatches: { setAreaFar(on: boolean): void }[] = batches ? [batches] : [];
   if (farBoard && options.quality === 'low') {
     // Houses: their per-house boxes from house-lod.ts (the plan's oriented rect, eave height,
     // wall colour and a roof-coloured top), shared with studio-tree-lab's far-far form.
@@ -641,8 +646,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     yield 'far-board buildings';
   }
   /** Add buildings to the far form: their boxes join the mesh, and their roots hide with it. */
-  const addFarBuildings = (boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) => {
+  const addFarBuildings = (boxes: readonly FarBox[], roots: readonly THREE.Object3D[], landmarkBatches?: { setAreaFar(on: boolean): void }) => {
     if (!farMesh) return;
+    if (landmarkBatches) farBatches.push(landmarkBatches);
     farBoxes.push(...boxes);
     grounded(farBoxes);
     farHidden.push(...roots);
@@ -666,6 +672,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     farOn = on;
     if (farMesh) { farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight; }
     for (const o of farHidden) o.visible = !on;
+    for (const b of farBatches) b.setAreaFar(on && !!farMesh);
   };
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
@@ -816,7 +823,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
      * Add buildings drawn outside this area's scenery (downtown's landmarks live in City's world
      * group) to its far-board form: their far boxes join the mesh, and the roots hide with it.
      */
-    addFar(boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) { addFarBuildings(boxes, roots); },
+    addFar(boxes: readonly FarBox[], roots: readonly THREE.Object3D[], landmarkBatches?: { setAreaFar(on: boolean): void }) { addFarBuildings(boxes, roots, landmarkBatches); },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
@@ -833,6 +840,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       rolled?.setWet(factor);
     },
     dispose() {
+      batches?.dispose();
       group.removeFromParent();
       board.material.map?.dispose();
       board.traverse(obj => {

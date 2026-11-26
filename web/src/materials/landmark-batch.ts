@@ -160,7 +160,7 @@ function classKey(mesh: Mesh, baked: boolean) {
 }
 
 /** Mirror each source's night state onto its batch: call after the landmarks' setNight. */
-function syncer(days: DayGroup[]) {
+function syncer(days: DayGroup[], merges: AreaMerge[]) {
   return () => {
     for (const d of days) {
       let alike = true;
@@ -175,6 +175,7 @@ function syncer(days: DayGroup[]) {
       d.alike = alike;
       show(d);
     }
+    for (const m of merges) refresh(m);
   };
 }
 
@@ -236,15 +237,20 @@ export class LandmarkCell extends LOD {
 function hideFromView(this: Mesh) { (this.userData as { range?: number }).range = this.geometry.drawRange.count; this.geometry.drawRange.count = -1; }
 function restoreRange(this: Mesh) { this.geometry.drawRange.count = (this.userData as { range: number }).range; }
 
-/** Which of a group's draws show, from its night state (`alike`) and its cell's distance. */
+/**
+ * Which of a group's draws show, from its night state (`alike`), its cell's distance and whether
+ * its area's far mesh stands in for it (merged: then neither its own far version nor its full
+ * version draws in the view, and the full version keeps casting).
+ */
 function show(d: DayGroup) {
-  const far = !!d.far && d.alike && d.cell.isFar;
-  if (d.far) d.far.visible = far;
+  const merged = !!d.merge?.on;
+  const far = d.alike && (merged || (!!d.far && d.cell.isFar));
+  if (d.far) d.far.visible = far && !merged;
   if (d.mesh) {
     d.mesh.visible = d.alike;
     for (const r of d.runs) r.mesh.visible = !d.alike;
   }
-  if (!d.far) return;
+  if (!d.far && !d.merge) return;
   const full = d.mesh ?? d.runs[0].mesh;
   full.onBeforeRender = far ? hideFromView : Mesh.prototype.onBeforeRender;
   full.onAfterRender = far ? restoreRange : Mesh.prototype.onAfterRender;
@@ -424,6 +430,135 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
   stats.lodMs = Math.round(stats.lodMs);
 }
 
+/**
+ * A landmark mesh no batch took because it had no same-class peer in its 500 m cell. From afar it
+ * can still join its area's far mesh: it is static, opaque, untextured, and its look (a baked
+ * colour and a constant emissive) never changes at night.
+ */
+interface Alone { mesh: Mesh; bake: Color; key: string; look: string }
+
+/**
+ * One far mesh per area and class look (Low, far board): past the far-board switch it draws every
+ * member group's far version (or its full version, where it has none) and every alone mesh of that
+ * look, triangle for triangle, as one draw. It is on only while the area is far and every member
+ * looks as it does by day; otherwise each member draws as it always has.
+ */
+interface AreaMerge {
+  key: string; mesh: Mesh; groups: DayGroup[]; alone: Alone[];
+  /** Built and in the area's far state, and drawn instead of its members. */
+  on: boolean; ready: boolean;
+  /** The area is beyond the far-board switch (setAreaFar). */
+  areaFar: boolean;
+}
+
+/** Whether an object and every ancestor is visible. */
+const visibleUp = (o: Object3D) => { for (let p: Object3D | null = o; p; p = p.parent) if (!p.visible) return false; return true; };
+
+/** Swap an area merge in or out from its area's far state and its members' night state. */
+function refresh(m: AreaMerge) {
+  const on = m.ready && m.areaFar && m.groups.every(d => d.alike && d.cell.detail !== 'full') && m.alone.every(a => visibleUp(a.mesh));
+  if (on === m.on) return;
+  m.on = on;
+  m.mesh.visible = on;
+  for (const d of m.groups) show(d);
+  for (const { mesh } of m.alone) {
+    mesh.onBeforeRender = on ? hideFromView : Mesh.prototype.onBeforeRender;
+    mesh.onAfterRender = on ? restoreRange : Mesh.prototype.onAfterRender;
+  }
+}
+
+/** Vertices copied per main-thread step while an area's far mesh is built. */
+const MERGE_STEP = 30_000;
+
+/**
+ * Fills each area merge's mesh from its members, in their draw order (material id: three's order
+ * for opaque meshes, which settles coplanar ties), as float positions in the batch group's frame
+ * with the members' own normals and colours. Sliced like buildFar. Stops, and frees what it made,
+ * once `dead()` says the area is gone.
+ */
+async function buildMerges(merges: AreaMerge[], group: Group, stats: BatchStats, sync: boolean, dead: () => boolean) {
+  let stepAt = performance.now();
+  const t0 = stepAt;
+  const slice = async () => {
+    stats.areaFarMaxStepMs = Math.max(stats.areaFarMaxStepMs, Math.round(performance.now() - stepAt));
+    if (!sync) await new Promise<void>(r => setTimeout(r, 0));
+    stepAt = performance.now();
+  };
+  const toGroup = new Matrix4(), m = new Matrix4(), v = new Vector3();
+  group.updateWorldMatrix(true, false);
+  toGroup.copy(group.matrixWorld).invert();
+  const fullOf = (d: DayGroup) => d.far ?? d.mesh ?? d.runs[0].mesh;
+  // Positions stay float in the group's frame: an Int16 cube over a whole area steps ~5 cm, which
+  // collapses roof caps and parapets a few cm proud of a roof into the roof (they z-fought in
+  // matched stills). Exact ties in a class buffer stay exact (same inputs, same arithmetic).
+  // Normals stay Int8 as the class buffers have them, colours bytes.
+  const packed = !compactVerticesOff;
+  for (const merge of merges) {
+    if (dead()) return;
+    type Part = { id: number; geometry: BufferGeometry; matrix: Matrix4; index: ArrayLike<number> | null; start: number; count: number; own: boolean };
+    const parts: Part[] = [];
+    for (const d of merge.groups) {
+      const src = fullOf(d);
+      const g = src.geometry;
+      parts.push({ id: (src.material as unknown as { id: number }).id, geometry: g, matrix: src.matrix, own: false,
+        index: g.index ? g.index.array : null, start: g.index ? 0 : g.drawRange.start, count: g.index ? g.index.count : g.drawRange.count });
+    }
+    for (const a of merge.alone) {
+      a.mesh.updateWorldMatrix(true, false);
+      const g = normalized(a.mesh, a.bake, m.multiplyMatrices(toGroup, a.mesh.matrixWorld));
+      parts.push({ id: (a.mesh.material as unknown as { id: number }).id, geometry: g, matrix: new Matrix4(), own: true, index: null, start: 0, count: g.getAttribute('position').count });
+      await slice();
+    }
+    parts.sort((a, b) => a.id - b.id);
+    const total = parts.reduce((n, p) => n + p.count, 0);
+    const own = new Box3();
+    const first = parts[0].geometry;
+    const col = first.getAttribute('color') as BufferAttribute | undefined, hasNormal = !!first.getAttribute('normal');
+    const k = col?.itemSize ?? 0;
+    const P = new Float32Array(total * 3);
+    const N = hasNormal ? packed ? new Int8Array(total * 3) : new Float32Array(total * 3) : null;
+    const C = col ? new (col.array.constructor as Float32ArrayConstructor)(total * k) : null;
+    const q8 = (x: number) => Math.round(Math.max(-1, Math.min(1, x)) * 127);
+    let at = 0, done = 0;
+    for (const part of parts) {
+      const pos = part.geometry.getAttribute('position') as BufferAttribute;
+      const nor = part.geometry.getAttribute('normal') as BufferAttribute | undefined;
+      const pc = part.geometry.getAttribute('color') as BufferAttribute | undefined;
+      // Int8 normals (a packed class buffer) copy as they are; float ones (an alone mesh) are packed.
+      const rawNormals = !!nor && nor.array instanceof Int8Array === N instanceof Int8Array && nor.normalized === packed;
+      for (let i = 0; i < part.count; i++, at++) {
+        const s = part.index ? part.index[i] : part.start + i;
+        v.fromBufferAttribute(pos, s).applyMatrix4(part.matrix);
+        own.expandByPoint(v);
+        P[at * 3] = v.x; P[at * 3 + 1] = v.y; P[at * 3 + 2] = v.z;
+        // A uniform scale and a translation: the direction is unchanged, and the shader normalises.
+        if (N && nor) {
+          if (rawNormals) for (let c = 0; c < 3; c++) N[at * 3 + c] = nor.array[s * 3 + c];
+          else if (packed) { N[at * 3] = q8(nor.getX(s)); N[at * 3 + 1] = q8(nor.getY(s)); N[at * 3 + 2] = q8(nor.getZ(s)); }
+          else { N[at * 3] = nor.getX(s); N[at * 3 + 1] = nor.getY(s); N[at * 3 + 2] = nor.getZ(s); }
+        }
+        if (C && pc) for (let c = 0; c < k; c++) C[at * k + c] = pc.array[s * k + c];
+        if (++done % MERGE_STEP === 0) { await slice(); if (dead()) { for (const p of parts) if (p.own) p.geometry.dispose(); return; } }
+      }
+      if (part.own) part.geometry.dispose();
+    }
+    if (dead()) return;
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(P, 3));
+    if (N) g.setAttribute('normal', new BufferAttribute(N, 3, packed));
+    if (C && col) g.setAttribute('color', new BufferAttribute(C, k, col.normalized));
+    g.boundingBox = own;
+    g.boundingSphere = own.getBoundingSphere(new Sphere());
+    merge.mesh.geometry.dispose();
+    merge.mesh.geometry = g;
+    merge.ready = true;
+    stats.areaFarTris += total / 3;
+    refresh(merge);
+    await slice();
+  }
+  stats.areaFarMs = Math.round(performance.now() - t0);
+}
+
 /** Dev only: every landmark mesh the batcher left as its own draw, and why (see landmarkBatchReport). */
 const unbatched: { landmark: string; mesh: string; why: string; batch: string }[] = [];
 const landmarkName = (o: Object3D) => { let p: Object3D | null = o; while (p && !p.name) p = p.parent; return p?.name ?? '(unnamed)'; };
@@ -441,13 +576,19 @@ export interface BatchStats {
   lodDropped: number; lodDoubled: number; lodMs: number;
   /** Longest single main-thread step of the far build (ms), for the idle-time rule. */
   lodMaxStepMs: number;
+  /** Area far meshes (Low far board): meshes, the groups and alone meshes they stand in for, triangles, build ms. */
+  areaFarMeshes: number; areaFarGroups: number; areaFarAlone: number; areaFarTris: number; areaFarMs: number; areaFarMaxStepMs: number;
 }
 
 interface Member { mesh: Mesh; root: Object3D; bake: Color | null; day: string; run: string }
 /** Meshes that look alike at every probe: drawn as one range with one material. */
 /** `source` is the landmark's own material, which its setNight drives; `material` draws, synced from it. */
 interface Run { source: Mat; material: Mat; baked: boolean; mesh: Mesh }
-interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean }
+interface DayGroup {
+  look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean;
+  /** Its area merge's key (class without the cell, and day look), the material it draws with by day, and the merge once made. */
+  key: string; material: Mat; merge: AreaMerge | null;
+}
 
 /**
  * Merges static landmark meshes into one buffer per 500 m cell and material class, baked relative
@@ -463,8 +604,11 @@ interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | n
  * is left at night 0; City sets the real value on its next frame. Run before City applies board
  * clipping.
  */
-/** `syncFar` builds far versions on the main thread, without a worker (tests). */
-export interface LandmarkBatchOptions { cellM?: number; name?: string; lod?: LandmarkLod | null; syncFar?: boolean }
+/**
+ * `syncFar` builds far versions on the main thread, without a worker (tests). `areaFar` (Low, far
+ * board) also builds one far mesh per class look for the whole batch, for setAreaFar.
+ */
+export interface LandmarkBatchOptions { cellM?: number; name?: string; lod?: LandmarkLod | null; syncFar?: boolean; areaFar?: boolean }
 export interface LandmarkBatches {
   group: Group; stats: BatchStats; cells: Map<string, LandmarkCell>;
   /** Mirror each landmark's night state onto its batch: call after their setNight. */
@@ -472,6 +616,12 @@ export interface LandmarkBatches {
   setCellDetail(cell: string, level: CellDetail | null): void;
   /** Resolves once every far version is in (they are built off the main thread). */
   farReady: Promise<void>;
+  /** Resolves once the area far meshes are built (after farReady), or at once without `areaFar`. */
+  areaFarReady: Promise<void>;
+  /** The area is past the far-board switch: draw its area far meshes instead of their members. */
+  setAreaFar(on: boolean): void;
+  /** Stop an area far build in progress (the area is going away). */
+  dispose(): void;
 }
 
 /** batchLandmarks, all at once. */
@@ -494,7 +644,10 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   const lod = landmarkLodOff ? null : o.lod ?? null;
   const t0 = performance.now();
   const cellM = o.cellM ?? CELL_M;
-  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0, lodMaxStepMs: 0 };
+  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0, lodMaxStepMs: 0,
+    areaFarMeshes: 0, areaFarGroups: 0, areaFarAlone: 0, areaFarTris: 0, areaFarMs: 0, areaFarMaxStepMs: 0 };
+  const areaFar = !!o.areaFar && !!lod && !areaFarOff;
+  const alone: Alone[] = [];
   const skip = (why: string, mesh?: Mesh, root?: Object3D) => {
     stats.skipped[why] = (stats.skipped[why] ?? 0) + 1;
     if (import.meta.env.DEV && mesh) unbatched.push({ landmark: landmarkName(root ?? mesh), mesh: mesh.name || mesh.type, why, batch: o.name ?? 'Landmark batches' });
@@ -513,7 +666,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   });
 
   const box = new Box3(), center = new Vector3();
-  const classes = new Map<string, { cell: [number, number]; members: Member[] }>();
+  const classes = new Map<string, { cell: [number, number]; key: string; members: Member[] }>();
   for (const entry of entries) {
     const root = entry.group;
     root.updateMatrixWorld(true);
@@ -546,8 +699,9 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       if (!g.boundingBox) g.computeBoundingBox();
       box.copy(g.boundingBox!).applyMatrix4(mesh.matrixWorld).getCenter(center);
       const cell: [number, number] = [Math.floor(center.x / cellM), Math.floor(center.z / cellM)];
-      const k = `${cell}#${classKey(mesh, !!bake)}`;
-      (classes.get(k) ?? classes.set(k, { cell, members: [] }).get(k)!).members.push(
+      const key = classKey(mesh, !!bake);
+      const k = `${cell}#${key}`;
+      (classes.get(k) ?? classes.set(k, { cell, key, members: [] }).get(k)!).members.push(
         { mesh, root, bake, day: looks[looks.length - 1], run: looks.join(';') });
       stats.candidates++;
     });
@@ -566,8 +720,15 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   // off its wall, far away). Batch materials are new, so make them in their sources' order.
   const minId = (c: { members: Member[] }) => Math.min(...c.members.map(mb => (mb.mesh.material as unknown as { id: number }).id));
   const ordered = [...classes.values()].sort((a, b) => minId(a) - minId(b));
-  for (const { cell, members } of ordered) {
-    if (members.length < 2) { skip('alone in its cell', members[0].mesh, members[0].root); continue; }
+  for (const { cell, key, members } of ordered) {
+    if (members.length < 2) {
+      const mb = members[0];
+      skip('alone in its cell', mb.mesh, mb.root);
+      // From afar it can still join its area's far mesh, if nothing about its look changes.
+      if (areaFar && mb.bake && !(mb.mesh.material as Mat).map && mb.run.split(';').every(l => l === mb.day))
+        alone.push({ mesh: mb.mesh, bake: mb.bake, key: `${key}#${mb.day}`, look: mb.day });
+      continue;
+    }
     members.sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : a.run < b.run ? -1 : a.run > b.run ? 1 : 0);
     // A big class takes several steps: its parts a few at a time, then the merge.
     const parts: BufferGeometry[] = [];
@@ -630,7 +791,8 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       return mesh;
     };
     for (const range of ranges) {
-      const dayGroup: DayGroup = { look: members[range.from].day, runs: [], mesh: null, far: null, cell: cellGroup, alike: true };
+      const dayGroup: DayGroup = { look: members[range.from].day, runs: [], mesh: null, far: null, cell: cellGroup, alike: true,
+        key: `${key}#${members[range.from].day}`, material: null as unknown as Mat, merge: null };
       let i = range.from, start = range.start;
       while (i < range.to) {
         const first = members[i], runStart = start;
@@ -659,6 +821,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
         dayGroup.mesh = draw(range.start, range.count, material, 'landmark batch (day)');
         stats.dayDraws++;
       }
+      dayGroup.material = dayMaterial;
       // The far version is computed off the main thread and arrives later; until then the cell
       // draws in full.
       if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material: dayMaterial, rep, packing });
@@ -687,7 +850,51 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   // them every original geometry, alive.
   users.clear();
   classes.clear();
-  const sync = syncer(days);
+  // Area far meshes: made now, empty and hidden, so City's board clipping reaches their materials;
+  // filled once the far versions are in. Textured classes (uv) stay as they are.
+  const merges: AreaMerge[] = [];
+  if (areaFar) {
+    // Members by key, each with the material id it draws with today (a group: its day material;
+    // an alone mesh: its own).
+    const byKey = new Map<string, { groups: DayGroup[]; alone: Alone[]; minId: number; material: Mat; rep: Mesh }>();
+    const idOf = (m: Mat) => (m as unknown as { id: number }).id;
+    const entry = (key: string, material: Mat, rep: Mesh) => {
+      let e = byKey.get(key);
+      if (!e) byKey.set(key, e = { groups: [], alone: [], minId: Infinity, material, rep });
+      e.minId = Math.min(e.minId, idOf(material));
+      return e;
+    };
+    for (const d of days) {
+      const full = d.mesh ?? d.runs[0].mesh;
+      if (full.geometry.getAttribute('uv')) continue;
+      entry(d.key, d.material, full).groups.push(d);
+    }
+    for (const a of alone) entry(a.key, a.mesh.material as Mat, a.mesh).alone.push(a);
+    // Each area mesh gets a still copy of its look's material (no new program: same parameters),
+    // made in the order of its members' earliest material id. three draws opaque meshes in
+    // material-id order with a less-or-equal depth test, so exact coplanar ties between members of
+    // different looks resolve as they did. A copy of an alone mesh's material is whitened, as a
+    // batch's is, since its colour moves into the vertices.
+    for (const [key, e] of [...byKey].sort((x, y) => x[1].minId - y[1].minId)) {
+      const material = e.material.clone() as Mat;
+      if (!e.groups.length) { material.color?.set(0xffffff); material.vertexColors = true; }
+      const mesh = new Mesh(new BufferGeometry(), material);
+      mesh.name = 'landmark batch (area far)';
+      mesh.castShadow = false;
+      mesh.receiveShadow = e.rep.receiveShadow;
+      mesh.renderOrder = e.rep.renderOrder;
+      mesh.layers.mask = e.rep.layers.mask;
+      mesh.visible = false;
+      group.add(mesh);
+      const mg: AreaMerge = { key, mesh, groups: e.groups, alone: e.alone, on: false, ready: false, areaFar: false };
+      for (const d of e.groups) d.merge = mg;
+      merges.push(mg);
+    }
+    stats.areaFarMeshes = merges.length;
+    stats.areaFarGroups = merges.reduce((n, mg) => n + mg.groups.length, 0);
+    stats.areaFarAlone = alone.length;
+  }
+  const sync = syncer(days, merges);
   sync();
   stats.ms = Math.round(performance.now() - t0);
   stats.lodMs = Math.round(stats.lodMs);
@@ -695,9 +902,14 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   // on request, so a scene built in a test does not change under it when a promise settles.
   const farReady = lod && farJobs.length && (o.syncFar || typeof Worker !== 'undefined')
     ? buildFar(farJobs, lod.minArea, stats, o.syncFar ?? false) : Promise.resolve();
+  let disposed = false;
+  const areaFarReady = merges.length && (o.syncFar || typeof Worker !== 'undefined')
+    ? farReady.then(() => buildMerges(merges, group, stats, o.syncFar ?? false, () => disposed)) : Promise.resolve();
   /** Streaming rings pick a cell's level; null hands it back to the distance rule. */
   const setCellDetail = (cell: string, level: CellDetail | null) => { const c = cells.get(cell); if (c) c.detail = level; };
-  return { group, stats, cells, sync, setCellDetail, farReady };
+  const setAreaFar = (on: boolean) => { for (const mg of merges) { mg.areaFar = on; refresh(mg); } };
+  const dispose = () => { disposed = true; };
+  return { group, stats, cells, sync, setCellDetail, farReady, areaFarReady, setAreaFar, dispose };
 }
 
 /**
@@ -761,6 +973,13 @@ const compactColoursOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
+})();
+
+/** `?perf&farmerge=off` keeps each landmark group's own far draw past the far-board switch, for A/B runs. */
+const areaFarOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('farmerge') === 'off';
 })();
 
 /** `?perf&quant=off` keeps landmark batch positions and normals as floats, for A/B runs. */
