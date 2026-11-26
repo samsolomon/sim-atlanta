@@ -34,6 +34,15 @@ export const WELL_CONTAINER_SETS: Record<string, [string, string]> = {
 
 export const VARIANT_FAMILIES: readonly VariantFamily[] = [
   {
+    // One model; paint and trim are built from the state (keys match road-pickup.ts PICKUP_PAINTS).
+    id: 'f150', label: 'Full-size crew-cab pickup (F-150 SuperCrew-like)',
+    controls: [
+      choice('paint', 'Paint', ['white', 'White'], ['black', 'Black'], ['silver', 'Silver'], ['grey', 'Dark grey'], ['stone', 'Stone grey'], ['blue', 'Blue'], ['red', 'Red']),
+      choice('trim', 'Trim', ['xlt', 'Chrome (XLT-like)'], ['xl', 'Work (XL-like)']),
+    ],
+    members: [{ id: 'f150', state: { paint: 'white', trim: 'xlt' } }],
+  },
+  {
     id: 'cm44ac', label: 'GE AC44 rebuild (CM44AC family)',
     controls: [choice('scheme', 'Scheme', ['csx', 'CSX-like'], ['ns', 'NS-like'])],
     members: [{ id: 'cm44ac', state: { scheme: 'csx' } }, { id: 'cm44acNs', state: { scheme: 'ns' } }],
