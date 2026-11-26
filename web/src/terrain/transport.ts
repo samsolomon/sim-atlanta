@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { runSync, type Build } from '../core/slice';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
-import { alongOn, joinedAt, matchRibbon, sectionAt, stripePoint } from './connector-corridor';
+import { alongOn, joinedAt, joinedWith, matchRibbon, sectionAt, stripePoint, type Ribbon } from './connector-corridor';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
@@ -243,6 +243,19 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   for (const rail of data.rail) if (rail.kind === 'ground') indexCrossing(rail.pts, 2.1, 7);
 
+  // Connector ribbons drawn as decks on this board, as station intervals (for shared edges).
+  const deckIntervals = new Map<Ribbon, [number, number][]>();
+  for (const run of data.roads) {
+    if (run.kind !== 'bridge' || run.cls !== 'motorway' || run.pts.length < 2) continue;
+    const r = matchRibbon(run.pts[0], run.pts[1], run.sub === 'link');
+    if (!r) continue;
+    const a = alongOn(r, run.pts[0]).s, b = alongOn(r, run.pts.at(-1)!).s;
+    deckIntervals.set(r, [...(deckIntervals.get(r) ?? []), [Math.min(a, b), Math.max(a, b)]]);
+  }
+  const decked = (r: Ribbon, p: P2) => {
+    const s = alongOn(r, p).s;
+    return (deckIntervals.get(r) ?? []).some(([a, b]) => s >= a - 1 && s <= b + 1);
+  };
   function deckJoins(p: P2, owner: TransportRun, run: TransportRun) {
     if (run.kind !== 'bridge' || run.deckNavd88M) return false;
     const key = p.join(',');
@@ -353,11 +366,15 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // A deck shares an option lane with its sibling until the gore opens: the part the owner
     // covers (connector-corridor, one surface owner) is the owner's tread, so this deck's tread,
     // shoulder and lines stop at the owner's edge there.
-    // An edge shared with a sibling (joined) has no shoulder: the two decks meet at the lane
-    // edge instead of lying across each other by their shoulders.
+    // An edge shared with a sibling that is itself a deck here has no shoulder: the two decks
+    // meet at the lane edge instead of lying across each other by their shoulders. Beside a
+    // sibling at grade the deck keeps its shoulder and parapet.
     function uncovered(row: { s: number; inner: P2; outer: P2; covered?: { inner?: number; outer?: number } }, f: number) {
-      if (joinedAt(ribbon!, row.s, 'inner')) f = Math.max(f, 0);
-      if (joinedAt(ribbon!, row.s, 'outer')) f = Math.min(f, 1);
+      for (const side of ['inner', 'outer'] as const) {
+        const other = joinedAt(ribbon!, row.s, side) && joinedWith(ribbon!, row.s, side);
+        if (!other || !decked(other, side === 'inner' ? row.inner : row.outer)) continue;
+        f = side === 'inner' ? Math.max(f, 0) : Math.min(f, 1);
+      }
       if (!row.covered) return f;
       const w = Math.hypot(row.outer[0]-row.inner[0], row.outer[1]-row.inner[1]) || 1;
       if (row.covered.inner) f = Math.max(f, row.covered.inner / w);

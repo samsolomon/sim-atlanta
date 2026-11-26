@@ -24,7 +24,7 @@ export interface Section {
   outer: P2;
   /** Where this edge is shared with a sibling at a merge or diverge: the owner draws one dashed
    * lane line ('dash') and the other branch draws none ('none'). Unset: an ordinary edge line. */
-  joined?: { inner?: 'dash' | 'none'; outer?: 'dash' | 'none' };
+  joined?: { inner?: 'dash' | 'none'; outer?: 'dash' | 'none'; innerWith?: Ribbon; outerWith?: Ribbon };
   /** Metres of this section, measured in from that edge, that lie under a sibling that owns
    * the surface there: a shared option lane before the gore opens. Paint and deck treads stop
    * at the owner's edge (paintedSection); traffic keeps the whole section. */
@@ -502,7 +502,7 @@ function separate(joint: string, left: End, right: End, forward: boolean) {
       // out (a shared option lane, tapering out at 1:10) stays under the owner: covered.
       const m = overlap > 0.02 ? push(ribbon, row, u, t, cap === Infinity ? Infinity : PUSH_SLOPE * d) : 0;
       cover(row, facing, overlap - Math.abs(m));
-      row.joined = { ...row.joined, [facing]: 'none' };
+      row.joined = { ...row.joined, [facing]: 'none', [facing + 'With']: owner.ribbon };
       parted = d;
       clear = 0;
       edgeOfMinor.length = edgeOfOwner.length = 0;
@@ -519,7 +519,7 @@ function separate(joint: string, left: End, right: End, forward: boolean) {
   // The owner draws the shared edge as one dashed lane line up to where the edges part.
   for (const { row, d } of ownerRows) {
     if (d > parted) break;
-    if (parted > 0) row.joined = { ...row.joined, [leftOwns ? 'outer' : 'inner']: 'dash' };
+    if (parted > 0) row.joined = { ...row.joined, [leftOwns ? 'outer' : 'inner']: 'dash', [(leftOwns ? 'outer' : 'inner') + 'With']: minor.ribbon };
   }
   if (edgeOfMinor.length > 1) gores.push({ joint, left: left.ribbon, right: right.ribbon, ring: [...edgeOfMinor, ...edgeOfOwner.reverse()] });
 }
@@ -571,10 +571,10 @@ for (const minor of ribbons) {
       if (t === undefined || (right ? t : -t) <= 0.02) continue;
       const m = push(minor, row, u, t, PARALLEL_SLOPE * fixedDistance(minor, row.s));
       cover(row, right ? 'inner' : 'outer', Math.abs(t) - Math.abs(m));
-      row.joined = { ...row.joined, [right ? 'inner' : 'outer']: 'none' };
+      row.joined = { ...row.joined, [right ? 'inner' : 'outer']: 'none', [(right ? 'inner' : 'outer') + 'With']: owner };
       // The owner's facing edge here becomes the one dashed line.
       const o = sectionIndex(owner, nearest.s);
-      for (const q of [owner.rows[o], owner.rows[o + 1]].filter(Boolean)) q.joined = { ...q.joined, [right ? 'outer' : 'inner']: 'dash' };
+      for (const q of [owner.rows[o], owner.rows[o + 1]].filter(Boolean)) q.joined = { ...q.joined, [right ? 'outer' : 'inner']: 'dash', [(right ? 'outer' : 'inner') + 'With']: minor };
     }
   }
 }
@@ -602,6 +602,11 @@ for (const joint of joints.values()) {
 /** The shared-edge treatment at distance s (from the row at or before s), or undefined. */
 export function joinedAt(r: Ribbon, s: number, side: 'inner' | 'outer') {
   return r.rows[sectionIndex(r, s)]?.joined?.[side];
+}
+/** The sibling that shares this edge at distance s, if any. */
+export function joinedWith(r: Ribbon, s: number, side: 'inner' | 'outer') {
+  const j = r.rows[sectionIndex(r, s)]?.joined;
+  return side === 'inner' ? j?.innerWith : j?.outerWith;
 }
 
 export function sectionAt(r: Ribbon, s: number): Section {
