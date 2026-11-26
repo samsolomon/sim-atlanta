@@ -5,7 +5,8 @@ import fixture from './fixtures/brookwood-timetable.json';
 import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
 import { corridorChainage, crescentPlacement } from './brookwood';
 import { corridor } from './brookwood-corridor';
-import { createNorcrossFreight, NORCROSS_LINE } from './brookwood-freight';
+import { createNorcrossFreight, FREIGHT_SLOT_MS, NORCROSS_LINE } from './brookwood-freight';
+import { leadFirst } from './vehicle-follow';
 
 // Keep the recorded service day and geometry together: rolling GTFS feeds expire
 // historical dates, so local pnpm data must not change this regression's input.
@@ -36,6 +37,24 @@ describe('Brookwood corridor trains', () => {
         expect(Math.abs(run[i].center - run[i - 1].center)).toBeLessThan(400);
       }
     }
+  });
+
+  it('puts the leading locomotive of the Norcross freight first in both directions', () => {
+    const freight = createNorcrossFreight(corridor.main2.pts, () => 0, []);
+    for (const slot of [0, 1]) {
+      const at = (seconds: number) => slot * FREIGHT_SLOT_MS + seconds * 1000;
+      freight.update(at(120), false);
+      const before = leadFirst(freight.poses.children)[0];
+      freight.update(at(121), false);
+      const cars = leadFirst(freight.poses.children), lead = cars[0];
+      expect(cars.length).toBeGreaterThan(3);
+      // Every other car is behind the lead along its direction of travel.
+      const dx = lead.x - before.x, dz = lead.z - before.z;
+      for (const car of cars.slice(1)) expect((car.x - lead.x) * dx + (car.z - lead.z) * dz).toBeLessThan(0);
+      const shown = freight.poses.children.filter(c => c.visible);
+      expect(shown.find(c => c.userData.consistIndex === 0)).toBeDefined();
+    }
+    freight.dispose();
   });
 
   it('keeps the illustrative Main 2 freight clear of every Crescent near the island', () => {

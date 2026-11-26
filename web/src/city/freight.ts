@@ -120,7 +120,7 @@ export class CityFreight {
     const summary = passageSummary(passage);
     this.visibleCars = 0;
     this.batches.begin();
-    for (const section of this.sections) {
+    for (const [nth, section] of this.sections.entries()) {
       let front = head;
       section.poses.forEach((car, i) => {
         const unit = passage.units[i];
@@ -134,6 +134,8 @@ export class CityFreight {
         car.visible = true;
         car.material = section.materials[cut];
         car.userData.lengthM = length;
+        // A unit astride two sections has two poses: the one further along its travel is in front.
+        car.userData.consistIndex = i - dir * nth / (2 * this.sections.length);
         car.userData.kind = unit.kind;
         car.userData.consist = summary;
         car.userData.lead = passage.units[0].kind;

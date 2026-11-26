@@ -22,7 +22,7 @@ import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
 import { drawnAt } from './drawn-at';
-import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
+import { FOLLOW_CAMERA, leadFirst, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -1845,14 +1845,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const t = states.find(s => s.id === v.id);
       if (!t) return null;
       const [x, z] = project(t.lon, t.lat);
-      const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...streetcar.cars()]
-        .filter(c => c.userData.trainId === t.id).flatMap(c => drawnCar(c) ?? []);
+      const cars = leadFirst([...trains.group.children, ...(brookwood?.cars.children ?? []), ...streetcar.cars()]
+        .filter(c => c.userData.trainId === t.id));
       return { id: t.id, pathId: t.pathId, tier: t.s.tier, routeId: t.routeId, heading: t.heading, x, z, cars,
         hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
     if (v.kind === 'freight') {
-      const cars = [...(freight?.poses.children ?? []), ...(brookwood?.freightPoses.children ?? [])]
-        .filter(c => c.userData.trainId === v.id).flatMap(c => drawnCar(c) ?? []);
+      const cars = leadFirst([...(freight?.poses.children ?? []), ...(brookwood?.freightPoses.children ?? [])]
+        .filter(c => c.userData.trainId === v.id));
       if (!cars.length) return null;
       return { id: v.id, tier: 'illustrative', x: cars[0].x, z: cars[0].z, cars, hidden: null };
     }
