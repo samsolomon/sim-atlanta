@@ -1,5 +1,8 @@
 # City performance architecture plan
 
+> **Superseded for direction (2026-11-26).** [`scaling-plan.md`](scaling-plan.md) (v2) is the plan of
+> record. This file stays as the evidence. Its §7 lists which sections here still stand.
+
 Draft for Sam, 2026-11-26. This is a plan only: nothing here changes product code. It covers what
 City costs today, measured, and what it would cost at the full I-285-plus-airport extent under
 today's architecture and under the proposed one. It then sets out the five pillars, the program

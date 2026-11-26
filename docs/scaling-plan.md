@@ -1,0 +1,335 @@
+# City scaling plan, v2
+
+Draft for Sam, 2026-11-26. This is a plan, so it changes no code. It replaces the direction of
+[`perf-architecture-plan.md`](perf-architecture-plan.md) (v1, same day), rewritten around what we
+measured on 2026-11-26. v1 stays as the evidence record. §7 lists which of its sections still
+stand.
+
+Every number is tagged. **M** means measured, with the device and commit. **E** means an
+estimate. "Studio 6×" is headless Chrome on the A16 canvas with the CPU throttled. It is a proxy,
+not a phone.
+
+## 0. Summary
+
+1. **Memory is the wall, and we are at it.** Low geometry is 150–178 MB against a 190 MB ceiling
+   (M, coordinator). A resident km² of full detail costs about 7.6–7.9 MB of Low geometry (M,
+   R16's matched pair), so a phone can hold about **20 km² of full detail: today's board**. Every
+   km² past that has to be coarse or unloaded. The full square is 1,239 km².
+2. **Headroom is gone on every tier.** That covers High night calls (629 of 630), High programs
+   (94 of 100) and Low geometry (above). Until it is restored, a feature that adds to a full
+   budget ships with an equal cut in the same PR (§4).
+3. **Calls are not the phone lever, and we haven't proven what is.** −143 calls gave +1.5 fps on
+   the A16. Merging landmark batches (C) saved 41 calls for +18 MB and was stopped. The
+   increments that moved phones also removed triangles or expensive shading. The best-supported
+   currency is **triangles**. A device A/B with the existing switches comes first and decides the
+   order of everything after it (§5, increment 0).
+4. **Baking isn't the lever for today's map.** It saved 21% of brookwood-south's mount and nothing
+   on three other rows. Downtown's bakeable ground is about 0.6 s of 7.2 s before ready at 6×. Bake
+   only areas whose ground is graded or seated (highway landings, interchanges, rail cuts), and
+   only when the saving clears a bar (§3.5).
+5. **The felt freeze is boot, and the fix is slicing.** `stage:terrain` (2.3–3.0 s at 6×) and
+   streets and freight (1.1–1.3 s) are single tasks before ready. Most of that time goes to
+   landmark builders, batching and transport, not ground. The integrator owns the slicing.
+6. **Unload doesn't need the bake.** v1 put unload behind joined-seam baking. A neighbour's carves
+   can be rebuilt from its yield list without the unloaded area's yields. The hold/revert added
+   for sliced mounts already does this inside a mount (§3.2).
+7. **Far levels add memory unless something is freed.** Far forms are held beside near forms:
+   #613 cost +9 MB and C +18 MB. #613's boxes cost about 0.43 MB/km². Over the square that is
+   about 530 MB, so the horizon needs a form about 20× cheaper per km² (§3.3).
+8. **The next expansion waits on five things.** Headroom restored to the reserve, boot sliced,
+   area unload with the growth check passing, per-view budgets, and the device A/B (§3.6).
+
+## 1. What we measured on 2026-11-26
+
+| Finding | Number | Source |
+|---|---|---|
+| Headroom, High night calls | 629 / 630 | M, coordinator, main |
+| Headroom, High programs | 94 / 100 (93 by day) | M, coordinator; #613 final head |
+| Headroom, Low geometry | 150–178 MB / 190 (by view and run) | M, coordinator; #613 final head 175.3 MB |
+| Boot, `stage:terrain` | 2,710–2,960 ms at 6× on f0c5ef55 (one task); 2,312 ms median after #705 | M, integrator boot profile; #705 |
+| Boot, streets and freight | 1,210–1,270 ms at 6× (one task) | M, integrator |
+| Boot, ready | 6.9–7.3 s at 6× (f0c5ef55); 6.4 s after #705 | M, integrator |
+| Inside `stage:terrain` | landmark builders ~1.2 s, `batchLandmarks` 0.5 s, `buildScenery` 0.45 s, ground tessellation and map ~0.3 s | M, integrator, unminified 6× |
+| Bakeable ground before ready | ≤ ~0.6 s of 7.2 s (re-carve 315 ms plus tessellation) | M, integrator |
+| Baked ground, brookwood-south | 2,418 → 1,912 ms of row work at 6× (−21%); 1.8 MB Low / 3.9 MB High download | M, #704 (open) |
+| Baked ground, three other rows | within noise at 1× (e.g. midtown-upper 242 → 253 ms) for 1.5–4.5 MB each | M, baked-ground handoff |
+| Far board, landmarks kept (#613) | iPhone 23.4 → 26.1 fps (+12%); 378 → ~358 calls, 1.82 → 1.61M triangles; +9 MB Low geometry | M, coordinator iPhone 15 Pro, cdd6d76a |
+| Far board, boxed landmarks | iPhone 36.2 fps (+55%); 218 calls, 1.21M triangles; also hid ~90 glass, hooked and lone meshes; **popped** | M, same run |
+| Calls alone | −143 calls → +1.5 fps | M, coordinator, A16 (earlier release) |
+| C, merged landmark far meshes | −41 calls by day, −2 at night, 0 triangles, +18 MB geometry, +19 MB heap; stopped | M, Studio, far-landmarks handoff |
+| C, Int16 over a 3 km area | 5 cm steps; roof caps a few cm proud z-fought | M, far-landmarks handoff |
+| Connector traffic (#688) | iPhone traffic 15 → 3.3 ms/frame; fps 18 → 23.5 | M, coordinator iPhone |
+| The GPU gap after #688 | 23.5 fps against 24.6–26.6 on release 16, with CPU 15 ms against 23 ms: about 1–3 fps of unattributed GPU time | M, #688 |
+| A16 on 2026-11-23 | GPU-bound; post and shadow off +0.2–1.6 fps; **a lower pixel ratio gained nothing**; hiding ground +7, trees +4, landmarks and transport +3 fps | M, build log 2026-11-23 |
+
+Main is now 2026bf31 (#705 merged). No phone run exists on it yet.
+
+## 2. Where v1 was wrong
+
+Plainly, so the next plan doesn't inherit these.
+
+1. **"Ground work is most of the main thread" (v1 §0.3, §2.6).** I generalised R16's mount, where
+   ground is 98% of the work, to boot. v1 put ground at 43% of boot and buildings at 0.08 s. The
+   integrator's profile shows landmark builders and batching at about 1.7 s of downtown's boot at
+   6×, and bakeable ground at about 0.6 s. My buckets matched call chains wrongly. v1's own
+   "Other, 1.01 s" bucket was hiding the landmark builders.
+2. **Baking as the main-thread lever (v1 increment 5).** It works where ground is graded and seated
+   (brookwood-south, R16). Elsewhere it costs 1.5–4.5 MB per row and saves nothing.
+3. **Unload had to wait for the bake (v1 §4.2, critical path 0 → 2 → 5 → 6 → 9).** That was the
+   wrong dependency. Seam carves can be rebuilt from the yield list (§3.2). The bake was never the
+   only way to make unload safe.
+4. **"Like the A16, the steady state is draw-bound" (v1 §1, and the Low 250-call end ceiling).**
+   −143 calls bought 1.5 fps. Calls are a guard, not the target.
+5. **C's estimate.** v1's handoff expected about 240 calls by day with nothing visible changing and
+   didn't count memory. C gave 302 calls (−41) for +18 MB. Night saved almost nothing, because 34
+   of 38 far groups have lit windows.
+6. **Far LOD saves memory (v1 §3: "≤ 150 MB resident, flat").** Far forms sit beside near forms
+   until something is freed: +9 MB (#613) and +18 MB (C). LOD without unload makes memory worse.
+7. **L2 packed like #575 (v1 §4.3).** Int16 over a 3 km cube z-fights roof caps (C). Packing
+   needs cubes of about 500 m or less, or geometry with no near-coplanar parts.
+8. **Bake byte estimates.** v1 §4.1a estimated about 0.6 MB per Midtown row on Low. It measured
+   1.5 MB (midtown-upper) and 1.86 MB (brookwood-south). The host also sends binaries
+   uncompressed, so files ship as .gz.
+9. **Runway.** v1 treated "today plus 10%" ceilings as room to grow. Building skins and #613
+   spent that room within a day.
+10. **Boot had no gate.** #613 added about 0.5 s to boot at 6× and nothing failed. The integrator
+    found it by hand (#705). `test:perf` checks long tasks only after ready.
+
+## 3. The path to the full square
+
+### 3.1 The constraint: a memory model per km²
+
+Low (the phone tier). Today's board is 21.2 km² (19.0 plus R16's 2.24).
+
+| Item | Cost | Source |
+|---|---|---|
+| Full detail, resident, seen from a distance | 7.6–7.9 MB geometry/km²; ~25 MB heap/km² | M: R16 pair (+17.6 MB per 2.24 km²); today's 160 MB / 21 km² |
+| Close-camera detail (houses, near ground) | +60 MB per neighbourhood in view; houses never freed (+58 MB after `route:north`) | M, v1 §2.2 |
+| #613 far boxes, held beside near | 0.43 MB/km² (9 MB / 21 km²) | M, #613 |
+| C merged far meshes, held beside | +18 MB / 21 km² | M, C |
+| Coarse horizon needed for the square | ≤ 25 KB/km² on average (≤ 30 MB for 1,219 km²) | E, target |
+
+What follows:
+
+- **The resident window of full detail is about 20 km² on Low, for good.** At 7.6 MB/km² and a
+  160 MB working budget (190 minus the reserve in §4), there is no room for a 22nd km² until
+  something is unloaded or packed. Packing generic buildings and houses (v1: about −18 MB on
+  generic buildings alone, E) buys roughly 2–3 km², not a direction.
+- **Coarse has to be about 20× cheaper per km² than #613's boxes.** Proposed split (E):
+  - an L1 ring (out to about 8 km from the camera, ~200 km²) at ≤ 80 KB/km², about 16 MB;
+  - L2 and L3 for the rest (~1,000 km²) at ≤ 10 KB/km², about 10 MB.
+- **High** has a second wall in ground maps: 21.8 MB of texture per km² (M, R16). Distance-tiered
+  maps (v1 §4.3) come before any High expansion past today's texture ceiling.
+
+### 3.2 Streaming: load and unload
+
+**Unit.** Today's areas (rows of 2.24 km²) first. 800 m tiles (#435's lattice, 1,936 tiles,
+~5,808 files, 29% of the free file cap) come before the second expansion step.
+
+**Load.** As R16 does today: lazy, sliced, on approach, behind fog or the coarse form. This
+already works. Sliced mounts reach a longest task of 185–335 ms at 6× (M, docs/perf.md).
+
+**Unload, without the bake.** An area's dispose already frees its own meshes and, for R16, its seam
+extras: `restoreMaps()`, `disposeBuildings()` and `seamNormals.reset()` (`city.ts` near line 1127).
+What is missing is undoing the carves it made in a neighbour (R16 re-cuts Brookwood Station's
+ground). The design:
+
+1. Each yield a mount adds to a neighbour is tagged with the mounting area's id. `carved` already
+   records the yields in order (`terrain/model.ts`).
+2. On unload, the neighbour re-tessellates from its `carved` list without that id's yields, as a
+   sliced build. This reuses `carveSteps` and `holdGround`: the old ground stays drawn until the
+   rebuild releases. `holdGround().revert()` already does this for an abandoned mount.
+3. Far boxes go back the way `revert` puts them back (`farBefore`).
+4. The cost is one re-tessellation of the neighbour, about 200–300 ms of work at 1× (M, row mounts
+   in Node), spread over frames.
+
+Eviction then works by distance, with hysteresis and an LRU under the per-tier memory budget,
+as v1 §4.2 describes. The near-house leak is fixed first, as the same rule at the smallest
+scale: dispose `HouseTile`'s near group a few seconds after it leaves the near band. The leak is
+still on main. `house-lod.ts` never frees its near group.
+
+**Joined-seam baking** becomes optional. It applies only where a seam's ground work is itself
+heavy (R16-class landings).
+
+**Per-frame work must scale with what is near, not with the board.** This is the lesson of #688:
+one O(triangles-per-run) lookup per traffic sample cost the phone 13–50 ms a frame. Every system
+updated per frame (traffic, LOD checks, night fan-out, far switches) has to be bounded by a spatial
+index or the resident set, and gated by **counts** (samples per car, objects visited per frame),
+not by milliseconds. Counts don't move with machine load (docs/perf.md, `_traffic`).
+
+### 3.3 Far levels that don't pop
+
+Sam's rule (v1 §7.3): simple far forms are fine if a blink test at normal views shows no pop.
+
+| Level | Covers | Form | Budget (E) |
+|---|---|---|---|
+| L0 | Resident window, ~20 km² | Full detail, built or baked | ~7.6 MB/km² today, packed toward ~6 |
+| L1 | Ring to ~8 km | #613-style boxes, but oriented boxes per block rather than footprint walls, plus canopy masses; landmarks keep their own far versions | ≤ 80 KB/km², ≤ 2 draws per tile |
+| L2 | Beyond L1 | Block masses on a coarse ground, colours from the near palette and season | ≤ 10 KB/km², 1 draw per 3.2 km block |
+| L3 | Horizon | #538's very-far ground | 1–2 draws |
+
+Rules carried over from what we measured:
+
+- **Colours come from the near-form functions** (palette, `World.setSeason`, the night window
+  share). ce1aed44 failed by computing its own.
+- **Int16 only in cubes ≤ ~500 m**, or in geometry with no parts within a few cm of each other.
+  Otherwise use float (C finding 1).
+- **Night needs its own plan.** Lit windows split draws (C: 34 of 38 groups). L1 and L2 carry
+  #613's warm-point night share, not per-window geometry.
+- **A far level replaces a near form; it doesn't sit beside it.** A unit either holds its near form
+  or its far form. If it holds both (as #613 does inside the resident window), that counts against
+  the budget.
+- **The blink harness gates every level**: default, wide and dolly cameras, 14:00 and 22:00,
+  strips at 0.8×, 1× and 1.2× of the switch distance (v1 §4.3).
+
+**The biggest measured phone prize lives here.** Boxed landmarks reached 36 fps on the iPhone
+against 26 with landmarks kept. It popped, so it was rejected. The landmarks it hid included
+glass and hooked-shader meshes, likely expensive per pixel. A far form per landmark that matches
+the silhouette and colour (fewer triangles, plain kit material), blink-tested, is how to collect
+part of that gap without a pop. That comes after increment 0 says whether the gap was triangles,
+transparency or shading.
+
+### 3.4 Download per km²
+
+| Item | Bytes | Source |
+|---|---|---|
+| Area source data (`ground.i16` + `context.json`) | ~0.45 MB/km² on disk (1.0 MB per 2.24 km² row) | M, row files |
+| Baked ground, where used | +0.83 MB/km² Low, +1.76 MB/km² High (gz) | M, brookwood-south |
+| Statewide `data/ga` | 6.4 MB, fixed | M |
+| Coarse levels for the square | ~5–10 MB gz in total | E |
+
+- A visitor downloads the resident window (~9 MB, E) plus the coarse set plus `data/ga`. That is
+  about 20–25 MB at the opening view, whatever the square's size (E).
+- Hosted in total: about 560 MB of source for the square (E). That is static, at no per-visitor
+  server cost, inside the file cap with 800 m tiles.
+- Ship binaries as .gz with `DecompressionStream`. The host doesn't compress `.i16` and `.bin`.
+- Baking everywhere would triple Low's bytes per km² (0.45 → ~1.3). That is another reason to bake
+  only where it pays.
+
+### 3.5 Where baking pays
+
+Bake an area's ground only if it saves **≥ 300 ms of main-thread work at 6×** (the coordinator's
+bar; about 30 ms at 1×) and its download stays within the per-km² budget above. That is true
+where ground is **graded or seated**: `gradeSouthboundSteps`, `seatLandingEdges`, conformed cut
+edges, and joined highway landings. Today that is brookwood-south and R16 only. Ahead it is
+likely the heavy areas: the Downtown Connector interchanges (I-75/85 with I-20), I-285's
+interchanges (Spaghetti Junction), the airport's runway grading and rail cuttings. That is an
+estimate; measure each when it is built.
+
+Downtown's ground isn't one of those areas. Its bake would save at most 0.6 s, and the integrator's
+slicing turns that time into frames anyway.
+
+**#704 (brookwood-south) — recommendation: park it, don't merge.** The saving is 0.5 s of a
+mount that is already sliced and happens after ready. That means faster fill, not a shorter
+freeze. Merging costs 5.7 MB of hosted files, a release-checklist step and a stale-bake risk on
+every ground change. Keep the branch as the proven mechanism for the first heavy area. **This is
+the coordinator's call** (question 1 below).
+
+### 3.6 What must be true before the next expansion
+
+1. **Reserve restored** on every tier (§4): High night calls, High programs, Low geometry.
+2. **Boot sliced.** No task before ready over 300 ms at 6×, with a boot gate in `test:perf` so
+   another #613 can't add 0.5 s unnoticed.
+3. **Area unload works** for R16 and the new area. The growth check (`route:north` out and back,
+   geometry and heap within +10%) passes.
+4. **Per-view budgets.** Opening, Midtown street, R16 and the new area's showcase camera, per tier.
+5. **The device A/B is done** (increment 0), so we know which currency the new area is paying in.
+6. **The new area's marginal cost is measured** in MB/km², calls and triangles, and fits under the
+   reserve with unload on.
+
+Before South, or any step past about 3 areas: 800 m tiles, the ring manager, and L1 to L3.
+
+## 4. Budget policy: features pay for themselves
+
+**Currencies, in order of what phones pay:**
+
+| Currency | Why | Gate |
+|---|---|---|
+| Low geometry and heap | The scaling wall (§3.1); a phone tab that runs out is killed | `test:perf` ceilings, plus the growth check |
+| Triangles (Low) | The best-supported fps currency on both phones (§1) | ceiling |
+| Longest task (6×), boot and after ready | The freeze people feel | `low-north`, `low-r16`, and a new boot gate |
+| Per-frame CPU counts (traffic samples and objects visited) | #688 | count ceilings |
+| Calls, programs | Guards: High night and programs are at the ceiling, but calls barely move phone fps | ceilings |
+
+**Reserve.** Each tier keeps a reserve under its ceiling that features may not spend. Only Sam
+releases it, for an expansion or a decision.
+
+| Tier | Reserve (proposed) |
+|---|---|
+| Low | geometry ≥ 25 MB (about 13%), heap ≥ 40 MB, triangles ≥ 150k |
+| High | programs ≥ 10 free, geometry ≥ 25 MB |
+| High night | calls ≥ 40 free |
+
+**Bootstrap.** At 629/630 there is nothing to reserve, so the restore increments come first (§5:
+2a–2c). Until each currency is back above its reserve, a PR that adds to it must remove at least as
+much in the same PR. Measure that with a same-build A/B in `test:perf`.
+
+**Every PR that changes what City draws or loads** states its cost in each currency it moves
+(`test:perf` against main), names its offset if a currency is under reserve, and keeps:
+
+- landmarks adding **0 programs** (the program-rule lint, v1 §4.4);
+- per-frame work O(near), with a count gate when it samples the world;
+- far forms that replace rather than add (§3.3).
+
+**Ratchet.** When a cut lands, the ceiling moves down (today's rule). Raising a ceiling is Sam's
+call.
+
+## 5. Next increments, ranked
+
+The ranking assumes triangles are the phone currency. **Increment 0 can reorder 2d, 5 and 7.**
+
+| # | Increment | Phone win | Cost (agent-h) | Risk | Owner |
+|---:|---|---|---:|---|---|
+| 0 | **Device A/B, no code.** iPhone and A16 on main 2026bf31: default and Midtown street at 14:00 and 22:00, with `farboard=off`, `shadow=off`, `nopass=ink,grade,tilt,bloom,gtao`, `post=off`, `pr=0.6`. Also a Safari timeline and an A16 GPU trace for the 1–3 fps GPU gap | None directly; it sets the currency. M: 2026-11-23 found pixel ratio worth nothing | 1 + coordinator device time (~2 h) | Low | Coordinator, with a frozen build from me |
+| 1 | **Slice boot**: landmark builders, `batchLandmarks`, `createDowntownTerrain`, `createSurfaceTransport` through `runBudgeted`, plus a boot long-task gate | iPhone freeze before ready (~10 s) turned into frames. E: longest pre-ready task 2.3 s → ≤ 300 ms at 6×. No fps change | 6–10 | Medium: keep surface reads and carve order unchanged (bake seam); byte-identical fingerprints as #621 | **Integrator** |
+| 2a | **Night windows ride the wall draw** (v1 increment 4) | E: −100–130 High-night calls; Low 22:00 is 521 calls. Restores High night | 6–10 | Medium: night look; matched-frame pixel diff | Materials owner |
+| 2b | **Programs phase A plus the lint** (v1 §5) | E: −30 High programs. Restores programs; phone fps ~0 | 8–12 | Medium: side, flat and alpha moves shift pixels | Materials owner |
+| 2c | **Free near houses; pack generic buildings and houses** | E: Low geometry −18 MB (packing) and flat after routes (house leak). Restores Low geometry | 6–10 | Low–medium: Int16 cube size ≤ 500 m | Streaming owner |
+| 2d | **Per-view budgets, growth check, boot gate** (v1 increment 0) | None; it stops silent regressions (#613's boot cost, the street view over its ceiling) | 6–10 | Low | Streaming owner |
+| 3 | **Area unload** via yield-list re-carve (§3.2), R16 first; eviction by distance with hysteresis | Memory flat with travel; required for any expansion. E: frees ~17.6 MB of Low geometry per row unloaded | 15–20 | Medium: seams; follow and deep links into an unloaded area (#682's rules) | Streaming owner |
+| 4 | **Close the GPU gap**, from increment 0's traces | E: up to +1–3 fps on the iPhone | 2–6 | Unknown until traced | Me, with the coordinator |
+| 5 | **Landmark far forms without pop**: silhouette and colour-matched far versions on the kit material for landmarks past 15 km, glass and hooked included, blink-tested | M upper bound: 26 → 36 fps (boxed, which popped). E: +10–25% iPhone | 15–25 | High: the look of approved landmarks; Sam's sheet | Far-LOD owner |
+| 6 | **800 m tiles and the ring manager** (#435's lattice, index, `immutable` static files) | Enables Stage 2 | 25–35 | Medium: pan hitches, file count | Streaming owner |
+| 7 | **Coarse levels L1 to L3** to the §3.1 budgets, with the blink harness | Enables the square; E: triangle-neutral at the opening view if L1 replaces today's far boxes | 20–30 | High: the look at the switch | Far-LOD owner |
+| 8 | **Programs phase B** (library kinds, data texture, facade array) | E: −15 programs more; batches hooked landmarks (calls) | 20–30 | High: every approved landmark | Materials owner |
+| 9 | **Bake per heavy area** (§3.5 bar), reusing #704's mechanism | Per area: M brookwood-south −21% of its mount | 4–8 per area | Medium: stale bakes, bytes | Bake owner |
+
+**Not on the list:** C (stopped: memory for calls), baking downtown or ordinary rows, and any
+change whose only win is calls.
+
+**Order.** Increments 0 and 1 run now and in parallel (one needs the device, the other the
+integrator). Then 2a–2d, which restore the reserve. Increment 3 is the gate for the next
+expansion. 4 and 5 follow increment 0's result. 6 and 7 come before South. 8 and 9 come when a
+feature or an area needs them.
+
+**Integration owners** (per AGENTS.md): streaming (2c, 2d, 3, 6), materials (2a, 2b, 8), far LOD
+(5, 7), boot (1, integrator).
+
+## 6. Stages to the square
+
+| Stage | Extent | What carries it | Resident Low geometry (E) |
+|---|---|---|---|
+| Today | 21 km² | Everything resident; far boxes beside | 150–178 MB |
+| 1. Next expansion | ~25–30 km² | Increments 0–3: areas load and unload; the window stays ~20 km² | ≤ 165 MB |
+| 2. Inside the perimeter, in part | ~30–300 km² | Tiles, ring manager, L1 and L2 (6, 7) | window ~120 MB + coarse ≤ 30 MB |
+| 3. The full square | 1,239 km² | L3 horizon; bake only heavy tiles (9); High ground maps tiered | the same, flat |
+
+Main-thread build stays proportional to what is resident, not to the square: one row of mount
+work per row entered, sliced (M: ≤ 335 ms longest task at 6×).
+
+## 7. What stands from v1
+
+- **Still stands:** §1 methods; §2.2–2.5 measurements (memory by layer, programs by bucket); §3's
+  extent and file-count arithmetic; §4.2's ring manager, hysteresis and follow rules; §4.3's
+  parity and blink-harness rules; §4.4–4.5 (program rule, per-view budgets); §5's program design;
+  §7, Sam's decisions.
+- **Superseded:** §0's summary and §6's order. §2.6's buckets (see §2.1 above). §4.1's "bake first",
+  and the unload-after-bake dependency. §3's "proposed" column where it assumed far LOD saves
+  memory or that L2 packs to Int16.
+
+## 8. Questions
+
+1. **For the coordinator: should #704 be parked or merged?** I recommend parking it (§3.5).
+2. **For Sam, via the coordinator: the reserve sizes in §4.** Until they are restored, features that
+   add to a full budget need an offset in the same PR. Does that hold for building skins already
+   in the queue?
