@@ -540,16 +540,18 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
       if (landing) strip(width * .5, -width * .5, DECK_LIFT, color, walkway ? .4 : .95, false, false, true, true, s => !nearLanding(s));
-      // A fused viaduct deck (sweet-auburn-transport.ts) can sit on the class-2
-      // freeway surface where the board keeps that height beside the Leonard Tate
-      // opening. Lower the drawn ground under its full width to just below the slab
-      // so terrain never shows through. Straight runs share one ring.
-      if (run.deckSurface && !walkway) deckYields.push(...deckFootprintYields());
+      // A deck over the Leonard Tate opening (sweet-auburn-transport.ts) can sit on
+      // the misclassified freeway roof the board keeps beside the street. Lower the
+      // drawn ground under its full width to just below the slab so terrain never
+      // shows through. Straight runs share one ring.
+      if (run.yieldsGround && profile && !walkway) deckYields.push(...deckFootprintYields());
       function deckFootprintYields(): GroundYield[] {
         const edge = (st: number) => [-.5, .5].map(f => {
           const [px, pz] = lateral(st, f * width * taper(st));
           const x = THREE.MathUtils.clamp(px, bounds.minX, bounds.maxX), z = THREE.MathUtils.clamp(pz, bounds.minZ, bounds.maxZ);
-          return [x, z, (run.deckSurface!(x, z) ?? NaN) - sceneZero] as const;
+          const vertex = line.vertexAt(st), index = Math.min(Math.floor(vertex), profile!.length - 2);
+          const own = profile![index] + (profile![index+1]-profile![index])*(vertex-index);
+          return [x, z, (run.deckSurface?.(x, z) ?? own) - sceneZero] as const;
         });
         const rows = stations.filter((st, k) => k === 0 || st !== stations[k-1]).map(edge);
         type Row = (typeof rows)[number];

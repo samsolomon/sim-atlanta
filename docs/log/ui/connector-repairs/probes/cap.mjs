@@ -42,7 +42,9 @@ try {
       const [name, file] = pose.slice(7).split(',');
       const F = JSON.parse(readFileSync(file, 'utf8'));
       await evaluate(`window.__restoreEye?.()`);
-      await evaluate(`__setView(0,60,150,${F.position[0]},${F.position[2]})`); await sleep(1500);
+      if (F.cam) { const [cx, cz, cb, ct, cd] = F.cam.split(','); await evaluate(`__setView(${cb},${ct},${cd},${cx},${cz},${F.zoom ?? 1})`); }
+      else await evaluate(`__setView(0,60,150,${F.position[0]},${F.position[2]})`);
+      await sleep(1500);
       await evaluate(`(()=>{const {scene,camera}=__cityDev;const F=${JSON.stringify(F)};
         const prev=scene.onBeforeRender,su=camera.updateMatrixWorld,sw=camera.updateWorldMatrix;
         const lock=()=>{camera.position.fromArray(F.position);camera.matrixWorldInverse.fromArray(F.matrixWorldInverse);camera.matrixWorld.copy(camera.matrixWorldInverse).invert();camera.matrix.copy(camera.matrixWorld);camera.quaternion.setFromRotationMatrix(camera.matrixWorld);camera.projectionMatrix.fromArray(F.projectionMatrix);camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();};

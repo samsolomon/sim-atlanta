@@ -41,5 +41,28 @@ it.each(['low', 'high'] as const)('draws the Sweet Auburn viaduct as one deck ov
       expect(h).not.toBeNull();
       expect(Math.abs(h! - top)).toBeLessThan(.4);
     }
+    // Away from the viaduct a profiled span lands flush on its ground tie. Way
+    // 1414820398's span starts at (1169.67, -461.07) on 300.29 m over 300.27 m
+    // ground: the whole cross-section stays on the ground, with no trench under it.
+    const span = runs.find(r => r.deckNavd88M && Math.hypot(r.pts[0][0]-1169.67, r.pts[0][1]+461.07) < .05)!;
+    expect(span).toBeDefined();
+    const [a, b] = span.pts, len = Math.hypot(b[0]-a[0], b[1]-a[1]), ux = (b[0]-a[0])/len, uz = (b[1]-a[1])/len;
+    for (const off of [-2, -1, 0, 1, 2]) {
+      const x = a[0] + .5*ux - off*uz, z = a[1] + .5*uz + off*ux;
+      const top = decks.deckAt(x, z, span);
+      expect(top).not.toBeNull();
+      console.log('EDGE', off, (top! - .12 - groundAt(x, z)!).toFixed(3));
+      expect(Math.abs(top! - .12 - groundAt(x, z)!)).toBeLessThan(.12);
+      expect(decks.cutting.some(y => pointIn(y.ring, x, z))).toBe(false);
+    }
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });
+
+function pointIn(ring: readonly (readonly [number, number])[], x: number, z: number) {
+  let inside = false;
+  for (let i = 0, j = ring.length-1; i < ring.length; j = i++) {
+    const [xi, zi] = ring[i], [xj, zj] = ring[j];
+    if ((zi > z) !== (zj > z) && x < (xj-xi)*(z-zi)/(zj-zi)+xi) inside = !inside;
+  }
+  return inside;
+}

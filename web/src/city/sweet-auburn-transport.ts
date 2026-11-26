@@ -54,7 +54,22 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
     return { ...road, bridge: true };
   });
   viaductSurfaces(runs);
+  // The 2019 classifier labels the freeway roof over Leonard Tate as bare earth, so
+  // the board beside the street opening keeps the freeway's own height. Decks there
+  // lower the drawn ground under their slab (transport.ts) so it cannot show through.
+  const street = context.roads.find(r => r.name === 'Leonard Tate Street Southeast' && r.pts[0]?.[0] === 1095.9 && r.pts[0]?.[1] === 134);
+  if (street) for (const run of runs) {
+    if (run.kind !== 'bridge' || run.cls !== 'motorway' || !run.deckNavd88M) continue;
+    if (run.pts.some(([x, z]) => street.pts.some((a, k) => k > 0 && segmentDistance(x, z, street.pts[k-1], a) < 30))) run.yieldsGround = true;
+  }
   return { ...context, roads, terrainTransport: { version: 1, roads: runs, rail: context.terrainTransport?.rail ?? [] } };
+}
+
+
+
+function segmentDistance(x: number, z: number, [ax, az]: readonly number[], [bx, bz]: readonly number[]) {
+  const dx = bx-ax, dz = bz-az, t = Math.max(0, Math.min(1, ((x-ax)*dx+(z-az)*dz)/((dx*dx+dz*dz) || 1)));
+  return Math.hypot(x-ax-t*dx, z-az-t*dz);
 }
 
 /** The Sweet Auburn viaduct is one structure carrying several mapped ways: both
@@ -64,21 +79,28 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
  * continuous 2 to 3% crossfall. Ways that run side by side at nearly the same
  * height form one viaduct; a local weighted plane through all of its samples is
  * the surface both edges of every slab sample. Crossing flyovers differ in height
- * or heading and keep their own profile. */
+ * or heading and keep their own profile. Only the Auburn-Edgewood structure fuses:
+ * elsewhere on the board a profiled span lands flush on its own ground tie. */
+const VIADUCT = { minX: 1150, maxX: 1265, minZ: -250, maxZ: 40 };
+const onViaduct = (run: TransportRun) => run.pts.filter(([x, z]) =>
+  x >= VIADUCT.minX && x <= VIADUCT.maxX && z >= VIADUCT.minZ && z <= VIADUCT.maxZ).length * 2 >= run.pts.length;
+
 export function viaductSurfaces(runs: TransportRun[]) {
-  const decks = runs.filter(r => r.kind === 'bridge' && r.cls === 'motorway' && r.deckNavd88M && r.pts.length > 1);
+  const decks = runs.filter(r => r.kind === 'bridge' && r.cls === 'motorway' && r.deckNavd88M && r.pts.length > 1 && onViaduct(r));
   const samples = decks.map(r => r.pts.map((p, i) => [p[0], p[1], r.deckNavd88M![i]] as const));
   // Nearest point on a run's centreline: distance, unit heading and interpolated height.
   function nearest(run: TransportRun, x: number, z: number) {
-    let best = { d: Infinity, h: 0, ux: 0, uz: 0 };
+    let best = { d: Infinity, h: 0, ux: 0, uz: 0, s: 0 }, along = 0;
     for (let i = 1; i < run.pts.length; i++) {
       const [ax, az] = run.pts[i-1], [bx, bz] = run.pts[i], dx = bx-ax, dz = bz-az, l2 = dx*dx+dz*dz;
       if (!l2) continue;
       const t = Math.max(0, Math.min(1, ((x-ax)*dx+(z-az)*dz)/l2)), d = Math.hypot(x-ax-t*dx, z-az-t*dz);
+      const l = Math.sqrt(l2);
       if (d < best.d) {
-        const l = Math.sqrt(l2), p = run.deckNavd88M!;
-        best = { d, h: p[i-1]+t*(p[i]-p[i-1]), ux: dx/l, uz: dz/l };
+        const p = run.deckNavd88M!;
+        best = { d, h: p[i-1]+t*(p[i]-p[i-1]), ux: dx/l, uz: dz/l, s: along+t*l };
       }
+      along += l;
     }
     return best;
   }
@@ -107,10 +129,27 @@ export function viaductSurfaces(runs: TransportRun[]) {
   // surface 15 m in, so the deck still lands on the ground it was tied to.
   const ends = decks.flatMap(r => [r.pts[0], r.pts.at(-1)!]);
   const shared = (p: readonly number[]) => ends.filter(q => Math.hypot(q[0]-p[0], q[1]-p[1]) < .01).length > 1;
+  // Free ends are abutments tied to class-2 ground. Each anchors a line across the
+  // deck through the end, square to its run; one fade field over the whole viaduct
+  // lands every end row flat on its tie, and joined runs agree at every point.
+  // A lane that ends on another fused deck, at its end or mid-span (the managed
+  // lane at Edgewood), merges on the structure and is no abutment.
+  const onFusedDeck = (owner: TransportRun, [x, z]: readonly number[]) => decks.some(o => o !== owner &&
+    o.pts.some((a, k) => k > 0 && segmentDistance(x, z, o.pts[k-1], a) < 1));
+  const anchors = decks.flatMap(r => ([[r.pts[0], r.pts[1]], [r.pts.at(-1)!, r.pts.at(-2)!]] as const)
+    .filter(([end]) => !onFusedDeck(r, end)));
+  const fade = (x: number, z: number) => {
+    let d = Infinity;
+    for (const [end, next] of anchors) {
+      const dx = next[0]-end[0], dz = next[1]-end[1], l = Math.hypot(dx, dz) || 1;
+      const along = ((x-end[0])*dx + (z-end[1])*dz)/l, across = Math.abs(((z-end[1])*dx - (x-end[0])*dz)/l);
+      d = Math.min(d, Math.hypot(Math.abs(along), Math.max(0, across-20)));
+    }
+    return Math.max(0, Math.min(1, (d-2)/13));
+  };
   decks.forEach((run, i) => {
     const pool = groups.get(find(i))!;
     if (pool.length === samples[i].length) return;
-    const free = [run.pts[0], run.pts.at(-1)!].filter(p => !shared(p));
     const fitted = (x: number, z: number): number | null => {
       // Weighted least squares for h = c + gx*dx + gz*dz around (x, z), with a
       // small ridge on the slopes so samples along one line give no crossfall.
@@ -143,10 +182,11 @@ export function viaductSurfaces(runs: TransportRun[]) {
     };
     run.deckSurface = (x, z) => {
       const surface = fitted(x, z);
-      if (surface === null || !free.length) return surface;
-      const reach = Math.min(...free.map(p => Math.hypot(x-p[0], z-p[1])));
-      const weight = Math.min(1, reach/15);
-      return weight === 1 ? surface : nearest(run, x, z).h + weight*(surface - nearest(run, x, z).h);
+      if (surface === null) return surface;
+      const weight = fade(x, z);
+      if (weight === 1) return surface;
+      const own = nearest(run, x, z);
+      return own.h + weight*(surface - own.h);
     };
   });
 }
