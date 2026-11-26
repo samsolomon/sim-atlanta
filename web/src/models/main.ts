@@ -16,6 +16,8 @@ import { FreightBatches, freightMaterial } from '../city/freight-batches';
 import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-consist';
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
+import { roadSemiGeometry, SEMI_LENGTH } from '../vignette/road-semi';
+import { LENGTH, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { figureLooks } from '../city/figure-looks';
@@ -80,6 +82,7 @@ let line: MartaLine = 'gold';
 const models = {
   cq400: 'Stadler CQ400',
   xe60: 'New Flyer XE60 articulated electric',
+  semi589: 'Long-hood sleeper tractor · 53 ft dry van',
   xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
@@ -139,6 +142,8 @@ const SPECIES_NOTES: Record<string, string> = {
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
+/** Lab cab paint for the semi: the red from City's traffic paint list. */
+const SEMI_LAB_PAINT = '#a3322b';
 const freightModels = {
   cm44ac: 'locomotive', cm44acNs: 'locomotiveNs', es44acNs: 'es44acNs',
   es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper', freightTank: 'tank', freightCoalLoaded: 'coalLoaded', freightCoalEmpty: 'coalEmpty', freightAutorack: 'autorack', freightCenterbeamLumber: 'centerbeamLumber', freightCenterbeamEmpty: 'centerbeamEmpty', freightGondolaScrap: 'gondolaScrap', freightGondolaEmpty: 'gondolaEmpty', freightWellA: 'wellA', freightWellB: 'wellB', freightWellC: 'wellC',
@@ -689,6 +694,29 @@ function build() {
     setJoint();
     return;
   }
+  if (model === 'semi589') {
+    // High shows the close form (Lab, street-eye); Low shows the form City traffic draws.
+    document.getElementById('tier')!.hidden = false;
+    const near = treeQuality === 'high';
+    const material = vehicleMaterial(night);
+    const rig = new THREE.Mesh(roadSemiGeometry({ near, paint: SEMI_LAB_PAINT }), material);
+    const sedan = new THREE.Mesh(vehicleGeometry('sedan'), material);
+    sedan.position.z = -SEMI_LENGTH / 2 - 4 - LENGTH.sedan / 2;
+    cars = [rig, sedan];
+    for (const part of cars) { part.castShadow = part.receiveShadow = true; scene.add(part); }
+    const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+    const other = roadSemiGeometry({ near: !near }), today = vehicleGeometry('semi');
+    landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? rig.geometry : other).toLocaleString()} (Lab and street-eye), `
+      + `traffic ${triangles(near ? other : rig.geometry).toLocaleString()} (City High), today's rigid semi ${triangles(today).toLocaleString()}. Low draws no semis.`;
+    other.dispose(); today.dispose();
+    landscapeReport.hidden = false;
+    document.getElementById('blurb')!.textContent = `A long-hood sleeper tractor in the proportions of a Peterbilt 589 (280 in wheelbase, 72 in sleeper) coupled to a generic 53 ft dry van, ${SEMI_LENGTH.toFixed(1)} m overall, with a midsize sedan behind for scale. No badges, lettering or fleet marks; traffic is illustrative. `;
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/road-semi.md';
+    link.textContent = 'Dimensions and reference photos';
+    document.getElementById('blurb')!.append(link);
+    return;
+  }
   if (model === 'xn40' || model === 'xn40Rapid') {
     if (model === 'xn40Rapid') document.getElementById('blurb')!.textContent = 'The A-Line opened with purple 40-foot XN40 buses powered by compressed natural gas.';
     const bus = new THREE.Mesh(busGeometry(model === 'xn40Rapid' ? RAPID_LIVERY : undefined), busMaterial(night));
@@ -997,6 +1025,15 @@ const BUS_VIEWS: Record<string, ViewPreset> = {
   'Rear': { pos: [0, 1.8, -30], target: [0, 1.6, -6], fov: 13 },
   'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
 };
+/** The rig is centred on its 22.9 m footprint; the scale sedan follows 4 m behind the van. */
+const SEMI_VIEWS: Record<string, ViewPreset> = {
+  'Front': { pos: [0, 2.0, 46], target: [0, 2.0, 8], fov: 12 },
+  '¾ front': { pos: [-12, 4.2, 20], target: [0, 1.9, 5.5], fov: 34 },
+  'Side': { pos: [-56, 2.4, -4.5], target: [0, 2.0, -4.5], fov: 21 },
+  'Rear': { pos: [6, 3.4, -46], target: [0, 2.0, -12], fov: 15 },
+  'Top': { pos: [0.01, 62, -4.5], target: [0, 0, -4.5], fov: 34 },
+  'Eye level': { pos: [-6.5, 1.6, 17.5], target: [0, 1.9, 6], fov: 50 },
+};
 const FIGURE_VIEWS: Record<string, ViewPreset> = {
   Front: { pos: [0, 1.03, 4.5], target: [0, .88, 0], fov: 30 },
   '¾ front': { pos: [-3.3, 1.7, 3.4], target: [0, .87, 0], fov: 30 },
@@ -1047,7 +1084,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -1062,7 +1099,7 @@ function selectModel(id: Model) {
   history.replaceState(history.state, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'semi589', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
