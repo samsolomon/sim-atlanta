@@ -628,7 +628,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;
@@ -2240,6 +2240,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setTimeout(release, 8000);
   }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  // Downtown's far-board buildings are only seen from beyond 15 km, so they build after colour
+  // shows, a few ms a frame, instead of holding up ready; until then its buildings draw as near.
+  void (whiteModel?.revealed ?? Promise.resolve()).then(async () => {
+    if (!terrain || options.signal?.aborted) return;
+    await terrain.buildFar();
+    if (!options.signal?.aborted) perf.phase('city:far-boards');
+  });
   // Compile what City may show later (weather, dusk and night lights, culled areas) a little at a
   // time once colour shows, so a clock or weather change never stalls on a first-use shader compile.
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.

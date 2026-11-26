@@ -6,7 +6,7 @@
  */
 import { boxFromVertices, dominantWallStyle, type FarBox } from '../city/far-board';
 import * as THREE from 'three';
-import { runSync } from '../core/slice';
+import { runSync, type Build } from '../core/slice';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
@@ -201,6 +201,11 @@ export class World {
   readonly group = new THREE.Group();
   /** One far-board box per building drawn by buildBuildings (city/far-board.ts). */
   readonly farBoxes: FarBox[] = [];
+  /** Set before buildingSteps to leave the far boxes unfitted; fitFarBoxesSteps fits them later. */
+  deferFarBoxes = false;
+  private farFit: (() => Build<void>) | null = null;
+  /** Fit the far boxes buildingSteps left for later (deferFarBoxes). Does nothing otherwise. */
+  *fitFarBoxesSteps(): Build<void> { const fit = this.farFit; if (fit) yield* fit(); this.farFit = null; }
   /** 0 by day → 1 at night: lit windows. */
   readonly night = { value: 0 };
   readonly b: VData['bounds'];
@@ -877,16 +882,22 @@ export class World {
     // shader's distance-faded windows (and their night glow) colour it as they colour the building.
     let bdStart = 0;
     let farRing: number[] | undefined;
+    const fitBox = (pos: ArrayLike<number>, col: ArrayLike<number>, style: ArrayLike<number>, base: ArrayLike<number>,
+      start: number, end: number, ring: number[] | undefined) => {
+      const { style: wallStyle, first, baseStyle, baseTop, baseFirst } = dominantWallStyle(pos, style, start, end);
+      const box = boxFromVertices(pos, col, start, end, 1, ring);
+      // Walls on the building's own footprint (not its oriented box) put the shader's window cells
+      // where the near form has them, so the far form lights the same windows at night.
+      const walled = box && ring && ring.length >= 6 ? { ...box, ring } : box;
+      if (walled) this.farBoxes.push(wallStyle >= 0 ? { ...walled, style: wallStyle, base: base[first] ?? walled.y0,
+        ...(baseStyle >= 0 ? { baseStyle, baseTop, baseBase: base[baseFirst] ?? walled.y0 } : {}) } : walled);
+    };
+    const later: { start: number; end: number; ring: number[] | undefined }[] = [];
     const farBox = () => {
       const end = b.pos.length / 3;
       if (withFarBoxes && end - bdStart >= 3) {
-        const { style: wallStyle, first, baseStyle, baseTop, baseFirst } = dominantWallStyle(b.pos, style, bdStart, end);
-        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1, farRing);
-        // Walls on the building's own footprint (not its oriented box) put the shader's window cells
-        // where the near form has them, so the far form lights the same windows at night.
-        const walled = box && farRing && farRing.length >= 6 ? { ...box, ring: farRing } : box;
-        if (walled) this.farBoxes.push(wallStyle >= 0 ? { ...walled, style: wallStyle, base: base[first] ?? walled.y0,
-          ...(baseStyle >= 0 ? { baseStyle, baseTop, baseBase: base[baseFirst] ?? walled.y0 } : {}) } : walled);
+        if (this.deferFarBoxes) later.push({ start: bdStart, end, ring: farRing });
+        else fitBox(b.pos, b.col, style, base, bdStart, end, farRing);
       }
       bdStart = end;
     };
@@ -1029,6 +1040,18 @@ export class World {
     const g = b.geometry();
     g.setAttribute('aStyle', new THREE.Float32BufferAttribute(style, 1));
     g.setAttribute('aBase', new THREE.Float32BufferAttribute(base, 1));
+    if (later.length) {
+      // Fitted from the drawn geometry (its vertices keep the Builder's order), so the build
+      // arrays above are not held until then.
+      const read = (name: string) => g.getAttribute(name).array;
+      this.farFit = function* () {
+        const pos = read('position'), col = read('color'), styles = read('aStyle'), bases = read('aBase');
+        for (let i = 0; i < later.length; i++) {
+          if (i && i % 16 === 0) yield 'far boxes';
+          fitBox(pos, col, styles, bases, later[i].start, later[i].end, later[i].ring);
+        }
+      };
+    }
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
     patchFacades(mat, this.night);
     const mesh = new THREE.Mesh(g, mat);
