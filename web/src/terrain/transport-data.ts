@@ -17,10 +17,10 @@ export interface TransportRun {
    * meet at the same height and the deck keeps its measured crossfall. Null
    * falls back to the centreline profile. */
   deckSurface?: (x: number, z: number) => number | null;
-  /** The drawn ground under this deck's slab is lowered where it would reach it:
-   * a misclassified freeway roof beside the Leonard Tate opening keeps the deck's
-   * own height in the DEM. */
-  yieldsGround?: boolean;
+  /** Where this returns true for a corner of a deck quad, drawn ground that would
+   * show through the tread is lowered to just under it: the misclassified freeway roof
+   * beside the Leonard Tate opening keeps the deck's own height in the DEM. */
+  yieldsGround?: (x: number, z: number) => boolean;
   /** Share of the deck profile at each approach vertex. Zero meets local terrain. */
   deckWeight?: number[];
   /** Original directed centerline before resampling a measured deck or its approach. */

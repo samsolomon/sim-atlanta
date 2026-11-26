@@ -131,11 +131,15 @@ The drawn decks follow `sweet-auburn-decks.json`: USGS GA B2 2018 class-17 retur
 - **Dips and jumps at Leonard Tate.** The Leonard Tate correction lowers the board along the street that passes under the freeway, over x 1075–1140, z 115–260, including a margin behind each wall. The deck survey only treated stations within 24 m of the street's centre line as "over the underpass", ignoring road width. Ways whose drawn width reached the lowered nodes were draped down into the cut where their deck spans ended. That produced the SB ramp 8.40 m drop and the NB main deck starting 5.85 m up.
 
 **Fix.**
-- **One viaduct surface.** `viaductSurfaces` in `web/src/city/sweet-auburn-transport.ts` fuses only the Auburn–Edgewood structure: profiled ways with at least half their vertices in x 1150–1265, z −250…40. Ways fuse when they run side by side (within 22 m, parallel within 25°) at nearly the same height (within 1.2 m). A local weighted plane through all their lidar samples sets both edges of every slab. Each fit uses only samples within 1.5 m of the run's own level, so a ramp under a flyover never borrows the flyover.
-- **Abutments land flat.** An end is an abutment unless another fused deck passes within 1 m of it, at an endpoint or mid-span. Each abutment anchors a line across the deck, square to its run (±20 m). One fade field over the whole viaduct blends from each run's own ground-tied profile at an anchor line to the fused surface 15 m in. Every end row therefore lands flat, and joined runs evaluate the same weight at every point. The rest of the board keeps its own profiles. That includes way 1414820398's span start at (1169.67, −461.07), which Grok's review flagged for a 0.35 m twist and a 0.9 m trench under the first version.
+- **One viaduct surface.** `viaductSurfaces` in `web/src/city/sweet-auburn-transport.ts` considers profiled ways that come within 30 m of the Auburn–Edgewood box (x 1150–1265, z −250…40). It fuses those that run side by side with another candidate (within 22 m, parallel within 25°, within 1.2 m in height). A local weighted plane through all their lidar samples is the one surface both edges of every member slab sample. Each fit uses only samples within 1.5 m of the run's own level, so a ramp under a flyover never borrows the flyover.
+- **Ties inside the fit, no fades.** The ends that must meet something else get weighted tie samples across their end row, so the surface itself lands there, eased exactly onto the tie within 1.5 m:
+  - an *abutment*, where no other fused deck lies within 12 m, tied at its own surveyed height;
+  - a *handoff*, where an unfused run continues, tied at the height the receiving run draws.
+
+  Every member samples the same function, so no slab can step against another. Two earlier attempts each failed review: a radial fade (round 1) twisted an abutment, and a global fade toward each run's own profile (round 2) stepped neighbours up to 0.49 m near z −194.
 - **No barriers inside one viaduct.** Parapets between members are skipped. The survey notes and street views show striped separation at Edgewood. The NB/SB median barrier and the outside parapets stay.
 - **Freeway top over the opening.** `deck-survey.py` now also counts a station as over the underpass when a node `underpass_grid` lowers lies within 15 m (half the widest carriageway). The unmodified survey first reproduced the committed `sweet-auburn-decks.json` byte for byte. The rerun changes 7 ways and adds 2: the SB ramp 9239463 (first 28.7 m) and the NB main from the board seam (last 20 m). The underpass node edits are unchanged.
-- **No terrain through decks, only at Leonard Tate.** Decks within 30 m of Leonard Tate Street carry `yieldsGround`. Where such a deck sits on the misclassified freeway roof the board keeps beside the opening, a `GroundYield` lowers the drawn ground under its slab. There is one ring per straight run of stations, kept only for convex rings with real area. No other deck carves. Fused decks are cut into 6 m tread bands, so markings stay above the surface.
+- **No terrain through decks, only over the Leonard Tate roof.** Decks get `yieldsGround`, a per-point predicate: within 30 m of a board node `underpass_grid` edits. That is the 15 m reach the survey uses plus half a slab. At those stations a `GroundYield` lowers only ground that would show through, to 5 cm under the tread; it never trenches under a deck resting on its fill. Way 9238785 at (1148.5, 190.1) keeps its ground exactly. Fused decks are cut into 6 m tread bands, so markings stay above the surface.
 
 **Results (Low = High).**
 
@@ -146,7 +150,7 @@ The drawn decks follow `sweet-auburn-decks.json`: USGS GA B2 2018 class-17 retur
 | Touching-slab step, Edgewood z −60 | +0.811 / +0.693 m | ≤ 0.039 m |
 | SB ramp 1450888999 → 9239463 | ends 8.402 m above the ground ramp | joint passes |
 | NB slab 1450889003 / 1450889004 start | 5.854 / 4.171 m in air | continuous |
-| Two-track joint probe, 81 tracks | — | 3 over the 2 mm flush budget. 38945237 → 1480458106: 3 of 10 samples, up to 4.5 mm. 962288411 → 38945231: 2 of 10, 2.7 mm. Both are in fade zones where two runs' own profiles meet. The third is the unchanged 2.1 mm board seam |
+| Two-track joint probe, 81 tracks | — | all pass except the unchanged 2.1 mm board seam from phase 1 |
 | Way 1414820398 span start (1169.67, −461.07) | — | tread minus 0.12 m lift sits −0.084 to +0.102 m from the ground across ±2 m, with no yield under it |
 | Open ends > 0.5 m | — | 3, all phase-1 items |
 
@@ -156,17 +160,20 @@ The z 30 "−0.95 m" lateral sample is the median barrier, unchanged and visible
 - `web/src/city/sweet-auburn-viaduct.test.ts` builds the Sweet Auburn transport over the lowered grid on Low and High. It requires:
   - the drawn tread to match within 3 cm across the four former seams;
   - a deck at the measured freeway top over both Leonard Tate ends;
-  - way 1414820398's span start to land on its ground with no ground yield.
+  - way 1414820398's span start to land on its ground;
+  - no tread step over 5 cm across the deck at z −194 and z −234…−205;
+  - carving the drawn ground with every yield to leave the span start and (1148.5, 190.1) within 5 cm;
+  - every deck yield to sit within 30 m of an edited roof node.
 
-  It fails on the original code (`expected null not to be null`) and on Grok-reviewed e5b8efb9 (yield under the span start).
+  It fails on the original code, on e5b8efb9 (yield under the span start) and on 015e9385 (0.475 m step at z −194, x 1206.25).
 - The full web suite passes.
 - The 439abf84 calibration with `--expect combined` passes on both tiers, byte-identical to 1d04eadc ([result](log/ui/connector-repairs/a-auburn/evidence/calibration-combined.json)).
 
 **Cost.** The auburn board, before → after, the same on both tiers for the deck:
-- Deck: 34,314 → 39,960 triangles.
-- Board: High 51,200 → 53,454; Low 35,112 → 37,155.
+- Deck: 34,314 → 41,284 triangles.
+- Board: High 51,200 → 54,445; Low 35,112 → 37,891.
 
-That is about +7.9k triangles per tier and needs a `pnpm test:perf` window. Deploy: rebuild `web/dist` only; no `pnpm data` (the survey JSON is bundled from `pipeline/prototypes`).
+That is about +10k triangles per tier and needs a `pnpm test:perf` window. Deploy: rebuild `web/dist` only; no `pnpm data` (the survey JSON is bundled from `pipeline/prototypes`).
 
 **Before and after, identical camera matrices.**
 - [Edgewood, High](log/ui/connector-repairs/a-auburn/A3-edgewood-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A3-edgewood-low-before-after.jpg)

@@ -5,6 +5,7 @@ import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
 
 const wayKey = (start: number[], end: number[]) => start.join(',') + '/' + end.join(',');
+const roofNodes = new Set(decks.underpass.nodes.map(([index]) => index));
 const profiles = new Map(decks.roads.map(row => [wayKey(row.start, row.end), row.spans]));
 
 /** OSM ways split for lane and destination changes along the same viaduct.
@@ -57,10 +58,20 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
   // The 2019 classifier labels the freeway roof over Leonard Tate as bare earth, so
   // the board beside the street opening keeps the freeway's own height. Decks there
   // lower the drawn ground under their slab (transport.ts) so it cannot show through.
-  const street = context.roads.find(r => r.name === 'Leonard Tate Street Southeast' && r.pts[0]?.[0] === 1095.9 && r.pts[0]?.[1] === 134);
-  if (street) for (const run of runs) {
+  // The misclassified roof: within 30 m of a board node underpass_grid edits
+  // (sweet-auburn-decks.json underpass.nodes, on the 161 x 161 Sweet Auburn grid
+  // from (1000, -520) at 5 m): the 15 m reach deck-survey.py uses to put these
+  // decks on the freeway top plus half a slab. Only stations there may carve, and
+  // only ground that would show through the tread (transport.ts).
+  const overRoof = (x: number, z: number) => {
+    const col = Math.round((x - 1000) / 5), row = Math.round((z + 520) / 5);
+    for (let dr = -6; dr <= 6; dr++) for (let dc = -6; dc <= 6; dc++)
+      if (roofNodes.has((row + dr) * 161 + col + dc) && Math.hypot(dr, dc) * 5 <= 30) return true;
+    return false;
+  };
+  for (const run of runs) {
     if (run.kind !== 'bridge' || run.cls !== 'motorway' || !run.deckNavd88M) continue;
-    if (run.pts.some(([x, z]) => street.pts.some((a, k) => k > 0 && segmentDistance(x, z, street.pts[k-1], a) < 30))) run.yieldsGround = true;
+    if (run.pts.some(([x, z]) => overRoof(x, z))) run.yieldsGround = overRoof;
   }
   return { ...context, roads, terrainTransport: { version: 1, roads: runs, rail: context.terrainTransport?.rail ?? [] } };
 }
@@ -82,11 +93,13 @@ function segmentDistance(x: number, z: number, [ax, az]: readonly number[], [bx,
  * or heading and keep their own profile. Only the Auburn-Edgewood structure fuses:
  * elsewhere on the board a profiled span lands flush on its own ground tie. */
 const VIADUCT = { minX: 1150, maxX: 1265, minZ: -250, maxZ: 40 };
-const onViaduct = (run: TransportRun) => run.pts.filter(([x, z]) =>
-  x >= VIADUCT.minX && x <= VIADUCT.maxX && z >= VIADUCT.minZ && z <= VIADUCT.maxZ).length * 2 >= run.pts.length;
+// A profiled way joins the fusion when it comes within 30 m of the viaduct; the
+// adjacency test below then keeps only those running beside a fused deck.
+const nearViaduct = (run: TransportRun) => run.pts.some(([x, z]) =>
+  x >= VIADUCT.minX-30 && x <= VIADUCT.maxX+30 && z >= VIADUCT.minZ-30 && z <= VIADUCT.maxZ+30);
 
 export function viaductSurfaces(runs: TransportRun[]) {
-  const decks = runs.filter(r => r.kind === 'bridge' && r.cls === 'motorway' && r.deckNavd88M && r.pts.length > 1 && onViaduct(r));
+  const decks = runs.filter(r => r.kind === 'bridge' && r.cls === 'motorway' && r.deckNavd88M && r.pts.length > 1 && nearViaduct(r));
   const samples = decks.map(r => r.pts.map((p, i) => [p[0], p[1], r.deckNavd88M![i]] as const));
   // Nearest point on a run's centreline: distance, unit heading and interpolated height.
   function nearest(run: TransportRun, x: number, z: number) {
@@ -118,38 +131,48 @@ export function viaductSurfaces(runs: TransportRun[]) {
     }
     if (hits >= 2 || (hits >= 1 && decks[a].pts.length <= 3)) parent[find(a)] = find(b);
   }
-  const groups = new Map<number, (readonly [number, number, number])[]>();
+  const members = new Map<number, number[]>();
   decks.forEach((_, i) => {
     const g = find(i);
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g)!.push(...samples[i]);
+    if (!members.has(g)) members.set(g, []);
+    members.get(g)!.push(i);
   });
-  // An end no other profiled run shares is an abutment, where the survey tied the
-  // profile to class-2 ground. Fade from the run's own profile there to the shared
-  // surface 15 m in, so the deck still lands on the ground it was tied to.
-  const ends = decks.flatMap(r => [r.pts[0], r.pts.at(-1)!]);
-  const shared = (p: readonly number[]) => ends.filter(q => Math.hypot(q[0]-p[0], q[1]-p[1]) < .01).length > 1;
-  // Free ends are abutments tied to class-2 ground. Each anchors a line across the
-  // deck through the end, square to its run; one fade field over the whole viaduct
-  // lands every end row flat on its tie, and joined runs agree at every point.
-  // A lane that ends on another fused deck, at its end or mid-span (the managed
-  // lane at Edgewood), merges on the structure and is no abutment.
-  const onFusedDeck = (owner: TransportRun, [x, z]: readonly number[]) => decks.some(o => o !== owner &&
-    o.pts.some((a, k) => k > 0 && segmentDistance(x, z, o.pts[k-1], a) < 1));
-  const anchors = decks.flatMap(r => ([[r.pts[0], r.pts[1]], [r.pts.at(-1)!, r.pts.at(-2)!]] as const)
-    .filter(([end]) => !onFusedDeck(r, end)));
-  const fade = (x: number, z: number) => {
-    let d = Infinity;
-    for (const [end, next] of anchors) {
+  const fused = new Set(decks.filter((_, i) => members.get(find(i))!.length > 1));
+  // An abutment is an end with no other fused deck within 12 m: the survey tied it
+  // to class-2 ground. A handoff is an end where an unfused run continues on its own
+  // profile. Ties at both enter the fit itself as heavily weighted samples across
+  // the end row, so the one surface lands each abutment flat on its tie and every
+  // member still samples the same function: no slab can step against another.
+  const nearFused = (owner: TransportRun, [x, z]: readonly number[]) => [...fused].some(o => o !== owner &&
+    o.pts.some((a, k) => k > 0 && segmentDistance(x, z, o.pts[k-1], a) < 12));
+  const groups = new Map<number, (readonly [number, number, number, number])[]>();
+  // A least-squares fit only approaches a tie; within 1.5 m of a tie row the surface
+  // eases onto it exactly. The ease depends on position alone, so members agree.
+  const rows: { end: readonly number[]; ux: number; uz: number; tie: number }[] = [];
+  decks.forEach((run, i) => {
+    const g = find(i);
+    if (!groups.has(g)) groups.set(g, []);
+    const pool = groups.get(g)!;
+    pool.push(...samples[i].map(([x, z, h]) => [x, z, h, 1] as const));
+    if (!fused.has(run)) return;
+    for (const [end, next, h] of [[run.pts[0], run.pts[1], run.deckNavd88M![0]], [run.pts.at(-1)!, run.pts.at(-2)!, run.deckNavd88M!.at(-1)!]] as const) {
+      // Tie an end where an unfused run continues (it keeps its own profile), and an
+      // abutment with no other fused deck nearby.
+      const receiver = runs.find(o => o !== run && !fused.has(o) && o.cls === 'motorway' &&
+        [o.pts[0], o.pts.at(-1)!].some(q => Math.hypot(q[0]-end[0], q[1]-end[1]) < .01));
+      if (!receiver && nearFused(run, end)) continue;
+      // At a handoff, land on the height the receiving run draws at the shared vertex.
+      const tie = receiver?.deckNavd88M
+        ? (Math.hypot(receiver.pts[0][0]-end[0], receiver.pts[0][1]-end[1]) < .01 ? receiver.deckNavd88M[0] : receiver.deckNavd88M.at(-1)!)
+        : h;
       const dx = next[0]-end[0], dz = next[1]-end[1], l = Math.hypot(dx, dz) || 1;
-      const along = ((x-end[0])*dx + (z-end[1])*dz)/l, across = Math.abs(((z-end[1])*dx - (x-end[0])*dz)/l);
-      d = Math.min(d, Math.hypot(Math.abs(along), Math.max(0, across-20)));
+      for (let o = -12; o <= 12; o += 1.5) pool.push([end[0] - o*dz/l, end[1] + o*dx/l, tie, 400] as const);
+      rows.push({ end, ux: dx/l, uz: dz/l, tie });
     }
-    return Math.max(0, Math.min(1, (d-2)/13));
-  };
+  });
   decks.forEach((run, i) => {
     const pool = groups.get(find(i))!;
-    if (pool.length === samples[i].length) return;
+    if (!fused.has(run)) return;
     const fitted = (x: number, z: number): number | null => {
       // Weighted least squares for h = c + gx*dx + gz*dz around (x, z), with a
       // small ridge on the slopes so samples along one line give no crossfall.
@@ -157,10 +180,10 @@ export function viaductSurfaces(runs: TransportRun[]) {
       // it through intermediate ways. Fit only samples on this run's own level.
       const level = nearest(run, x, z).h;
       let w0 = 0, sx = 0, sz = 0, sh = 0, sxx = 0, sxz = 0, szz = 0, sxh = 0, szh = 0;
-      for (const [px, pz, ph] of pool) {
+      for (const [px, pz, ph, weight] of pool) {
         const dx = px-x, dz = pz-z, d2 = dx*dx+dz*dz;
         if (d2 > 900 || Math.abs(ph-level) > 1.5) continue;
-        const w = Math.exp(-d2/128);
+        const w = weight*Math.exp(-d2/(weight > 1 ? 18 : 128));
         w0 += w; sx += w*dx; sz += w*dz; sh += w*ph;
         sxx += w*dx*dx; sxz += w*dx*dz; szz += w*dz*dz; sxh += w*dx*ph; szh += w*dz*ph;
       }
@@ -181,12 +204,14 @@ export function viaductSurfaces(runs: TransportRun[]) {
       return m[0][3]/m[0][0];
     };
     run.deckSurface = (x, z) => {
-      const surface = fitted(x, z);
-      if (surface === null) return surface;
-      const weight = fade(x, z);
-      if (weight === 1) return surface;
-      const own = nearest(run, x, z);
-      return own.h + weight*(surface - own.h);
+      let value = fitted(x, z);
+      if (value === null) return null;
+      for (const { end, ux, uz, tie } of rows) {
+        const along = (x-end[0])*ux + (z-end[1])*uz, across = Math.abs((z-end[1])*ux - (x-end[0])*uz);
+        if (along < -.5 || along > 1.5 || across > 12) continue;
+        value = tie + Math.max(0, Math.min(1, along/1.5))*(value - tie);
+      }
+      return value;
     };
   });
 }

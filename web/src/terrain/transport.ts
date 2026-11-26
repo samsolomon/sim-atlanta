@@ -570,8 +570,13 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         for (let k = 1; k < rows.length; k++) {
           const quad = [rows[k-1][0], rows[k-1][1], rows[k][1], rows[k][0]];
           if (quad.some(p => !Number.isFinite(p[2]))) { close(); continue; }
-          const floorY = Math.min(...quad.map(p => p[2])) + DECK_LIFT - .95 - .05;
-          if (!quad.some(([x, z]) => (groundAt(x, z) ?? -Infinity) > floorY)) { close(); continue; }
+          // Just under the tread: only ground that would show through it is lowered,
+          // never a trench under a deck that rests on its fill.
+          const floorY = Math.min(...quad.map(p => p[2])) + DECK_LIFT - .05;
+          // A yield only lowers ground above its floor, so every station over the roof
+          // carries one: a hump between the 5 m ground nodes can rise through the tread
+          // while all four corners stay below it.
+          if (!quad.some(([x, z]) => run.yieldsGround!(x, z))) { close(); continue; }
           if (open) {
             const next: Open = { rows: [...open.rows, rows[k]], floor: Math.min(open.floor, floorY) };
             if (straight(next.rows.map(r => r[0])) && straight(next.rows.map(r => r[1])) && Math.abs(open.floor - floorY) < .15) { open = next; continue; }

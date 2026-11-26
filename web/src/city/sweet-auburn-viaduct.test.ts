@@ -11,7 +11,7 @@ const manifest = JSON.parse(readFileSync(new URL('ground/ground.json', auburn), 
 const bytes = Uint8Array.from(readFileSync(new URL('ground/ground.i16', auburn))).buffer;
 const zero = manifest.vertical.sceneZeroNavd88M;
 
-it.each(['low', 'high'] as const)('draws the Sweet Auburn viaduct as one deck over Auburn, Edgewood and Leonard Tate on %s', quality => {
+it.each(['low', 'high'] as const)('draws the Sweet Auburn viaduct as one deck over Auburn, Edgewood and Leonard Tate on %s', async quality => {
   const grid = auburnGround(manifest, bytes);
   const ground = new GroundSurface(grid, quality);
   const groundAt = ground.sampleScene.bind(ground);
@@ -46,6 +46,7 @@ it.each(['low', 'high'] as const)('draws the Sweet Auburn viaduct as one deck ov
     // ground: the whole cross-section stays on the ground, with no trench under it.
     const span = runs.find(r => r.deckNavd88M && Math.hypot(r.pts[0][0]-1169.67, r.pts[0][1]+461.07) < .05)!;
     expect(span).toBeDefined();
+    const spanPoints: [number, number][] = [];
     const [a, b] = span.pts, len = Math.hypot(b[0]-a[0], b[1]-a[1]), ux = (b[0]-a[0])/len, uz = (b[1]-a[1])/len;
     for (const off of [-2, -1, 0, 1, 2]) {
       const x = a[0] + .5*ux - off*uz, z = a[1] + .5*uz + off*ux;
@@ -53,10 +54,41 @@ it.each(['low', 'high'] as const)('draws the Sweet Auburn viaduct as one deck ov
       expect(top).not.toBeNull();
       console.log('EDGE', off, (top! - .12 - groundAt(x, z)!).toFixed(3));
       expect(Math.abs(top! - .12 - groundAt(x, z)!)).toBeLessThan(.12);
-      expect(decks.cutting.some(y => pointIn(y.ring, x, z))).toBe(false);
+      spanPoints.push([x, z]);
     }
+    // Grok round 2: where a ramp's end comes near the fused deck (z -194) and where
+    // 39169049 runs beside 962288411 (z -234..-205), no tread steps across the deck.
+    for (const z of [-194, -234, -229, -224, -219, -214, -209, -205]) {
+      let previous: number | null = null, worst = 0, at = 0;
+      for (let x = 1170; x <= 1250; x += .25) {
+        const h = tread(x, z);
+        if (h !== null && previous !== null && Math.abs(h - previous) > worst) { worst = Math.abs(h - previous); at = x; }
+        previous = h;
+      }
+      expect(worst, `z ${z} at x ${at}`).toBeLessThan(.05);
+    }
+    // Way 9238785 starts within reach of the street but has met grade at
+    // (1148.5, 190.1), outside the lowered roof: no yield, no trench.
+    // Carve the drawn ground with every yield: no trench at either point.
+    const before = [...spanPoints, [1148.5, 190.1]].map(([x, z]) => groundAt(x, z)!);
+    ground.carve(decks.cutting);
+    [...spanPoints, [1148.5, 190.1]].forEach(([x, z], k) =>
+      expect(Math.abs(groundAt(x, z)! - before[k]), `ground at ${x}, ${z}`).toBeLessThan(.05));
+    // Deck yields lie only within 30 m of the board nodes the Leonard Tate correction edits.
+    const edited = new Set((await import('../../../pipeline/prototypes/connector-footprint/sweet-auburn-decks.json')).underpass.nodes.map(([i]: number[]) => i));
+    const steps = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+    const onRoof = ([x, z]: readonly number[]) => steps.some(dr => steps.some(dc =>
+      Math.hypot(dr, dc) * 5 <= 30 && edited.has((Math.round((z + 520) / 5) + dr) * 161 + Math.round((x - 1000) / 5) + dc)));
+    expect(manifest.cols).toBe(161);
+    const deckYields = decks.cutting.filter(y => y.ring.length === 4 && y.ring.some(([x, z]) => x > 1040 && x < 1200 && z > 60 && z < 280));
+    for (const y of deckYields) expect(y.ring.some(onRoof)).toBe(true);
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });
+
+function segment(x: number, z: number, [ax, az]: readonly number[], [bx, bz]: readonly number[]) {
+  const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / ((dx * dx + dz * dz) || 1)));
+  return Math.hypot(x - ax - t * dx, z - az - t * dz);
+}
 
 function pointIn(ring: readonly (readonly [number, number])[], x: number, z: number) {
   let inside = false;
