@@ -29,7 +29,7 @@ describe('road semi', () => {
     expect(near).toBeGreaterThan(far * 2);
   });
 
-  it('winds every face it shows outward, from both sides, above, front and rear', () => {
+  it('winds every face it shows outward from five directions (single-sided fender undersides face the ground)', () => {
     for (const near of [true, false]) {
       const geometry = roadSemiGeometry({ near });
       const material = new MeshBasicMaterial({ side: DoubleSide });

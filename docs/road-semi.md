@@ -2,7 +2,7 @@
 
 `web/src/vignette/road-semi.ts` draws a coupled tractor-trailer as one rigid body. The tractor has the proportions of a Peterbilt 589 sleeper, and the trailer is a generic 53 ft composite dry van. Neither carries a badge, oval, script, number or fleet mark. Traffic positions are `illustrative`.
 
-The Model Lab entry is **Long-hood sleeper tractor · 53 ft dry van** (`/models.html?v=semi589`). Its Detail buttons switch forms: High shows the close form used for the Lab and street-eye views, and Low shows the cheaper form City traffic would draw. A midsize sedan follows 4 m behind for scale.
+The Model Lab entry is **Long-hood sleeper tractor · 53 ft dry van** (`/models.html?v=semi589`). Its Detail buttons switch forms: High shows the close form, which only the Lab draws. Low shows the traffic form, which City would draw at every distance, street-eye included, because traffic draws one mesh per kind. A midsize sedan follows 4 m behind for scale.
 
 Status (2026-11-26): this is a Lab study awaiting Sam's approval. City traffic still draws the earlier 19.16 m rigid semi from `vehicles.ts`.
 
@@ -36,13 +36,13 @@ The earlier rigid semi in `vehicles.ts` is 19.16 m.
 
 | Form | Triangles | Vertices | Use |
 |---|---:|---:|---|
-| Close | 7,662 | 14,158 | Model Lab, street-eye |
-| Traffic | 1,370 | 2,580 | City High traffic (proposed) |
+| Close | 7,662 | 14,158 | Model Lab only |
+| Traffic | 1,370 | 2,580 | City High traffic at every distance (proposed) |
 | Today's rigid semi | 900 | 2,700 | City High traffic (current) |
 
 Low traffic draws no semis (`road-traffic.ts`), so the semi costs nothing on Low. Both forms pack into one vertex-colour draw on the shared `vehicleMaterial`, so they need no new shader program. The traffic form drops the panel seams, door hardware, grille slats, catwalk treads, fifth-wheel plate, air cleaners, cab markers and mirrors. It also uses eight-sided wheels with two-ring inner duals and six-sided tanks, stacks and fenders.
 
-The study's faces were not wound consistently. The port therefore orients every face away from an interior point. A test raycasts both forms from six directions and fails on any back face.
+The study kit's faces are not wound consistently: 838 of the close rig's 3,147 come out inside out in construction order. The port therefore orients every face away from an interior point. A test raycasts both forms from both sides, above, front and rear, and fails on any back face. Fender undersides face only the ground.
 
 ## What each part follows
 
@@ -63,6 +63,14 @@ Links only; the photographs are not committed.
 - Night: [Peterbilt 389, Dryden, Ontario, before sunrise (Wikimedia Commons)](https://commons.wikimedia.org/wiki/File:Peterbilt_389,_Dryden,_Ontario_-_Before_Sunrise.jpg)
 - Van: [Great Dane Champion factory spec](https://www.maximinc.com/media/RK614703%20-%20RK614713%20Tandem%20Dry%20Vans%20NP.pdf) · [Wabash DuraPlate build sheet](https://trailerimages.haletrailer.com/inv/docs/trailer/A029467-1.pdf) · [Wabash DuraPlate product sheet](https://onewabash.com/docs/default-source/wabash-trailer-downloads/van-trailers-product-sheets/Dry-van-duraplate-cell-core-tech.pdf) · [Hendrickson VANTRAAX](https://hendrickson-intl.com/products/vantraax/vantraax-hkant-40k) · [49 CFR 393.86 rear impact guards](https://www.ecfr.gov/current/title-49/subtitle-B/chapter-III/subchapter-B/part-393/subpart-G/section-393.86) · [California kingpin-to-rear-axle rule](https://www.dot.ca.gov/programs/traffic-operations/legal-truck-access/vehicle-lengths)
 - Origin: the everyday-cars finish study on `codex/sedan-rear-polish` (729ca2b6, 8cf37b81, de4b3d50, 08669e18).
+
+## Open questions for review
+
+- **Hood height.** The model's hood rises to 2.15 m at the cowl (study). Scaled by its tyres, the dealer side photo reads about 1.9 m. The gap is unresolved.
+- **Front fenders.** The photo shows full-coverage fenders that wrap well down the front of the steer tyre and run back to the step. The model keeps the study's thinner swept fender over the tyre crown.
+- **Traffic-form detail.** City draws one mesh per kind, so street-eye shows the traffic form: a plain grille plate, octagonal wheels and no mirrors. Approximate prices to promote details into it: grille slats and dividers +168 triangles, mirrors +72, twelve-sided outer wheels +160 (ten wheels, 16 each).
+- **Amber lamps.** Lighting the amber cab and van markers at night would need a new kind in the shared vehicle material.
+- **Eye-level ink.** In the close form, the van's far panel seams alias into a zigzag at a raking eye-level angle.
 
 ## Stills
 

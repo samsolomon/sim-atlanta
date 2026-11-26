@@ -162,6 +162,8 @@ function isPassengerUnit(id: Model): id is keyof typeof stockNames {
   return Object.hasOwn(stockNames, id);
 }
 let cars: THREE.Mesh[] = [];
+/** Scale references drawn beside a model; camera fitting ignores them. They share the model's material. */
+let props: THREE.Mesh[] = [];
 let figure: ReturnType<typeof createFigurePreview> | undefined;
 const play = document.querySelector<HTMLButtonElement>('#play')!;
 const phase = document.querySelector<HTMLInputElement>('#phase')!;
@@ -503,6 +505,8 @@ function build() {
   }
   retiredMaterials.forEach(material => material.dispose());
   cars = [];
+  for (const p of props) { scene.remove(p); p.geometry.dispose(); }
+  props = [];
   figure?.dispose();
   figure = undefined;
   trees?.dispose();
@@ -695,19 +699,20 @@ function build() {
     return;
   }
   if (model === 'semi589') {
-    // High shows the close form (Lab, street-eye); Low shows the form City traffic draws.
+    // High shows the close form (Lab only); Low shows the form City traffic would draw at every distance.
     document.getElementById('tier')!.hidden = false;
     const near = treeQuality === 'high';
     const material = vehicleMaterial(night);
     const rig = new THREE.Mesh(roadSemiGeometry({ near, paint: SEMI_LAB_PAINT }), material);
     const sedan = new THREE.Mesh(vehicleGeometry('sedan'), material);
     sedan.position.z = -SEMI_LENGTH / 2 - 4 - LENGTH.sedan / 2;
-    cars = [rig, sedan];
-    for (const part of cars) { part.castShadow = part.receiveShadow = true; scene.add(part); }
+    cars = [rig];
+    props = [sedan];
+    for (const part of [rig, sedan]) { part.castShadow = part.receiveShadow = true; scene.add(part); }
     const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
     const other = roadSemiGeometry({ near: !near }), today = vehicleGeometry('semi');
-    landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? rig.geometry : other).toLocaleString()} (Lab and street-eye), `
-      + `traffic ${triangles(near ? other : rig.geometry).toLocaleString()} (City High), today's rigid semi ${triangles(today).toLocaleString()}. Low draws no semis.`;
+    landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? rig.geometry : other).toLocaleString()} (Lab only), `
+      + `traffic ${triangles(near ? other : rig.geometry).toLocaleString()} (City High, street-eye included), today's rigid semi ${triangles(today).toLocaleString()}. Low draws no semis.`;
     other.dispose(); today.dispose();
     landscapeReport.hidden = false;
     document.getElementById('blurb')!.textContent = `A long-hood sleeper tractor in the proportions of a Peterbilt 589 (280 in wheelbase, 72 in sleeper) coupled to a generic 53 ft dry van, ${SEMI_LENGTH.toFixed(1)} m overall, with a midsize sedan behind for scale. No badges, lettering or fleet marks; traffic is illustrative. `;
@@ -1029,7 +1034,7 @@ const BUS_VIEWS: Record<string, ViewPreset> = {
 const SEMI_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.0, 46], target: [0, 2.0, 8], fov: 12 },
   '¾ front': { pos: [-12, 4.2, 20], target: [0, 1.9, 5.5], fov: 34 },
-  'Side': { pos: [-56, 2.4, -4.5], target: [0, 2.0, -4.5], fov: 21 },
+  'Side': { pos: [-56, 2.4, -4.5], target: [0, 2.0, -4.5], fov: 25 },
   'Rear': { pos: [6, 3.4, -46], target: [0, 2.0, -12], fov: 15 },
   'Top': { pos: [0.01, 62, -4.5], target: [0, 0, -4.5], fov: 34 },
   'Eye level': { pos: [-6.5, 1.6, 17.5], target: [0, 1.9, 6], fov: 50 },
