@@ -30,6 +30,10 @@ def witness(way, station, p, **details):
                 camera=f'{p[0]:.2f},{p[1]:.2f},110,75,75',**details)
 
 
+# A lid model passes only when the lid is positively found (see capitol()).
+LID_TOLERANCE_M, LID_SHARE, LID_COVERAGE, LID_MIN_WALK_SAMPLES = .30, .95, .80, 1000
+
+
 class NoFaces:
     """An empty mounted selection: nothing to hit."""
     def hits(self, p):
@@ -55,13 +59,17 @@ def capitol(scene):
     shell=optional(scene, name='Decks and embedded rails',colors=[0xa7a197])
     walk_rows = []
     missing=[]
+    fallbacks=0
     for idx in ['517','518','519','520']:
         data=REGISTER[idx]
         line=LineString(data['points'])
         for s in np.linspace(.02,line.length-.02,int(line.length*4)+1):
             for offset in [-.99,0,.99]:
                 p=location(line,s,offset)
-                top=walk.hits(p) or ground.hits(p)
+                top=walk.hits(p)
+                if not top:
+                    top=ground.hits(p)
+                    if top:fallbacks+=1
                 if not top:
                     missing.append(witness(data["way"],s,p,offset=offset))
                     continue
@@ -111,7 +119,34 @@ def capitol(scene):
                     outside=bool(change<envelope[0] or change>envelope[1]),
                     stepM=heights(1,.001)-heights(0,.001)))
     floated=[r for r in walk_rows if r['undersideGapM'] is not None and r['undersideGapM']>.001 and r['support']!='street']
-    return dict(walkSamples=len(walk_rows),missingWalkSamples=len(missing),firstMissing=next(iter(missing),None),firstUnsupported=next(iter(floated),None),
+    extra={}
+    if fallbacks:
+        # A lid model must be found, not assumed: every registered street and walk
+        # on the cover is sampled on its centreline, and the board there must sit at
+        # the cover's own class-2 level, with no street deck standing above it.
+        checked=matched=above=0
+        per_way={};expected={}
+        for key,data in REGISTER.items():
+            line=LineString(data['points'])
+            ar=np.array(data['class2'])
+            n=e=0
+            for s in np.arange(0,line.length,.5):
+                near=ar[np.argmin(abs(ar[:,0]-s))]
+                if abs(near[0]-s)>1.0:continue
+                e+=1
+                p=location(line,s)
+                board=ground.hits(p)
+                if not board:continue
+                top=max(board)
+                n+=1;checked+=1
+                if abs(top+323.8-near[3])<=LID_TOLERANCE_M:matched+=1
+                if any(y>top+LID_TOLERANCE_M for y in pavement.hits(p)):above+=1
+            per_way[data['way']]=n;expected[data['way']]=e
+        ok=(checked>0 and matched>=LID_SHARE*checked and above==0 and
+            all(per_way[w]>=LID_COVERAGE*expected[w] and expected[w]>0 for w in per_way) and len(walk_rows)>=LID_MIN_WALK_SAMPLES and len(joints)==6)
+        extra=dict(lid=dict(walkSamplesOnBoard=fallbacks,samples=checked,matchedShare=round(matched/checked,4) if checked else 0,
+                            decksAboveSamples=above,samplesByWay=per_way,joints=len(joints),ok=bool(ok)))
+    return dict(**extra,walkSamples=len(walk_rows),missingWalkSamples=len(missing),firstMissing=next(iter(missing),None),firstUnsupported=next(iter(floated),None),
                 lengthByWayAndOffsetM={f"{way}/{offset}":round(sum(1 for r in floated if r["way"]==way and r["offset"]==offset)*LineString(data["points"]).length/(int(LineString(data["points"]).length*4)+1),3) for key,data in REGISTER.items() if key in ["517","518","519","520"] for way in [data["way"]] for offset in [-.99,0,.99]},
                 maxWalkGap=max(walk_rows,key=lambda r:r['gapM']),joints=joints)
 
@@ -239,6 +274,7 @@ def main():
                 failed=[]
                 if row['firstUnsupported'] or row['missingWalkSamples']:failed.append('walk support')
                 if any(j['outside'] for j in row['joints']):failed.append('joint grade')
+                if 'lid' in row and not row['lid']['ok']:failed.append('lid not found')
                 wanted=[] if args.expect=='repaired' else ['walk support','joint grade']
             else:
                 failed=[]
