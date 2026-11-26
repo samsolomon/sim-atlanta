@@ -48,3 +48,13 @@ city-view Claude.
 - **Temporary worktrees, safe to remove** (`git worktree remove`):
   - `<scratchpad>/wt-613`: the far-board-v2 branch is pushed.
   - `<scratchpad>/wt-base`: a detached main.
+
+## Leftover branches (no PR needed)
+
+These are pushed, superseded or held, not unfinished work:
+- `samsolomon/traffic-wheel-plane`, `samsolomon/traffic-timers` and `samsolomon/traffic-timers-682`:
+  diagnostics for the release 17 traffic regression, folded into #688. The shared lane-height store
+  on traffic-wheel-plane didn't move the phone and was dropped.
+- `samsolomon/aligned-vertices`: 4-byte-aligned landmark packing. Held, because the iPhone A/B showed
+  #575's packing wasn't the regression.
+- `samsolomon/far-board-v2`: merged as #613.
