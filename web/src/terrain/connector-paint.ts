@@ -184,11 +184,15 @@ export function connectorMedians(city: TerrainCity, strips = groundStrips(city))
   return runs.filter(rows=>rows.length>1);
 }
 
+/** Dev and tests: the strips paintConnector filled on each board, by board name (road-lint.ts). */
+export const paintedStrips = new Map<string, { r: Ribbon; rows: Section[] }[]>();
+
 export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity, texelM: number) {
   const east = 'name' in city && city.name === 'r16';
   if (!isConnectorCity(city) && !east) return;
   const box = city.bounds;
   const visible = groundStrips(city).filter(({r}) => !east || eastGround.has(r.id));
+  if (import.meta.env.DEV) paintedStrips.set(String((city as { name?: string }).name), visible);
   function fill(rows: Section[], left: number, right: number, color: string) {
     path(ctx, [
       ...rows.map((r) => stripePoint(r, left)),

@@ -1,0 +1,3 @@
+{
+ "_doc": "Road-kit lint ratchet (docs/road-kit.md, pnpm lint:roads). Per tier and board: violation counts are ceilings that only come down; treadM2 and elevatedM2 are coverage floors (2% slack). Regenerate with `pnpm lint:roads --write` and lower only."
+}
