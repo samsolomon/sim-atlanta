@@ -100,3 +100,27 @@ All nine named branches exist; each conflicts only in `docs/build-log.md` or not
 - **Next limit is shader programs and night draws,** not memory: after #682, High programs 100 of 100, Low 85 of 86, High-night calls 622 of 630. Check each train step against these first; the clubhouses add a material.
 - **#482 and #476** are closed.
 - **Building review fixes for the batches:** #573 (reveal strips inside the sibling mass; none on the Juniper side), #587 (south facade 0.3 m inside `osm:way:792229255`; party-wall test too loose), #610 (two canopy plates float 5 m unsupported), #612 (crown ring fitted to the wrong circle). #578 is mergeable with two minors; #595, #598 and #614 are clean.
+
+## 2026-11-26: #682 merged; Sam's decisions on the held items
+
+This section supersedes "Hold: not on Sam's list" and decision 3 for the PRs it names.
+
+- **#682 merged** as `1e9e7a7b` (tree identical to `04dcd6cf`, which passed `pnpm test` and `pnpm build`). Not deployed. `pnpm test:perf` last ran on `a63d9d57`: take one run on merged `main` before the first batch, so an existing overrun is not blamed on that batch.
+- **Priority:** the R16 slicing follow-up (`samsolomon/area-build-slicing`, folds in #621 and #611), then the deploy, **then** the building batches.
+- No production deploy until the follow-up lands.
+
+Relayed by the coordinator from Sam's screenshot session. "Approved" still means nothing merges without the coordinator's OK.
+
+| PR | Decision |
+| --- | --- |
+| #594 Fed, #604 1072 West Peachtree, #627 Emmi Midtown, #632 T Deck | **Approved** (titles and bodies updated) |
+| #481 Sifly trees | **Approved** |
+| #521 → #542 Piedmont details | **Approved.** Retarget #542 to `main` before merging #521 |
+| #404 Xpress coach | **Approved**, Model Lab only, no City placement |
+| #427 downtown paving | **Approved**, but merge only after the pending verification on its revised head (door and campus-edge controls). `ground-map.ts` conflicted with #682: rebase first |
+| #654 MSAA | **Hold. Do not merge.** The coordinator will assign a cheaper shimmer fix separately |
+| #409 bus network plan | **Parked** until the 81-route steering follow-up |
+
+**Budget rule.** High programs were 100 of 100 and High-night calls 622 of 630 on the last run. Merge in batches with `pnpm test:perf` after **each** batch. If a batch goes over, trim the offending item (shared materials, fewer night lamps). **Do not raise the program or call ceilings without asking Sam.** Negative deltas still go first (#544, #637, #643, #645, #594, #604).
+
+Still undecided, as listed above: #450, #592, #646 → #651, #663 and the step 4 fixes. #541 stays excluded.
