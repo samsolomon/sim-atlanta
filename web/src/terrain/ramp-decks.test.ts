@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import register from '../../../pipeline/prototypes/connector-footprint/ramp-register.json';
 import survey from '../../../pipeline/prototypes/connector-footprint/ramp-decks.json';
@@ -199,14 +199,31 @@ it.each(['low', 'high'] as const)('carries 38974038 from 9239459\'s fill on %s, 
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });
 
-const stagedDowntown = new URL('../../public/data/scene/downtown/', import.meta.url);
-it.skipIf(!existsSync(new URL('vignette.json', stagedDowntown)))('keeps the MLK ramp under the MLK west approach across its whole width', () => {
+it('keeps the MLK ramp under the MLK west approach across its whole width', () => {
   // The approach falls across its width, so a ramp pinned under it on the
   // centreline still cut its lower edge by up to 8 cm (Grok, step 3). Sample the
-  // ramp's footprint where it runs under the approach.
-  const manifest = JSON.parse(readFileSync(new URL('ground.json', stagedDowntown), 'utf8'));
-  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', stagedDowntown))).buffer);
-  const city = applyRampDecks(JSON.parse(readFileSync(new URL('vignette.json', stagedDowntown), 'utf8')) as TerrainCity);
+  // ramp's footprint where it runs under the approach. Built from committed
+  // sources only (the downtown grid, ways.json, street-bridges.json), so it runs
+  // in a fresh checkout without pnpm data.
+  const downtown = new URL('../../../pipeline/prototypes/downtown-ground/', import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', downtown), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', downtown))).buffer);
+  const ways = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/connector-footprint/ways.json', import.meta.url), 'utf8'));
+  const bridges = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/connector-footprint/street-bridges.json', import.meta.url), 'utf8'));
+  const mlk = bridges.find((d: { outline: number }) => d.outline === 1278959968);
+  const pts = (...ids: number[]) => ids.flatMap((id, k) => (k ? ways[id].pts.slice(1) : ways[id].pts)) as P2[];
+  const { minX, maxX, minZ, maxZ } = manifest.bounds;
+  const city = applyRampDecks({
+    bounds: { minX, maxX, minZ, maxZ }, buildings: [],
+    roads: [
+      { cls: 'motorway', sub: 'link', bridge: false, pts: pts(9236952, 436808889, 755543582) },
+      { cls: 'motorway', sub: 'link', bridge: true, pts: [...pts(755543580, 755543583), [549.77, 605.77]] },
+    ],
+    terrainTransport: { version: 1, rail: [], roads: [
+      { kind: 'ground', cls: 'motorway', sub: 'link', pts: pts(755543580, 755543583) },
+      ...mlk.roads.map((r: P2[]) => ({ kind: 'bridge', cls: 'secondary', name: mlk.name, pts: r })),
+    ] },
+  } as unknown as TerrainCity);
   const ground = new GroundSurface(grid, 'high');
   const bare = (x: number, z: number) => ground.sampleScene(x, z);
   const approaches = bridgeApproaches(streetPortals(city), manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads)!;
