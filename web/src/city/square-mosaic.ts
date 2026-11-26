@@ -16,23 +16,18 @@ export interface NorthView { orbitM: number; inView: () => boolean }
 /** A vehicle this close to an unmounted row loads it, so a follow has ground to run onto. */
 const seekMarginM = 600;
 
-/** How far down the frame, from its middle to its bottom edge, the board may reach. */
-const clearOfToolbar = 0.72;
 /**
- * The orbit that shows the board from `south` to `north` and nothing beyond that north edge:
- * looking due north, the top of the frame lands on the edge. A narrow window stands farther
- * back to fit the width, still with the edge at the top.
+ * The full-board view: a 15° bearing and 35° tilt, far enough back to hold the board from
+ * `north` to its south edge with margins, or its width in a tall window. Framed to the loaded
+ * edge, R16's far tip can show as bare table until the row loads (Sam, 25 November).
  */
-export function frameToEdge(south: number, north: number, halfWidth: number, aspect: number, fovDeg: number, tiltDeg: number) {
-  const tilt = tiltDeg * Math.PI / 180, half = fovDeg * Math.PI / 360;
-  // Ground ahead of and behind the target covered by the frame, per metre of orbit.
-  const ahead = Math.cos(tilt) * Math.tan(tilt + half) - Math.sin(tilt);
-  // The south edge stops short of the bottom of the frame, above the toolbar.
-  const behind = Math.sin(tilt) - Math.cos(tilt) * Math.tan(tilt - Math.atan(clearOfToolbar * Math.tan(half)));
-  const length = south - north;
-  const wide = (1.04 * halfWidth / (Math.tan(half) * aspect) + length * Math.sin(tilt)) / (1 + ahead * Math.sin(tilt));
-  const distance = Math.max(length / (ahead + behind), wide);
-  return { distance, targetZ: north + ahead * distance };
+export function fullBoardFrame(south: number, north: number, midtown: boolean, aspect: number) {
+  const a = Math.max(.25, aspect);
+  return {
+    azimuth: -15, tilt: 35,
+    distance: midtown ? Math.max((south - north) * 2.95, 11700 / a) : Math.max(9200, 9600 / a),
+    targetZ: (south + north) / 2,
+  };
 }
 
 type Rect = Area['bounds'];
