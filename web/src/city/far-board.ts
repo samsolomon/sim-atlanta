@@ -42,6 +42,12 @@ export const FAR_BUILDINGS_M = (() => {
   return perf !== null && perf !== '0' && perf !== 'off' && q.has('farm') && m >= 0 ? m : 15000;
 })();
 /**
+ * Night factor (City's darkness: 1 − smoothstep(−8°, 2°, sun elevation)) at which the far form
+ * swaps to its night variant, and back. The near form's windows glow in proportion to it, so the
+ * swap waits until near walls are mostly dark (sun about 6° down), not mid-dusk.
+ */
+export const FAR_NIGHT_ON = 0.8, FAR_NIGHT_OFF = 0.75;
+/**
  * Landmarks that keep their real form at every distance: a box cannot stand in for them (the
  * stadium's see-through roof reads as its bowl and field from afar, a box as a grey slab).
  * Each costs its own few draws.
@@ -224,6 +230,11 @@ const hash = (x: number, z: number) => { const h = Math.sin(x * 12.9898 + z * 78
 const CLUTTER = { r: 0.36, g: 0.38, b: 0.41 };
 /** Night walls under City's night sky: deep blue, not grey. */
 const NIGHT_WALL = { r: 0.018, g: 0.03, b: 0.095 };
+/** Share of windows the near form lights at night (vignette/world.ts: about a third of rooms). */
+const NEAR_LIT = 1 / 3;
+/** Share of a wall the near form's lit windows cover at full night (window fraction about 0.5 ×
+ * a third lit × mean lit level 0.75, against this amber at full strength): ~0.12–0.14. */
+const WINDOW_GLOW = 0.13;
 /** Lit windows read amber from afar (sodium-warm interiors), in many small points. */
 const AMBER = { r: 1, g: 0.62, b: 0.26 };
 
@@ -250,7 +261,8 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
     if (ringArea2(ring) < 0) { const r2: number[] = []; for (let i = ring.length - 2; i >= 0; i -= 2) r2.push(ring[i], ring[i + 1]); ring = r2; }
     const n = ring.length / 2;
     const tall = Math.min(1, Math.max(0, (y1 - y0 - 10) / 80));
-    const lit = bx.lit ?? (0.06 + 0.16 * tall) * (0.6 + 0.8 * hash(cx, cz));
+    // The near form lights about a third of its windows at night (vignette/world.ts); vary it per building.
+    const lit = bx.lit ?? NEAR_LIT * (0.7 + 0.6 * hash(cx, cz)) * (0.9 + 0.2 * tall);
     const ny = NIGHT_WALL, split = y0 + (y1 - y0) * 0.35, big = shows(bx);
     for (let i = 0; i < n; i++) {
       const ax = ring[i * 2], az = ring[i * 2 + 1], bx2 = ring[((i + 1) % n) * 2], bz = ring[((i + 1) % n) * 2 + 1];
@@ -289,22 +301,28 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
     for (let i = 0; i < n; i++) put(ring[i * 2], y1, ring[i * 2 + 1], 0, 1, 0, roof.r, roof.g, roof.b, ny.r * 0.7, ny.g * 0.7, ny.b * 0.7);
     const pts = Array.from({ length: n }, (_, i) => new Vector2(ring[i * 2], ring[i * 2 + 1]));
     for (const [a, b, c] of ShapeUtils.triangulateShape(pts, [])) I.push(first + a, first + c, first + b);
-    // Night: amber window points on taller buildings, by their lit share.
+    // Night: amber window points, covering the share of wall the near form's lit windows cover
+    // (WINDOW_GLOW of the wall per unit lit share). Houses get smaller points, about one each.
     const h = y1 - y0;
     // Window points only on walls standing on their ground: none in graded cuts, where a
     // building's base was re-cut after it was placed.
-    if (h < 12 || noSparkle?.(cx, cz)) continue;
-    const count = Math.min(80, Math.round(lit * (hx + hz) * 4 * h / 40));
+    if (h < 3 || noSparkle?.(cx, cz)) continue;
+    let perimeter = 0;
+    for (let i = 0; i < n; i++) perimeter += Math.hypot(ring[((i + 1) % n) * 2] - ring[i * 2], ring[((i + 1) % n) * 2 + 1] - ring[i * 2 + 1]);
+    const w = h < 12 ? 1.5 : 2.5;
+    const want = WINDOW_GLOW * (lit / NEAR_LIT) * perimeter * h / (4 * w * w);
+    // A fractional point becomes one with that probability (stable per building).
+    const count = Math.min(160, Math.floor(want) + (hash(cz, cx) < want % 1 ? 1 : 0));
     for (let k2 = 0; k2 < count; k2++) {
       const e = Math.floor(hash(cx + k2 * 7.1, cz - k2 * 3.7) * n), t = 0.1 + 0.8 * hash(cz + k2, cx - k2);
       const ax = ring[e * 2], az = ring[e * 2 + 1], bx2 = ring[((e + 1) % n) * 2], bz = ring[((e + 1) % n) * 2 + 1];
       let nx = bz - az, nz = -(bx2 - ax);
       const l = Math.hypot(nx, nz);
-      if (l < 4) continue;
+      if (l < 2 * w) continue;
       nx /= l; nz /= l;
-      const ex = (bx2 - ax) / l, ez = (bz - az) / l, w = 2.5;
+      const ex = (bx2 - ax) / l, ez = (bz - az) / l;
       const px = ax + (bx2 - ax) * t + nx * 0.5, pz = az + (bz - az) * t + nz * 0.5;
-      const y = y0 + 4 + (h - 8) * hash(cx * 0.3 + k2, cz * 0.7 - k2);
+      const y = h < 12 ? y0 + h * 0.45 : y0 + 4 + (h - 8) * hash(cx * 0.3 + k2, cz * 0.7 - k2);
       const g = 0.75 + 0.25 * hash(px, pz);
       const q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([dx, dy]) => put(px + ex * dx * w, y + dy * w, pz + ez * dx * w, nx, 0, nz, 0, 0, 0, AMBER.r * g, AMBER.g * g, AMBER.b * g));
       quad(q[0], q[1], q[2], q[3], true);

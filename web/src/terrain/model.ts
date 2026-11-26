@@ -80,7 +80,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxesFromObject, FAR_BUILDINGS_M, KEEP_NEAR, farBoxMesh, type FarBox } from '../city/far-board';
+import { boxesFromObject, FAR_BUILDINGS_M, FAR_NIGHT_OFF, FAR_NIGHT_ON, KEEP_NEAR, farBoxMesh, type FarBox } from '../city/far-board';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
@@ -808,7 +808,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
     /** Streaming rings choose a landmark cell's level ('x,z' in 500 m cells); null restores the distance rule. */
     setLandmarkDetail(cell: string, level: 'full' | 'lod' | null) { batches?.setCellDetail(cell, level); },
-    setNight(factor: number) { if (farNight !== factor > 0.5) { farNight = factor > 0.5; showFar(farOn); } trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
+    setNight(factor: number) { const nightNow = farNight ? factor > FAR_NIGHT_OFF : factor > FAR_NIGHT_ON; if (farNight !== nightNow) { farNight = nightNow; showFar(farOn); } trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);
