@@ -405,8 +405,9 @@ function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mes
       const p2 = put(bx2, y1, bz, nx, 0, nz, bx.r, bx.g, bx.b, st, base), p3 = put(ax, y1, az, nx, 0, nz, bx.r, bx.g, bx.b, st, base);
       I.push(p0, p2, p1, p0, p3, p2);
     }
-    const rf = bx.roof ?? { r: bx.r, g: bx.g, b: bx.b };
-    const roof = { r: (rf.r * 0.7 + CLUTTER.r * 0.3) * 0.86, g: (rf.g * 0.7 + CLUTTER.g * 0.3) * 0.86, b: (rf.b * 0.7 + CLUTTER.b * 0.3) * 0.86 };
+    // The roof's own colour: the near form's roof clutter is under a pixel at the switch, and a
+    // clutter-weighted mean read visibly greyer than the near roofs (2026-11-26 stills).
+    const roof = bx.roof ?? { r: bx.r, g: bx.g, b: bx.b };
     const first = v;
     for (let i = 0; i < n; i++) put(ring[i * 2], y1, ring[i * 2 + 1], 0, 1, 0, roof.r, roof.g, roof.b, -1, 0);
     const pts = Array.from({ length: n }, (_, i) => new Vector2(ring[i * 2], ring[i * 2 + 1]));
