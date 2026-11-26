@@ -13,7 +13,7 @@ import { addSection, bounds, joins, midtownRows, type Area, type Board, type Tra
  * Today's seam buildings have no yards, so one is given to them here: the drawn Station ground must
  * not change before the buildings appear, and an abandoned mount must put it back.
  */
-const yard = vi.hoisted(() => ({ on: false, failLate: false }));
+const yard = vi.hoisted(() => ({ on: false, failLate: false, extra: null as number[][] | null }));
 const CENTRE = [406, -5297] as const;
 vi.mock('../city/residential', async importOriginal => {
   const actual = await importOriginal<typeof import('../city/residential')>();
@@ -22,7 +22,8 @@ vi.mock('../city/residential', async importOriginal => {
     const homes = actual.residential(...args);
     // Only the seam layers ask for yards in one pass; area builds step through buildYards.
     if (yard.on) homes.yards = () => ({ group: new Group(), dispose() { },
-      yields: [{ ring: [[400, -5300], [412, -5300], [406, -5290]], floor: () => -200 }] }) as never;
+      yields: [{ ring: [[400, -5300], [412, -5300], [406, -5290]], floor: () => -200 },
+        ...(yard.extra ? [{ ring: yard.extra, floor: () => -200 }] : [])] }) as never;
     return homes;
   } };
 });
@@ -63,6 +64,13 @@ it.skipIf(!ready)('draws the Station uncut until R16 commits, and puts it back w
     mountStationFragments(station, 'low', clip);
     const drawn = () => [station.board.geometry.getAttribute('position').array, station.board.geometry.index!.array] as const;
     const original = drawn(), height = station.terrainAt(...CENTRE)!, carves = station.carved.length;
+    // Low's far-board boxes: a seam carve lowers those over the cut; an abandoned mount puts them back.
+    const farY0 = () => station.farBoxes.map(b => b.y0);
+    const farBefore = farY0();
+    // A second cut under one far box's centre, so the carve has a box to lower.
+    const under = station.farBoxes.find(b => b.cz > -5690 && b.cz < -4910 && b.hx * b.hz > 50)!;
+    yard.extra = [[under.cx - 3, under.cz - 3], [under.cx + 3, under.cz - 3], [under.cx, under.cz + 3]];
+    let farLowered = false;
     const uncut = () => drawn()[0] === original[0] && drawn()[1] === original[1];
 
     // A mount in slices, looked at between frames as a visitor would see it.
@@ -74,6 +82,7 @@ it.skipIf(!ready)('draws the Station uncut until R16 commits, and puts it back w
     // Frames drawn with the Station carved underneath, and how many of them showed it.
     let carvedFrames = 0, shownEarly = 0;
     const look = () => {
+      if (farY0().some((y, i) => y < farBefore[i])) farLowered = true;
       if (station.terrainAt(...CENTRE)! >= height - 1) return;
       carvedFrames++;
       if (!uncut()) shownEarly++;
@@ -86,6 +95,9 @@ it.skipIf(!ready)('draws the Station uncut until R16 commits, and puts it back w
     expect(uncut()).toBe(true);
     expect(station.terrainAt(...CENTRE)).toBe(height);
     expect(station.carved.length).toBe(carves);
+    expect(farBefore.length).toBeGreaterThan(0);
+    expect(farLowered, 'the seam carve never lowered a far box, so this check proves nothing').toBe(true);
+    expect(farY0()).toEqual(farBefore);
 
     // A step that fails after the cut puts the Station back too.
     yard.failLate = true;

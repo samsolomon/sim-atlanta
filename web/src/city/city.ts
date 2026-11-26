@@ -150,6 +150,7 @@ const GLIDE_PER_60HZ_FRAME = 0.12;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
+import { boxedFromAfar, boxesFromObject, FAR_LANDMARKS } from './far-board';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { cameraWatch, releaseCamera, runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
@@ -697,7 +698,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
-        if (landmarkBatchOff) world.group.add(batchLandmarkBodies(landmarks));
+        // Far-board buildings (low): downtown's landmarks join the downtown area's box mesh, from
+        // boxes taken before batching empties their groups.
+        const boxed = landmarks.filter(g => boxedFromAfar(g.name));
+        const farBoxesDowntown = low ? boxed.flatMap(g => boxesFromObject(g, terrain!.scenery)) : [];
+        const farRoots: THREE.Object3D[] = [...boxed];
+        if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); if (FAR_LANDMARKS) farRoots.push(bodies); }
         else {
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
@@ -714,6 +720,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
+          if (FAR_LANDMARKS) farRoots.push(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
             if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
@@ -721,6 +728,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             void batches.farReady.then(() => console.info('City landmark far versions (downtown)', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
           }
         }
+        terrain!.addFar(farBoxesDowntown, farRoots);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
