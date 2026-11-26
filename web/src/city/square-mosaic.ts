@@ -137,11 +137,16 @@ export class SquareMosaic {
   cancelTarget() { this.wanted = undefined; }
   /** A vehicle's position: its rows load although the camera is not asking, and the camera stays. */
   seek(point: Point) { this.seeking = point; }
-  /** True while a sought vehicle stands in a row that is still on its way. */
+  /** True while a sought vehicle stands in a row that a load under way can still deliver. */
   pending(p: Point) {
     const s = this.seeking;
-    return this.midtown && !!s && midtownRows.some(id => !this.areas.has(id) && !this.failed.has(id) &&
+    if (!this.midtown || !s) return false;
+    const row = midtownRows.findIndex(id => !this.areas.has(id) &&
       inside(bounds[id], p.x, p.z) && inside(bounds[id], s.x, s.z, seekMarginM));
+    if (row < 0) return false;
+    // The row arrives only by way of the north band and every row before it.
+    const path: Section[] = ['north', ...midtownRows.slice(0, row + 1)];
+    return !path.some(d => this.failed.has(d)) && path.some(d => this.loading.has(d));
   }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,

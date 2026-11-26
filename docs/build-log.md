@@ -3870,7 +3870,7 @@ North of Brookwood Station the expansion drew 1.4 crowns per hectare under a can
 
 Deploying this needs the data staged again (`pnpm data`, or `pnpm data:midtown` on an up-to-date data folder) and a fresh `web/dist` build. R16's context hash is now `ee43ccf3` before the tee overlay. A build made from data staged earlier still carries the 317 fallback crowns, and City would now feed them to the species rollout.
 
-Review then found two holes in the waiting row. A followed train heading into R16 ended its trip at the edge, because nothing asked for the row. And the default frame still looked 2 km past the loaded board. City now loads a row for a followed vehicle within 600 m of it. For the default frame we tried looking due north, which kept R16's ground out of sight, but Sam preferred the tilted diorama and its margins. The far tip of R16 is simply absent at 20 km until the row loads. [Following a train into R16](log/ui/north-expansion-integration/follow-into-r16.jpg)
+Review then found two holes in the waiting row. A followed train heading into R16 ended its trip at the edge, because nothing asked for the row. And the default frame still looked 2 km past the loaded board. City now loads a row for a followed vehicle within 600 m of it, and gives the follow up if the row can no longer arrive. A browser test drives a Gold train across that edge while the row is still loading. For the default frame we tried looking due north, which kept R16's ground out of sight, but Sam preferred the tilted diorama and its margins. The far tip of R16 is simply absent at 20 km until the row loads. [Following a train into R16](log/ui/north-expansion-integration/follow-into-r16.jpg)
 
 ### 2026-11-25 — Follow the engines
 
