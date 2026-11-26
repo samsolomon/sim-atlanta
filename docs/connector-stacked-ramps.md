@@ -85,7 +85,7 @@ The order is unambiguous from the other ways' heights. The lower way's own level
 
 ### Step 1: the Baker flyovers and the Baker exit
 
-`ramp-decks.py` turns each listed way's tracked `own` stations into deck spans and writes `ramp-decks.json`, in metres along the full OSM way. Step 1 lists 38974028, 38974034, 38974051, 1450884828, 1450884829, the first 60 m of 38974031 and the last 74 m of 39169033. `web/src/terrain/ramp-decks.ts` applies the spans. Boards clip ways at their seams, so it matches runs to ways by geometry (every vertex within 5 cm of the way):
+`ramp-decks.py` turns each listed way's tracked `own` stations into deck spans and writes `ramp-decks.json`, in metres along the full OSM way. Step 1 lists 38974028, 38974034, 1450884828 and 1450884829, plus the first 60 m of 38974031 and of 38974051 and the last 74 m of 39169033. From 75 m on, 38974051 is the Baker junction deck's own approach (`junction-decks.json`, drawn by `junctionPortals`). A span there doubled it 1–12 cm under its surface, so it is left out. `web/src/terrain/ramp-decks.ts` applies the spans. Boards clip ways at their seams, so it matches runs to ways by geometry (every vertex within 5 cm of the way):
 
 - On north-corner, `auburnTransport` looks up `rampSpans(road.pts)` when a motorway road has no Sweet Auburn profile, then slices it like any other profiled road.
 - Downtown, `applyRampDecks(vd)` slices the baked `vignette.json` runs before `createSurfaceTransport` and `cityRoadHeight` read them.
@@ -102,16 +102,18 @@ Runs that already carry a profile keep it. Span ends that round to within 5 cm o
 | Drawn tread minus register `own` at measured stations | ≤ 0.13 m (shared endpoints are averaged) |
 | Shared vertices of the Baker chain | One height. The phase-1 38974034 → 1450884828 step (−0.291 m High, −0.307 m Low) is closed |
 | x = 1000 seam, 38974028 and 38974034 | Downtown and north-corner treads within 1 mm. Before: the downtown half stood 7.4 m above the north-corner half |
-| Ground through the tread, centreline and ±1.6 m | None |
-| Ties | Tread = drawn terrain + 0.12 m at all five, as at Sweet Auburn abutments. 38974034's start was 0.216 m |
+| Any other surface through the tread (terrain, bridge approaches, every mesh), centreline and ±1.6 m | None |
+| Cars (`cityRoadHeight` on the real `vd.roads` / north-corner roads, every metre of every span) | Car height minus profile 0.117–0.136 m on both boards and both tiers; none fall back to the ground |
+| Ties | Tread = drawn terrain + 0.12 m at all four, as at Sweet Auburn abutments. 38974034's start was 0.216 m |
 | Soffit to lower tread over 9235707 and 337901399 | 8.12, 8.57, 8.65 and 9.08 m (≥ 4.5 m), with the crossing order kept |
 | 439abf84 gate, warm, Low and High | Byte-identical to the reference |
-| Triangles, whole scene at the Baker camera | +4,494 High, +4,510 Low, all deck geometry |
+| Triangles, whole scene at the Baker camera | +3,398 High, +3,414 Low, all deck geometry |
 
 **Still open after step 1.**
 
 - **Plan gap at the x = 1000 seam (closed in the next commit).** Both carriageways stopped 0.6–0.7 m short of each other across the seam. The gap was pre-existing: `transport.ts` clamped a perpendicular end row to the board bounds, which leaves a wedge on each side wherever a deck crosses a seam obliquely. The 7.4 m step had hidden it. Now a profiled run's end corners slide along the run onto the boundary (`onSeam`, ribbon and plain laterals), capped at 6 m for grazing crossings. Dense 5 cm samples across x = 999.4–1000.6 at the centreline and ±1 m find tread everywhere on both carriageways and both tiers, with no step over 1 mm. The 439abf84 gate stays byte-identical, and `ramp-decks.test.ts` fails with the change reverted. Stills: [K1 High](log/ui/connector-repairs/b2-baker/seam/K1-high-before-after.jpg) · [K1 Low](log/ui/connector-repairs/b2-baker/seam/K1-low-before-after.jpg) · [K2 High](log/ui/connector-repairs/b2-baker/seam/K2-high-before-after.jpg) · [K2 Low](log/ui/connector-repairs/b2-baker/seam/K2-low-before-after.jpg). Here BEFORE is step 1, from the same frozen cameras.
-- **38974038 open start.** It is not a Baker way. It sits on the NB-to-Freedom-Parkway chain at the auburn edge (1450884836 → 38974038), so step 1 leaves it as phase 1 found it.
+- **38974038 open start.** It is not a Baker way, and none of the four approved steps covers its chain (1450884836 → 38974038 → 1450884835 → 38974039, NB to Freedom Parkway at the auburn edge). On this head it still starts in mid-air: tread −19.57 at (1045.81, −497.53), with the terrain 0.8 m short of the start at −25.81.
+- **The lane under the Baker junction approach.** The taper finding at (880, −855) (a covered lane climbing on a 28% grade, leaving 3.0 m to the street where 10.1 m is expected) is ground beneath a structure. That is plan item 3, which step 1 does not touch.
 - **Tie edges.** At the 38974031 tie, the drawn terrain rises 2–3 cm through the tread 0.15 m inside the slab edge, between grid nodes. A shallow yield could not reach it (the nodes were already below the tread), so none is applied.
 
 **Stills** (day, matched frozen cameras, BEFORE | AFTER): [K1 High: the flyovers over the Connector](log/ui/connector-repairs/b2-baker/K1-high-before-after.jpg) · [K1 Low](log/ui/connector-repairs/b2-baker/K1-low-before-after.jpg) · [K2 High: side-on near the seam](log/ui/connector-repairs/b2-baker/K2-high-before-after.jpg) · [K2 Low](log/ui/connector-repairs/b2-baker/K2-low-before-after.jpg) · [K3 High: 38974034 into 1450884828](log/ui/connector-repairs/b2-baker/K3-high-before-after.jpg) · [K3 Low](log/ui/connector-repairs/b2-baker/K3-low-before-after.jpg) · [K4 High: the Baker exit](log/ui/connector-repairs/b2-baker/K4-high-before-after.jpg) · [K4 Low](log/ui/connector-repairs/b2-baker/K4-low-before-after.jpg). Cameras: `cam=1000,-790,150,60,220`, `1020,-785,200,70,90`, `1045,-772,120,65,60`, `895,-835,250,30,170`, with `&dev&mindist=20`, matrices in `cameras/`.

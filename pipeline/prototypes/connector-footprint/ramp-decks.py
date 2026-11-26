@@ -21,7 +21,9 @@ STEPS = {
     "baker": [38974028, 38974034, 38974051, 1450884828, 1450884829, 38974031, 39169033],
 }
 # Only these stretches of longer ways belong to a step (station window, metres).
-WINDOWS = {38974031: (0, 60), 39169033: (300, 1e9)}
+# 38974051 from 75 m on is the Baker junction deck's own approach
+# (junction-decks.json, drawn by junctionPortals): a span there would double it.
+WINDOWS = {38974031: (0, 60), 39169033: (300, 1e9), 38974051: (0, 60)}
 ABOVE, TIE = 0.5, 1
 
 
@@ -53,7 +55,8 @@ def spans_for(way, length):
         # Blend onto the terrain within 0.25 m of a tie: the ground beside a
         # ramp often falls away toward the freeway, and a blend over a full
         # 5 m station would sag the tread with it.
-        for at, toward in ((0, 1), (len(rows) - 1, -1)):
+        # The far end first, so the near end's insert cannot shift its index.
+        for at, toward in ((len(rows) - 1, -1), (0, 1)):
             if len(rows[at]) > 2 and len(rows) > 1:
                 a, b = rows[at], rows[at + toward]
                 f = 0.25 / abs(b[0] - a[0])
