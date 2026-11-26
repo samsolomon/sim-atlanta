@@ -30,12 +30,29 @@ def witness(way, station, p, **details):
                 camera=f'{p[0]:.2f},{p[1]:.2f},110,75,75',**details)
 
 
+class NoFaces:
+    """An empty mounted selection: nothing to hit."""
+    def hits(self, p):
+        return []
+
+
+def optional(scene, **selection):
+    """A deck layer the model may not draw at all (Capitol Gateway as a lid)."""
+    try:
+        return scene.layer(**selection)
+    except ValueError:
+        return NoFaces()
+
+
 def capitol(scene):
-    pavement = scene.layer(name='Decks and embedded rails',colors=[0x5d5f66])
-    walk = scene.layer(name='Decks and embedded rails',colors=[0xd9d3c7])
+    # Capitol Gateway may be drawn as decks over the concealed freeway or, as the
+    # lid it is, with its streets and walks on the board. On a lid model the
+    # street and walk deck layers are empty and a walk's top is the board.
+    pavement = optional(scene, name='Decks and embedded rails',colors=[0x5d5f66])
+    walk = optional(scene, name='Decks and embedded rails',colors=[0xd9d3c7])
     ground = scene.layer(board=True)
-    approaches = scene.layer(name='bridge approaches')
-    shell=scene.layer(name='Decks and embedded rails',colors=[0xa7a197])
+    approaches = optional(scene, name='bridge approaches')
+    shell=optional(scene, name='Decks and embedded rails',colors=[0xa7a197])
     walk_rows = []
     missing=[]
     for idx in ['517','518','519','520']:
@@ -44,7 +61,7 @@ def capitol(scene):
         for s in np.linspace(.02,line.length-.02,int(line.length*4)+1):
             for offset in [-.99,0,.99]:
                 p=location(line,s,offset)
-                top=walk.hits(p)
+                top=walk.hits(p) or ground.hits(p)
                 if not top:
                     missing.append(witness(data["way"],s,p,offset=offset))
                     continue
