@@ -424,22 +424,6 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (!drawQuad) ballast = null;
         if (prev && drawQuad) {
           const [a, b] = prev, [d, c] = section;
-          // A fused viaduct deck (sweet-auburn-transport.ts) can sit on the class-2
-          // freeway surface where the board keeps that same height beside the
-          // Leonard Tate opening. Lower the drawn ground under its own footprint to
-          // just below the slab so terrain never shows through the tread.
-          if (run.deckSurface && use === 'road' && depth > 0) {
-            const floorY = Math.min(a[1], b[1], c[1], d[1]) - depth - .05;
-            const ring = [a, b, c, d].map(([x, , z]) => [x, z] as [number, number]);
-            // Only a convex quad with real area: coincident stations make slivers.
-            const turns = ring.map(([x0, z0], k) => {
-              const [x1, z1] = ring[(k+1)%4], [x2, z2] = ring[(k+2)%4];
-              return (x1-x0)*(z2-z1)-(z1-z0)*(x2-x1);
-            });
-            const convex = turns.every(t => t > 1e-4) || turns.every(t => t < -1e-4);
-            if (convex && [a, b, c, d].some(([x, , z]) => (groundAt(x, z) ?? -Infinity) > floorY))
-              deckYields.push({ ring, floor: () => floorY });
-          }
           if (southFootbridge && depth > 0) {
             const floorY = Math.min(a[1], b[1], c[1], d[1]) - .05;
             footbridgeYields.push({ ring: [a, b, c, d].map(([x, , z]) => [x, z]), floor: () => floorY });
@@ -545,17 +529,64 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (ok && fall <= LANDING_BANK_M) cuts = keepColumns(candidates.map(f => f * width), rows, LANDING_TOLERANCE_M).map(i => candidates[i]);
       }
       const landing = cuts.length > 2;
-      // A fused viaduct deck follows a measured surface with crossfall. Lane-width
-      // bands keep its tread within a centimetre or two of that surface, under the
+      // A fused viaduct deck follows a measured surface with crossfall. 6 m bands
+      // keep its tread within a centimetre or two of that surface, under the
       // markings drawn 3 cm above it.
       const uniform = !!run.deckWeight || (!!run.deckSurface && !landing);
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : uniform ? Math.ceil(width / 3) : cuts.length - 1;
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : uniform ? Math.ceil(width / 6) : cuts.length - 1;
       for (let i = 0; i < bands; i++) {
         const [l, r] = uniform ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
         strip(width * l, width * r, DECK_LIFT, color,
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
       if (landing) strip(width * .5, -width * .5, DECK_LIFT, color, walkway ? .4 : .95, false, false, true, true, s => !nearLanding(s));
+      // A fused viaduct deck (sweet-auburn-transport.ts) can sit on the class-2
+      // freeway surface where the board keeps that height beside the Leonard Tate
+      // opening. Lower the drawn ground under its full width to just below the slab
+      // so terrain never shows through. Straight runs share one ring.
+      if (run.deckSurface && !walkway) deckYields.push(...deckFootprintYields());
+      function deckFootprintYields(): GroundYield[] {
+        const edge = (st: number) => [-.5, .5].map(f => {
+          const [px, pz] = lateral(st, f * width * taper(st));
+          const x = THREE.MathUtils.clamp(px, bounds.minX, bounds.maxX), z = THREE.MathUtils.clamp(pz, bounds.minZ, bounds.maxZ);
+          return [x, z, (run.deckSurface!(x, z) ?? NaN) - sceneZero] as const;
+        });
+        const rows = stations.filter((st, k) => k === 0 || st !== stations[k-1]).map(edge);
+        type Row = (typeof rows)[number];
+        type Open = { rows: Row[]; floor: number };
+        const out: GroundYield[] = [];
+        let open: Open | null = null as Open | null;
+        const straight = (pts: Row[number][]) => pts.slice(1, -1).every(([x, z]) =>
+          segDist(x, z, [pts[0][0], pts[0][1]], [pts.at(-1)![0], pts.at(-1)![1]]) < .05);
+        const close = () => {
+          if (open && open.rows.length > 1) {
+            const first = open.rows[0], last = open.rows.at(-1)!, floorY: number = open.floor;
+            out.push({ ring: [first[0], last[0], last[1], first[1]].map(([x, z]) => [x, z] as [number, number]), floor: () => floorY });
+          }
+          open = null;
+        };
+        for (let k = 1; k < rows.length; k++) {
+          const quad = [rows[k-1][0], rows[k-1][1], rows[k][1], rows[k][0]];
+          if (quad.some(p => !Number.isFinite(p[2]))) { close(); continue; }
+          const floorY = Math.min(...quad.map(p => p[2])) + DECK_LIFT - .95 - .05;
+          if (!quad.some(([x, z]) => (groundAt(x, z) ?? -Infinity) > floorY)) { close(); continue; }
+          if (open) {
+            const next: Open = { rows: [...open.rows, rows[k]], floor: Math.min(open.floor, floorY) };
+            if (straight(next.rows.map(r => r[0])) && straight(next.rows.map(r => r[1])) && Math.abs(open.floor - floorY) < .15) { open = next; continue; }
+            close();
+          }
+          open = { rows: [rows[k-1], rows[k]], floor: floorY };
+        }
+        close();
+        // Only convex rings with real area: coincident stations make slivers.
+        return out.filter(({ ring }) => {
+          const turns = ring.map(([x0, z0], i) => {
+            const [x1, z1] = ring[(i+1)%4], [x2, z2] = ring[(i+2)%4];
+            return (x1-x0)*(z2-z1)-(z1-z0)*(x2-x1);
+          });
+          return turns.every(t => t > 1e-4) || turns.every(t => t < -1e-4);
+        });
+      }
       if (roadTop.length) roadTreads.set(owner, [...(roadTreads.get(owner) ?? []), ...roadTop]);
       if (ribbon) {
         for (let i=0;i<=ribbon.lanes;i++) {
