@@ -94,5 +94,14 @@ it.each(['low', 'high'] as const)('draws the Baker flyover treads on their own m
       }
     }
     expect(checked).toBeGreaterThan(20);
+    // Both carriageways cross the x = 1000 seam obliquely. Their end rows lie on
+    // the seam, so the tread reaches it across the slab: a perpendicular end row
+    // clamped to the board left a 0.3 m wedge on this side.
+    for (const [id, z] of [[38974028, -802.35], [38974034, -793.96]] as const) {
+      for (const dz of [-1.2, 0, 1.2]) {
+        const hits = decksOn(runs, id).map(r => decks.deckAt(1000.05, z + dz, r)).filter(h => h !== null);
+        expect(hits.length, `${id} at z ${z + dz}`).toBeGreaterThan(0);
+      }
+    }
   } finally { decks.dispose(); ground.geometry.dispose(); }
 });

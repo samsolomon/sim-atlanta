@@ -260,9 +260,22 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     function lateral(s:number,off:number): P2 {
       const p=line.at(s);
-      if (!ribbon) return [p.x+off*p.nx,p.z+off*p.nz];
+      if (!ribbon) return onSeam(s,p.x+off*p.nx,p.z+off*p.nz);
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
-      return stripePoint(row,.5-off/travelWidth);
+      return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+    }
+    // A profiled deck that crosses a board seam obliquely ends on the seam itself:
+    // each end corner slides along the run onto the boundary, so the neighbouring
+    // board's half meets it edge to edge. Clamping a perpendicular end row left a
+    // 0.6 m wedge on each side (the Baker flyovers at x = 1000).
+    function onSeam(s:number,px:number,pz:number): P2 {
+      if (!profile || (s!==0 && s!==line.length)) return [px,pz];
+      const e = s===0 ? start : end;
+      if (!onEdge(e)) return [px,pz];
+      const p=line.at(s), across = e[0]===bounds.minX || e[0]===bounds.maxX;
+      const step = across ? (e[0]-px)/p.nz : (e[1]-pz)/-p.nx;
+      if (!Number.isFinite(step) || Math.abs(step) > 6) return [px,pz];
+      return across ? [e[0], pz-step*p.nx] : [px+step*p.nz, e[1]];
     }
     // A road deck that lands on the board, not on another deck or the board's edge,
     // follows the board across its width over the last seam (keeping its 12 cm tread).
