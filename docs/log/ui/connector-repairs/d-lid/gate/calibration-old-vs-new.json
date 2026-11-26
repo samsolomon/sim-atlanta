@@ -1,6 +1,6 @@
 {
  "oldChecker": "439abf84",
- "newChecker": "846cb5b8 (samsolomon/crossing-check-lid)",
+ "newChecker": "e2b253ee (samsolomon/crossing-check-lid)",
  "runs": [
   {
    "export": "/tmp/four-city-study/step0",
@@ -25,6 +25,23 @@
    "expect": "combined",
    "identical": true,
    "sha256": "62290ed4c01e367528120978cb0362a098936dc5b318cd97168b0d4d9f981d48"
+  }
+ ],
+ "negativeCases": [
+  {
+   "variant": "a-board-raised",
+   "expected": "fails: lid not found",
+   "result": "Calibration mismatch [('capitol', 'low', ['lid not found'], []), ('capitol', 'high', ['lid not found'], [])]"
+  },
+  {
+   "variant": "b-walks-removed-decks-kept",
+   "expected": "fails: lid not found, joint grade",
+   "result": "Calibration mismatch [('capitol', 'low', ['joint grade', 'lid not found'], []), ('capitol', 'high', ['joint grade', 'lid not found'], [])]"
+  },
+  {
+   "variant": "c-no-board",
+   "expected": "stops: no board selection",
+   "result": "ValueError: Empty mounted selection: , (), board=True"
   }
  ]
 }
