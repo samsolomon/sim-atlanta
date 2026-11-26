@@ -710,10 +710,10 @@ function build() {
     props = [sedan];
     for (const part of [rig, sedan]) { part.castShadow = part.receiveShadow = true; scene.add(part); }
     const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
-    const other = roadSemiGeometry({ near: !near }), today = vehicleGeometry('semi');
+    const other = roadSemiGeometry({ near: !near });
     landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? rig.geometry : other).toLocaleString()} (Lab only), `
-      + `traffic ${triangles(near ? other : rig.geometry).toLocaleString()} (City High, street-eye included), today's rigid semi ${triangles(today).toLocaleString()}. Low draws no semis.`;
-    other.dispose(); today.dispose();
+      + `traffic ${triangles(near ? other : rig.geometry).toLocaleString()} (City High, street-eye included; the rigid semi it replaced was 900). Low draws no semis.`;
+    other.dispose();
     landscapeReport.hidden = false;
     document.getElementById('blurb')!.textContent = `A long-hood sleeper tractor in the proportions of a Peterbilt 589 (280 in wheelbase, 72 in sleeper) coupled to a generic 53 ft dry van, ${SEMI_LENGTH.toFixed(1)} m overall, with a midsize sedan behind for scale. No badges, lettering or fleet marks; traffic is illustrative. `;
     const link = document.createElement('a');

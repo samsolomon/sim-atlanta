@@ -34,8 +34,9 @@ const VAN_AXLES = [VAN_REAR_AXLE, VAN_REAR_AXLE + 1.245];
 const LANDING = VAN_FRONT - 3.42;
 
 export const SEMI_FRONT = BUMPER;
-export const SEMI_REAR = VAN_REAR;
-/** Bumper to rear sill, about 22.9 m. */
+/** Rear lamps stand 6 cm proud of the rear frame. */
+export const SEMI_REAR = VAN_REAR - 0.06;
+/** Bumper to rear lamps, 22.97 m (22.91 m to the rear sill). */
 export const SEMI_LENGTH = SEMI_FRONT - SEMI_REAR;
 
 const bodyPaint = '#ffffff',
@@ -53,8 +54,8 @@ const bodyPaint = '#ffffff',
   amber = '#c88c4b',
   van = '#eeede6',
   vanRail = '#b9bebd',
-  vanFrame = '#8c9294',
-  skirt = '#cfd1ce';
+  vanFrame = '#8c9294';
+
 
 type V = number[];
 type Face = { points: V[]; color: string };
@@ -150,7 +151,14 @@ function kit() {
     if (near) round(x, r, z, 'x', [[-0.13, r * 0.918], [-0.1, r], [0.1, r], [0.13, r * 0.918]], tyre, 16);
     else round(x, r, z, 'x', [[-0.13, r], [0.13, r]], tyre, 8);
   }
-  return { faces, panel, skin, box, round, wheel, innerDual };
+  /** A flat lamp facing out along +z (axis 'z') or away from the centre line (axis 'x'). */
+  function lamp(x: number, y: number, z: number, w: number, h: number, axis: 'x' | 'z', color: string) {
+    const pts = axis === 'z'
+      ? [[x - w / 2, y - h / 2, z], [x + w / 2, y - h / 2, z], [x + w / 2, y + h / 2, z], [x - w / 2, y + h / 2, z]]
+      : [[x, y - h / 2, z - w / 2], [x, y - h / 2, z + w / 2], [x, y + h / 2, z + w / 2], [x, y + h / 2, z - w / 2]];
+    panel(pts, color, axis === 'z' ? [x, y, z - 1] : [0, y, z]);
+  }
+  return { faces, panel, skin, box, round, wheel, innerDual, lamp };
 }
 
 type Kit = ReturnType<typeof kit>;
@@ -170,16 +178,21 @@ function tractor(k: Kit, near: boolean) {
   }
   // Frame rails, hood, cab and sleeper.
   for (const s of [-1, 1]) box(s * 0.43, 0.78, (nose + FRAME_TAIL) / 2, 0.13, 0.27, nose - FRAME_TAIL, dark);
-  shell([[1.96, 1.43, 1.06, 2.15], [2.27, 1.4, 1.04, 2.18], [nose - 0.15, 1.3, 1.06, 2.11], [nose - 0.1, 1.24, 1.06, 2.085]], bodyPaint);
-  shell([[CAB_BACK, 2.08, 1.2, 3.01], [1.61, 2.04, 1.2, 3.01], [2.04, 2.02, 1.18, 2.18]], bodyPaint);
+  // Hood about 1.9 m tall, as the dealer side photo reads when scaled by its tyres; the cab's cowl
+  // steps up from it to the windshield base.
+  shell([[1.96, 1.43, 1.06, 1.9], [2.27, 1.4, 1.04, 1.93], [nose - 0.15, 1.3, 1.06, 1.86], [nose - 0.1, 1.24, 1.06, 1.835]], bodyPaint);
+  shell([[CAB_BACK, 2.08, 1.2, 3.01], [1.61, 2.04, 1.2, 3.01], [1.98, 2.02, 1.18, 2.3], [2.04, 2.02, 1.18, 2.2]], bodyPaint);
   panel([[-0.87, 2.88, 1.7], [0.87, 2.88, 1.7], [0.92, 2.22, 2.036], [-0.92, 2.22, 2.036]], wind, [0, 2.4, 1.2]);
   shell(
     [[SLEEPER_REAR, 2.22, 1.05, 3.35], [SLEEPER_REAR + 0.1, 2.24, 1.04, 3.45], [CAB_BACK - 0.3, 2.22, 1.04, 3.45], [CAB_BACK + 0.04, 2.14, 1.09, 3.17]],
     bodyPaint,
   );
   // Grille surround, grille and bumper.
-  box(0, 1.59, nose - 0.055, 1.32, 1.15, 0.12, bright);
-  box(0, 1.6, nose + 0.012, 1.15, 1.0, 0.025, shadow);
+  box(0, 1.38, nose - 0.055, 1.32, 0.96, 0.12, bright);
+  box(0, 1.39, nose + 0.012, 1.15, 0.84, 0.025, shadow);
+  // Vertical slats with three heavier dividers, as on the photographed grille.
+  for (let i = -5; i <= 5; i++) box(i * 0.098, 1.39, nose + 0.031, 0.021, 0.74, 0.018, alloy);
+  for (const x of [-0.28, 0, 0.28]) box(x, 1.39, nose + 0.044, 0.045, 0.78, 0.022, bright);
   // Deep chrome bumper, about 0.42 m tall in the dealer front photo.
   box(0, 0.7, nose, 2.47, 0.42, 0.14, steel);
   for (const s of [-1, 1]) {
@@ -189,12 +202,21 @@ function tractor(k: Kit, near: boolean) {
       wheel(s * 1.032, 0.51, z, s, near);
       innerDual(s * 0.71, 0.51, z, near);
     }
-    // Swept bicycle fenders cover the crown but leave the tyre sidewall exposed.
+    // Full wrap-around front fenders: the crown runs from below the hub in front, over the tyre and
+    // down behind it, with a deep outer face over the top of the sidewall.
     const hub = [s * 1.0, 0.51, STEER];
+    const from = -0.42, to = Math.PI + 0.3;
     for (let i = 0; i < n; i++) {
-      const p = (j: number, x: number, r: number) => [s * x, 0.51 + r * Math.sin((j * Math.PI) / n), STEER + r * Math.cos((j * Math.PI) / n)];
-      panel([p(i, 0.77, 0.66), p(i, 1.24, 0.66), p(i + 1, 1.24, 0.66), p(i + 1, 0.77, 0.66)], bodyPaint, hub);
-      panel([p(i, 1.24, 0.66), p(i, 1.24, 0.595), p(i + 1, 1.24, 0.595), p(i + 1, 1.24, 0.66)], bodyPaint, hub);
+      const a = (j: number) => from + ((to - from) * j) / n;
+      const p = (j: number, x: number, r: number) => [s * x, 0.51 + r * Math.sin(a(j)), STEER + r * Math.cos(a(j))];
+      panel([p(i, 0.74, 0.66), p(i, 1.25, 0.66), p(i + 1, 1.25, 0.66), p(i + 1, 0.74, 0.66)], bodyPaint, hub);
+      panel([p(i, 1.25, 0.66), p(i, 1.25, 0.45), p(i + 1, 1.25, 0.45), p(i + 1, 1.25, 0.66)], bodyPaint, hub);
+      // The low front and rear wraps are seen from inside along the road, so give them an inner face
+      // just inside the outer one (normal toward the hub: `panel` turns it away from a point outside).
+      if (i === 0 || i === n - 1) {
+        const out = [s * 1.0, 0.51 + 3 * Math.sin(a(i + 0.5)), STEER + 3 * Math.cos(a(i + 0.5))];
+        panel([p(i, 0.74, 0.655), p(i, 1.25, 0.655), p(i + 1, 1.25, 0.655), p(i + 1, 0.74, 0.655)], bodyPaint, out);
+      }
     }
     // Headlamp pods on the fenders.
     box(s * 0.992, 1.23, STEER + 0.46, 0.43, 0.21, 0.34, alloy);
@@ -205,6 +227,10 @@ function tractor(k: Kit, near: boolean) {
     box(s * 0.92, 0.89, 1.35, 0.55, 0.48, 0.93, steel);
     for (let i = 0; i < 3; i++) box(s * (1.15 - i * 0.065), 0.59 + i * 0.18, 1.36, 0.2, 0.055, 0.96, bright);
     round(s * 1.056, 0, 0.74, 'y', [[1.05, 0.105], [3.64, 0.105], [3.71, 0.096]], steel, n);
+    // Grab handle, mirror arm and mirror head.
+    box(s * 1.09, 2.08, 0.94, 0.032, 0.46, 0.032, bright);
+    box(s * 1.16, 2.61, 1.74, 0.25, 0.032, 0.035, alloy);
+    box(s * 1.272, 2.57, 1.74, 0.055, 0.35, 0.14, bright);
     if (!near) continue;
     round(s * 1.03, 0, 2.06, 'y', [[1.35, 0.14], [1.42, 0.18], [2.13, 0.18], [2.2, 0.14]], bright);
     // Sleeper service door with inset window and latch, door seam, mirror arm and head.
@@ -212,9 +238,6 @@ function tractor(k: Kit, near: boolean) {
     box(s * 1.14, 2.03, -0.49, 0.025, 1.32, 0.5, bodyPaint);
     box(s * 1.157, 2.43, -0.49, 0.016, 0.365, 0.405, glass);
     box(s * 1.155, 1.67, -0.64, 0.018, 0.108, 0.065, dark);
-    box(s * 1.09, 2.08, 0.94, 0.032, 0.46, 0.032, bright);
-    box(s * 1.16, 2.61, 1.74, 0.25, 0.032, 0.035, alloy);
-    box(s * 1.272, 2.57, 1.74, 0.055, 0.35, 0.14, bright);
     box(s * 1.05, 0.62, FRAME_TAIL + 0.25, 0.49, 0.6, 0.05, rubber);
   }
   // Slotted fifth wheel on slide rails, under the trailer's kingpin.
@@ -228,19 +251,20 @@ function tractor(k: Kit, near: boolean) {
         [s * 0.3, 0, SEMI_KINGPIN],
       );
   }
+  // Five amber cab-roof markers: small boxes close up, forward-facing quads far off.
+  for (const x of [-0.74, -0.36, 0, 0.36, 0.74])
+    if (near) box(x, 3.018, 1.52, 0.073, 0.048, 0.12, amber);
+    else k.lamp(x, 3.018, 1.58, 0.073, 0.048, 'z', amber);
   // Catwalk between the sleeper and the fifth wheel.
   box(0, 0.999, -1.66, 0.99, 0.08, 0.94, alloy);
   if (near) {
     for (let i = -5; i <= 5; i++) box(i * 0.091, 1.046, -1.66, 0.019, 0.014, 0.88, shadow);
-    for (let i = -5; i <= 5; i++) box(i * 0.098, 1.59, nose + 0.031, 0.021, 0.89, 0.018, alloy);
-    // Vertical slats with three heavier dividers, as on the photographed grille.
-    for (const x of [-0.28, 0, 0.28]) box(x, 1.59, nose + 0.044, 0.045, 0.92, 0.022, bright);
-    for (const x of [-0.74, -0.36, 0, 0.36, 0.74]) box(x, 3.018, 1.52, 0.073, 0.048, 0.12, amber);
   }
 }
 
 function dryVan(k: Kit, near: boolean) {
   const { box, wheel, innerDual } = k;
+  // The box takes the van paint kind: white unless a traffic slot picks one of the plain colours.
   const half = VAN_WIDTH / 2,
     mid = (VAN_FRONT + VAN_REAR) / 2,
     h = VAN_TOP - VAN_FLOOR;
@@ -265,9 +289,11 @@ function dryVan(k: Kit, near: boolean) {
       wheel(s * 1.035, 0.51, z, s, near);
       innerDual(s * 0.713, 0.51, z, near);
     }
-    // Aero skirts between the landing gear and the tandem, and mud flaps behind it.
-    box(s * (half - 0.04), 0.68, (LANDING - 0.5 + VAN_AXLES[1] + 0.9) / 2, 0.03, 0.76, LANDING - 0.5 - VAN_AXLES[1] - 0.9, skirt);
+    // Mud flaps behind the tandem. No side skirts: dropped at review as uncommon.
     box(s * 0.9, 0.55, VAN_AXLES[0] - 0.65, 0.55, 0.62, 0.03, rubber);
+    // Amber clearance lamps at the top front corners and a mid-ship side marker, lit at night.
+    k.lamp(s * (half - 0.05), VAN_TOP - 0.05, VAN_FRONT + 0.012, 0.08, 0.05, 'z', amber);
+    k.lamp(s * (half + 0.012), VAN_FLOOR + 0.02, mid, 0.1, 0.05, 'x', amber);
     // Landing gear leg and sand shoe.
     box(s * 0.85, 0.72, LANDING, 0.11, 0.92, 0.11, vanFrame);
     if (near) {
@@ -275,9 +301,8 @@ function dryVan(k: Kit, near: boolean) {
       box(s * 0.85, 1.0, LANDING + 0.13, 0.05, 0.05, 0.14, dark);
       // Composite panel seams, side marker lamps and the door hinges.
       for (let i = 1; i < 13; i++) box(s * (half + 0.004), (VAN_FLOOR + VAN_TOP) / 2, VAN_FRONT - (i * VAN_LENGTH) / 13, 0.008, h - 0.2, 0.04, vanRail);
-      for (const z of [VAN_FRONT - 0.3, mid, VAN_REAR + 0.3]) box(s * (half + 0.012), VAN_FLOOR + 0.02, z, 0.02, 0.05, 0.1, z === VAN_REAR + 0.3 ? red : amber);
-      // Clearance lamps: amber at the top front corners, red at the top rear corners.
-      box(s * (half - 0.05), VAN_TOP - 0.05, VAN_FRONT + 0.012, 0.08, 0.05, 0.02, amber);
+      for (const z of [VAN_FRONT - 0.3, VAN_REAR + 0.3]) box(s * (half + 0.012), VAN_FLOOR + 0.02, z, 0.02, 0.05, 0.1, z === VAN_REAR + 0.3 ? red : amber);
+      // Red clearance lamps at the top rear corners.
       box(s * (half - 0.05), VAN_TOP - 0.2, rear - 0.03, 0.06, 0.05, 0.02, red);
       for (const y of [1.65, 2.6, 3.55]) box(s * (half - 0.22), y, rear - 0.035, 0.12, 0.1, 0.02, alloy);
     }
@@ -289,9 +314,11 @@ function dryVan(k: Kit, near: boolean) {
   }
 }
 
-/** Kinds from colour: paint takes the instance colour, lamps glow at night, the rest is fixed. */
+/** Kinds from colour: paint takes the instance colour, lamps glow at night (amber is kind 5), the van
+ * box is kind 6 (white, or a traffic slot's van colour), and the rest is fixed. */
 function kindOf(color: string) {
-  return color === bodyPaint ? 0 : color === lens ? 1 : color === red ? 2 : color === glass || color === wind ? 3 : 4;
+  return color === bodyPaint ? 0 : color === lens ? 1 : color === red ? 2 : color === glass || color === wind ? 3
+    : color === amber ? 5 : color === van ? 6 : 4;
 }
 
 /**

@@ -10,8 +10,8 @@ const triangles = (near: boolean) => {
 };
 
 describe('road semi', () => {
-  it('is a 589-proportioned sleeper tractor and 53 ft van, about 22.9 m overall', () => {
-    expect(SEMI_LENGTH).toBeCloseTo(22.91, 1);
+  it('is a 589-proportioned sleeper tractor and 53 ft van, 22.97 m to the rear lamps', () => {
+    expect(SEMI_LENGTH).toBeCloseTo(22.97, 2);
     const g = roadSemiGeometry();
     g.computeBoundingBox();
     const box = g.boundingBox as Box3;
@@ -25,7 +25,8 @@ describe('road semi', () => {
   it('keeps the traffic form within its triangle budget', () => {
     const near = triangles(true),
       far = triangles(false);
-    expect(far).toBeLessThan(1400);
+    // 1,370 at the first review, plus Sam's grille slats (+168), mirrors (+72) and amber lamps.
+    expect(far).toBeLessThan(1700);
     expect(near).toBeGreaterThan(far * 2);
   });
 
