@@ -83,6 +83,7 @@ A Studio dry run at the A16 viewport (fps there is meaningless, but counts and m
 
 - **Ceiling:** about 10% above the 2026-11-23 measurement, enforced as a regression guard.
 - **Target:** the goal, reported but not enforced. When a cut reaches a target, lower the ceiling.
+- **Reserve** (some entries): headroom under the ceiling that features may not spend (Low geometry 25 MB, High programs 10, High night calls 40; Sam, 2026-11-26). A figure above ceiling − reserve prints `IN RESERVE`. It doesn't fail the check; while a budget is inside its reserve, a PR that adds to it must offset that in the same PR (`docs/review-charter.md`, Budget reserves).
 
 `scripts/perf-budget.mjs` builds `web/`, serves it, runs both tiers in headless Chrome, and fails if any ceiling is exceeded.
 The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and the A16's ready time come only from the device runs.

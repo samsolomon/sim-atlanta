@@ -38,6 +38,28 @@ automatically. Edit them there.
 - The Studio is for timed performance and GPU work. Ask its integrator for the window before a
   timed run.
 
+## Budget reserves
+
+Sam adopted these on 2026-11-26 (`docs/scaling-plan.md` §4). Each is headroom kept under a
+`test:perf` ceiling that features may not spend. Only Sam releases it.
+
+| Budget | Ceiling | Reserve | Room ends at |
+| --- | ---: | ---: | ---: |
+| Low geometry | 190 MB | 25 MB | 165 MB |
+| High programs | 100 | 10 | 90 |
+| High night calls | 630 | 40 | 590 |
+
+They live as `reserve` next to each ceiling in `web/src/core/perf-budget.json`. `test:perf` marks a
+figure inside its reserve `IN RESERVE` and lists them at the end. It doesn't fail on them, because
+the rule compares a PR with its base:
+
+- **While a budget is inside its reserve, a PR that adds to it must remove at least as much in
+  the same PR.** This includes building skins already in the queue.
+- The PR body gives the before and after numbers for each affected budget, measured from the
+  same `test:perf` setup on the base and the head.
+- A reviewer reports an addition without an offset as a finding (cost skew, Significant).
+- Once a budget is back above its reserve, a PR may spend down to the reserve, but not into it.
+
 ## Reviewing with Grok
 
 Run it read-only, from your worktree, with the diff in a file **inside the worktree** (its plan
