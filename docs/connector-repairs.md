@@ -95,6 +95,26 @@ The results:
 
 Matrices: `c-floors/cameras/`.
 
+### Taper follow-up: MLK and Baker are stacked ramps (November 26)
+
+**The phase-1 reading was reversed.** The 22 "real departures" are not lower lanes pulled up toward a deck. They are **elevated ramps pulled down** by the covered-pavement taper. Lidar sampled along each way's own centreline (USGS 2019, 2.4 m disks):
+
+| Way | Role | Class-2 / class-17 along the way (NAVD88 m) | Drawn lane before |
+|---|---|---|---|
+| 436808889, 755543582 (+ 44698161, 755543580) | MLK SB ramps climbing to the MLK deck on their own structure | 309.0 → 312.2 m. Class-2 and class-17 coincide along the whole length | 306.3–311.2 m (1–6 m low) |
+| 38974051 | Baker exit, continuing NB flyover 38974028 (300.2–301.1 m) into the Baker/Piedmont junction at street level | 299.7–300.6 m | 294.1–297.7 m, under the drawn approach at 300.7 m |
+
+**MLK structure extent (crossing row 18).** The drawn MLK deck (outline 1278959968) spans z 597–651 and is correct. North of it, a 12–16 m wide diagonal class-17 band from about (550, 595) to (670, 550) is the ramp structure above, not an extension of the MLK deck. OSM tags only 24.5 m of it as bridge (link [561.1, 584.44] → [549.77, 605.77]), and the City draws all of it on the board. At Baker, the class-17 returns continue about 14 m south of junction outline 953207661, along the exit ramp.
+
+**Why no fix ships here.** A trial rule in `underpass-floors.py` released those ramp nodes back to the raw grid, guarded by the way's own class-2. It put 21 of the 22 nodes within 0.14 m of their class-2 on both tiers, kept the swept-vehicle and Civic Center tests green, and left north- and south-band unchanged. But a narrow raised ramp on the 5 m board becomes a ridge with sawtooth sides beside the tapered ground, which looks worse than today's smooth but low lanes:
+- [current](log/ui/connector-repairs/taper-mlk-baker/mlk-ramps-current-high.jpg)
+- [board-only trial](log/ui/connector-repairs/taper-mlk-baker/mlk-ramps-board-only-trial-high.jpg)
+- [trial generator, for reference](log/ui/connector-repairs/taper-mlk-baker/underpass-floors-upper-rule-trial.py.txt)
+
+**B2 register, November 26:** [Stacked-ramp register](connector-stacked-ramps.md) freezes the movements, own profiles and crossing order. **B2 step 3** draws the MLK SB ramps on their own profiles ([record](connector-stacked-ramps.md#step-3-the-mlk-sb-ramp-tree)). The lane under the Baker approach (plan item 3) is parked.
+
+**Plan (with B, as the stacked multi-level ramp primitive).** Draw these ramps as lidar-profiled decks (bridge runs with `deckNavd88M` from their class-2 and class-17 centreline), as Sweet Auburn does, so they ride over the tapered lower ground on structure with fascia. Then apply the trial rule, or simply keep the taper, beneath them. Freeze the movement and elevation register first (ways above, with the profiles in the table and in `candidates-lidar.json`). The same primitive covers B's flyovers 38974028/34, which this exit continues, and the floating north-corner ramps.
+
 ## A. Sweet Auburn (priority 2)
 
 **Site.** The Connector viaduct over Auburn Ave (z ≈ −180), Edgewood Ave (z ≈ −58) and Leonard Tate St, on the `auburn` board (x 1000–1800, z −520..280).

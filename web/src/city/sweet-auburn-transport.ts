@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import decks from '../../../pipeline/prototypes/connector-footprint/sweet-auburn-decks.json';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import { deckWeightAt, laneGain, rampSpans } from '../terrain/ramp-decks';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
 
@@ -16,7 +17,11 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
   const runs: TransportRun[] = [];
   const roads = context.roads.map(road => {
     if (road.tunnel || road.pts.length < 2) return road;
-    const spans = road.cls === 'motorway' && profiles.get(wayKey(road.pts[0], road.pts.at(-1)!));
+    // Stacked ramps (ramp-decks.json) are registered on whole OSM ways, so a board
+    // road clipped at a seam still finds its own measured spans.
+    const surveyed = road.cls === 'motorway' && profiles.get(wayKey(road.pts[0], road.pts.at(-1)!));
+    const ramp = road.cls === 'motorway' && !surveyed;
+    const spans = surveyed || (ramp && rampSpans(road.pts));
     const base = { cls: road.cls, name: road.name, sub: road.sub ?? undefined };
     if (!spans) {
       if (road.bridge) runs.push({ ...base, pts: road.pts, kind: 'bridge' });
@@ -42,7 +47,11 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
         const [a,b] = [samples[k-1], samples[k]];
         return a[1] + (b[1]-a[1]) * (s-station(a[0])) / (station(b[0])-station(a[0]));
       });
-      runs.push({ ...base, pts, kind: deckNavd88M || road.bridge ? 'bridge' : 'ground', deckNavd88M });
+      // Ramp tie rows (ramp-decks.json) meet the drawn terrain.
+      const deckWeight = samples?.some(r => r[2]) ? stations.map(s => deckWeightAt(samples, s)) : undefined;
+      const widenInto = ramp && deckNavd88M ? laneGain(pts) : undefined;
+      runs.push({ ...base, pts, kind: deckNavd88M || road.bridge ? 'bridge' : 'ground', deckNavd88M,
+        ...(deckWeight && { deckWeight }), ...(widenInto && { widenInto }) });
     }
     let last = 0;
     for (const span of spans) {

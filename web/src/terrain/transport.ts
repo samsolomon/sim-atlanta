@@ -223,6 +223,11 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
     const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    // A ramp deck ending where OSM adds a lane (ramp-decks.ts laneGain) widens
+    // across its length to the next ribbon's section at the joint, so the wider
+    // deck's slab end does not stand over open air. Shoulders keep their width.
+    const gain = ribbon && profile && run.widenInto ? matchRibbon(end, run.widenInto, run.sub === 'link') : undefined;
+    const gainEnds = gain && ribbon !== gain ? [sectionAt(ribbon!, alongOn(ribbon!, end).s), sectionAt(gain, alongOn(gain, end).s)] : undefined;
     const width = run.crossSection?.width ?? mapped;
     // An approach carries the inventory deck width at the abutment and blends
     // to the mapped street width where its profile weight reaches bare earth.
@@ -260,9 +265,27 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     function lateral(s:number,off:number): P2 {
       const p=line.at(s);
-      if (!ribbon) return [p.x+off*p.nx,p.z+off*p.nz];
+      if (!ribbon) return onSeam(s,p.x+off*p.nx,p.z+off*p.nz);
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
-      return stripePoint(row,.5-off/travelWidth);
+      if (!gainEnds) return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+      const [mine, next] = gainEnds, w = s / line.length;
+      const inner: P2 = [row.inner[0] + w*(next.inner[0]-mine.inner[0]), row.inner[1] + w*(next.inner[1]-mine.inner[1])];
+      const outer: P2 = [row.outer[0] + w*(next.outer[0]-mine.outer[0]), row.outer[1] + w*(next.outer[1]-mine.outer[1])];
+      const travel = Math.hypot(outer[0]-inner[0], outer[1]-inner[1]), shoulder = mapped - travelWidth;
+      return onSeam(s,...stripePoint({ s: row.s, inner, outer }, .5 - off*(travel+shoulder)/(travelWidth+shoulder)/travel));
+    }
+    // A profiled deck that crosses a board seam obliquely ends on the seam itself:
+    // each end corner slides along the run onto the boundary, so the neighbouring
+    // board's half meets it edge to edge. Clamping a perpendicular end row left a
+    // 0.6 m wedge on each side (the Baker flyovers at x = 1000).
+    function onSeam(s:number,px:number,pz:number): P2 {
+      if (!profile || (s!==0 && s!==line.length)) return [px,pz];
+      const e = s===0 ? start : end;
+      if (!onEdge(e)) return [px,pz];
+      const p=line.at(s), across = e[0]===bounds.minX || e[0]===bounds.maxX;
+      const step = across ? (e[0]-px)/p.nz : (e[1]-pz)/-p.nx;
+      if (!Number.isFinite(step) || Math.abs(step) > 6) return [px,pz];
+      return across ? [e[0], pz-step*p.nx] : [px+step*p.nz, e[1]];
     }
     // A road deck that lands on the board, not on another deck or the board's edge,
     // follows the board across its width over the last seam (keeping its 12 cm tread).
