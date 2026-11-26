@@ -111,6 +111,8 @@ Matrices: `c-floors/cameras/`.
 - [board-only trial](log/ui/connector-repairs/taper-mlk-baker/mlk-ramps-board-only-trial-high.jpg)
 - [trial generator, for reference](log/ui/connector-repairs/taper-mlk-baker/underpass-floors-upper-rule-trial.py.txt)
 
+**B2 register, November 26:** [Stacked-ramp register](connector-stacked-ramps.md) freezes the movements, own profiles and crossing order.
+
 **Plan (with B, as the stacked multi-level ramp primitive).** Draw these ramps as lidar-profiled decks (bridge runs with `deckNavd88M` from their class-2 and class-17 centreline), as Sweet Auburn does, so they ride over the tapered lower ground on structure with fascia. Then apply the trial rule, or simply keep the taper, beneath them. Freeze the movement and elevation register first (ways above, with the profiles in the table and in `candidates-lidar.json`). The same primitive covers B's flyovers 38974028/34, which this exit continues, and the floating north-corner ramps.
 
 ## A. Sweet Auburn (priority 2)

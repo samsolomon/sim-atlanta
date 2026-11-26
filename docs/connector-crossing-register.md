@@ -45,6 +45,8 @@ These spots were measured on PR #682 head c8e3e34e, both tiers, at 14:00 EST. Fu
 | 4 | D. Capitol Gateway | Row 1 above, re-measured on both tiers: walk 755543611 at 196.768 mm; joint +74.575 pp with a 158.94 mm step. Also raw DEM point spikes on the cover top at (375, 760) and (460, 760). | [City](http://localhost:5173/?view=city&cam=357,777,-22,56,470) |
 | 5 | E. I-20 / Connector | Rows 2–3 and the flyovers below; no new measurement. | [City](http://localhost:5173/?view=city&cam=190,1018,35,52,470) |
 
+**Stacked ramps.** [Movement and elevation register](connector-stacked-ramps.md): 62 Connector ways and 22 crossings, 18 ordered by tracked lidar height. It includes the three-level stack at (1115.8, −591.0).
+
 ## Directed flyovers
 
 These OSM axes cross a lower Connector axis in plan and have an upper layer or bridge tag. A source way can occupy only part of a physical structure. Use inventory and imagery to group consecutive spans, confirm order and locate piers before design. Each row needs a full-width signed underside check and a through-vehicle replay.
