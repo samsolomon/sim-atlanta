@@ -17,7 +17,9 @@ Landmark skin `web/src/city/the-peach.ts`. It replaces `osm:way:265351172` ("The
 **Dimensions.** The slab and core use the mapped part heights: 39.6 m and 43.2 m, from 12 storeys at 3.6 m. The parking decks are 14.4–18 m. The rest is estimated:
 - Tower top 47.2 m, about a storey above the roof.
 - Mast to 49.5 m, with the ring platform 11.6 m across at 49.5 m.
-- Peach about 8.6 m across, centred about 53 m up, with a stem and leaf to about 59 m.
+- Peach about 8.2 m across and 9.4 m tall. Its lower third sits inside the ring, with a stem and leaf to about 59 m.
+
+**Peach (revised after Sam's review).** It follows the sculpture's vertical metal slices: 12 solid gores on a peach profile, with thin dark ribs on the slice edges. The peach is slightly taller than wide, with a point at the bottom. A suture groove runs down the Peachtree-facing side. Each slice is shaded a step lighter or darker than its neighbour. The colour grades from golden yellow to a red-pink blush toward Peachtree, and the ad wrap is a thin plain cream band.
 
 **Not drawn.** The ad wrap is a plain cream band with no lettering, and the rooftop and east-facade advertising signs are left blank. No logos appear.
 
@@ -26,8 +28,10 @@ Landmark skin `web/src/city/the-peach.ts`. It replaces `osm:way:265351172` ("The
 **Cost.** Measured from the matched normal camera, 1440×720, against the same camera with the skin switched off:
 | Tier | Draw calls | Triangles |
 |---|---|---|
-| High | +2, day and night | +2,904 |
-| Low | +2, day and night | +3,018 |
+| High | +2, day and night | +3,188 |
+| Low | +2, day and night | +3,302 |
+
+The sliced peach added 284 triangles over the first round (`b028b997`). Its cameras and counters are in [`cameras-sliced.json`](cameras-sliced.json).
 
 The landmark draws alone in its batch cell. See [`cameras.json`](cameras.json).
 

@@ -1,4 +1,4 @@
-import { CylinderGeometry, IcosahedronGeometry, ShapeUtils, Vector2 } from 'three';
+import { Color, CylinderGeometry, ShapeUtils, Vector2 } from 'three';
 import { surfaces } from '../materials';
 import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
@@ -25,7 +25,7 @@ const PARTS = {
 };
 const SLAB = 39.6, CORE = 43.2, DECK = [18, 14.4, 14.4], STOREY = 3.6;
 const TOWER = 47.2; // tower top, about a storey above the roof
-const PEACH_R = 4.3; // a peach about 8.6 m across, inside the 11.6 m ring
+const PEACH_R = 4.1; // a peach about 8.2 m across and 9.4 m tall, inside the 11.6 m ring
 
 const white = '#eceae3', flute = '#d6d3cb', rail = '#f4f2ec', glass = '#3f5357', deck = '#4a4d51',
   deckEdge = '#666a6e', metal = '#b9bcbc', band = '#e6e0d2';
@@ -114,22 +114,59 @@ export function createThePeach(buildings: VBuilding[], site: VBuilding, grid: Gr
   body.addGeometry(new CylinderGeometry(R - .6, .7, 2.1, 16, 1, true).translate(cx, deckY - 1.05, cz), '#9fa3a4');
   // Mirrored copy: the same cone wound inward, so its inside face draws too.
   body.addGeometry(new CylinderGeometry(R - .6, .7, 2.1, 16, 1, true).scale(-1, 1, 1).translate(cx, deckY - 1.05, cz), '#9fa3a4');
-  // The peach: a faceted sphere, slightly squat, golden below and blushing red toward Peachtree.
-  const py = deckY + PEACH_R * .82;
-  const ico = new IcosahedronGeometry(1, 1);
-  const pos = ico.getAttribute('position');
-  const v = (i: number) => [cx + pos.getX(i) * PEACH_R, py + pos.getY(i) * PEACH_R * .93, cz + pos.getZ(i) * PEACH_R];
-  for (let i = 0; i < pos.count; i += 3) {
-    const nx = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3, ny = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
-    const nz = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3;
-    const color = ny < -.55 ? '#efb45c' : (-nx * .55 + nz * .45) > .25 ? '#d8513f' : '#f08f4d';
-    body.tri(v(i), v(i + 1), v(i + 2), color);
+  // The peach, after the sculpture's vertical metal slices: 12 solid gores on a peach profile,
+  // a little taller than wide, with a point at the bottom and a suture groove down the
+  // Peachtree-facing side. Gold grades to a red-pink blush toward Peachtree; each slice is a
+  // shade lighter or darker than its neighbour, so the ribs read up close.
+  const G = 12, H = PEACH_R * 1.06;
+  const profile: [y: number, r: number][] = [[1, .1], [.88, .5], [.6, .84], [.24, .99], [-.12, .99],
+    [-.48, .85], [-.8, .55], [-1.02, .18], [-1.14, 0]];
+  const py = deckY - 1.2 + H * 1.14; // the lower third sits inside the ring, as in the 2016 view
+  const blush: P2 = [-.77, .63], suture = Math.atan2(blush[1], blush[0]);
+  const gold = new Color('#f1cf68'), peach = new Color('#f3a878'), red = new Color('#d83b62'), tint = new Color();
+  const point = (k: number, g: number, scale = 1): number[] => {
+    const [y, r] = profile[k], phi = suture + g / G * 2 * Math.PI;
+    const groove = g % G === 0 && k > 0 && k < profile.length - 1 ? .8 : 1;
+    return [cx + Math.cos(phi) * r * PEACH_R * groove * scale, py + y * H, cz + Math.sin(phi) * r * PEACH_R * groove * scale];
+  };
+  // Emits a triangle wound to face away from the peach's axis.
+  const outward = (a: number[], b: number[], c: number[], color: string) => {
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    const m = [(a[0] + b[0] + c[0]) / 3 - cx, (a[1] + b[1] + c[1]) / 3 - py, (a[2] + b[2] + c[2]) / 3 - cz];
+    if (n[0] * m[0] + n[1] * m[1] + n[2] * m[2] >= 0) body.tri(a, b, c, color); else body.tri(a, c, b, color);
+  };
+  for (let g = 0; g < G; g++) {
+    const mid = suture + (g + .5) / G * 2 * Math.PI;
+    const facing = Math.cos(mid) * blush[0] + Math.sin(mid) * blush[1];
+    for (let k = 0; k < profile.length - 1; k++) {
+      const y = (profile[k][0] + profile[k + 1][0]) / 2;
+      const t = Math.min(1, Math.max(0, .45 + .55 * facing + .18 * y));
+      if (t < .5) tint.lerpColors(gold, peach, t / .5); else tint.lerpColors(peach, red, (t - .5) / .5);
+      tint.offsetHSL(0, 0, g % 2 ? -.025 : .02);
+      const color = '#' + tint.getHexString();
+      const a = point(k, g), b = point(k, g + 1), c = point(k + 1, g + 1), d = point(k + 1, g);
+      outward(a, b, c, color);
+      if (k < profile.length - 2) outward(a, c, d, color);
+    }
   }
-  ico.dispose();
-  // The ad wrap at the waist, drawn as a plain cream band with no lettering.
-  body.addGeometry(new CylinderGeometry(PEACH_R * 1.01, PEACH_R * 1.01, 1.5, 16, 1, true).translate(cx, py, cz), band);
+  // Thin dark ink ribs on the slice edges (along every band, so they stay on the surface).
+  for (let g = 0; g < G; g++) {
+    const phi = suture + g / G * 2 * Math.PI, tx = -Math.sin(phi) * .06, tz = Math.cos(phi) * .06;
+    for (let k = 0; k + 1 < profile.length; k++) {
+      const a = point(k, g, 1.008), b = point(k + 1, g, 1.008);
+      outward([a[0] - tx, a[1], a[2] - tz], [a[0] + tx, a[1], a[2] + tz], [b[0] + tx, b[1], b[2] + tz], '#8c4a3a');
+      outward([a[0] - tx, a[1], a[2] - tz], [b[0] + tx, b[1], b[2] + tz], [b[0] - tx, b[1], b[2] - tz], '#8c4a3a');
+    }
+  }
+  // The ad wrap at the waist, drawn as a thin plain cream band with no lettering.
+  for (let g = 0; g < G; g++) {
+    const at = (gg: number, dy: number) => { const p = point(3, gg, 1.02); return [p[0], p[1] + dy, p[2]]; };
+    outward(at(g, -.3), at(g + 1, -.3), at(g + 1, .3), band);
+    outward(at(g, -.3), at(g + 1, .3), at(g, .3), band);
+  }
   // Stem and one leaf on top.
-  const crown = py + PEACH_R * .93;
+  const crown = py + H;
   body.addGeometry(new CylinderGeometry(.18, .28, 1.1, 5).translate(cx, crown + .45, cz), '#5b4130');
   const leaf = [[cx, crown + .9, cz], [cx + 1.6, crown + 1.7, cz + .7], [cx + 3.4, crown + 1.3, cz + .3], [cx + 1.7, crown + .8, cz - .6]];
   body.quad(leaf[0], leaf[1], leaf[2], leaf[3], '#5f8a3c');
