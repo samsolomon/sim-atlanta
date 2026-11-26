@@ -9,18 +9,12 @@ city-view Claude.
 |---|---|---|
 | Performance architecture plan | `docs/perf-architecture-plan.md` on `samsolomon/perf-architecture` (7355072d), evidence in `docs/log/perf-architecture/` | Sam answered §7 (recorded there). No PR yet: it is a plan branch. |
 | iPhone traffic regression (release 17) | #688, merged as 068b32ed | Root cause: `deckAt` scanned every tread triangle of a run per sample. Now an 8 m tread index, proven identical at tolerance 0. Phone: Connector 13 → 1.7 ms, 18 → 23.5 fps. The traffic gate is in `perf-budget.json` (low). |
+| Far board, version A (landmarks kept) | #613, merged as fb118c6b (release 19) | Generic buildings and houses as boxes past 15 km (Low), drawn with the facades' material on each footprint, landmarks untouched. iPhone 23.4 → about 26 fps. Accepted: generic window positions reshuffle at the switch (density and tone match). |
 | Seam program fold | #696, merged as feb26b51 (release 19) | The Station seam fragments and R16 seam buildings take the perimeter clip. Programs: Low 83 → 80, High 98 → 93 (R16 view 87 → 84, 107 → 101). |
 
 ## In progress
 
-**#613 far board, version A (landmarks kept): head 4f97f653 on main 6c5aa4e6, for release 19.**
-- `pnpm test` and build pass. Stills and zoom videos are in `docs/log/far-board-v2/`.
-- iPhone: 23.4 → about 26 fps (boxed landmarks gave 36.2).
-- Waiting on Grok (via the coordinator) and `test:perf` (the integrator has it queued third).
-- Generic boxes draw with the generic buildings' material (`styledBoxMesh`). The wall style is chosen
-  by area (`dominantWallStyle`).
-
-**C (decided follow-up): one far mesh per area for plain landmark batches.** Design, not started:
+**C (next): one far mesh per area for plain landmark batches.** Builds on #613 (main fb118c6b). Design, not started:
 - **Where:** inside `materials/landmark-batch.ts`. Add `batches.buildAreaFar()`, built after `farReady`,
   and `batches.setAreaFar(on)`, called from model.ts's `showFar` next to the box mesh.
 - **What merges:** a `DayGroup` merges when its group is alike at every night probe (no lit-window
