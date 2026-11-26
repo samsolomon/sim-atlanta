@@ -495,6 +495,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.
   let veryFarGeometry: THREE.BufferGeometry | null = null;
   let veryFarQueued = false;
+  /** The near ground as it was, drawn in its place while holdGround holds the board. */
+  let held: ReturnType<GroundSurface['hold']> | null = null;
   const bb = grid.manifest.bounds;
   let far = false, veryFar = false, farHouses = false, disposed = false;
   yield 'far ground';
@@ -652,6 +654,26 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
     /** carve as a build that yields while the ground re-tessellates (sliced section builds). */
     *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); } },
+    /**
+     * Draw the near ground as it is now while carves rebuild it: for a sliced mount that carves a
+     * board already on screen. `release` shows the carved ground, in the frame the things standing
+     * on it appear; `revert` undoes those carves. Either ends the hold; later calls do nothing.
+     */
+    holdGround() {
+      if (held) throw Error('This board is already held');
+      const hold = held = mesh.hold(), carves = carved.length;
+      if (board.geometry === nearGeometry) board.geometry = hold.shown;
+      const end = () => {
+        if (board.geometry === hold.shown) board.geometry = nearGeometry;
+        held = null;
+        hold.drop();
+        groundLodChanged = true;
+      };
+      return {
+        release() { if (held === hold) end(); },
+        revert() { if (held !== hold) return; hold.revert(); carved.length = carves; end(); },
+      };
+    },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
     /**
@@ -678,7 +700,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         veryFar = nextVery;
         let replaced: THREE.BufferGeometry | null = null;
         if (pendingFar && farGeometry) { replaced = farGeometry; farGeometry = pendingFar; pendingFar = null; }
-        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : nearGeometry;
+        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : held?.shown ?? nearGeometry;
         if (replaced && replaced !== board.geometry) replaced.dispose();
         groundLodChanged = true;
       }
@@ -707,6 +729,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       // The traverse disposed whichever ground is attached; release the others.
       disposed = true;
       for (const g of [nearGeometry, farGeometry, veryFarGeometry, pendingFar]) if (g && g !== board.geometry) g.dispose();
+      // The traverse may have disposed a held ground; the surface's own buffers went with nearGeometry.
+      held?.drop();
+      held = null;
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();

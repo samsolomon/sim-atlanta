@@ -18,6 +18,8 @@ export type NorthRowMount = ReturnType<typeof mountNorthRowSteps> extends Build<
 
 export function* mountNorthRowSteps(north: TrafficArea, station: TrafficArea, quality: TerrainQuality) {
   const seam = yield* mountSeamBuildingsSteps(north, station, quality);
+  // A step that throws leaves the Station, which is on screen, as it was.
+  try {
   const structures = new Group();
   const sides = yield* freewaySidesSteps((x, z) => north.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
   yield 'freeway sides';
@@ -32,4 +34,5 @@ export function* mountNorthRowSteps(north: TrafficArea, station: TrafficArea, qu
   structures.add(sides, supports, mountMayson(), rails, norcross.mesh);
   north.group.add(structures);
   return { structures, rails, freightRailhead: norcross.freightRailhead, commit: seam.commit, disposeBuildings: seam.dispose };
+  } catch (error) { seam.dispose(); throw error; }
 }

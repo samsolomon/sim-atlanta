@@ -88,6 +88,36 @@ export class GroundSurface {
     yield* this.buildSteps();
   }
 
+  /**
+   * Keep the mesh as it is now to draw in this surface's place while later carves rebuild it
+   * (for a board already on screen). Sampling follows the carves at once. `shown` shares the
+   * current buffers, so nothing is copied; `revert` puts them and the yields back, and `drop`
+   * frees what only `shown` still holds, once nothing draws it.
+   */
+  hold() {
+    const shown = new THREE.BufferGeometry();
+    for (const [name, attribute] of Object.entries(this.geometry.attributes)) shown.setAttribute(name, attribute);
+    shown.setIndex(this.geometry.index);
+    const { yields, starts, blockCols } = this;
+    return {
+      shown,
+      revert: () => {
+        this.yields = yields;
+        this.starts = starts;
+        this.blockCols = blockCols;
+        this.geometry.boundingBox = this.geometry.boundingSphere = null;
+        for (const [name, attribute] of Object.entries(shown.attributes)) this.geometry.setAttribute(name, attribute);
+        this.geometry.setIndex(shown.index);
+      },
+      drop: () => {
+        // Disposing a geometry frees its buffers, so first let go of those the surface still draws.
+        for (const [name, attribute] of Object.entries(shown.attributes)) if (this.geometry.getAttribute(name) === attribute) shown.deleteAttribute(name);
+        if (shown.index === this.geometry.index) shown.setIndex(null);
+        shown.dispose();
+      },
+    };
+  }
+
   private build() { runSync(this.buildSteps()); }
 
   private *buildSteps() {
