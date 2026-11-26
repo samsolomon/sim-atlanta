@@ -233,54 +233,62 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     let work = 0;
     let blockSlots: ReturnType<typeof slotPlanes>[] | undefined;
     let blockYields: ReturnType<typeof yieldPlanes>[] | undefined;
-    // A triangle with openings or footprints to clip against returns that work as a build: one
-    // triangle can meet hundreds of footprints, so it pauses between them.
+    // One triangle can meet hundreds of footprints; past this many in its block, clipping it is a
+    // build of its own that pauses between them. Fewer are clipped at once, at no generator's cost.
+    const CROWDED = 64;
     const tri = (a: number, b: number, c: number) => {
       const ia = vertex(a), ib = vertex(b), ic = vertex(c);
       if (!blockSlots && !blockYields) {
         indices.push(ia, ib, ic);
         return undefined;
       }
-      return clipTri(ia, ib, ic);
-    };
-    function* clipTri(ia: number, ib: number, ic: number): Build<void> {
       let faces = [[ia, ib, ic]];
       for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
-      for (const y of blockYields ?? []) {
+      if (blockYields && blockYields.length > CROWDED) return clipCrowded(faces, blockYields, ia, ib, ic);
+      for (const y of blockYields ?? []) faces = clipBy(faces, y, ia, ib, ic);
+      for (const f of faces) emit(f);
+      return undefined;
+    };
+    function* clipCrowded(faces: number[][], footprints: ReturnType<typeof yieldPlanes>[], ia: number, ib: number, ic: number): Build<void> {
+      for (const y of footprints) {
         if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
-        work += faces.length;
-        // splitConvex can allocate temporary intersections before rejecting a face.
-        // Keep a tee's extended clip lines off the neighbouring board rim.
-        if (y.grade && (
-          [ia,ib,ic].every(i => pos[3*i] < y.minX) || [ia,ib,ic].every(i => pos[3*i] > y.maxX) ||
-          [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
-        )) continue;
-        faces = faces.flatMap(f => {
-          if (apartFromFootprint(y, pos, f)) return [f];
-          const { inside, outside } = splitConvex(f, y.planes, pos, add);
-          if (!inside) return outside;
-          const low = inside.map(lower);
-          if (low.every((j, k) => j === inside[k])) return [...outside, inside];
-          emit(low);
-          // Skirt each footprint edge where the inside dropped, seen from either side.
-          for (let k = 0; k < inside.length; k++) {
-            const n = (k + 1) % inside.length, p = inside[k], q = inside[n];
-            if (low[k] === p && low[n] === q) continue;
-            const edge = y.planes.findIndex(plane =>
-              Math.abs(plane(pos[3*p], 0, pos[3*p+2])) < 1e-6 && Math.abs(plane(pos[3*q], 0, pos[3*q+2])) < 1e-6);
-            if (edge < 0) continue;
-            // Just beyond the edge's midpoint, away from the piece's centre.
-            const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
-            const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
-            const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
-            if (nearYields(bx, bz).some(other => other !== y && footprintContains(other, bx, bz, 0))) continue;
-            emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
-            emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
-          }
-          return outside;
-        });
+        faces = clipBy(faces, y, ia, ib, ic);
       }
       for (const f of faces) emit(f);
+    }
+    /** The pieces of one triangle after one footprint has cut and lowered them. */
+    function clipBy(faces: number[][], y: ReturnType<typeof yieldPlanes>, ia: number, ib: number, ic: number): number[][] {
+      work += faces.length;
+      // splitConvex can allocate temporary intersections before rejecting a face.
+      // Keep a tee's extended clip lines off the neighbouring board rim.
+      if (y.grade && (
+        [ia,ib,ic].every(i => pos[3*i] < y.minX) || [ia,ib,ic].every(i => pos[3*i] > y.maxX) ||
+        [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
+      )) return faces;
+      return faces.flatMap(f => {
+        if (apartFromFootprint(y, pos, f)) return [f];
+        const { inside, outside } = splitConvex(f, y.planes, pos, add);
+        if (!inside) return outside;
+        const low = inside.map(lower);
+        if (low.every((j, k) => j === inside[k])) return [...outside, inside];
+        emit(low);
+        // Skirt each footprint edge where the inside dropped, seen from either side.
+        for (let k = 0; k < inside.length; k++) {
+          const n = (k + 1) % inside.length, p = inside[k], q = inside[n];
+          if (low[k] === p && low[n] === q) continue;
+          const edge = y.planes.findIndex(plane =>
+            Math.abs(plane(pos[3*p], 0, pos[3*p+2])) < 1e-6 && Math.abs(plane(pos[3*q], 0, pos[3*q+2])) < 1e-6);
+          if (edge < 0) continue;
+          // Just beyond the edge's midpoint, away from the piece's centre.
+          const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
+          const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
+          const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
+          if (nearYields(bx, bz).some(other => other !== y && footprintContains(other, bx, bz, 0))) continue;
+          emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
+          emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
+        }
+        return outside;
+      });
     }
     for (let k = 0; k < detail.length; k++) {
       if (k % (2 * blockCols) === 2 * blockCols - 1 || work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }

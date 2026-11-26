@@ -81,6 +81,13 @@ it('marks the camera in use whenever the view moves, and not for the tail of a d
     expect(sliceInput.inputAt).toBe(500);
     watch({ ...at, x: .5 }, { ...target, z: 1 }, { ...turn, y: .001 }, 600);
     expect(sliceInput.inputAt).toBe(500);
+    // From 20 km a metre a frame is the tail of a damped orbit, not a move anyone sees.
+    const far = { x: 0, y: 20_000, z: 0 };
+    watch(far, target, turn, 700);
+    watch({ ...far, x: .9 }, target, turn, 800);
+    expect(sliceInput.inputAt).toBe(700);
+    watch({ ...far, x: 4 }, target, turn, 900);
+    expect(sliceInput.inputAt).toBe(900);
     sliceInput.dragging = true;
     releaseCamera();
     expect(sliceInput).toMatchObject({ dragging: false, inputAt: -Infinity });

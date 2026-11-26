@@ -60,14 +60,17 @@ type Vec = { readonly x: number; readonly y: number; readonly z: number };
 /**
  * Call once a frame, after everything that moves the camera: marks it in use whenever the view
  * changed since the last frame, however it moved (a gesture, a key, a slider, a glide, a followed
- * vehicle). Movements under a centimetre or so, a damped orbit's tail, do not count.
+ * vehicle). Movements too small to see do not count, or a damped orbit's long tail would: about a
+ * tenth of a pixel, which grows with the orbit distance (2 cm at the closest views).
  */
 export function cameraWatch() {
   const last = new Float64Array(10);
   let seen = false;
   return (position: Vec, target: Vec, turn: Vec & { readonly w: number }, now = performance.now()) => {
     const view = [position.x, position.y, position.z, target.x, target.y, target.z, turn.x, turn.y, turn.z, turn.w];
-    if (seen && view.every((v, i) => Math.abs(v - last[i]) <= (i < 6 ? .02 : 1e-5))) return;
+    // City's 22° lens spans about 4e-4 of the orbit distance per pixel.
+    const still = Math.max(.02, 5e-5 * Math.hypot(position.x - target.x, position.y - target.y, position.z - target.z));
+    if (seen && view.every((v, i) => Math.abs(v - last[i]) <= (i < 6 ? still : 2e-5))) return;
     if (seen) sliceInput.inputAt = now;
     seen = true;
     last.set(view);
