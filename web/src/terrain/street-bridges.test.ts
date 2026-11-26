@@ -180,3 +180,26 @@ it('samples the Ted Turner banks without pulling its first interior section down
     deck.dispose();
   }
 });
+
+// Jackson Street NE over Freedom Parkway (NBI 000000012104290): one 18.9 m deck
+// with a 13.4 m roadway and 2.4 m raised sidewalks behind ~0.35 m parapets. It was
+// drawn as a 9 m roadway and two 1.95 m walk strips standing off it over open gaps.
+it('draws Jackson Street as one deck with its sidewalks on the slab', async () => {
+  const { auburnTransport } = await import('../city/sweet-auburn-transport');
+  const context = JSON.parse(read('square-board/north-corner/context.json').toString());
+  const city = auburnTransport(context);
+  const corner = loadGrid('square-board/north-corner'), z0 = corner.manifest.vertical.sceneZeroNavd88M;
+  const builder = new Builder(), treads = new Map<TransportRun, number[]>();
+  const replaced = drawStreetBridges(city, z0, (x, z) => (corner.sample(x, z) ?? z0) - z0, builder, treads);
+  const runs = [...replaced];
+  expect(runs.filter(r => r.cls === 'tertiary' && r.pts.some(([x, z]) => Math.hypot(x - 1598.4, z + 697) < 35))).toHaveLength(1);
+  expect(runs.filter(r => r.cls === 'footway' && r.pts.some(([x, z]) => Math.abs(x - 1590.6) < 1.5 || Math.abs(x - 1606.5) < 1.5))).toHaveLength(2);
+  const survey = JSON.parse(readFileSync(new URL('connector-footprint/street-bridges.json', root), 'utf8'));
+  const jackson = survey.find((d: { outline: number }) => d.outline === 1451196894);
+  for (const r of jackson.rows) {
+    const width = Math.hypot(r[3] - r[0], r[4] - r[1]);
+    expect(width).toBeGreaterThan(18.6);
+    expect(width).toBeLessThan(19.8);
+    expect((r[8] - r[6]) * width).toBeCloseTo(13.4, 0);
+  }
+});

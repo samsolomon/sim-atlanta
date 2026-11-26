@@ -39,6 +39,22 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
   const parts = city.terrainTransport?.roads ?? [];
   const approachClasses = new Set(parts.filter(part => part.deckWeight).map(part => part.cls));
   const cache = new WeakMap<VRoad, TransportRun[]>();
+  // A ramp leaving a gore starts at no width on its ribbon (the MLK SB fork at
+  // (561.1, 584.44)), so its first metres are pavement drawn by the deck it splits
+  // from. Near a shared end vertex, ride that deck. A deck overhead never shares
+  // an end vertex with the car's own piece.
+  const noseTread = (x: number, z: number, part: TransportRun) => {
+    for (const nose of [part.pts[0], part.pts.at(-1)!]) {
+      if (Math.hypot(x - nose[0], z - nose[1]) > 10) continue;
+      for (const other of parts) {
+        if (other === part || other.kind !== 'bridge') continue;
+        if (![other.pts[0], other.pts.at(-1)!].some(q => q[0] === nose[0] && q[1] === nose[1])) continue;
+        const tread = deckAt?.(x, z, other);
+        if (tread != null) return tread;
+      }
+    }
+    return null;
+  };
   return (x: number, z: number, road: VRoad) => {
     const ground = !road.bridge && !road.tunnel;
     // The directed OSM lane owner can be tagged ground even where the Sweet
@@ -64,7 +80,8 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
       }
       const near = nearest([onRoad.x,onRoad.z],part.pts);
       if (near.distance > .08 || near.ux*onRoad.ux + near.uz*onRoad.uz < .98) continue;
-      return part.kind === 'ground' ? groundAt(x,z,road) : deckAt?.(x,z,part) ?? null;
+      if (part.kind === 'ground') return groundAt(x,z,road);
+      return deckAt?.(x,z,part) ?? noseTread(x,z,part);
     }
     return ground ? groundAt(x,z,road) : null;
   };

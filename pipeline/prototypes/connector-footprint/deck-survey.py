@@ -18,12 +18,19 @@ def lonlat(x, z):
     return LON0 + math.degrees(x / (R * K)), LAT0 - math.degrees(z / R)
 
 
-def bake(x, z, elevation, cls):
+def bake(x, z, elevation, cls, lowered=()):
     tree = cKDTree(np.column_stack((x, z)))
+    # Board nodes the underpass grid lowers (underpass_grid). A road whose drawn
+    # width reaches one of them crosses the street opening, so its surface there
+    # is the freeway top, never the lowered street grade. 15 m covers half the
+    # widest mapped carriageway; the centre-line test below misses wide roads.
+    opening = cKDTree(np.asarray(lowered, dtype=float).reshape(-1, 2)) if len(lowered) else None
     profiles = []
     underpass = next(r for r in context['roads'] if r['name'] == 'Leonard Tate Street Southeast'
                      and r['pts'][0] == [1095.9, 134.0])['pts']
     def near_underpass(p):
+        if opening is not None and opening.query(p, distance_upper_bound=15)[0] < 15:
+            return True
         for a, b in zip(np.array(underpass), np.array(underpass)[1:]):
             v = b-a
             t = np.clip(np.dot(p-a, v) / np.dot(v, v), 0, 1)
@@ -119,14 +126,18 @@ def underpass_grid(x, z, elevation, cls):
         value = round(original+weight*(target-original))
         if value != original:
             edits.append([row*manifest['cols']+col, value])
-    return {'groundSha256':manifest['sha256'], 'portalNavd88M':anchors, 'nodes':edits}
+    lowered = [[manifest['bounds']['minX'] + (i % manifest['cols'])*manifest['stepM'],
+                manifest['bounds']['minZ'] + (i // manifest['cols'])*manifest['stepM']]
+               for i, value in edits if nodes.flat[i] - value > 3]
+    return {'groundSha256':manifest['sha256'], 'portalNavd88M':anchors, 'nodes':edits}, lowered
 
 
 if __name__ == '__main__':
     points = ept_points((*lonlat(915, 380), *lonlat(1300, -555)))
-    profiles = bake(*points[:4])
+    underpass, lowered = underpass_grid(*points[:4])
+    profiles = bake(*points[:4], lowered)
     output = HERE / 'sweet-auburn-decks.json'
     rows = ',\n'.join('    ' + json.dumps(p, separators=(',', ':')) for p in profiles)
-    ground = json.dumps(underpass_grid(*points[:4]), separators=(',', ':'))
+    ground = json.dumps(underpass, separators=(',', ':'))
     output.write_text('{\n  "roads": [\n' + rows + '\n  ],\n  "underpass": ' + ground + '\n}\n')
     print(f'{len(profiles)} profiled road ways → {output}')

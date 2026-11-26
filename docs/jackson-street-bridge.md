@@ -38,9 +38,26 @@ ATLDOT project 1126 (construction scheduled June–November 2025) adds a protect
 
 **Gaps.** No reliable night image of the deck, railing or luminaires was found. Bridge lighting is undocumented: pole positions, luminaire type and colour temperature are unknown. The only lighting note is the AJC's "row of lights down the middle of the freeway below." The research notes on what each photo shows come from Commons captions, EXIF and geotags, not from viewing the images. Review the images in an Orca tab before modelling.
 
-## Drawn today (c8e3e34e)
+## Drawn (branch `samsolomon/connector-b1-jackson`)
 
-At z = −697 the drawn roadway is 9.0 m wide. Two 1.95 m walk strips stand off it with open 2.05 m and 2.55 m gaps. The west walk is 0.6–0.79 m below the road. Numbers and cameras: [Connector repairs, B](connector-repairs.md#b-freedom-parkway-interchange-and-the-jackson-street-bridge-priority-3). Daylight stills on both tiers: [orbit, high](log/ui/connector-repairs/B3-jackson-bridge-high.jpg) · [orbit, low](log/ui/connector-repairs/B3-jackson-bridge-low.jpg) · [skyline eye, high](log/ui/connector-repairs/B4-jackson-skyline-eye-high.jpg) · [skyline eye, low](log/ui/connector-repairs/B4-jackson-skyline-eye-low.jpg). Full-night stills from the same cameras are still due before the reskin.
+Before (main, phase 1): a 9.0 m roadway with two 1.95 m walk strips standing off it over open 2.05–2.55 m gaps. The west walk was 0.6–0.79 m below the road.
+
+Now the bridge is one measured street deck, using the same primitive as Decatur, MLK and the downtown Peachtree crossing (`terrain/street-bridges.ts`). `street-bridge-survey.py` gained an Overpass-source mode (`--source pipeline/prototypes/square-board/source/north-corner.json.gz --only 1451196894`). It bakes only this entry and leaves the five Connector spans byte-identical.
+
+- **Outline** 1451196894: 18.7–19.7 m wide, 67.1 m long. NBI: 18.9 m by 67.4 m.
+- **Lidar rows** (USGS 2019 class-17 medians, crossfall extrapolated to the edges): the deck falls from 314.7 m NAVD88 at the north abutment to 312.8 m at the south.
+- **Cross-section:** a 2.75 m edge-to-curb on each side (2.4 m raised sidewalk + ~0.35 m parapet, NBI) leaves a 13.4 m roadway. That gives 0.27 m raised walks with curbs, a centre line, 1.0 m parapets and a dark fascia.
+- **Replaced runs:** the road 43520078 and both sidewalks (637636159, 1389424703). Their approaches land on Jackson Street and its mapped sidewalks at both ends.
+- **Seams (25 samples across each end row, both tiers):** none open, all within 0.1 mm. The exception is the 16 mm yellow centre line ending at the north joint, which is paint.
+
+Not modelled, with no source: bridge luminaires, the 2025 protected cycle track (current striping unknown), and the planned west-edge parklet. Night frames therefore show an unlit deck.
+
+Matched stills, both tiers, day 14:00 and night 23:00 on 2026-11-20 (the after frames reuse the before orbit matrices):
+- Orbit [day, High](log/ui/connector-repairs/b1-jackson/J1-jackson-high-day-before-after.jpg) · [Low](log/ui/connector-repairs/b1-jackson/J1-jackson-low-day-before-after.jpg) · [night, High](log/ui/connector-repairs/b1-jackson/J1-jackson-high-night-before-after.jpg) · [Low](log/ui/connector-repairs/b1-jackson/J1-jackson-low-night-before-after.jpg)
+- North abutment [day, High](log/ui/connector-repairs/b1-jackson/J2-north-end-high-day-before-after.jpg) · [night, High](log/ui/connector-repairs/b1-jackson/J2-north-end-high-night-before-after.jpg)
+- Skyline eye [day, High](log/ui/connector-repairs/b1-jackson/J3-skyline-eye-high-day-before-after.jpg) · [Low](log/ui/connector-repairs/b1-jackson/J3-skyline-eye-low-day-before-after.jpg) · [night, High](log/ui/connector-repairs/b1-jackson/J3-skyline-eye-high-night-before-after.jpg)
+
+The eye stands 1.6 m above the walk it finds, so it now sits about 1.3 m higher, on the raised walk at the surveyed deck height.
 
 ## The skyline camera
 
@@ -54,4 +71,4 @@ Photographers stand on the **west sidewalk near mid-span**; the Commons geotag i
 | Truist Plaza | 285° | 1.21 km |
 | Bank of America Plaza | 317° | 1.59 km |
 
-City eye: (1590.6, −690) on the drawn west walk, 1.6 m above its tread (y −9.336). Bearing 285°, pitch +2°, vertical field of view 40°. Matrices: `log/ui/connector-repairs/cameras/B4-jackson-skyline-eye-{high,low}-camera.json`. A common lens is about 49 mm full-frame equivalent, roughly a 40° field.
+City eye: (1590.6, −690) on the drawn west walk, 1.6 m above its tread (y −9.336). Bearing 285°, pitch +2°, vertical field of view 40°. Matrices: `log/ui/connector-repairs/cameras/B4-jackson-skyline-eye-{high,low}-camera.json` (phase 1) and `log/ui/connector-repairs/b1-jackson/cameras/`. A common lens is about 49 mm full-frame equivalent, roughly a 40° field.

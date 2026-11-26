@@ -12,6 +12,18 @@ export interface TransportRun {
   pts: P2[];
   /** Road pavement NAVD88 metres at each vertex of a lidar-profiled structural run. */
   deckNavd88M?: number[];
+  /** One measured surface for every run on the same physical viaduct, in NAVD88
+   * metres at a plan position. Both slab edges sample it, so neighbouring ways
+   * meet at the same height and the deck keeps its measured crossfall. Null
+   * falls back to the centreline profile. */
+  deckSurface?: (x: number, z: number) => number | null;
+  /** Where this returns true for a corner of a deck quad, drawn ground that would
+   * show through the tread is lowered to just under it: the misclassified freeway roof
+   * beside the Leonard Tate opening keeps the deck's own height in the DEM. */
+  yieldsGround?: (x: number, z: number) => boolean;
+  /** A point just inside the next way where OSM adds a lane at this deck's end:
+   * the deck widens across its length to that ribbon's section (ramp-decks.ts). */
+  widenInto?: P2;
   /** Share of the deck profile at each approach vertex. Zero meets local terrain. */
   deckWeight?: number[];
   /** Original directed centerline before resampling a measured deck or its approach. */

@@ -97,6 +97,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   const footbridgeYields: GroundYield[] = [];
+  const deckYields: GroundYield[] = [];
   const ballastRuns: BallastQuad[][] = [];
   // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
   const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
@@ -222,6 +223,11 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
     const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    // A ramp deck ending where OSM adds a lane (ramp-decks.ts laneGain) widens
+    // across its length to the next ribbon's section at the joint, so the wider
+    // deck's slab end does not stand over open air. Shoulders keep their width.
+    const gain = ribbon && profile && run.widenInto ? matchRibbon(end, run.widenInto, run.sub === 'link') : undefined;
+    const gainEnds = gain && ribbon !== gain ? [sectionAt(ribbon!, alongOn(ribbon!, end).s), sectionAt(gain, alongOn(gain, end).s)] : undefined;
     const width = run.crossSection?.width ?? mapped;
     // An approach carries the inventory deck width at the abutment and blends
     // to the mapped street width where its profile weight reaches bare earth.
@@ -259,9 +265,27 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     function lateral(s:number,off:number): P2 {
       const p=line.at(s);
-      if (!ribbon) return [p.x+off*p.nx,p.z+off*p.nz];
+      if (!ribbon) return onSeam(s,p.x+off*p.nx,p.z+off*p.nz);
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
-      return stripePoint(row,.5-off/travelWidth);
+      if (!gainEnds) return onSeam(s,...stripePoint(row,.5-off/travelWidth));
+      const [mine, next] = gainEnds, w = s / line.length;
+      const inner: P2 = [row.inner[0] + w*(next.inner[0]-mine.inner[0]), row.inner[1] + w*(next.inner[1]-mine.inner[1])];
+      const outer: P2 = [row.outer[0] + w*(next.outer[0]-mine.outer[0]), row.outer[1] + w*(next.outer[1]-mine.outer[1])];
+      const travel = Math.hypot(outer[0]-inner[0], outer[1]-inner[1]), shoulder = mapped - travelWidth;
+      return onSeam(s,...stripePoint({ s: row.s, inner, outer }, .5 - off*(travel+shoulder)/(travelWidth+shoulder)/travel));
+    }
+    // A profiled deck that crosses a board seam obliquely ends on the seam itself:
+    // each end corner slides along the run onto the boundary, so the neighbouring
+    // board's half meets it edge to edge. Clamping a perpendicular end row left a
+    // 0.6 m wedge on each side (the Baker flyovers at x = 1000).
+    function onSeam(s:number,px:number,pz:number): P2 {
+      if (!profile || (s!==0 && s!==line.length)) return [px,pz];
+      const e = s===0 ? start : end;
+      if (!onEdge(e)) return [px,pz];
+      const p=line.at(s), across = e[0]===bounds.minX || e[0]===bounds.maxX;
+      const step = across ? (e[0]-px)/p.nz : (e[1]-pz)/-p.nx;
+      if (!Number.isFinite(step) || Math.abs(step) > 6) return [px,pz];
+      return across ? [e[0], pz-step*p.nx] : [px+step*p.nz, e[1]];
     }
     // A road deck that lands on the board, not on another deck or the board's edge,
     // follows the board across its width over the last seam (keeping its 12 cm tread).
@@ -338,7 +362,9 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         const length = Math.hypot(p[0]-other[0], p[2]-other[2]) || 1;
         return [p[0]+distance*(p[0]-other[0])/length, p[1], p[2]+distance*(p[2]-other[2])/length];
       };
-      for (const distance of [-.28, .7, 1.8]) {
+      // On one fused viaduct (sweet-auburn-transport.ts viaductSurfaces) the next
+      // member's lanes start beyond both shoulders: striped separation, no barrier.
+      for (const distance of run.deckSurface ? [-.28, .7, 1.8, 2.6, 3.7] : [-.28, .7, 1.8]) {
         const p = offset(a, otherA, distance), q = offset(b, otherB, distance);
         if (inConnectorLanes(p[0], p[2], .18) || inConnectorLanes(q[0], q[2], .18) ||
           inConnectorLanes((p[0]+q[0])/2, (p[2]+q[2])/2, .18)) return;
@@ -385,6 +411,8 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const vertex = line.vertexAt(s);
             const index = Math.min(Math.floor(vertex), profile.length - 2);
             y = profile[index] + (profile[index+1]-profile[index])*(vertex-index) - sceneZero;
+            const surface = run.deckSurface?.(x, z);
+            if (surface != null) y = surface - sceneZero;
             if (run.deckWeight) {
               const weights = run.deckWeight;
               const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
@@ -524,13 +552,71 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (ok && fall <= LANDING_BANK_M) cuts = keepColumns(candidates.map(f => f * width), rows, LANDING_TOLERANCE_M).map(i => candidates[i]);
       }
       const landing = cuts.length > 2;
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : cuts.length - 1;
+      // A fused viaduct deck follows a measured surface with crossfall. 6 m bands
+      // keep its tread within a centimetre or two of that surface, under the
+      // markings drawn 3 cm above it.
+      const uniform = !!run.deckWeight || (!!run.deckSurface && !landing);
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : uniform ? Math.ceil(width / 6) : cuts.length - 1;
       for (let i = 0; i < bands; i++) {
-        const [l, r] = run.deckWeight ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
+        const [l, r] = uniform ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
         strip(width * l, width * r, DECK_LIFT, color,
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
       if (landing) strip(width * .5, -width * .5, DECK_LIFT, color, walkway ? .4 : .95, false, false, true, true, s => !nearLanding(s));
+      // A deck over the Leonard Tate opening (sweet-auburn-transport.ts) can sit on
+      // the misclassified freeway roof the board keeps beside the street. Lower the
+      // drawn ground under its full width to just below the slab so terrain never
+      // shows through. Straight runs share one ring.
+      if (run.yieldsGround && profile && !walkway) deckYields.push(...deckFootprintYields());
+      function deckFootprintYields(): GroundYield[] {
+        const edge = (st: number) => [-.5, .5].map(f => {
+          const [px, pz] = lateral(st, f * width * taper(st));
+          const x = THREE.MathUtils.clamp(px, bounds.minX, bounds.maxX), z = THREE.MathUtils.clamp(pz, bounds.minZ, bounds.maxZ);
+          const vertex = line.vertexAt(st), index = Math.min(Math.floor(vertex), profile!.length - 2);
+          const own = profile![index] + (profile![index+1]-profile![index])*(vertex-index);
+          return [x, z, (run.deckSurface?.(x, z) ?? own) - sceneZero] as const;
+        });
+        const rows = stations.filter((st, k) => k === 0 || st !== stations[k-1]).map(edge);
+        type Row = (typeof rows)[number];
+        type Open = { rows: Row[]; floor: number };
+        const out: GroundYield[] = [];
+        let open: Open | null = null as Open | null;
+        const straight = (pts: Row[number][]) => pts.slice(1, -1).every(([x, z]) =>
+          segDist(x, z, [pts[0][0], pts[0][1]], [pts.at(-1)![0], pts.at(-1)![1]]) < .05);
+        const close = () => {
+          if (open && open.rows.length > 1) {
+            const first = open.rows[0], last = open.rows.at(-1)!, floorY: number = open.floor;
+            out.push({ ring: [first[0], last[0], last[1], first[1]].map(([x, z]) => [x, z] as [number, number]), floor: () => floorY });
+          }
+          open = null;
+        };
+        for (let k = 1; k < rows.length; k++) {
+          const quad = [rows[k-1][0], rows[k-1][1], rows[k][1], rows[k][0]];
+          if (quad.some(p => !Number.isFinite(p[2]))) { close(); continue; }
+          // Just under the tread: only ground that would show through it is lowered,
+          // never a trench under a deck that rests on its fill.
+          const floorY = Math.min(...quad.map(p => p[2])) + DECK_LIFT - .05;
+          // A yield only lowers ground above its floor, so every station over the roof
+          // carries one: a hump between the 5 m ground nodes can rise through the tread
+          // while all four corners stay below it.
+          if (!quad.some(([x, z]) => run.yieldsGround!(x, z))) { close(); continue; }
+          if (open) {
+            const next: Open = { rows: [...open.rows, rows[k]], floor: Math.min(open.floor, floorY) };
+            if (straight(next.rows.map(r => r[0])) && straight(next.rows.map(r => r[1])) && Math.abs(open.floor - floorY) < .15) { open = next; continue; }
+            close();
+          }
+          open = { rows: [rows[k-1], rows[k]], floor: floorY };
+        }
+        close();
+        // Only convex rings with real area: coincident stations make slivers.
+        return out.filter(({ ring }) => {
+          const turns = ring.map(([x0, z0], i) => {
+            const [x1, z1] = ring[(i+1)%4], [x2, z2] = ring[(i+2)%4];
+            return (x1-x0)*(z2-z1)-(z1-z0)*(x2-x1);
+          });
+          return turns.every(t => t > 1e-4) || turns.every(t => t < -1e-4);
+        });
+      }
       if (roadTop.length) roadTreads.set(owner, [...(roadTreads.get(owner) ?? []), ...roadTop]);
       if (ribbon) {
         for (let i=0;i<=ribbon.lanes;i++) {
@@ -676,7 +762,8 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     meshes.push(mesh);
   }
   const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
-  cutting.push(...footbridgeYields);
+  cutting.push(...footbridgeYields, ...deckYields.filter(y => y.ring.every(([x, z]) =>
+    x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ)));
   // The mesh attributes now own their copies. Drop build-time arrays held by the transport closures.
   const hasBridge = seventeenth.pos.length > 0;
   for (const builder of [structures, seventeenth, freight]) {

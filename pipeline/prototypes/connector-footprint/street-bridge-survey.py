@@ -1,4 +1,8 @@
-"""Bake the five simple Connector street bridges from the corridor OSM snapshot and USGS lidar."""
+"""Bake the simple street bridges over the Connector corridor from OSM and USGS lidar.
+
+The five Connector spans read the corridor OSM API snapshot. Jackson Street over
+Freedom Parkway reads the pinned north-corner Overpass source (--source, --only)
+and replaces only its own entry, leaving the others as baked."""
 import argparse
 import json
 import math
@@ -20,6 +24,9 @@ SPANS = [
     (1450884819, [13,14,15,16,0], [9,8,7,6,5,4,3], [38974973], [[635796672],[635796675]], [3.4,3.5]),
     (1450884817, [0,9], [4,5], [38976112], [[637321699],[635570944]], [2.6,2.6]),
     (1451206619, [4,5], [0,9], [181272928,1451206620], [[853927445],[853927450]], [3.4,2.9]),
+    # Jackson Street NE over Freedom Parkway (NBI 000000012104290): one 18.9 m deck,
+    # a 13.4 m roadway and 2.4 m raised sidewalks with ~0.35 m parapets each side.
+    (1451196894, [9,0], [5,4], [43520078], [[637636159],[1389424703]], [2.75,2.75]),
 ]
 
 
@@ -30,6 +37,16 @@ def read_ways(path):
                            round((LAT0-float(n.get("lat")))*scale, 2)) for n in root.findall("node")}
     return {int(w.get("id")): ([nodes[n.get("ref")] for n in w.findall("nd")],
                                {t.get("k"): t.get("v") for t in w.findall("tag")}) for w in root.findall("way")}
+
+
+def read_overpass(path):
+    import gzip
+    elements = json.load(gzip.open(path))["elements"]
+    scale = math.pi/180 * R
+    nodes = {e["id"]: (round((e["lon"]-LON0)*scale*K, 2), round((LAT0-e["lat"])*scale, 2))
+             for e in elements if e["type"] == "node"}
+    return {e["id"]: ([nodes[n] for n in e["nodes"]], e.get("tags", {}))
+            for e in elements if e["type"] == "way" and all(n in nodes for n in e["nodes"])}
 
 
 def lengths(points):
@@ -155,19 +172,25 @@ def approach(ways, row, roads, walks):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("osm",type=Path,help="The XML map used by extract-ways.py")
+    parser.add_argument("osm",type=Path,nargs="?",help="The XML map used by extract-ways.py")
+    parser.add_argument("--source",type=Path,help="A pinned Overpass JSON (square-board/source/*.json.gz)")
+    parser.add_argument("--only",type=int,action="append",help="Re-bake only these outlines in place")
     args = parser.parse_args()
-    ways = read_ways(args.osm)
-    spans = []
+    ways = read_overpass(args.source) if args.source else read_ways(args.osm)
+    output = HERE/"street-bridges.json"
+    spans = json.loads(output.read_text()) if args.only else []
     for outline,edge_a,edge_b,roads,walks,widths in SPANS:
+        if args.only and outline not in args.only:
+            continue
         road = [ways[i][0] for i in roads]
         rows = cross_sections(ways[outline][0],(edge_a,edge_b),np.array(sum(road,[])),widths)
         # The south abutment of Capitol Avenue is outside the source/board.
         ends = [rows[0]] if outline == 1451206619 else [rows[0],rows[-1]]
-        spans.append(dict(name=ways[roads[0]][1]["name"],outline=outline,sideWidthsM=widths,roads=road,
-                          walks=[[ways[i][0] for i in side] for side in walks],rows=rows,
-                          approaches=[approach(ways,row,roads,walks) for row in ends]))
-    (HERE/"street-bridges.json").write_text("[\n"+",\n".join("  "+json.dumps(d,separators=(",",":")) for d in spans)+"\n]\n")
+        entry = dict(name=ways[roads[0]][1]["name"],outline=outline,sideWidthsM=widths,roads=road,
+                     walks=[[ways[i][0] for i in side] for side in walks],rows=rows,
+                     approaches=[approach(ways,row,roads,walks) for row in ends])
+        spans = [d for d in spans if d["outline"] != outline] + [entry]
+    output.write_text("[\n"+",\n".join("  "+json.dumps(d,separators=(",",":")) for d in spans)+"\n]\n")
 
 
 if __name__ == "__main__":

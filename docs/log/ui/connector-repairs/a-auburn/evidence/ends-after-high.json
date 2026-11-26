@@ -1,0 +1,728 @@
+[
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 9235148,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1239.69,
+   -197.45
+  ],
+  "f": 0.9,
+  "xz": [
+   1242.53,
+   -197.31
+  ],
+  "tread": -18.223,
+  "beyond1mm": -0.004,
+  "beyond1m": 0.007,
+  "treadAboveBoard1m": 9.934,
+  "drop": -0.006906111582630103
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 9236432,
+  "kind": "bridge",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1248.16,
+   -493.27
+  ],
+  "f": 0.9,
+  "xz": [
+   1249.58,
+   -493.37
+  ],
+  "tread": -19.55,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.008,
+  "treadAboveBoard1m": 6.603,
+  "drop": 0.007826747328667949
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 28686579,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1235.55,
+   -512.83
+  ],
+  "f": 0.9,
+  "xz": [
+   1238.01,
+   -514.25
+  ],
+  "tread": -22.12,
+  "beyond1mm": -0.001,
+  "beyond1m": -0.622,
+  "treadAboveBoard1m": 0.622,
+  "drop": 0.6224294969037985
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38945231,
+  "kind": "bridge",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1192.29,
+   -80.34
+  ],
+  "f": 0.5,
+  "xz": [
+   1192.29,
+   -80.34
+  ],
+  "tread": -17.187,
+  "beyond1mm": -0.018,
+  "beyond1m": -0.016,
+  "treadAboveBoard1m": 8.413,
+  "drop": 0.01611596549100014
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38945231,
+  "kind": "bridge",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1194.05,
+   -80.1
+  ],
+  "f": 0.1,
+  "xz": [
+   1202.5,
+   -78.96
+  ],
+  "tread": -17.335,
+  "beyond1mm": 0.002,
+  "beyond1m": -0.008,
+  "treadAboveBoard1m": 8.162,
+  "drop": 0.007860784223758799
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38945232,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1223.92,
+   -345.15
+  ],
+  "f": 0.9,
+  "xz": [
+   1231.0,
+   -345.62
+  ],
+  "tread": -20.67,
+  "beyond1mm": 0.0,
+  "beyond1m": -0.013,
+  "treadAboveBoard1m": 8.63,
+  "drop": 0.013134167232660587
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38945232,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1230.83,
+   -197.87
+  ],
+  "f": 0.1,
+  "xz": [
+   1223.74,
+   -198.2
+  ],
+  "tread": -18.498,
+  "beyond1mm": -0.002,
+  "beyond1m": 0.013,
+  "treadAboveBoard1m": 10.046,
+  "drop": -0.012547351448013444
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38945238,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1176.41,
+   1.23
+  ],
+  "f": 0.9,
+  "xz": [
+   1166.89,
+   -1.62
+  ],
+  "tread": -17.178,
+  "beyond1mm": 0.0,
+  "beyond1m": -0.021,
+  "treadAboveBoard1m": 5.56,
+  "drop": 0.02084414164164272
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38970415,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1151.7,
+   -325.49
+  ],
+  "f": 0.9,
+  "xz": [
+   1148.92,
+   -324.91
+  ],
+  "tread": -17.69,
+  "beyond1mm": -12.13,
+  "beyond1m": -12.106,
+  "treadAboveBoard1m": 12.106,
+  "drop": 12.10619448932269
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38970423,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1183.9,
+   -289.74
+  ],
+  "f": 0.1,
+  "xz": [
+   1185.31,
+   -289.82
+  ],
+  "tread": -20.16,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.0,
+  "treadAboveBoard1m": 9.34,
+  "drop": -0.00042692360197804646
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 38974039,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1137.8,
+   -467.32
+  ],
+  "f": 0.9,
+  "xz": [
+   1135.66,
+   -465.46
+  ],
+  "tread": -23.38,
+  "beyond1mm": -0.266,
+  "beyond1m": -0.261,
+  "treadAboveBoard1m": 0.261,
+  "drop": 0.2614941118541232
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 39169024,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1194.53,
+   -290.31
+  ],
+  "f": 0.9,
+  "xz": [
+   1187.44,
+   -289.93
+  ],
+  "tread": -20.16,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.0,
+  "treadAboveBoard1m": 9.34,
+  "drop": -0.00045656429727714
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 39169049,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1202.8,
+   -357.46
+  ],
+  "f": 0.9,
+  "xz": [
+   1201.39,
+   -357.28
+  ],
+  "tread": -20.62,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.012,
+  "treadAboveBoard1m": 9.045,
+  "drop": 0.011634858156540417
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 337901392,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1213.83,
+   -19.51
+  ],
+  "f": 0.3,
+  "xz": [
+   1209.06,
+   -20.88
+  ],
+  "tread": -17.064,
+  "beyond1mm": -0.013,
+  "beyond1m": -0.021,
+  "treadAboveBoard1m": 7.673,
+  "drop": 0.02107809172264652
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 337901402,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1093.01,
+   237.23
+  ],
+  "f": 0.9,
+  "xz": [
+   1101.33,
+   244.97
+  ],
+  "tread": -16.72,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.01,
+  "treadAboveBoard1m": 5.98,
+  "drop": -0.010487087373260096
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 337901420,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1225.69,
+   -345.27
+  ],
+  "f": 0.1,
+  "xz": [
+   1217.19,
+   -344.7
+  ],
+  "tread": -20.67,
+  "beyond1mm": -0.014,
+  "beyond1m": -0.056,
+  "treadAboveBoard1m": 8.756,
+  "drop": 0.055537226320780064
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 905997415,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1180.44,
+   -59.54
+  ],
+  "f": 0.9,
+  "xz": [
+   1180.03,
+   -60.9
+  ],
+  "tread": -17.603,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.05,
+  "treadAboveBoard1m": 8.097,
+  "drop": -0.0503026308804273
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 953274060,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1153.44,
+   -325.85
+  ],
+  "f": 0.9,
+  "xz": [
+   1152.05,
+   -325.56
+  ],
+  "tread": -17.69,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.048,
+  "treadAboveBoard1m": 12.11,
+  "drop": -0.04836381084238894
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 962288411,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1196.19,
+   -239.89
+  ],
+  "f": 0.7,
+  "xz": [
+   1192.65,
+   -239.71
+  ],
+  "tread": -19.423,
+  "beyond1mm": -0.002,
+  "beyond1m": -0.017,
+  "treadAboveBoard1m": 9.977,
+  "drop": 0.01667552549978879
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1003022422,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1215.54,
+   -19.03
+  ],
+  "f": 0.9,
+  "xz": [
+   1223.73,
+   -16.69
+  ],
+  "tread": -16.778,
+  "beyond1mm": -0.002,
+  "beyond1m": -0.018,
+  "treadAboveBoard1m": 7.922,
+  "drop": 0.018304683289859014
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1081674705,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1201.04,
+   -357.24
+  ],
+  "f": 0.9,
+  "xz": [
+   1198.22,
+   -356.88
+  ],
+  "tread": -20.62,
+  "beyond1mm": -9.053,
+  "beyond1m": -9.031,
+  "treadAboveBoard1m": 9.031,
+  "drop": 9.030759265276732
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1081674705,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1196.6,
+   -392.46
+  ],
+  "f": 0.5,
+  "xz": [
+   1196.6,
+   -392.46
+  ],
+  "tread": -21.01,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.026,
+  "treadAboveBoard1m": 8.859,
+  "drop": 0.02615913986531382
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1414809190,
+  "kind": "bridge",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1202.85,
+   -78.91
+  ],
+  "f": 0.9,
+  "xz": [
+   1201.44,
+   -79.1
+  ],
+  "tread": -17.298,
+  "beyond1mm": -0.004,
+  "beyond1m": -0.007,
+  "treadAboveBoard1m": 8.165,
+  "drop": 0.007224811666784348
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1414820394,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1194.42,
+   -239.8
+  ],
+  "f": 0.9,
+  "xz": [
+   1185.91,
+   -239.35
+  ],
+  "tread": -19.593,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.005,
+  "treadAboveBoard1m": 9.774,
+  "drop": -0.0052952626421571836
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1414820394,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "start",
+  "endXz": [
+   1192.76,
+   -290.21
+  ],
+  "f": 0.5,
+  "xz": [
+   1192.76,
+   -290.21
+  ],
+  "tread": -20.13,
+  "beyond1mm": -0.03,
+  "beyond1m": -0.048,
+  "treadAboveBoard1m": 9.37,
+  "drop": 0.04846170798553828
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1450888994,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1166.21,
+   -1.83
+  ],
+  "f": 0.1,
+  "xz": [
+   1167.57,
+   -1.42
+  ],
+  "tread": -17.157,
+  "beyond1mm": 0.001,
+  "beyond1m": 0.019,
+  "treadAboveBoard1m": 5.462,
+  "drop": -0.01907009413330485
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1450888995,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1178.11,
+   1.74
+  ],
+  "f": 0.3,
+  "xz": [
+   1182.19,
+   2.96
+  ],
+  "tread": -16.855,
+  "beyond1mm": -0.009,
+  "beyond1m": -0.006,
+  "treadAboveBoard1m": 5.987,
+  "drop": 0.006216146724771221
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1450888996,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1203.59,
+   -22.44
+  ],
+  "f": 0.1,
+  "xz": [
+   1202.23,
+   -22.83
+  ],
+  "tread": -16.989,
+  "beyond1mm": -0.005,
+  "beyond1m": -0.006,
+  "treadAboveBoard1m": 7.652,
+  "drop": 0.006126398659095145
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1450889003,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1100.81,
+   244.49
+  ],
+  "f": 0.5,
+  "xz": [
+   1100.81,
+   244.49
+  ],
+  "tread": -16.69,
+  "beyond1mm": -0.03,
+  "beyond1m": -0.045,
+  "treadAboveBoard1m": 5.854,
+  "drop": 0.04513624456853549
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1450889004,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "start",
+  "endXz": [
+   1091.71,
+   236.02
+  ],
+  "f": 0.9,
+  "xz": [
+   1098.99,
+   242.8
+  ],
+  "tread": -16.72,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.015,
+  "treadAboveBoard1m": 4.171,
+  "drop": 0.014969189120044746
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1451196895,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1198.36,
+   -392.68
+  ],
+  "f": 0.1,
+  "xz": [
+   1199.77,
+   -392.86
+  ],
+  "tread": -21.04,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.016,
+  "treadAboveBoard1m": 8.758,
+  "drop": -0.016356592222322774
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1451196896,
+  "kind": "ground",
+  "dir": "southbound",
+  "end": "end",
+  "endXz": [
+   1194.84,
+   -392.24
+  ],
+  "f": 0.9,
+  "xz": [
+   1193.43,
+   -392.06
+  ],
+  "tread": -21.04,
+  "beyond1mm": 0.0,
+  "beyond1m": 0.018,
+  "treadAboveBoard1m": 8.89,
+  "drop": -0.017969079316721093
+ },
+ {
+  "site": "A",
+  "tier": "high",
+  "way": 1480458106,
+  "kind": "ground",
+  "dir": "northbound",
+  "end": "end",
+  "endXz": [
+   1232.6,
+   -197.78
+  ],
+  "f": 0.5,
+  "xz": [
+   1232.6,
+   -197.78
+  ],
+  "tread": -18.397,
+  "beyond1mm": -0.0,
+  "beyond1m": -0.016,
+  "treadAboveBoard1m": 10.154,
+  "drop": 0.015873425482919146
+ }
+]
