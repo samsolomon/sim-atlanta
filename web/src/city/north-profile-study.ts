@@ -1,3 +1,4 @@
+import type { Build } from '../core/slice';
 import { formationEnvelope } from './north-formation-ends';
 import * as THREE from 'three';
 import type { Area } from '../square-board/sections';
@@ -16,7 +17,8 @@ export const extensions = profiles.map(profile => {
   return { line, at, track: profile.track };
 });
 
-export function studyRails(area: Area) {
+/** The inferred North Line extension, cutting its formation under the budget of an area build. */
+export function* studyRailsSteps(area: Area): Build<THREE.Mesh> {
   const body = new Builder();
   for (const { line, at } of extensions) {
     for (let s = 0; s < line.length; s += 1.5) {
@@ -35,7 +37,8 @@ export function studyRails(area: Area) {
     }
   }
   const nr = extensions.find(profile => profile.track === 'NR')!;
-  area.carve(formationEnvelope(nr, cutWindows, area.terrainAt, .75));
+  yield 'north rail mesh';
+  yield* area.carveSteps(formationEnvelope(nr, cutWindows, area.terrainAt, .75));
   const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
   mesh.name = 'Inferred North Line extension';
   return mesh;

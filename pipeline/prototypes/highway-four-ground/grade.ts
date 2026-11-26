@@ -1,5 +1,6 @@
 // Private R16 southbound I-85 trial. Heights in scene metres, station follows OSM 38983384.
-import { conformCutEdges } from '../../../web/src/terrain/conform-cut-edges';
+import { conformCutEdgesSteps } from '../../../web/src/terrain/conform-cut-edges';
+import { runSync, type Build } from '../../../web/src/core/slice';
 import sections from './sb-sections.json';
 import median from './deering-sections.json';
 import exitSections from './exit-sections.json';
@@ -66,6 +67,10 @@ export function sbTrialHeight(x:number,z:number,ground:number){
 }
 /** Replace only existing board faces, after slots and rail/trail cuts; retain UVs and block ownership. */
 export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds,far?: {settled: boolean}):T{
+  return runSync(gradeSouthboundSteps(mesh,bounds,far));
+}
+/** gradeSouthboundBoard as a build that yields every few hundred blocks (same triangles). */
+export function* gradeSouthboundSteps<T extends Mesh>(mesh:T,bounds:Bounds,far?: {settled: boolean}):Build<T>{
   if(bounds.minX!==-1000 || bounds.maxX!==1800)return mesh;
   const east=bounds.minZ===-6500 && bounds.maxZ===-5700;
   const deering=bounds.minZ===-4900 && bounds.maxZ===-4100;
@@ -76,6 +81,7 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds,far?: 
   // shared vertices; a settled level must also stay below its original cap.
   if (deering && far) {
     for (let v = 0; v < pos.length; v += 3) {
+      if (v % 12288 === 12285) yield 'far normals';
       const x = pos[v], z = pos[v+2];
       if (x < window[0] || x > window[1] || z < window[2] || z > window[3]) continue;
       const height = sbTrialHeight(x, z, pos[v+1]);
@@ -121,12 +127,17 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds,far?: 
   }
   const starts=mesh.starts,oldStarts=starts?.slice(),blocks=oldStarts?oldStarts.length-1:1;
   for(let block=0;block<blocks;block++){
+    if(block%256===255) yield 'ground rows';
     if(starts)starts[block]=next.length;
     const end=oldStarts?oldStarts[block+1]:indices.length;
     for(let j=oldStarts?oldStarts[block]:0;j<end;j+=3){
+      // An unblocked far mesh is one long run.
+      if(!oldStarts && j%6144===6141) yield 'far normals';
       const abc=indices.slice(j,j+3);
-      const xs=abc.map(i=>pos[3*i]),zs=abc.map(i=>pos[3*i+2]);
-      const box={minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs)};
+      // Scalars, not arrays: this runs for every triangle of the board.
+      const a=3*abc[0],b=3*abc[1],c=3*abc[2];
+      const box={minX:Math.min(pos[a],pos[b],pos[c]),maxX:Math.max(pos[a],pos[b],pos[c]),
+        minZ:Math.min(pos[a+2],pos[b+2],pos[c+2]),maxZ:Math.max(pos[a+2],pos[b+2],pos[c+2])};
       // Include the ungraded triangle on the other side of a split edge.
       if (deering && starts && box.maxX >= window[0] && box.minX <= window[1] &&
           box.maxZ >= window[2] && box.minZ <= window[3]) stitchBlocks.add(block);
@@ -154,7 +165,7 @@ export function gradeSouthboundBoard<T extends Mesh>(mesh:T,bounds:Bounds,far?: 
   mesh.indices=next;
   if (starts && stitchBlocks.size) {
     const fitted = {pos, uv, indices: next, starts};
-    conformCutEdges(fitted, stitchBlocks);
+    yield* conformCutEdgesSteps(fitted, stitchBlocks);
     mesh.indices = fitted.indices;
   }
   return mesh;

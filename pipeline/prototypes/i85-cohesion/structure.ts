@@ -40,7 +40,8 @@ export function rampSpanSides(top: (x:number,z:number)=>number|null, quad:(verti
 
 
 import { Builder } from '../../../web/src/vignette/geom';
-import { drawRoadWall, type RoadWall } from './profile-wall';
+import { drawRoadWallSteps, type RoadWall } from './profile-wall';
+import type { Build } from '../../../web/src/core/slice';
 import toes from './wall-toes.json';
 
 const sourceRuns=[28038801,1416312985,484857197,369529900].map(id=>ribbons.find(r=>r.id===id)!);
@@ -79,9 +80,9 @@ export function brookwoodWall(top:(x:number,z:number)=>number|null):RoadWall {
   };
 }
 // Callback compatibility with the private mount. All facets are emitted by Builder.wall.
-export function retainedOuterEdge(top:(x:number,z:number)=>number|null, quad:(vertices:V[],color:string)=>void){
+export function* retainedOuterEdge(top:(x:number,z:number)=>number|null, quad:(vertices:V[],color:string)=>void): Build<void> {
   class MountWall extends Builder {
     override quad(a:V,b:V,c:V,d:V,color:string){quad([a,b,c,d],color);}
   }
-  drawRoadWall(new MountWall(),brookwoodWall(top));
+  yield* drawRoadWallSteps(new MountWall(),brookwoodWall(top));
 }

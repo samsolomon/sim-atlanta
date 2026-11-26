@@ -38,10 +38,18 @@ export interface GraniteAtlasOptions {
 }
 
 /** Day and night textures for a granite elevation, plus their material. */
-export function graniteWindowAtlas(o: GraniteAtlasOptions) {
+/** Pixels for a granite atlas, cached by its options: deterministic (seeded), so a rebuild of the
+ * same building (a re-mounted area, the other tier) reuses them. */
+const atlasCache = new Map<string, { day: Uint8Array<ArrayBuffer>; night: Uint8Array<ArrayBuffer> }>();
+export function atlasPixels(o: GraniteAtlasOptions) {
+  const key = JSON.stringify(o);
+  const hit = atlasCache.get(key);
+  if (hit) return hit;
   const w = o.bays.length * o.bayWidth, h = o.floors * o.floorHeight;
   const day = new Uint8Array(w * h * 4), night = new Uint8Array(day.length);
   const random = rng(o.seed);
+  const [gr, gg, gb] = o.granite, [fr, fg, fb] = o.frame;
+  // Channels are written directly: a fresh array per pixel cost ~17 ms for One Atlantic Center.
   o.bays.forEach(({panes, width, grouped}, bay) => {
     const left = (o.bayWidth - width) / 2;
     for (let floor = 0; floor < o.floors; floor++) {
@@ -54,13 +62,23 @@ export function graniteWindowAtlas(o: GraniteAtlasOptions) {
         const mullion = pane && ((dx % (width / panes)) < 1 || y === 0);
         const shade = 68 + 4 * (Math.floor(dx * panes / width) % 3);
         const i = 4 * ((floor * o.floorHeight + y) * w + bay * o.bayWidth + x);
-        day.set(!pane ? o.granite : mullion ? o.frame : [shade, shade + 13, shade + 22], i);
+        if (!pane) { day[i] = gr; day[i+1] = gg; day[i+2] = gb; }
+        else if (mullion) { day[i] = fr; day[i+1] = fg; day[i+2] = fb; }
+        else { day[i] = shade; day[i+1] = shade + 13; day[i+2] = shade + 22; }
         day[i+3] = 255;
         const glow = pane && !mullion ? lit : 0;
-        night.set([255*glow, 195*glow, 123*glow, 255], i);
+        night[i] = 255*glow; night[i+1] = 195*glow; night[i+2] = 123*glow; night[i+3] = 255;
       }
     }
   });
+  const out = { day, night };
+  atlasCache.set(key, out);
+  return out;
+}
+
+export function graniteWindowAtlas(o: GraniteAtlasOptions) {
+  const w = o.bays.length * o.bayWidth, h = o.floors * o.floorHeight;
+  const { day, night } = atlasPixels(o);
   function texture(bytes: Uint8Array<ArrayBuffer>) {
     const t = new THREE.DataTexture(bytes, w, h);
     t.colorSpace = THREE.SRGBColorSpace;

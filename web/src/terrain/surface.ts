@@ -36,9 +36,17 @@ export class GroundSurface {
   /** Only the far mesh is kept from a prebuilt surface: a carve replaces the near arrays. */
   private prebuiltFar?: BuiltSurface['far'];
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
-    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface) {
+    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface, deferred = false) {
     if (built) this.adopt(built);
-    else this.build();
+    else if (!deferred) this.build();
+  }
+
+  /** The constructor as a build that yields while it first tessellates (sliced section builds). */
+  static *steps(grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [],
+    join?: TerrainJoins, built?: BuiltSurface): Build<GroundSurface> {
+    const surface = new GroundSurface(grid, quality, openings, join, built, true);
+    if (!built) yield* surface.buildSteps();
+    return surface;
   }
 
   /** Take a mesh built off the main thread; a later carve rebuilds here as usual. */
@@ -80,6 +88,36 @@ export class GroundSurface {
     yield* this.buildSteps();
   }
 
+  /**
+   * Keep the mesh as it is now to draw in this surface's place while later carves rebuild it
+   * (for a board already on screen). Sampling follows the carves at once. `shown` shares the
+   * current buffers, so nothing is copied; `revert` puts them and the yields back, and `drop`
+   * frees what only `shown` still holds, once nothing draws it.
+   */
+  hold() {
+    const shown = new THREE.BufferGeometry();
+    for (const [name, attribute] of Object.entries(this.geometry.attributes)) shown.setAttribute(name, attribute);
+    shown.setIndex(this.geometry.index);
+    const { yields, starts, blockCols } = this;
+    return {
+      shown,
+      revert: () => {
+        this.yields = yields;
+        this.starts = starts;
+        this.blockCols = blockCols;
+        this.geometry.boundingBox = this.geometry.boundingSphere = null;
+        for (const [name, attribute] of Object.entries(shown.attributes)) this.geometry.setAttribute(name, attribute);
+        this.geometry.setIndex(shown.index);
+      },
+      drop: () => {
+        // Disposing a geometry frees its buffers, so first let go of those the surface still draws.
+        for (const [name, attribute] of Object.entries(shown.attributes)) if (this.geometry.getAttribute(name) === attribute) shown.deleteAttribute(name);
+        if (shown.index === this.geometry.index) shown.setIndex(null);
+        shown.dispose();
+      },
+    };
+  }
+
   private build() { runSync(this.buildSteps()); }
 
   private *buildSteps() {
@@ -90,17 +128,20 @@ export class GroundSurface {
       this.minY = minY;
     }
     const { pos, uv, indices, starts, blockCols } = yield* tessellateSteps(spec, this.heights, this.quality, this.openings, this.join, this.yields);
-    yield 'ground normals';
+    yield 'ground rows';
+    // The normals read the positions as float32, as computeVertexNormals reads the attribute,
+    // and sum in a float32 array as it does: the same bytes, a chunk per step.
+    const position = new THREE.Float32BufferAttribute(pos, 3);
+    const normal = yield* vertexNormalsSteps(position.array, indices, 'ground normals');
+    // Nothing of the old mesh changes until here, so a cancelled rebuild leaves it whole.
     this.starts = starts;
     this.blockCols = blockCols;
-    // A rebuild (carve) changes the vertex count. computeVertexNormals would reuse a
-    // stale normal attribute of the old length, and cached bounds would be stale too.
-    this.geometry.deleteAttribute('normal');
+    // A rebuild (carve) changes the vertex count, so cached bounds are stale too.
     this.geometry.boundingBox = this.geometry.boundingSphere = null;
-    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    this.geometry.setAttribute('position', position);
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
-    this.geometry.computeVertexNormals();
+    this.geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
     this.shadeExitBank(this.geometry);
   }
 

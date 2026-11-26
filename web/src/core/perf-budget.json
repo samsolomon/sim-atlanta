@@ -72,6 +72,46 @@
       "longestTaskMs": 150
     }
   },
+  "low-r16": {
+    "_doc": "Looks north into R16 after the default view has settled, so R16 mounts inside the sample (13 areas; the run fails if it does not). Only the long task is a ceiling. The targets repeat the default view's ceilings so each figure R16 adds over them is printed.",
+    "tier": "low",
+    "viewport": "a16",
+    "cpu": 6,
+    "motion": "route:r16",
+    "areas": 13,
+    "r16InSample": true,
+    "ceiling": {
+      "longestTaskMs": 500
+    },
+    "target": {
+      "longestTaskMs": 150,
+      "triangles": 2060000,
+      "calls": 435,
+      "programs": 86,
+      "textureMB": 125,
+      "geometryMB": 190,
+      "heapAfterGcMB": 460
+    }
+  },
+  "high-r16": {
+    "tier": "high",
+    "viewport": "desktop",
+    "motion": "route:r16",
+    "areas": 13,
+    "r16InSample": true,
+    "ceiling": {
+      "longestTaskMs": 500
+    },
+    "target": {
+      "longestTaskMs": 150,
+      "triangles": 6850000,
+      "calls": 475,
+      "programs": 100,
+      "textureMB": 890,
+      "geometryMB": 300,
+      "heapAfterGcMB": 570
+    }
+  },
   "low-zoomout": {
     "tier": "low",
     "viewport": "a16",

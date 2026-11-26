@@ -78,12 +78,12 @@ import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchel
 import { createVarsity, varsityId } from '../city/midtown-culture-varsity';
 import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
-import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
-import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
-import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
+import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
+import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
+import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
-import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { buildMidtownLandmark, createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
@@ -340,7 +340,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const openings = terrainOpenings(grid, options);
-  const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
+  const mesh = yield* GroundSurface.steps(grid, options.quality, openings, options.join, options.surface);
   // The area's closures keep `options`; don't let them keep the prebuilt surface's arrays too.
   if (options.surface) options = { ...options, surface: undefined };
   yield 'ground surface';
@@ -361,6 +361,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
+  yield 'bridge approaches';
   // On the high tier the sampler also carries the drawn triangles, so ground-following
   // layers can drape (terrain/drape.ts). The low tier skips the drape until the phone
   // memory budget is known: it adds ~100k triangles across the board.
@@ -442,6 +443,10 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)
       : site.id === norfolkSouthernId ? createNorfolkSouthern(sceneryCity.buildings, site, grid)
       : site.id === vireoId ? createVireo(sceneryCity.buildings, site, grid)
+      // The heaviest landmark modules build in steps (core/slice.ts).
+      : create === createSkylineLandmark ? yield* buildSkylineLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : create === createMidtownLandmark ? yield* buildMidtownLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : create === createArtsCampusLandmark ? yield* buildArtsCampusLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
@@ -490,6 +495,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.
   let veryFarGeometry: THREE.BufferGeometry | null = null;
   let veryFarQueued = false;
+  /** The near ground as it was, drawn in its place while holdGround holds the board. */
+  let held: ReturnType<GroundSurface['hold']> | null = null;
   const bb = grid.manifest.bounds;
   let far = false, veryFar = false, farHouses = false, disposed = false;
   yield 'far ground';
@@ -560,7 +567,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   yield 'landmarks attached';
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
-  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? yield* buildLandmarkBatches(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
@@ -647,6 +654,26 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
     /** carve as a build that yields while the ground re-tessellates (sliced section builds). */
     *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); } },
+    /**
+     * Draw the near ground as it is now while carves rebuild it: for a sliced mount that carves a
+     * board already on screen. `release` shows the carved ground, in the frame the things standing
+     * on it appear; `revert` undoes those carves. Either ends the hold; later calls do nothing.
+     */
+    holdGround() {
+      if (held) throw Error('This board is already held');
+      const hold = held = mesh.hold(), carves = carved.length;
+      if (board.geometry === nearGeometry) board.geometry = hold.shown;
+      const end = () => {
+        if (board.geometry === hold.shown) board.geometry = nearGeometry;
+        held = null;
+        hold.drop();
+        groundLodChanged = true;
+      };
+      return {
+        release() { if (held === hold) end(); },
+        revert() { if (held !== hold) return; hold.revert(); carved.length = carves; end(); },
+      };
+    },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
     /**
@@ -673,7 +700,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         veryFar = nextVery;
         let replaced: THREE.BufferGeometry | null = null;
         if (pendingFar && farGeometry) { replaced = farGeometry; farGeometry = pendingFar; pendingFar = null; }
-        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : nearGeometry;
+        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : held?.shown ?? nearGeometry;
         if (replaced && replaced !== board.geometry) replaced.dispose();
         groundLodChanged = true;
       }
@@ -702,6 +729,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       // The traverse disposed whichever ground is attached; release the others.
       disposed = true;
       for (const g of [nearGeometry, farGeometry, veryFarGeometry, pendingFar]) if (g && g !== board.geometry) g.dispose();
+      // The traverse may have disposed a held ground; the surface's own buffers went with nearGeometry.
+      held?.drop();
+      held = null;
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();

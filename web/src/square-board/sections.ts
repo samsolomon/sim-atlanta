@@ -4,9 +4,10 @@ import { golfFlags, teeMarkers } from '../terrain/golf';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
-import { rampStudy } from '../city/i85-ramp-study';
+import { rampStudySteps } from '../city/i85-ramp-study';
 import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
 import { sharedIds, joinedPaint } from '../city/north-seam-neighborhood';
+import { mountNorthRowSteps, type NorthRowMount } from '../city/north-row-mount';
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
@@ -33,7 +34,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
-import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
+import { emptySliceStats, frameShare, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -43,19 +44,14 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
  */
 /**
- * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
- * high, half that while the camera is dragged (the sliced-build gate: no long task while an
- * area mounts). Off by default.
+ * Each section's build is spread over frames, a share of each (frameShare in core/slice.ts; the
+ * sliced-build gate: no long task while an area mounts). ?slice=0 builds each section in one
+ * task, for comparisons and profiles; so does Node.
  */
-function sliceBudget(quality: TerrainQuality, section: Section): (() => number) | null {
-  if (typeof location === 'undefined') return null;
-  const query = new URLSearchParams(location.search);
-  if (query.get('slice') !== '1' && !(section === 'r16' && query.has('northSlice'))) return null;
-  const ms = quality === 'low' ? 4 : 8;
-  // Half the share while the user drags, so a moving camera stays smooth.
-  return () => sliceInput.dragging ? ms / 2 : ms;
+function sliceBudget() {
+  return typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0' ? null : frameShare;
 }
-/** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
+/** Sliced-build stats across every section this page loaded, for the perf harness. */
 export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
@@ -73,7 +69,7 @@ export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).sort((a, b) 
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
-export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null };
+export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null; northMount?: NorthRowMount };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -120,8 +116,7 @@ export function verifySeam(a: GroundGrid, b: GroundGrid, edge: JoiningEdge) {
   }
 }
 
-// Validate the entire addition before hiding any skirts on the mounted board.
-export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
+function verifyAddition(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
   const all = new Map([...mounted, ...additions]);
   for (const [id, area] of additions) {
     for (const other of neighbors[id]) {
@@ -129,6 +124,12 @@ export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) 
       if (adjacent) verifySeam(area.grid, adjacent.grid, seam(id, other));
     }
   }
+  return all;
+}
+
+// Validate the entire addition before hiding any skirts on the mounted board.
+export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
+  const all = verifyAddition(mounted, additions);
   for (const [id, area] of additions) {
     mounted.set(id, area);
     neighbors[id].forEach((other, i) => {
@@ -163,7 +164,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return new GroundGrid(manifest, terrain);
 }
 
-async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
+async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, budget: ((restMs: number) => number) | null, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band', id === 'r16' || id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
@@ -171,7 +172,8 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
-  const ramp = id === 'r16' ? rampStudy(grid, quality, joins(id)) : undefined;
+  const study = id === 'r16' ? rampStudySteps(grid, quality, joins(id)) : undefined;
+  const ramp = study && (budget ? await runBudgeted(study, { budgetMs: budget, stats: sliceStats }) : runSync(study));
   // The orbit and the lower road still use the original exposed surface.
   const drawnGrid=ramp ? eastPortalBank(grid) : grid;
   const trail = ramp && northeastTrailStudy(grid.manifest.bounds, ramp.originalHeight);
@@ -183,8 +185,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
+  const budget = sliceBudget();
   const [patches] = await Promise.all([
-    Promise.all(ids.map(id => readPatch(id, quality, signal, options?.dataRoot, options?.brookwood))),
+    Promise.all(ids.map(id => readPatch(id, quality, signal, budget, options?.dataRoot, options?.brookwood))),
     // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).
     Promise.resolve().then(() => loadPlaces((options?.dataRoot ?? '/data') + '/ga/neighborhoods.json')).catch(() => undefined),
   ]);
@@ -199,9 +202,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
   // low, all typed-array stores, in a heap snapshot diff).
   const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
-  const budget = sliceBudget(quality, direction);
   const added = new Map<Board, TrafficArea>();
-  // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
+  // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
   try {
     for (const [patchIndex, { id, grid, context, ramp, trail, slots }] of patches.entries()) {
@@ -322,14 +324,24 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
   if (direction === 'r16') performance.mark('r16:build-start');
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
+  const north = built.get('r16'), station = mounted.get('brookwood-station') as TrafficArea | undefined;
   try {
     signal.throwIfAborted();
+    if (north && station) {
+      // R16's mount work also cuts the Station, so the seam is proved first.
+      verifyAddition(mounted, built);
+      const mount = mountNorthRowSteps(north, station, quality);
+      north.northMount = budget ? await runBudgeted(mount, { budgetMs: budget, stats: sliceStats }) : runSync(mount);
+      signal.throwIfAborted();
+    }
     connect(mounted, built);
   } catch (error) {
     // Aborted, or a seam failed validation: nothing of this section survives.
+    north?.northMount?.disposeBuildings();
     for (const area of built.values()) area.dispose();
     throw error;
   }
+  north?.northMount?.commit();
   for (const area of built.values()) area.commitTrees();
   if (direction === 'r16') performance.mark('r16:built');
   return built;

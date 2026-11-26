@@ -1,5 +1,5 @@
 import { seatLandingEdges } from '../../../pipeline/prototypes/highway-four-ground/landing';
-import { gradeSouthboundBoard } from '../../../pipeline/prototypes/highway-four-ground/grade';
+import { gradeSouthboundSteps } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import { runSync, type Build } from '../core/slice';
 /**
  * The ground surface's geometry as pure functions over typed arrays: no DOM, no three.js objects,
@@ -7,7 +7,7 @@ import { runSync, type Build } from '../core/slice';
  * GroundSurface (surface.ts) calls the same code, so both paths draw the same triangles.
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
-import { conformCutEdges } from './conform-cut-edges';
+import { conformCutEdgesSteps } from './conform-cut-edges';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
@@ -37,6 +37,26 @@ export interface SurfaceSpec {
   sha256: string; sceneZeroNavd88M: number;
 }
 
+/**
+ * How many multiples of a plane tolerance a point can lie past a footprint's bounding box and
+ * still pass every edge plane: a corner of the widened polygon reaches 1 / sin(angle / 2).
+ * Infinite, so nothing is rejected early, where that bound does not hold: a reflex or folded
+ * corner, or a repeated vertex.
+ */
+export function cornerReach(ring: readonly (readonly [number, number])[], sign: number) {
+  let reach = 1;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[(i + ring.length - 1) % ring.length], b = ring[i], c = ring[(i + 1) % ring.length];
+    const ux = a[0] - b[0], uz = a[1] - b[1], vx = c[0] - b[0], vz = c[1] - b[1];
+    const lengths = Math.hypot(ux, uz) * Math.hypot(vx, vz);
+    if (!lengths || sign * (vx * uz - vz * ux) < 0) return Infinity;
+    const halfSine = Math.sqrt(Math.max(0, (1 - (ux * vx + uz * vz) / lengths) / 2));
+    if (halfSine < 1e-6) return Infinity;
+    reach = Math.max(reach, 1 / halfSine);
+  }
+  return reach;
+}
+
 export function yieldPlanes(y: GroundYield) {
   const ring = y.ring;
   let area = 0;
@@ -51,9 +71,34 @@ export function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, grade: y.grade, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, reach: cornerReach(ring, sign), grade: y.grade, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
+
+type Footprint = ReturnType<typeof yieldPlanes>;
+
+/** Whether a point is within `eps` of a footprint: its planes, behind a box test that only skips
+ * footprints the planes would reject (footprint-pretest.test.ts). */
+export function footprintContains(y: Footprint, x: number, z: number, eps: number) {
+  const margin = y.reach === Infinity ? Infinity : y.reach * eps + 1e-6;
+  if (x < y.minX - margin || x > y.maxX + margin || z < y.minZ - margin || z > y.maxZ + margin) return false;
+  return y.planes.every(plane => plane(x, 0, z) >= -eps);
+}
+
+/** Whether a face lies wholly outside a footprint's box, so the footprint cannot split it. Asking
+ * splitConvex anyway returns the face unchanged, but first allocates cut vertices nothing draws. */
+export function apartFromFootprint(y: Footprint, pos: readonly number[], face: readonly number[]) {
+  if (y.reach === Infinity) return false;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const i of face) {
+    const x = pos[3 * i], z = pos[3 * i + 2];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
+  }
+  return maxX < y.minX - 1e-6 || minX > y.maxX + 1e-6 || maxZ < y.minZ - 1e-6 || minZ > y.maxZ + 1e-6;
+}
 
 /** Scene heights per grid node (NaN in voids), with the inferred underpass pavement applied. */
 export function nodeHeights(spec: SurfaceSpec, node: (row: number, col: number) => number | null) {
@@ -80,7 +125,11 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
   return runSync(tessellateSteps(spec, heights, quality, openings, join, yieldList));
 }
 
-/** tessellate as a build that yields every 8 block rows (core/slice.ts); same triangles, same order. */
+/** Footprint tests after which a tessellation yields early. */
+const WORK_PER_STEP = 1_500;
+
+/** tessellate as a build that yields every 2 block rows, sooner where footprints are dense
+ * (core/slice.ts); same triangles, same order. */
 export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quality: TerrainQuality,
   openings: readonly OpenSlot[] = [], join?: TerrainJoins, yieldList: readonly GroundYield[] = []) {
     const { rows, cols, stepM, bounds } = spec;
@@ -149,21 +198,26 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     // Yields may abut or overlap (a run of graded-cutting triangles). A vertex takes the
     // lowest floor of every yield that contains it, so faces of neighbouring yields meet
     // at the same height, and a skirt is drawn only where no yield lies beyond the edge.
+    // Cached per block: a dense run of yields is asked for once per clipped vertex.
+    const nearby = new Map<number, ReturnType<typeof yieldPlanes>[]>();
     const nearYields = (x: number, z: number) => {
       const c = Math.floor((x - bounds.minX) / (2 * stepM)), r = Math.floor((z - bounds.minZ) / (2 * stepM));
-      const out = new Set<ReturnType<typeof yieldPlanes>>();
-      for (let rr = r - 1; rr <= r + 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++)
-        if (rr >= 0 && cc >= 0 && rr < blockRows && cc < blockCols) for (const y of yieldBlocks.get(rr * blockCols + cc) ?? []) out.add(y);
-      return out;
+      const key = r * 65536 + c;
+      let list = nearby.get(key);
+      if (!list) {
+        const out = new Set<ReturnType<typeof yieldPlanes>>();
+        for (let rr = r - 1; rr <= r + 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++)
+          if (rr >= 0 && cc >= 0 && rr < blockRows && cc < blockCols) for (const y of yieldBlocks.get(rr * blockCols + cc) ?? []) out.add(y);
+        nearby.set(key, list = [...out]);
+      }
+      return list;
     };
-    const contains = (y: ReturnType<typeof yieldPlanes>, x: number, z: number, eps: number) =>
-      y.planes.every(plane => plane(x, 0, z) >= -eps);
     const lowered = new Map<number, number>();
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
       let f = Infinity;
       let designed = y;
-      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) {
+      for (const yd of nearYields(x, z)) if (footprintContains(yd, x, z, 1e-6)) {
         const height = yd.floor(x, z, y);
         if (yd.grade) designed = height;
         else f = Math.min(f, height);
@@ -175,6 +229,8 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       return j;
     };
     const emit = (f: number[]) => { for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]); };
+    // Face-against-footprint tests since the last yield: a dense block costs far more than a plain row.
+    let work = 0;
     let blockSlots: ReturnType<typeof slotPlanes>[] | undefined;
     let blockYields: ReturnType<typeof yieldPlanes>[] | undefined;
     const tri = (a: number, b: number, c: number) => {
@@ -186,6 +242,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       let faces = [[ia, ib, ic]];
       for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
       for (const y of blockYields ?? []) {
+        work += faces.length;
         // splitConvex can allocate temporary intersections before rejecting a face.
         // Keep a tee's extended clip lines off the neighbouring board rim.
         if (y.grade && (
@@ -193,6 +250,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
           [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
         )) continue;
         faces = faces.flatMap(f => {
+          if (apartFromFootprint(y, pos, f)) return [f];
           const { inside, outside } = splitConvex(f, y.planes, pos, add);
           if (!inside) return outside;
           const low = inside.map(lower);
@@ -209,7 +267,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
             const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
             const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
-            if ([...nearYields(bx, bz)].some(other => other !== y && contains(other, bx, bz, 0))) continue;
+            if (nearYields(bx, bz).some(other => other !== y && footprintContains(other, bx, bz, 0))) continue;
             emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
             emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
           }
@@ -219,7 +277,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       for (const f of faces) emit(f);
     };
     for (let k = 0; k < detail.length; k++) {
-      if (k % (8 * blockCols) === 8 * blockCols - 1) yield 'ground rows';
+      if (k % (2 * blockCols) === 2 * blockCols - 1 || work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
       starts[k] = indices.length;
       blockSlots = slots.get(k);
       blockYields = yieldBlocks.get(k);
@@ -232,7 +290,10 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             // Never bridge a void with a coarse face. Omit the entire invalid source cell.
             if (!Number.isFinite(heights[a] + heights[a + 1] + heights[b] + heights[b + 1])) continue;
             tri(a, b, a + 1);
+            // A block crowded with footprints costs a step per triangle, not per block.
+            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
             tri(b, b + 1, a + 1);
+            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
           }
         }
         continue;
@@ -248,9 +309,13 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       if (bz && detail[k - blockCols]) ring.push(nw + 1);
       if (ring.length === 4) {
         tri(nw, sw, ne);
+        if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
         tri(sw, se, ne);
       } else {
-        for (let i = 0; i < ring.length; i++) tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
+        for (let i = 0; i < ring.length; i++) {
+          tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
+          if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
+        }
       }
     }
     starts[detail.length] = indices.length;
@@ -258,16 +323,19 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     if (yieldList.some(y=>y.conformEdges)) {
       const blocks = new Set<number>();
       for (const [k,ys] of yieldBlocks) if (ys.some(y=>y.conformEdges)) blocks.add(k);
-      conformCutEdges(result, blocks, (x,z)=>{
+      yield 'ground rows';
+      yield* conformCutEdgesSteps(result, blocks, (x,z)=>{
         let floor=Infinity;
-        for (const y of nearYields(x,z)) if (y.conformEdges && contains(y,x,z,1e-6)) {
+        for (const y of nearYields(x,z)) if (y.conformEdges && footprintContains(y,x,z,1e-6)) {
           floor=Math.min(floor,y.floor(x,z));
         }
         return floor;
       });
     }
-    const graded = gradeSouthboundBoard(result, spec.bounds);
-    seatLandingEdges(graded.pos, yieldList);
+    yield 'ground rows';
+    const graded = yield* gradeSouthboundSteps(result, spec.bounds);
+    yield 'ground rows';
+    yield* seatLandingEdges(graded.pos, yieldList);
     return graded;
 }
 
@@ -404,7 +472,7 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
     if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return gradeSouthboundBoard({pos, uv, indices}, spec.bounds, {settled: lower});
+    return yield* gradeSouthboundSteps({pos, uv, indices}, spec.bounds, {settled: lower});
 }
 
 /**
@@ -502,11 +570,12 @@ export function* typedSteps<T extends Float32Array | Uint16Array | Uint32Array>(
   return out;
 }
 
-/** vertexNormals as a build that yields every few thousand triangles (same result). */
-export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>): Build<Float32Array> {
+/** vertexNormals as a build that yields every few thousand triangles (same result); `label`
+ * names its steps (far normals, or ground normals for a near re-cut). */
+export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>, label = 'far normals'): Build<Float32Array> {
   const n = new Float32Array(pos.length);
   for (let i = 0; i < indices.length; i += 3) {
-    if (i % 3072 === 3069) yield 'far normals';
+    if (i % 3072 === 3069) yield label;
     const a = indices[i] * 3, b = indices[i + 1] * 3, c = indices[i + 2] * 3;
     const ax = pos[a], ay = pos[a + 1], az = pos[a + 2];
     const bx = pos[b], by = pos[b + 1], bz = pos[b + 2];
@@ -515,7 +584,7 @@ export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<n
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     for (const k of [a, b, c]) { n[k] += nx; n[k + 1] += ny; n[k + 2] += nz; }
   }
-  yield 'far normals';
+  yield label;
   for (let k = 0; k < n.length; k += 3) {
     const inv = 1 / (Math.sqrt(n[k] * n[k] + n[k + 1] * n[k + 1] + n[k + 2] * n[k + 2]) || 1);
     n[k] *= inv; n[k + 1] *= inv; n[k + 2] *= inv;

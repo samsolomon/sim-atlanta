@@ -52,10 +52,12 @@ function curtainWall() {
 /** Night emissive strengths for the crown (Kendall/Heaton night skyline: a lit pale wash, never clipped). */
 export const CROWN_NIGHT = { veil: .82, lattice: .78, frames: .75, edge: .75 };
 
-export function symphonyTower(shell: Shell) {
+/** 1180 Peachtree, as a build that yields between its parts (core/slice.ts; createSkylineLandmark runs it). */
+export function* symphonyTower(shell: Shell) {
   /** Terrace crape myrtles in the landmark's local frame (u, v and terrace height). */
   const terraceTrees: { u: number; v: number; y: number }[] = [];
   const wall = curtainWall();
+  yield '1180 curtain wall';
   const skin = new Builder(), uv: number[] = [];
   // Every exterior wall gets the same atlas, 0.06 m proud of the massing.
   function glaze(ring: P2[], lo: number, hi: number, taller: P2[][] = []) {
@@ -84,15 +86,18 @@ export function symphonyTower(shell: Shell) {
     shell.prism(p.ring, shell.base, p.h, '#7d9ea6', '#d6cdbd');
     glaze(p.ring, shell.base, p.h, parts.filter(o => o !== p && o.h > p.h).map(o => o.ring));
   }
+  yield '1180 wing';
   for (const p of tower) {
     shell.prism(p.ring, shell.base, ROOF, '#7d9ea6', '#8d9a9c');
     glaze(p.ring, shell.base, ROOF);
   }
+  yield '1180 tower';
 
   // Roof garden on the 68 m wing: paving, an oval lawn in a clipped hedge round
   // the white pavilion, two cypress cones at the tower end and a glass rail.
   const wing = parts.find(p => p.id === 'osm:way:885660381');
   if (wing) garden(wing);
+  yield '1180 roof garden';
   function garden(wing: { h: number; ring: P2[] }) {
   const top = wing.h, ground = () => top;
   const oval = (rx: number, rz: number, n = 24): P2[] =>

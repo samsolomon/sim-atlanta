@@ -49,23 +49,45 @@ export function mountStationFragments(station: TrafficArea, quality: TerrainQual
   return () => { stationLayers.delete(station); layer.dispose(); };
 }
 
-export function mountSeamBuildings(north: TrafficArea, south: TrafficArea, quality: TerrainQuality) {
+/**
+ * The buildings shared across R16's southern seam, and the ground cut under their yards. The
+ * Station is already on screen while a sliced build runs, so until `commit` the layers stay
+ * hidden, its fragments visible and its ground drawn uncut. `dispose` before a commit puts the
+ * Station back as it was, as does a step that throws.
+ */
+export function* mountSeamBuildingsSteps(north: TrafficArea, south: TrafficArea, quality: TerrainQuality) {
   const bounds = {...north.bounds, maxZ: south.bounds.maxZ};
   const sample = joinedPlacementGround(north.groundAt, south.groundAt, bounds);
   const roads = [...south.connectorBoard.city.roads, ...north.connectorBoard.city.roads];
   const footprints = [...north.connectorBoard.city.buildings, ...south.connectorBoard.city.buildings]
     .filter(b => !sharedIds.has(b.id)).concat(inventory.map(entry => entry.building as VBuilding));
   const owners = [['r16',north],['brookwood-station',south]] as const;
-  const layers = owners.map(([id, area]) => {
+  const layers: ReturnType<typeof buildingLayer>[] = [];
+  let ground: ReturnType<TrafficArea['holdGround']> | undefined;
+  const dispose = () => {
+    ground?.revert();
+    for (const layer of layers) layer.dispose();
+    stationLayers.get(south)?.show(true);
+  };
+  try {
+  for (const [id, area] of owners) {
     const buildings = inventory.filter(entry => entry.owner === id).map(entry => entry.building as VBuilding);
     const city = {...area.connectorBoard.city, roads, bounds, buildings};
     const layer = buildingLayer(area, city, sample, footprints, quality, 'Shared seam buildings ' + id);
+    layer.show(false);
+    layers.push(layer);
+    yield 'seam buildings';
     for (const board of [north,south]) {
-      board.carve(layer.yields.filter(y => Math.min(...y.ring.map(p => p[1])) <= board.bounds.maxZ &&
-        Math.max(...y.ring.map(p => p[1])) >= board.bounds.minZ));
+      const cuts = layer.yields.filter(y => Math.min(...y.ring.map(p => p[1])) <= board.bounds.maxZ &&
+        Math.max(...y.ring.map(p => p[1])) >= board.bounds.minZ);
+      if (board === south && cuts.length) ground ??= south.holdGround();
+      yield* board.carveSteps(cuts);
+      yield 'seam cut';
     }
-    return layer;
-  });
-  stationLayers.get(south)?.show(false);
-  return () => { for (const layer of layers) layer.dispose(); stationLayers.get(south)?.show(true); };
+  }
+  } catch (error) { dispose(); throw error; }
+  return {
+    commit() { ground?.release(); for (const layer of layers) layer.show(true); stationLayers.get(south)?.show(false); },
+    dispose,
+  };
 }

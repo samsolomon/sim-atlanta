@@ -47,14 +47,15 @@ try {
   if (q === 'low') await send('Emulation.setDeviceMetricsOverride', { width: 411, height: 891, deviceScaleFactor: 2.625, mobile: true });
   else await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
   await send('Page.navigate', { url: `${base}/?view=city&q=${q}&t=${start}&perf=1` });
-  // Ready, then quiet: no load phase for 5 s (every area mounted), with the ?perf hooks installed.
+  // Ready, then quiet: no sliced area build under way and no load phase for 5 s (every area
+  // mounted), with the ?perf hooks installed.
   // A loaded Studio can take minutes; wait up to 8, and say what was missing if it never got there.
-  let state = { hook: false, ready: false, last: 0, now: 0, phase: 'none' };
+  let state = { hook: false, ready: false, building: 0, last: 0, now: 0, phase: 'none' };
   for (let i = 0; i < 960; i++) {
     await sleep(500);
     try {
-      state = await evaluate('(() => { const p = window.__perf?.phases ?? []; return { hook: typeof window.__scene === "function", ready: p.some(x => x.name === "ready"), last: p[p.length - 1]?.ms ?? 0, now: performance.now(), phase: p[p.length - 1]?.name ?? "none" }; })()') ?? state;
-      if (state.hook && state.ready && state.now - state.last > 5000) break;
+      state = await evaluate('(() => { const p = window.__perf?.phases ?? []; return { hook: typeof window.__scene === "function", ready: p.some(x => x.name === "ready"), last: p[p.length - 1]?.ms ?? 0, building: window.__perf?.building ?? 0, now: performance.now(), phase: p[p.length - 1]?.name ?? "none" }; })()') ?? state;
+      if (state.hook && state.ready && !state.building && state.now - state.last > 5000) break;
     } catch { /* navigating */ }
   }
   if (!state.hook) throw new Error(`__scene hook never appeared at ${q} (last load phase: ${state.phase}); is this a ?perf build from main after #464?`);

@@ -70,13 +70,18 @@ it.each(['low', 'high'] as const)('a Midtown row built with a yield after every 
 // trees, their seasons and the tree rollout are covered too.
 const staged = new URL('../../public/data/scene/square-board/brookwood-south/', import.meta.url);
 const hasStaged = existsSync(new URL('context.json', staged));
-it.skipIf(!hasStaged).each(['low', 'high'] as const)('a staged Brookwood row with its crowns builds the same sliced as synchronously on %s', async quality => {
+// Rows whose landmark modules build in steps: the arts campus (midtown-upper), Bank of America
+// Plaza (midtown-south), plus Brookwood's crowns and rollout.
+const stagedRows = (['brookwood-south', 'midtown-upper', 'midtown-south'] as const)
+  .filter(r => existsSync(new URL(`../${r}/context.json`, staged)));
+it.skipIf(!hasStaged).each(stagedRows.flatMap(row => (['low', 'high'] as const).map(q => [row, q] as const)))('the staged %s row builds the same sliced as synchronously on %s', async (row, quality) => {
   const ctx = new Proxy({}, { get: () => () => { } });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
-  const g = () => new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', staged), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', staged))).buffer);
-  const c = JSON.parse(readFileSync(new URL('context.json', staged), 'utf8'));
-  const options = () => ({ quality, bottomY: -48, join: joins('brookwood-south'), lights: midtownLights,
-    rollout: { row: 'brookwood-south', lowCount: c.treeLowCount, allCrowns: c.trees } });
+  const dir = new URL(`../${row}/`, staged);
+  const g = () => new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', dir))).buffer);
+  const c = JSON.parse(readFileSync(new URL('context.json', dir), 'utf8'));
+  const options = () => ({ quality, bottomY: -48, join: joins(row), lights: midtownLights,
+    rollout: { row, lowCount: c.treeLowCount, allCrowns: c.trees } });
   const sync = runSync(buildDowntownTerrain(g(), c, neighborhoodTrees(c, quality), options()));
   const a = fingerprint(sync.group);
   sync.dispose();

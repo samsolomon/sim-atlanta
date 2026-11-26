@@ -1,4 +1,5 @@
-import type { GroundYield } from '../../../web/src/terrain/surface-build';
+import { cornerReach, type GroundYield } from '../../../web/src/terrain/surface-build';
+import type { Build } from '../../../web/src/core/slice';
 
 type Vertex = readonly [number, number, number];
 const landingFloors = new WeakSet<GroundYield>();
@@ -34,26 +35,36 @@ export function eastLandingYields(triangles: readonly LandingTriangle[]): Ground
 // A clipped face can have zero area in double precision and acquire a thin
 // footprint when its coordinates are uploaded as floats. Its unlowered boundary
 // vertices then reappear above the tread. Seat those vertices on the same plane.
-export function seatLandingEdges(pos: number[], footprints: readonly GroundYield[]) {
-  const buckets = new Map<string, GroundYield[]>();
+export function* seatLandingEdges(pos: number[], footprints: readonly GroundYield[]): Build<void> {
+  const buckets = new Map<string, { face: GroundYield; minX: number; maxX: number; minZ: number; maxZ: number }[]>();
   const cell = (v: number) => Math.floor(v / 5);
   for (const face of footprints) {
     if (!landingFloors.has(face)) continue;
     const xs = face.ring.map(p => p[0]), zs = face.ring.map(p => p[1]);
+    // The box a seated vertex must lie in. A sliver no wider than the tolerance also seats
+    // vertices along its whole line, so it keeps no box.
+    const [a, b, c] = face.ring;
+    const cross = (b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]);
+    const around = face.ring.reduce((sum, p, i) => sum + Math.hypot(face.ring[(i+1)%3][0]-p[0], face.ring[(i+1)%3][1]-p[1]), 0);
+    const reach = Math.abs(cross)/around > .002 ? cornerReach(face.ring, Math.sign(cross)) : Infinity;
+    const margin = reach*.001+1e-6;
+    const boxed = { face, minX: Math.min(...xs)-margin, maxX: Math.max(...xs)+margin, minZ: Math.min(...zs)-margin, maxZ: Math.max(...zs)+margin };
     for (let i = cell(Math.min(...xs)-.001); i <= cell(Math.max(...xs)+.001); i++) {
       for (let j = cell(Math.min(...zs)-.001); j <= cell(Math.max(...zs)+.001); j++) {
         const key = i+','+j;
         const group = buckets.get(key);
-        if (group) group.push(face);
-        else buckets.set(key,[face]);
+        if (group) group.push(boxed);
+        else buckets.set(key,[boxed]);
       }
     }
   }
   if (!buckets.size) return;
   for (let i=0; i<pos.length; i+=3) {
+    if (i % 12288 === 12285) yield 'ground rows';
     const x = Math.fround(pos[i]), z = Math.fround(pos[i+2]);
     if (x < 1470 || x > 1545 || z < -6300 || z > -6190) continue;
-    for (const face of buckets.get(cell(x)+','+cell(z)) ?? []) {
+    for (const { face, minX, maxX, minZ, maxZ } of buckets.get(cell(x)+','+cell(z)) ?? []) {
+      if (x < minX || x > maxX || z < minZ || z > maxZ) continue;
       let positive = false, negative = false;
       const ring = face.ring;
       for (let j=0; j<ring.length; j++) {

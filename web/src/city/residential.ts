@@ -895,7 +895,10 @@ export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) =
       const group = new THREE.Group();
       group.name = 'yards';
       group.userData.perf = 'landscape';
-      const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
+      const land = landscapeMesh(b);
+      yield 'yard land';
+      const covers = cover.triangles ? cover.mesh({ quality }) : null;
+      yield 'yard cover';
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);
       return { group, yields, terraceSites, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };

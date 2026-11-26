@@ -1,3 +1,4 @@
+import { runSync } from '../core/slice';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -129,9 +130,22 @@ const landmarks = [
   { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
 ] satisfies { site: typeof site, axis: P2, probes: P2[], build: (shell: Shell, ground: LocalGround) => unknown }[];
 
+const isBuild = (v: unknown): v is Generator<string | void, unknown, void> =>
+  !!v && typeof (v as Generator).next === 'function' && typeof (v as Generator)[Symbol.iterator] === 'function';
+/** What a builder returns once it has run: a generator's return value, or a plain builder's result. */
+type Built<R> = R extends Generator<unknown, infer T, unknown> ? T : R;
+
 export const skylineIds = new Set(landmarks.map(entry => entry.site.id));
 
-export function createSkylineLandmark(buildings: VBuilding[], building: VBuilding, base: number | null,
+export function createSkylineLandmark(...args: Parameters<typeof buildSkylineLandmark>) {
+  return runSync(buildSkylineLandmark(...args));
+}
+
+/**
+ * createSkylineLandmark as a build (core/slice.ts). A skyline builder may be a generator that yields
+ * a label between its parts; a plain builder runs as one step, exactly as before.
+ */
+export function* buildSkylineLandmark(buildings: VBuilding[], building: VBuilding, base: number | null,
   groundAt: (x: number, z: number) => number | null) {
   const entry = landmarks.find(({site}) => site.id === building.id);
   if (!entry || building.rings.length !== 1 || base === null) return null;
@@ -145,7 +159,9 @@ export function createSkylineLandmark(buildings: VBuilding[], building: VBuildin
     const y = groundAt(site.x + u * c - v * s, site.z + u * s + v * c);
     return y === null || !Number.isFinite(y) ? null : y - grade;
   };
-  const built = shell && build(shell, ground);
+  const result = shell ? build(shell, ground) : null;
+  // A generator builder's return value is the same shape as a plain builder's.
+  const built = (isBuild(result) ? yield* result : result) as Built<typeof result>;
   if (!built) return built;
   // Trees a landmark plants (1180 Peachtree's terrace crape myrtles), in world coordinates.
   const local = (built as { terraceTrees?: { u: number; v: number; y: number }[] }).terraceTrees ?? [];

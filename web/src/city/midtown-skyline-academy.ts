@@ -18,7 +18,8 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 const stucco = '#e2d6bf', base = '#d8ccb3', trim = '#eee6d4', copper = '#8da396', seam = '#6f8579', shade = '#a99c86';
 const stain = '#d0c3a9', glazing = '#3b4241', muntin = '#f2efe6';
 
-export function academyOfMedicine(shell: Shell, ground: LocalGround) {
+/** Yields between its parts (core/slice.ts; createSkylineLandmark runs it). */
+export function* academyOfMedicine(shell: Shell, ground: LocalGround) {
   const { band, modillions, rusticated, edges } = classicalOrnament(shell, { stone: trim, shade, limestone: base, joint: '#c6b99f' });
   const ring = shell.ring.reduce((s, [x, z], i) => { const [a, b] = shell.ring[(i + 1) % shell.ring.length]; return s + x * b - z * a; }, 0) < 0
     ? [...shell.ring].reverse() : shell.ring;
@@ -115,6 +116,7 @@ export function academyOfMedicine(shell: Shell, ground: LocalGround) {
   }
   for (const z of [-17, 13.5]) sash(z > 0 ? -13.92 : -11.62, z, -1, 0);
   for (const x of [-6, 0]) for (const [z, nz] of [[-21.12, -1], [18.92, 1]] as const) sash(x, z, 0, nz);
+  yield 'Academy body';
 
   // The portico: six columns, a frieze lettered ACADEMY OF MEDICINE (drawn as a band),
   // and a pediment, over steps down to the West Peachtree walk.
@@ -177,5 +179,6 @@ export function academyOfMedicine(shell: Shell, ground: LocalGround) {
     flowerBed(shell.body, s > 0 ? bed : [...bed].reverse(), g, { doy: 324, soil: 'rich-black', density: .6, seed: `academy-bed-${s}` });
     hedge(shell.body, [bed[0], bed[1], bed[2], bed[3], bed[0]], g, { height: .45, width: .45, seed: `academy-edge-${s}` });
   }
+  yield 'Academy porch and walks';
   return shell.finish('#ffdcaa', .55);
 }
