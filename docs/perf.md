@@ -133,12 +133,29 @@ Release 17 cost the iPhone 7 → 15 ms of traffic per frame, and 53 ms at #682. 
 `terrain/transport.ts`, which scanned every tread triangle of a road run for each sample. Its 8 m tread
 index restores the phone to 3.3 ms per frame and 0.009 ms per sample. Ceilings at 1× on the Studio:
 
-| Measure | Ceiling | Measured |
+| Measure | Ceiling | Measured when added |
 |---|---:|---:|
-| `trafficMean` | 0.8 ms | 0.57 ms |
+| `trafficMean` | 1.0 ms | 0.57 ms |
 | `trafficSamples` | 160 | 117 |
 | `connectorMs` | 0.4 ms | 0.21 ms |
 | `connectorSamplesPerCar` | 3 | 1.6 |
+
+`trafficMean` was 0.8 ms until 2026-11-26. That afternoon the Studio read it higher for unchanged
+code, and release 18's `test:perf` failed on it once at 0.858 ms. Alternating runs, Low default view:
+
+| Build | Runs | `trafficMean`, ms | `connectorMs`, ms |
+|---|---:|---:|---:|
+| `8678645f` (release 16) | 4 | 0.697–0.708 | not reported |
+| `068b32ed` (release 18, first cut) | 5 | 0.665–0.723 | 0.281–0.302 |
+| `6c5aa4e6` (release 18) | 19 | 0.667–0.864, five over 0.8 | 0.271–0.348 (15 runs) |
+| `6c5aa4e6` with `deckAt` back to the full scan | 4 | 0.847–1.048 | **0.484–0.561** |
+| `b80c49f7` (before the tread index) | 4 | 0.843–0.888 | not reported |
+
+`068b32ed` itself had read 0.50 and 0.61 ms that morning; why the machine slowed is unknown. The new
+1.0 ms ceiling would pass the unindexed builds, so **`connectorMs` is the check that catches this
+regression** on the Studio: all four full-scan runs exceed its 0.4 ms. Its own margin over the current
+build is small (0.348 at most). If it starts failing on unchanged code, don't raise it past about
+0.45 ms without a better check.
 
 On the phone, Connector samples per car reached 3.1. Slower frames meet more untested height steps, so
 about 3.5 samples per car is the phone-equivalent bound.
