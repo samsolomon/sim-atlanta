@@ -90,17 +90,20 @@ export class GroundSurface {
       this.minY = minY;
     }
     const { pos, uv, indices, starts, blockCols } = yield* tessellateSteps(spec, this.heights, this.quality, this.openings, this.join, this.yields);
-    yield 'ground normals';
+    yield 'ground rows';
+    // The normals read the positions as float32, as computeVertexNormals reads the attribute,
+    // and sum in a float32 array as it does: the same bytes, a chunk per step.
+    const position = new THREE.Float32BufferAttribute(pos, 3);
+    const normal = yield* vertexNormalsSteps(position.array, indices, 'ground normals');
+    // Nothing of the old mesh changes until here, so a cancelled rebuild leaves it whole.
     this.starts = starts;
     this.blockCols = blockCols;
-    // A rebuild (carve) changes the vertex count. computeVertexNormals would reuse a
-    // stale normal attribute of the old length, and cached bounds would be stale too.
-    this.geometry.deleteAttribute('normal');
+    // A rebuild (carve) changes the vertex count, so cached bounds are stale too.
     this.geometry.boundingBox = this.geometry.boundingSphere = null;
-    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    this.geometry.setAttribute('position', position);
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
-    this.geometry.computeVertexNormals();
+    this.geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
     this.shadeExitBank(this.geometry);
   }
 

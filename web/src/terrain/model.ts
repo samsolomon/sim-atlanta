@@ -79,7 +79,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
-import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
+import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
@@ -558,7 +558,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   yield 'landmarks attached';
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
-  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? yield* buildLandmarkBatches(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
