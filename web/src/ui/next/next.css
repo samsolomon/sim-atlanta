@@ -625,6 +625,8 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera-piece { display: grid; justify-items: center; }
 .a2-camera .a2-three-d { border-radius: 12px; }
 .a2-angle { display: none; position: absolute; right: calc(100% + 4px); bottom: 12px; background: var(--a2-ink); color: var(--a2-on-ink); border-radius: 6px; padding: 4px; }
+.a2-eye-height:not([hidden]) { display: grid; justify-items: center; padding-block: 3px; font-size: 11px; }
+.a2-eye-height input { writing-mode: vertical-lr; direction: rtl; height: 88px; width: 44px; margin: 2px 0; accent-color: var(--a2-ink); }
 .a2-tilt:active + .a2-angle { display: block; }
 .a2-in-models .a2-tilt-group { display: none; }
 .a2-hint { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding-block: 0; }

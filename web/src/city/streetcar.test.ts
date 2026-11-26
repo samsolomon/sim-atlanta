@@ -73,3 +73,12 @@ it.skipIf(!ready)('draws the seam between two boards exactly once, with no gap',
   expect(west.poles.length + east.poles.length).toBe(whole.poles.length);
   for (const t of [whole, west, east]) t.dispose();
 });
+
+it('samples a local street deck, the crossing below it, and open ground', () => {
+  const deck = { cls: 'secondary', bridge: true, pts: [[0, -40], [0, 40]] as P2[] };
+  const below = { cls: 'residential', pts: [[-40, 0], [40, 0]] as P2[] };
+  const floor = roadSurface([deck, below], (_x, _z, road: typeof deck) => road.bridge ? 9 : 1, () => 0, true);
+  expect(floor(0, 24)).toBe(9);
+  expect(floor(0, 0)).toBe(1);
+  expect(floor(24, 24)).toBe(0);
+});

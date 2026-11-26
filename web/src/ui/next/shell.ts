@@ -8,6 +8,7 @@
  * Plus the OpenStreetMap credit line (persistent on Map, fading in City) and a first-visit hint. See docs/ui-controls-brief.md.
  */
 import './next.css';
+import { MAX_EYE_HEIGHT, PEDESTRIAN_HEIGHT } from '../../core/camera';
 import type { AtmosphereOverride } from '../../core/atmosphere';
 import { fetchLive, weatherFresh, type Weather } from '../../core/weather';
 import { findPlaces, loadPlaces, placeAt } from '../../core/places';
@@ -453,7 +454,13 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const tiltGroup = el('div', { class: 'a2-camera-piece a2-g a2-tilt-group' });
   const angle = el('output', { class: 'a2-angle' });
   tilt.oninput = () => { angle.textContent = tilt.value + '°'; };
-  tiltGroup.append(threeD, tilt, angle);
+  const heightGroup = el('label', { class: 'a2-eye-height', hidden: '' });
+  const height = el('input', { type: 'range', min: String(PEDESTRIAN_HEIGHT), max: String(MAX_EYE_HEIGHT),
+    value: String(PEDESTRIAN_HEIGHT), step: '0.1', 'aria-label': 'Camera height above surface in metres' });
+  const heightValue = el('span');
+  heightGroup.append('Height', height, heightValue);
+  height.addEventListener('input', () => o.setEyeHeight?.(height.valueAsNumber));
+  tiltGroup.append(threeD, tilt, angle, heightGroup);
   compass.classList.add('a2-g');
   resetBtn.classList.add('a2-g');
   cam.classList.remove('a2-g');
@@ -541,8 +548,20 @@ export function createShellNext(o: ShellOptions): ShellApi {
   let labelTimer = 0;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
+    const limit = String(view === 'city' ? Math.round(o.getMaxTilt?.() ?? 70) : 70);
+    if (tilt.max !== limit) tilt.max = limit;
     const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
     if (tilt.value !== tiltNow && !tilt.matches(':active, :focus-visible')) tilt.value = tiltNow;
+    const metres = view === 'city' && Number(tiltNow) > 70 ? o.getEyeHeight?.() : undefined;
+    if (heightGroup.hidden !== (metres === undefined)) heightGroup.hidden = metres === undefined;
+    if (metres !== undefined) {
+      const label = metres.toFixed(1) + ' m';
+      if (height.valueAsNumber !== metres) height.value = String(metres);
+      if (heightValue.textContent !== label) {
+        heightValue.textContent = label;
+        height.setAttribute('aria-valuetext', label);
+      }
+    }
     const show = view !== 'models';
     if (compass.hidden === show) {
       compass.hidden = !show;

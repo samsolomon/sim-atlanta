@@ -7,6 +7,7 @@
  * bakes use the flat board. Quality is selected once when the view opens.
  */
 import * as THREE from 'three';
+import { maxStreetTilt, minStreetDistance, ORBIT_TILT, streetBlend, streetFov } from './street-eye';
 import { ORBIT_MIN, minOrbitDistance } from './dev-camera';
 import { takeHouseLodChange } from './house-lod';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -17,7 +18,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
-import type { GroundCamera } from '../core/camera';
+import { MAX_EYE_HEIGHT, PEDESTRIAN_HEIGHT, type GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
@@ -163,12 +164,15 @@ export interface CityView {
   hasPeople: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
-  lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
+  lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number; eyeHeightM?: number }): void;
   target(): { x: number; z: number };
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
   camera(): GroundCamera & { tilt: number };
+  maxTilt(): number;
+  eyeHeight(): number;
+  setEyeHeight(metres: number): void;
   /** Orbit distance in metres, the last field of a `cam` link. */
   distance(): number;
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
@@ -1228,6 +1232,36 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
   const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
+  const streetControls = !!options.mapGestures && !drive;
+  let eyeHeightM = PEDESTRIAN_HEIGHT;
+  const orbitMinimum = controls.minDistance;
+  function orbitLimits(distance: number, tilt: number) {
+    if (!streetControls) return;
+    controls.maxPolarAngle = THREE.MathUtils.degToRad(maxStreetTilt(distance));
+    controls.minDistance = minStreetDistance(tilt, orbitMinimum);
+    // Cursor zoom intersects a ground plane. Near the horizon zoom around the
+    // subject instead, including on the first wheel event after restoring a URL.
+    controls.zoomToCursor = tilt <= ORBIT_TILT;
+  }
+  // Resolve the road under the eye, including boards mounted after a shared
+  // view opens. Build each spatial index only on the first low visit.
+  const floors = new WeakMap<ConnectorBoard, ReturnType<typeof roadSurface>>();
+  function streetFloor(x: number, z: number) {
+    const ground = targetY(x, z);
+    for (const board of [trafficOptions, east?.connectorBoard, north?.connectorBoard,
+      ...Array.from(mosaic?.patches.values() ?? [], area => area.connectorBoard)]) {
+      if (!board) continue;
+      const r = board.city.bounds;
+      if (x < r.minX || x > r.maxX || z < r.minZ || z > r.maxZ) continue;
+      let floor = floors.get(board);
+      if (!floor) {
+        floor = roadSurface(board.city.roads, board.roadHeight, targetY, true);
+        floors.set(board, floor);
+      }
+      return Math.max(ground, floor(x, z) ?? ground);
+    }
+    return ground;
+  }
   const clampTarget = () => {
     if (drive) return;
     const t = controls.target;
@@ -1236,7 +1270,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     approachNorth(t.x, t.z);
     const point = pointOnBoard(t.x, t.z);
     const dx = point.x - t.x, dz = point.z - t.z;
-    const dy = grid ? targetY(point.x, point.z) - t.y : 0;
+    const tilt = THREE.MathUtils.radToDeg(controls.getPolarAngle());
+    const distance = camera.position.distanceTo(t);
+    orbitLimits(distance, tilt);
+    const blend = streetControls ? streetBlend(tilt) : 0;
+    let pivotY = grid || blend ? targetY(point.x, point.z) : t.y;
+    if (blend) {
+      // Translate eye and pivot together: picking, camera snapshots, all render
+      // passes and Follow then see exactly the same upward-looking camera.
+      const eyeOffset = camera.position.y - t.y;
+      const eyeFloor = streetFloor(camera.position.x + dx, camera.position.z + dz) + eyeHeightM;
+      pivotY = Math.max(eyeFloor, THREE.MathUtils.lerp(pivotY + eyeOffset, eyeFloor, blend)) - eyeOffset;
+    }
+    const dy = pivotY - t.y;
+    const lens = streetFov(blend, distance);
+    if (camera.fov !== lens) {
+      camera.fov = lens;
+      camera.updateProjectionMatrix();
+    }
     if (dx || dy || dz) {
       // Direct mode: inertia into the board edge stops there instead of pushing on silently.
       if (directCamera && (dx || dz)) orbitInternals._panOffset.set(0, 0, 0);
@@ -1251,6 +1302,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.addEventListener('change', clampTarget);
 
   function setView(azDeg: number, polarDeg: number, dist: number, tx = controls.target.x, tz = controls.target.z) {
+    orbitLimits(dist, polarDeg);
     const ty = targetY(tx, tz);
     controls.target.set(tx, ty, tz);
     const az = THREE.MathUtils.degToRad(azDeg);
@@ -2000,7 +2052,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;
-      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z));
+      const blend = streetControls ? streetBlend(THREE.MathUtils.radToDeg(controls.getPolarAngle())) : 0;
+      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z), THREE.MathUtils.lerp(20, .18, blend));
       if (Math.abs(near - camera.near) > 0.05 * camera.near) {
         camera.near = near;
         camera.updateProjectionMatrix();
@@ -2220,6 +2273,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     quality,
     lookAt(x, z, view) {
       glideTo = null;
+      if (view) eyeHeightM = view.eyeHeightM ?? PEDESTRIAN_HEIGHT;
       pendingEastTarget = previewEast && !east && x > b.maxX && x <= eastBounds.maxX &&
         z >= eastBounds.minZ && z <= eastBounds.maxZ ? { x, z } : undefined;
       pendingNorthTarget = previewNorth && !north && x > b.maxX && x <= northBounds.maxX &&
@@ -2232,6 +2286,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const point = pointOnBoard(x, z);
       if (view) {
         const dist = 'distanceM' in view ? view.distanceM : view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+        orbitLimits(dist, view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()));
         const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
           THREE.MathUtils.radToDeg(controls.minPolarAngle), THREE.MathUtils.radToDeg(controls.maxPolarAngle));
         setView(-view.bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance),
@@ -2246,6 +2301,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
     distance: () => camera.position.distanceTo(controls.target),
+    eyeHeight: () => eyeHeightM,
+    setEyeHeight(metres) {
+      if (!Number.isFinite(metres)) return;
+      eyeHeightM = THREE.MathUtils.clamp(metres, PEDESTRIAN_HEIGHT, MAX_EYE_HEIGHT);
+      clampTarget();
+      camera.updateMatrixWorld();
+    },
+    maxTilt: () => THREE.MathUtils.radToDeg(controls.maxPolarAngle),
     onBoard(x, z, eventually = false) {
       if (eventually && mosaic) {
         const r = mosaic.bounds;
