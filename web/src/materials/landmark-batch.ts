@@ -580,6 +580,8 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
     if (parts.length > 1) yield 'landmark parts';
     const merged = mergeGeometries(parts);
     if (!merged) throw new Error(`landmark batch: could not merge ${members.length} meshes in cell ${cell}`);
+    // Nothing of this class is in the scene yet, so the merge and the packing can each end a step.
+    yield 'landmark merge';
     const counts = parts.map(p => p.getAttribute('position').count);
     for (const part of parts) part.dispose();
     // Day groups as vertex ranges, and (by day, from afar) their far versions.
@@ -591,6 +593,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
     }
     const lodable = !!lod && !!merged.getAttribute('color') && !merged.getAttribute('uv');
     const packing = pack(merged);
+    yield 'landmark pack';
     const ck = `${cell}`;
     let cellGroup = cells.get(ck);
     if (!cellGroup) {

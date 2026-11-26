@@ -3,6 +3,7 @@ import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import type { TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import { pierObstacles } from '../terrain/pier-clearance';
+import { nearestOnLine } from './line-distance';
 
 type Ground = (x: number, z: number) => number | null;
 
@@ -44,23 +45,6 @@ function crossing(a: P2, b: P2, c: P2, d: P2): P2 | null {
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + t * r[0], a[1] + t * r[1]] : null;
 }
 
-function nearestOn(line: Line, x: number, z: number) {
-  let best = { d: Infinity, s: 0, x: 0, z: 0 };
-  for (let i = 1; i < line.pts.length; i++) {
-    const [ax, az] = line.pts[i - 1],
-      [bx, bz] = line.pts[i];
-    const dx = bx - ax,
-      dz = bz - az,
-      l2 = dx * dx + dz * dz || 1;
-    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
-    const px = ax + t * dx,
-      pz = az + t * dz,
-      d = Math.hypot(x - px, z - pz);
-    if (d < best.d) best = { d, s: line.cum[i - 1] + t * Math.sqrt(l2), x: px, z: pz };
-  }
-  return best;
-}
-
 /**
  * One designed profile shared by both tracks: on bare earth it rides the highest
  * ground between the outer rails, and over a span it keeps the deck at least
@@ -82,10 +66,10 @@ export function northLineProfile(
   const centre: { x: number; z: number; s: number; nx: number; nz: number; half: number; bridge: boolean; clear: number | null }[] = [];
   for (let s = 0; s <= a.length; s += STEP) {
     const p = a.at(s),
-      q = nearestOn(b, p.x, p.z);
+      q = nearestOnLine(b, p.x, p.z);
     const x = (p.x + q.x) / 2,
       z = (p.z + q.z) / 2;
-    const near = spans.map((l) => ({ l, n: nearestOn(l, x, z) })).filter(({ n }) => n.d < 3.2);
+    const near = spans.map((l) => ({ l, n: nearestOnLine(l, x, z) })).filter(({ n }) => n.d < 3.2);
     const bridge = near.some(({ l, n }) => n.s > 0.5 && n.s < l.length - 0.5);
     centre.push({ x, z, s, nx: -p.dz, nz: p.dx, half: q.d / 2 + 2.1, bridge, clear: null });
   }
@@ -164,13 +148,13 @@ export function northLineProfile(
     const h = new Float64Array(Math.ceil(line.length) + 1);
     for (let u = 0; u < h.length; u++) {
       const p = line.at(Math.min(u, line.length));
-      h[u] = onA(line === a ? u : nearestOn(a, p.x, p.z).s);
+      h[u] = onA(line === a ? u : nearestOnLine(a, p.x, p.z).s);
     }
     perTrack.set(line, h);
   }
   const bridgeAt = (line: Line, along: number) => {
     const p = line.at(THREE.MathUtils.clamp(along, 0, line.length));
-    return spans.some((l) => nearestOn(l, p.x, p.z).d < 0.6);
+    return spans.some((l) => nearestOnLine(l, p.x, p.z).d < 0.6);
   };
   return {
     centre,
@@ -221,7 +205,7 @@ export function northLineGuideway(tracks: Line[], profile: NorthLineProfile, gro
         nz = p.dx;
       // Where the other track is close, widen the inner edge to meet its bed, so the
       // two lifted strips read as one double-track embankment with no slot between.
-      const q = nearestOn(other, p.x, p.z);
+      const q = nearestOnLine(other, p.x, p.z);
       const shared = q.d < 7;
       const innerLeft = shared ? (q.x - p.x) * nx + (q.z - p.z) * nz < 0 : null;
       const inner = shared ? Math.max(2.1, q.d / 2 + 0.02) : 2.1;

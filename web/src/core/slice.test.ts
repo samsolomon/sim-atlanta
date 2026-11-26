@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { emptySliceStats, frameShare, runBudgeted, runEveryStep, runSync, sliceInput, type Build } from './slice';
+import { SHARE, emptySliceStats, frameShare, runBudgeted, runEveryStep, runSync, sliceInput, type Build } from './slice';
 
 function* work(units: number, msEach: number, clock: { t: number }): Build<number> {
   let sum = 0;
@@ -41,14 +41,20 @@ it('counts builds in progress for other background work to defer to', async () =
   expect(sliceInput.building).toBe(0);
 });
 
-it('gives a build half of what the rest of the frame cost, within bounds', () => {
-  expect(frameShare(0)).toBe(4);
-  expect(frameShare(16)).toBe(8);
-  expect(frameShare(37)).toBe(18.5);
-  expect(frameShare(400)).toBe(24);
-  sliceInput.building = 2;
-  sliceInput.dragging = true;
-  try { expect(frameShare(40)).toBe(5); } finally { sliceInput.building = 0; sliceInput.dragging = false; }
+it('gives an idle camera a share of what the rest of the frame cost, and a moving one very little', () => {
+  const idle = (rest: number) => frameShare(rest, 10_000);
+  expect(idle(0)).toBe(SHARE.idleMinMs);
+  expect(idle(30)).toBe(30 * SHARE.idleShare);
+  expect(idle(4000)).toBe(SHARE.idleMaxMs);
+  try {
+    sliceInput.inputAt = 10_000 - SHARE.idleAfterMs + 1;
+    expect(idle(30)).toBe(SHARE.movingMs);
+    sliceInput.inputAt = -Infinity;
+    sliceInput.dragging = true;
+    expect(idle(30)).toBe(SHARE.movingMs);
+    sliceInput.building = 2;
+    expect(idle(30)).toBe(SHARE.movingMs / 2);
+  } finally { Object.assign(sliceInput, { inputAt: -Infinity, dragging: false, building: 0 }); }
 });
 
 it('measures the rest of a frame without any build\'s own work', async () => {

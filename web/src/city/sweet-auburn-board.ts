@@ -1,8 +1,9 @@
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { createDowntownTerrain } from '../terrain/model';
+import { buildDowntownTerrain } from '../terrain/model';
+import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats } from '../core/slice';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import { createSurfaceTransport } from '../terrain/transport';
+import { buildSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { wheatStreetId, wheatStreetTower } from './wheat-street-towers';
 import { bigBethelId, heritageId, sanctuaryShells } from './auburn-sanctuaries';
@@ -54,14 +55,21 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
   const city = auburnTransport({ ...context, buildings: context.buildings.filter(b=>!ids.has(b.id)) });
-  const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+  const budget = sliceBudget();
+  // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
+  function* build() {
+  const area = yield* buildDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
     simpleLeafClumps: context.treeLowCount !== undefined,
     quality, bottomY, join: [northWestJoin, northSouthJoin, ...extraJoins],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
+    // Trees join the City-wide batch only when the whole board is built.
+    deferTrees: true,
+    dayOfYear: budget ? sliceInput.dayOfYear : undefined,
   });
   try {
-    const decks = createSurfaceTransport(city, grid, area.groundAt);
-    area.carve(decks.cutting);
+    const decks = yield* buildSurfaceTransport(city, grid, area.groundAt);
+    yield* area.carveSteps(decks.cutting);
+    yield 'decks';
     const walls = leonardTateWalls(city, new GroundGrid(manifest, bytes), grid);
     const signs=auburnSigns(ids,manifest.vertical.sceneZeroNavd88M);
     const shells=sanctuaryShells(ids,manifest.vertical.sceneZeroNavd88M);
@@ -77,4 +85,9 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
     area.dispose();
     throw error;
   }
+  }
+  // An abandoned build still runs to its end; the caller then disposes what it returns.
+  const built = budget ? await runBudgeted(build(), { budgetMs: budget, stats: sliceStats }) : runSync(build());
+  built.commitTrees();
+  return built;
 }

@@ -150,7 +150,8 @@ import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } fr
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { sliceInput } from '../core/slice';
+import { sliceBudget, sliceInput } from '../core/slice';
+import { distToLine } from './line-distance';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
@@ -845,8 +846,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
   /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
   let trafficHeightsStale = false;
+  let trafficQueued = false;
+  /** Rejoin Connector traffic across the mounted boards: in a page that builds in steps, on the
+   * next frame, once for however many boards mounted, so no mount carries it. */
   function extendConnectorTraffic() {
     trafficHeightsStale = true;
+    if (!trafficOptions || trafficQueued) return;
+    if (!sliceBudget()) { joinConnectorTraffic(); return; }
+    trafficQueued = true;
+    requestAnimationFrame(() => {
+      trafficQueued = false;
+      if (!eastController.signal.aborted) joinConnectorTraffic();
+    });
+  }
+  function joinConnectorTraffic() {
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
     if (east) clippingPlanes[1].constant = east.bounds.maxX;
@@ -1273,6 +1286,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       // Cars stay visible under the open-sided King Memorial canopy, like Georgia State's.
       t.visibleInStation = s => !!inStation?.(s) || (t.coverAt?.(s) === 'roofed' && t.formAt?.(s) === 'station' && t.line.at(s).x > b.maxX);
     }
+    // The alignments and the track are each a frame's work on a phone.
+    if (sliceBudget()) await new Promise(resolve => requestAnimationFrame(resolve));
+    if (eastController.signal.aborted) return;
     const rail = mod.buildEastRail(extended, rf, pack, area.groundAt, ground.manifest.vertical.sceneZeroNavd88M, b.maxX);
     scene.add(rail.mesh);
     scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
@@ -1531,6 +1547,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     pendingEastTarget = undefined;
   };
   const manualCamera = () => {
+    sliceInput.inputAt = performance.now();
     cancelPendingTarget();
     if (options.follow?.active) options.follow.stop();
   };
@@ -1557,9 +1574,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
-  // Sliced area builds take a smaller share of each frame while the camera is dragged.
-  controls.addEventListener('start', () => { sliceInput.dragging = true; });
-  controls.addEventListener('end', () => { sliceInput.dragging = false; });
+  // Sliced area builds stay out of the way while the camera is in use.
+  controls.addEventListener('start', () => { sliceInput.dragging = true; sliceInput.inputAt = performance.now(); });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; sliceInput.inputAt = performance.now(); });
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
     cancelPendingTarget();
@@ -2455,31 +2472,3 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
   return { tracks: kept, station };
 }
 
-const lineBoxes = new WeakMap<Line, { minX: number; maxX: number; minZ: number; maxZ: number }>();
-/** Distance from (x, z) to the polyline. With `within`, only "is it under `within`" is exact: a
- * point farther than that from the line's box returns Infinity, and the scan stops at the first
- * segment closer than `within` (this ran ~0.35 s of a phone's City load scanning every point). */
-function distToLine(line: Line, x: number, z: number, within = Infinity) {
-  let best = Infinity;
-  const pts = line.pts;
-  if (within < Infinity) {
-    let box = lineBoxes.get(line);
-    if (!box) {
-      box = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
-      for (const [px, pz] of pts) { box.minX = Math.min(box.minX, px); box.maxX = Math.max(box.maxX, px); box.minZ = Math.min(box.minZ, pz); box.maxZ = Math.max(box.maxZ, pz); }
-      lineBoxes.set(line, box);
-    }
-    if (x < box.minX - within || x > box.maxX + within || z < box.minZ - within || z > box.maxZ + within) return Infinity;
-  }
-  for (let i = 1; i < pts.length; i += 1) {
-    const [ax, az] = pts[i - 1];
-    const [bx, bz] = pts[i];
-    const dx = bx - ax;
-    const dz = bz - az;
-    const l2 = dx * dx + dz * dz || 1;
-    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
-    best = Math.min(best, Math.hypot(ax + dx * t - x, az + dz * t - z));
-    if (best < within) return best;
-  }
-  return best;
-}

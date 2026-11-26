@@ -41,21 +41,18 @@ function inside(p: P2, b: Box) {
 /** Cut each lane, including its outside offsets, at the union of mounted boards.
  * Splitting at *all* boundaries also handles a lane leaving and re-entering an L. */
 function clipped(points: P2[], boxes: Box[]) {
+  // Neighbouring boards share edges: each coordinate cuts once.
+  const edges = ([0, 1] as const).map(axis => [...new Set(boxes.flatMap(b => axis ? [b.minZ, b.maxZ] : [b.minX, b.maxX]))]);
   const pieces: P2[][] = [];
   let part: P2[] | undefined;
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1],
       b = points[i],
       cuts = [0, 1];
-    for (const box of boxes)
-      for (const [axis, min, max] of [
-        [0, box.minX, box.maxX],
-        [1, box.minZ, box.maxZ],
-      ]) {
-        for (const edge of [min, max]) {
-          const t = (edge - a[axis]) / (b[axis] - a[axis]);
-          if (t > 0 && t < 1) cuts.push(t);
-        }
+    for (let axis = 0; axis < 2; axis++)
+      for (const edge of edges[axis]) {
+        const t = (edge - a[axis]) / (b[axis] - a[axis]);
+        if (t > 0 && t < 1) cuts.push(t);
       }
     cuts.sort((x, y) => x - y);
     for (let j = 1; j < cuts.length; j++) {

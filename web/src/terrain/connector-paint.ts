@@ -15,22 +15,27 @@ import {
 } from './connector-corridor';
 import { connectorLanes, connectorPoint } from './connector-lanes';
 
-const bands = new PlacementIndex<{ ring: P2[]; ribbon: Ribbon }>();
+const bands = new PlacementIndex<{ ring: P2[]; ribbon: Ribbon; minX: number; maxX: number; minZ: number; maxZ: number }>();
 for (const r of ribbons) {
   for (let i = 1; i < r.rows.length; i++) {
     const a = r.rows[i - 1],
       b = r.rows[i];
     const ring = [a.inner, b.inner, b.outer, a.outer];
-    bands.add({ ring, ribbon: r }, ring, 4);
+    const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
+    bands.add({ ring, ribbon: r, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) }, ring, 4);
   }
 }
 /** Whether (x, z) lies on a rendered Connector lane. `except` ignores a deck's own ribbons,
  * so a flyover can ask only about the lanes that pass beneath it. */
 export function inConnectorLanes(x: number, z: number, margin = 0, except?: ReadonlySet<Ribbon>) {
+  // A cell holds many lane quads; a point farther than the margin from a quad's box is
+  // neither inside it nor that near an edge.
+  const reach = Math.max(margin, 0) + 1e-6;
   return bands
     .at(x, z)
     .some(
-      ({ ring, ribbon }) =>
+      ({ ring, ribbon, minX, maxX, minZ, maxZ }) =>
+        x >= minX - reach && x <= maxX + reach && z >= minZ - reach && z <= maxZ + reach &&
         !except?.has(ribbon) &&
         (pointInRing(x, z, ring) ||
           (margin > 0 && ring.some((a, i) => segDist(x, z, a, ring[(i + 1) % 4]) < margin))),

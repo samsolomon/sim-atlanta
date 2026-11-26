@@ -1,9 +1,10 @@
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { createDowntownTerrain } from '../terrain/model';
+import { buildDowntownTerrain, createDowntownTerrain } from '../terrain/model';
+import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import { createSurfaceTransport } from '../terrain/transport';
+import { buildSurfaceTransport, createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 import { drawGrantStreet, grantBoardRoads, GrantStreetGround, grantFormation, grantLighting } from './grant-street';
 import kingRail from './fixtures/king-rail.json';
@@ -73,6 +74,9 @@ export async function loadEast(
   verifyJoin(west, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees))
     throw new Error('Missing King Memorial neighborhood');
+  const budget = sliceBudget();
+  // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
+  function* build() {
   // The context was baked without rail, so its canopy never kept off the freight corridor:
   // drop crowns that would stand on the ballast.
   const onTrack = ([x, z, , radius]: [number, number, number, number]) => rail.some(run =>
@@ -84,7 +88,11 @@ export async function loadEast(
   const grantNight = { value: 0 };
   const grantTunnel = context.roads.find(r => r.tunnel && r.name === 'Grant Street Southeast');
   const zero = manifest.vertical.sceneZeroNavd88M;
-  const area = createDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
+  yield 'canopy';
+  const area = yield* buildDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
+    // Trees join the City-wide batch only when the whole board is built.
+    deferTrees: true,
+    dayOfYear: budget ? sliceInput.dayOfYear : undefined,
     boardRoads: grantBoardRoads(context.roads),
     boardDetails(builder, ground, material) { drawGrantStreet(builder, ground, zero); grantLighting(material, grantNight, zero); },
     simpleLeafClumps: context.treeLowCount !== undefined,
@@ -95,7 +103,7 @@ export async function loadEast(
   });
   grantLighting(area.board.material, grantNight, zero);
   let freight: ReturnType<typeof kingFreight>;
-  try { freight = kingFreight(context, grid, area); }
+  try { freight = yield* kingFreightSteps(context, grid, area); }
   catch (error) { area.dispose(); throw error; }
   const streetHeight = cityRoadHeight(context, area.groundAt);
   const roadHeight: typeof streetHeight = (x,z,road) =>
@@ -107,6 +115,11 @@ export async function loadEast(
     setNight(factor: number) { grantNight.value = factor; area.setNight(factor); freight.setNight?.(factor); },
     dispose() { freight.dispose(); area.dispose(); },
   };
+  }
+  // An abandoned build still runs to its end; the caller then disposes what it returns.
+  const built = budget ? await runBudgeted(build(), { budgetMs: budget, stats: sliceStats }) : runSync(build());
+  built.commitTrees();
+  return built;
 }
 
 /**
@@ -117,12 +130,16 @@ export async function loadEast(
  * downtown edge. Ground ballast like the rest, with graded cuttings carved under it.
  */
 export function kingFreight(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
+  return runSync(kingFreightSteps(context, grid, area));
+}
+/** kingFreight as a build that yields while it lays the track and carves its cuttings. */
+function* kingFreightSteps(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>): Build<ReturnType<typeof createSurfaceTransport>> {
   const freightGround = Object.assign((x:number,z:number,run?:TransportRun) => {
     const y=area.groundAt(x,z);
     return run && y!==null ? grantFormation(x,y,grid.manifest.vertical.sceneZeroNavd88M) : y;
   }, {triangles:area.groundAt.triangles});
-  const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, freightGround);
-  area.carve(transport.cutting);
+  const transport = yield* buildSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, freightGround);
+  yield* area.carveSteps(transport.cutting);
   area.group.add(transport.group);
   return transport;
 }
