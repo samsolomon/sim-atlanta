@@ -193,7 +193,17 @@ ceilings, so each run prints how far R16 takes memory, calls and programs past t
 
 King Memorial, Sweet Auburn and the rows beyond downtown (the north and south patches, Midtown, Brookwood and R16) build
 in steps, as do Brookwood's rail and the North Line (the last of its row's build); `?slice=0` builds each in one task.
-Downtown builds in one task, before the page is ready.
+Downtown builds in one task, before the page is ready. Its far-board buildings (low; shown only beyond 15 km, so at
+the default view) are left out of that task and built after colour shows, a few ms a frame; until then its buildings
+draw as near. Studio, 6x, A16 canvas, Low, alternating, 4 runs each (2026-11-26; not a phone):
+
+| Build | `stage:terrain`, ms (median) | Ready, ms (median) |
+| --- | --- | --- |
+| `6c5aa4e6`, no far boards | 2,312 | 6,390 |
+| `f0c5ef55`, far boards in the boot tasks | 2,753 | 6,873 |
+| `ccdde64a`, far boards after ready | 2,312 | 6,388 |
+
+The boxes appear about 0.3 s after ready at 1x and 5 to 6 s at 6x.
 
 While the camera is in use (a gesture held, any movement of the view in the last second, or a followed vehicle) building takes 2 ms a frame. Otherwise each frame
 gives it what the rest of the last frame cost, from 4 to 50 ms, split between the builds under way. A run settles only

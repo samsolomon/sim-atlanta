@@ -3964,3 +3964,11 @@ The street had always dropped about 6 m at one node over the Connector cut. Rele
 Every pull request had been checked by someone cloning `main` fresh on the Mac Studio, which also has to stay quiet for timed runs. GitHub Actions now runs the release tests, the type check and the web build on each pull request and push to `main`. A run takes about five and a half minutes; one that has to download the map data again spends two and a half of them doing it. The data is cached until the pipeline that makes it changes.
 
 A GPU-less four-core runner found what a Mac hides, one failure at a time. The three tests that drive City in Chrome cannot run there: forced into software WebGL they missed their time limits even on the Studio, so CI skips them and says so. Three board-building tests overran Vitest's five-second default. Then 1,513 tests passed and the run still failed, because Vitest's worker gives its own progress messages 60 seconds and a single test had held the thread for 72. The longest tests now pause between boards. Last, one ground-carving step read 20.0 ms against a limit of 18.6, so the shared runner gets twice the step limits and local runs keep the real ones.
+
+## 2026-11-26 · The far view was holding up the front door
+
+Drawing distant buildings as boxes cut Low's draw calls, and it also made the page take about half a second longer to open at 6× CPU on the Studio. The boxes show only beyond 15 km, yet downtown fitted them and meshed them three times over inside its two boot tasks. They now build once, after colour shows, a few milliseconds a frame. Alternating four runs of each build, the terrain task went from 2,753 ms back to 2,312, the live release's figure to the millisecond, and ready from 6,873 to 6,388 ms.
+
+The price is that the opening view draws its real buildings first and swaps to boxes shortly after: 0.3 s later at full speed, about 5 s later throttled. By day the swap changes 0.35% of pixels. At night it is 1.1%, as some lit-window dots land in different places. The test for the change caught one building, the one downtown draws on its own, that the deferred version had left out; a draw-call count that was two higher than before pointed the same way.
+
+![Day and night, right after ready and once the boxes are built, with changed pixels marked](log/ui/far-boxes-after-ready/swap-day-night.jpg)
