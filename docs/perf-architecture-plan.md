@@ -378,6 +378,99 @@ Both run V8 with the same float32 rounding, so a mismatch is a bug, not noise.
 **Reuse.** #611 and #621 generators (via `area-build-slicing`), #575's packing, #682's R16 mount
 function, and the ground-contact audit (`pnpm audit:ground`) as a parity check of the drawn surface.
 
+### 4.1a Increment 5, first slice: a one-area ground bake (design, 2026-11-26)
+
+**Scope.** Bake one area's ground on both tiers and load it in place of the in-browser surface
+work. It sits behind `?perf&bake=0`, which turns the bake off and rebuilds in the browser as
+today. Prove the geometry is byte-identical, and measure the mount long task, boot and download at
+Low 6×.
+
+**What the code does today** (code map, main fb118c6b):
+- `buildDowntownTerrain` tessellates the whole board, then re-tessellates it on every carve, using
+  all yields so far:
+  - carve 1: golf, landmark yields, Winn Park and the Piedmont garden;
+  - carve 2: yards;
+  - after it returns: the deck cutting, the trail, R16's landing and seam yields, and the
+    studyRails envelope.
+- The final near mesh therefore equals `tessellateSteps(spec, heights, quality, openings, join,
+  allYieldsInOrder)`, followed by normals.
+- Every step is pure code over static data. The ground map canvas does not depend on geometry and
+  stays painted in the browser.
+
+**The catch: yields are closures, and many sample the surface at mount.** Cuttings, deck
+footprints, tee grades, yard terraces, residential sites and the R16 formation envelope all read
+`groundAt` or `terrainAt` from the surface as it stands at that point. Baking only the final mesh
+is therefore not enough: the yields have to be built the same way to keep `carved`, `holdGround`
+and later seam carves working, and building them needs the intermediate surfaces.
+
+**Design: a baked surface plus a sample tape.**
+1. **Bake (Node).**
+   - Run the area's real build (`addSection` or `loadNorth`, with fetch stubbed) under `runSync`
+     for each tier and each join set the site uses.
+   - At every tessellation (the first build and each carve), record two things:
+     - the surface arrays produced (`position`, `uv`, `normal`, index, `starts`, `blockCols`);
+     - every `groundAt`, `terrainAt` and `sampleScene` call made since the previous tessellation
+       (inputs and outputs, in order).
+   - Store only the **final** surface arrays plus the **tape** of samples. The tape is a few
+     thousand floats.
+   - The manifest records the grid sha256, the tier, the join set, and a hash of the builder
+     sources. A stale bake is a test failure.
+2. **Load (browser).**
+   - `GroundSurface` gets a baked source. Each tessellation step becomes a no-op that advances a
+     counter, and the last one adopts the baked arrays.
+   - `groundAt`, `terrainAt` and `sampleScene` answer from the tape while it is being replayed. Each
+     call checks that its inputs equal the recorded ones.
+   - Any mismatch (a different call order, a stale bake, a missing file) drops to today's
+     in-browser build for that area, logs it in dev, and counts it in the perf summary.
+   - Yields are still constructed exactly as today, so `carved`, `hold`/`revert`, the far boxes and
+     later carves (the R16 seam on the Station) see the same objects. Their floors return the
+     recorded numbers.
+   - Carves made after the replay (a neighbour mounting later) re-tessellate in the browser as
+     today, until §4.1's joined-seam bake.
+3. **Runner.** Add `vite-node` (already in the lockfile through vitest) as a dev dependency, and a
+   `pnpm data:bake` script that runs `web/scripts/bake-ground.ts`, stubbing `document` the way the
+   tests do. It writes `web/public/data/scene/<area>/ground-bake-<tier>[-<join>].bin` and a JSON
+   manifest. `pnpm data` calls it last.
+4. **Format.** The arrays are the Float32 and Uint16/32 arrays the surface already uses, so
+   adoption is a copy and parity is exact. Brotli on the wire. Packing (Int16, #575) is a later
+   byte cut, measured separately, because quantised positions can't be byte-identical.
+
+**Proof.**
+- **Parity test** (vitest, both tiers, every baked join set): fingerprint the area built with the
+  bake against the same area built in the browser, using `sliced-build.test.ts`'s FNV
+  `fingerprint`. That covers ground, decks, carved list, far prefixes and `sampleScene` at a grid
+  of points.
+- **Revert check:** the test fails if the replay is forced to record a different sample.
+- **In the browser:** run `?perf&bake=0` against the bake on one frozen build at Low 6× (A16
+  canvas): the mount long task, ready and last-area time, the bytes fetched, and a matched pixel
+  diff at the default view and at the area's street view.
+
+**Which area.**
+- I recommend **midtown-central for the mechanism**. It has a fixture, a sliced-build test, yards,
+  golf-free carves, decks and the trail, and needs no seam.
+- **The felt freeze is elsewhere.** The integrator's numbers show the iPhone's 10 s and 4 s
+  freezes are before ready, in downtown's `stage:terrain`, which still builds in one task. Post-ready
+  mounts are already sliced to under about 300 ms at 6×.
+- **So the second slice should be downtown**, the same mechanism plus the transport cutting. That
+  is the lever for the iPhone freeze. Sweet Auburn is the smallest area (161×161), but it skips
+  `seatLandingEdges` and grading, so it proves less.
+
+**Cost, estimated before measuring.**
+- **Download:** a Midtown row's Low surface is about 45k vertices × 32 B plus indices, roughly
+  1.6 MB raw and about 0.6 MB with Brotli. High is about 4× that. The first deliverable is the
+  measured bytes per tier.
+- **Main thread:** the mount keeps transport, decks and the yields' own construction. Only
+  tessellation, `lower`, `nearYields`, conform, grade, `seatLandingEdges` and normals go.
+- **Deploy:** needs `pnpm data`, a `web/dist` rebuild and a redeploy. With the bake missing, the
+  site still works through the fallback.
+
+**Risks.**
+- **Tape order** must be deterministic. Sliced and sync builds already produce identical output
+  (#621), which suggests it is.
+- **Tier and join variants multiply files.** Sweet Auburn alone has two join sets (mosaic or
+  preview).
+- **The `?ground=old`, `?worker=1` and `farsettle` flags** bypass the bake.
+
 ### 4.2 Load and unload by distance (streaming)
 
 **Design.** A ring manager keeps a resident set chosen by screen-space error under a memory budget
