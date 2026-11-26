@@ -1,3 +1,4 @@
+import { perfOverrides } from '../core/perf';
 import { golfBowlYields, golfTeeGrades } from './golf';
 import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
@@ -232,7 +233,7 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
   const options = { cityFacades: true, terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048,
-    clumpScale: quality === 'low' ? CITY_LOW_CLUMP_SCALE : 1 };
+    clumpScale: perfOverrides.clumpScale ?? (quality === 'low' ? CITY_LOW_CLUMP_SCALE : 1) };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
