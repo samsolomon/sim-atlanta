@@ -2065,7 +2065,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     arterials?.update(sceneTime, atm.dark, trafficView);
     midtownArterials?.update(sceneTime, atm.dark, trafficView);
     // Spare frames fill untested road-height steps, so cars' first visits stop costing samples.
-    if (!sliceInput.building && !sliceInput.dragging) {
+    // Only when the last frame kept up (a slow phone frame has nothing to spare).
+    if (!sliceInput.building && !sliceInput.dragging && ts - speciesTs <= 20) {
       for (const layer of [traffic, arterials, midtownArterials]) if (layer?.prefill(TRAFFIC_PREFILL_SAMPLES)) break;
     }
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));

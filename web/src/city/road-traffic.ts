@@ -91,8 +91,9 @@ type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
  * takes back the arrays its predecessor filled. When an area mounts, only lanes near it are cleared
  * (`invalidate`); the rest keep their heights, which the new ground cannot have changed.
  */
-/** Road samples City spends per spare frame pre-filling height steps (about 0.1 ms on the Studio,
- * a few ms at most on a phone), across all traffic layers. */
+/** Road samples City spends per spare frame (no area building, no drag, last frame 20 ms or less)
+ * pre-filling height steps (about 0.1 ms on the Studio;
+ * a phone whose frames run long never pre-fills), across all traffic layers. */
 export const TRAFFIC_PREFILL_SAMPLES = 24;
 
 export class LaneHeightStore {
