@@ -44,10 +44,11 @@ it('keeps the rectangle ground maps within each tier budget on the GPU', () => {
   // RGBA8 with a full mip chain, every board of the rectangle mounted (the phone default).
   const mb = (quality: 'low' | 'high') => Object.values(bounds)
     .reduce((sum, b) => { const { width, height } = groundMapSize(b, quality); return sum + width * height * 4 * 4 / 3; }, 0) / 2 ** 20;
-  // Low: about 1.4 m texels (was 1 m and 101.7 MB; now 50.8 MB). High is pinned at today's 406.4 MB until its own budget.
+  // Low: about 1.4 m texels (was 1 m and 101.7 MB; 50.8 MB before r16). High is pinned until its own budget:
+  // 406.4 MB before r16, 454.2 MB with it (one more 2.8 km x 0.8 km board, same texel density, 2026-11-25).
   expect(mb('low')).toBeLessThanOrEqual(75);
   expect(mb('low')).toBeGreaterThan(40);   // not silently blurred further
-  expect(mb('high')).toBeLessThanOrEqual(410);
+  expect(mb('high')).toBeLessThanOrEqual(455);
 });
 
 it('keeps North Avenue sidewalks under the covers and Marietta sidewalks on top', async () => {

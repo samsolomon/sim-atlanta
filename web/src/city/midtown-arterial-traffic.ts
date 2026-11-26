@@ -4,6 +4,7 @@ import { arterialTrafficRoutes, type ArterialCorridor } from './arterial-traffic
 import { ARTERIAL_TRAFFIC_CAP } from './arterial-traffic';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 import bake from './fixtures/midtown-arterials.json';
+import northBake from '../../../pipeline/prototypes/north-arterials/runs.json';
 import signalPoints from './fixtures/midtown-signals.json';
 import { arterialTurns } from './arterial-turns';
 
@@ -26,14 +27,22 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[])
   const corridors = new Map<string, ArterialCorridor & { runs: ArterialCorridor['runs'][number][] }>();
   let skipped = 0;
   let drifted = 0;
-  for (const run of bake.runs as Run[]) {
-    const board = boards.find(b => b.row === run.row);
+  const mounted = new Map(boards.map(board => [board.row, board]));
+  const hasNorth = mounted.has('brookwood-station') || mounted.has('r16');
+  const runs = hasNorth
+    ? [...bake.runs.filter(run => run.row !== 'brookwood-station'),
+       ...northBake.runs.filter(run => mounted.has(run.row))]
+    : bake.runs;
+  for (const run of runs as Run[]) {
+    const board = mounted.get(run.row);
     if (!board) { skipped++; continue; }
     const road = board.city.roads.find(r => r.name === run.name && near(r.pts[0], run.a) && near(r.pts.at(-1)!, run.b));
     // A mounted row whose drawn roads moved since the bake.
     if (!road) { skipped++; drifted++; continue; }
     heights.set(road, board.roadHeight);
-    const id = corridorId(run.name);
+    // US 19 changes its street suffix at Brookwood. Both names belong to the
+    // same directed corridor and share a mapped endpoint in the northern bake.
+    const id = run.name === 'Peachtree Road Northeast' ? 'Peachtree Street' : corridorId(run.name);
     if (!corridors.has(id)) corridors.set(id, { id, runs: [] });
     corridors.get(id)!.runs.push({
       road, from: run.from, to: run.to, allow: run.allow as 'both' | 'forward' | 'reverse',
@@ -44,7 +53,27 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[])
     minX: Math.min(u.minX, b.minX), maxX: Math.max(u.maxX, b.maxX),
     minZ: Math.min(u.minZ, b.minZ), maxZ: Math.max(u.maxZ, b.maxZ) } : { ...b }, null);
   if (drifted) console.warn(`Midtown arterial traffic: ${drifted} baked runs no longer match their drawn roads`);
-  return { corridors: [...corridors.values()], heights, bounds, skipped, drifted };
+  if (hasNorth) {
+    // The offset lane and its axles reach the cut at different stations from
+    // the source axis. Resolve these two pieces by the actual sample Z.
+    const seamZ = -5700;
+    const pieces = ['brookwood-station', 'r16'].map(row => {
+      const board = mounted.get(row);
+      const road = board?.city.roads.find(r => heights.has(r) && r.name === 'Peachtree Road Northeast'
+        && [r.pts[0], r.pts.at(-1)!].some(([x,z]) => Math.abs(x + 197.1) < .05 && z === seamZ));
+      return board && road ? { road, sample: board.roadHeight } : undefined;
+    });
+    const [south, north] = pieces;
+    if (south && north) {
+      const across: MidtownTrafficBoard['roadHeight'] = (x,z) => {
+        const side = z < seamZ ? north : south;
+        return side.sample(x,z,side.road);
+      };
+      heights.set(north.road, across);
+      heights.set(south.road, across);
+    }
+  }
+  return { corridors: [...corridors.values()], heights, bounds, skipped, drifted, hasNorth };
 }
 
 /** Illustrative car positions on Midtown's arterials. Volumes are HPMS AADT (inferred),
@@ -52,10 +81,23 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[])
  * corridor or a signalised turn and fade at unresolved endpoints. Buses are never drawn here. */
 export class MidtownArterialTraffic extends RoadTraffic {
   constructor(opts: Omit<RoadTrafficOptions, 'city' | 'roadHeight'>, boards: readonly MidtownTrafficBoard[]) {
-    const { corridors, heights, bounds } = midtownArterialCorridors(boards);
+    const { corridors, heights, bounds, hasNorth } = midtownArterialCorridors(boards);
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
-    super({ ...opts, city, roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
-      bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signalPoints as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
+    const signals = hasNorth ? [...signalPoints, ...northBake.signals] : signalPoints;
+    const courses = bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signals as [number, number][]) : [];
+    if (hasNorth) {
+      // Reserve a larger share for the two continuous US 19 paths on the
+      // northern rows. The fixed fleet still uses the published directional flow.
+      const northernRoads = new Set(corridors.find(c => c.id === 'Peachtree Street')?.runs
+        .filter(run => run.road.pts.some(p => p[1] < -5700)).map(run => run.road));
+      for (const course of courses) {
+        if (course.roads.some(road => northernRoads.has(road))) course.sampleWeight = 2;
+      }
+    }
+    super({ ...opts, city,
+      fitWheelPlane: hasNorth ? (_road, _x, z) => z <= -4900 : undefined,
+      roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
+      courses, ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
       'Illustrative Midtown arterial traffic');
   }
 }

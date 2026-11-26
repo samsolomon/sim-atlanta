@@ -262,7 +262,10 @@ function startPendingFollow() {
   // end at a loading edge.
   const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
   p.since ??= performance.now();
-  if (!diorama.onBoard(x, z) && performance.now() - p.since < 20_000) return;
+  if (!diorama.onBoard(x, z)) {
+    diorama.seek(x, z);
+    if (performance.now() - p.since < 20_000) return;
+  }
   pendingFollow = null;
   if (p.kind === 'train') {
     const t = source.find(p.id);
@@ -349,7 +352,10 @@ function followFromLink() {
   // Wait for that train's area to mount, so follow does not end at a loading edge.
   // If it never mounts, the follow starts anyway and ends at the edge as usual.
   if (best) followLinkAt ??= performance.now();
-  if (best && !diorama.onBoard(best.x, best.z) && performance.now() - followLinkAt! < 20_000) return;
+  if (best && !diorama.onBoard(best.x, best.z)) {
+    diorama.seek(best.x, best.z);
+    if (performance.now() - followLinkAt! < 20_000) return;
+  }
   const train = best && source.find(best.id);
   if (!train) return;
   followRoute = null;
@@ -371,7 +377,7 @@ const buses = new LiveBuses();
 // so the Map's own per-frame poll below adds no extra requests.
 buses.heartbeat(() => clock.isRealTime() && !document.hidden);
 const schedule = new Schedule(rf, tf, vts);
-if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
+if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule, __clock: clock });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);
@@ -1224,7 +1230,7 @@ const shellOptions: ShellOptions = {
     const c = map?.getCenter();
     if (!c) return false;
     const [x, z] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
-    return x < -1000 || x > 1800 || z < -5700 || z > 1100;
+    return !inCityArea(x, z);
   },
   centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
   getTilt: () => diorama?.camera().tilt ?? cityTilt,

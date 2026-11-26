@@ -1,0 +1,166 @@
+{
+  "origin": "south end of 484857197; increases NB",
+  "NBI": [
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012102060",
+        "FACILITY_CARRIED_007": "SR 13",
+        "FEATURES_DESC_006A": "CLEAR CREEK",
+        "MAIN_UNIT_SPANS_045": "3",
+        "MAX_SPAN_LEN_MT_048": "26.2",
+        "STRUCTURE_LEN_MT_049": "64.3",
+        "DECK_WIDTH_MT_052": "27.4",
+        "VERT_CLR_UND_REF_054A": "N",
+        "VERT_CLR_UND_054B": "0",
+        "LAT_016": "33481322",
+        "LONG_017": "084230194",
+        "YEAR_BUILT_027": "1963",
+        "STRUCTURE_KIND_043A": "2",
+        "STRUCTURE_TYPE_043B": "04"
+      },
+      "sceneXZ": [
+        714.4417495567537,
+        -5534.4262434006
+      ],
+      "nearestNBStation": 55.04137915167826,
+      "lateralDistance": 36.65973581818601
+    },
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012105500",
+        "FACILITY_CARRIED_007": "I-85",
+        "FEATURES_DESC_006A": "CLEAR CREEK",
+        "MAIN_UNIT_SPANS_045": "3",
+        "MAX_SPAN_LEN_MT_048": "28.3",
+        "STRUCTURE_LEN_MT_049": "78.3",
+        "DECK_WIDTH_MT_052": "56.3",
+        "VERT_CLR_UND_REF_054A": "N",
+        "VERT_CLR_UND_054B": "0",
+        "LAT_016": "33481396",
+        "LONG_017": "084230392",
+        "YEAR_BUILT_027": "1984",
+        "STRUCTURE_KIND_043A": "5",
+        "STRUCTURE_TYPE_043B": "02"
+      },
+      "sceneXZ": [
+        663.593630788475,
+        -5557.283009893543
+      ],
+      "nearestNBStation": 33.65408432521585,
+      "lateralDistance": 14.823723436140389
+    },
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012105570",
+        "FACILITY_CARRIED_007": "I-85 RAMP",
+        "FEATURES_DESC_006A": "SR 13",
+        "MAIN_UNIT_SPANS_045": "4",
+        "MAX_SPAN_LEN_MT_048": "39.3",
+        "STRUCTURE_LEN_MT_049": "106.7",
+        "DECK_WIDTH_MT_052": "10.1",
+        "VERT_CLR_UND_REF_054A": "H",
+        "VERT_CLR_UND_054B": "5.18",
+        "LAT_016": "33483326",
+        "LONG_017": "084223201",
+        "YEAR_BUILT_027": "1984",
+        "STRUCTURE_KIND_043A": "4",
+        "STRUCTURE_TYPE_043B": "05"
+      },
+      "sceneXZ": [
+        1483.070130730514,
+        -6153.412190033939
+      ],
+      "nearestNBStation": 453.15412153992054,
+      "lateralDistance": 595.7523762029941
+    },
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012105620",
+        "FACILITY_CARRIED_007": "I-85",
+        "FEATURES_DESC_006A": "RAMP SR13 SBL TO 403 SBL",
+        "MAIN_UNIT_SPANS_045": "1",
+        "MAX_SPAN_LEN_MT_048": "14",
+        "STRUCTURE_LEN_MT_049": "14",
+        "DECK_WIDTH_MT_052": "52",
+        "VERT_CLR_UND_REF_054A": "H",
+        "VERT_CLR_UND_054B": "5.51",
+        "LAT_016": "33482190",
+        "LONG_017": "084225346",
+        "YEAR_BUILT_027": "1984",
+        "STRUCTURE_KIND_043A": "5",
+        "STRUCTURE_TYPE_043B": "01"
+      },
+      "sceneXZ": [
+        932.2155107456452,
+        -5802.529936853035
+      ],
+      "nearestNBStation": 397.34379416907336,
+      "lateralDistance": 13.748605741629488
+    },
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012105900",
+        "FACILITY_CARRIED_007": "I-85",
+        "FEATURES_DESC_006A": "NS RAILROAD",
+        "MAIN_UNIT_SPANS_045": "1",
+        "MAX_SPAN_LEN_MT_048": "10.4",
+        "STRUCTURE_LEN_MT_049": "10.4",
+        "DECK_WIDTH_MT_052": "56.3",
+        "VERT_CLR_UND_REF_054A": "N",
+        "VERT_CLR_UND_054B": "7.08",
+        "LAT_016": "33482597",
+        "LONG_017": "084224736",
+        "YEAR_BUILT_027": "1984",
+        "STRUCTURE_KIND_043A": "1",
+        "STRUCTURE_TYPE_043B": "07"
+      },
+      "sceneXZ": [
+        1088.8688059392016,
+        -5928.24215256146
+      ],
+      "nearestNBStation": 453.15412153992054,
+      "lateralDistance": 144.53272329814416
+    },
+    {
+      "fields": {
+        "STRUCTURE_NUMBER_008": "000000012106700",
+        "FACILITY_CARRIED_007": "I-85",
+        "FEATURES_DESC_006A": "ATLANTA BELTLINE",
+        "MAIN_UNIT_SPANS_045": "1",
+        "MAX_SPAN_LEN_MT_048": "10.4",
+        "STRUCTURE_LEN_MT_049": "10.4",
+        "DECK_WIDTH_MT_052": "56.3",
+        "VERT_CLR_UND_REF_054A": "N",
+        "VERT_CLR_UND_054B": "7.16",
+        "LAT_016": "33483157",
+        "LONG_017": "084223942",
+        "YEAR_BUILT_027": "1984",
+        "STRUCTURE_KIND_043A": "1",
+        "STRUCTURE_TYPE_043B": "07"
+      },
+      "sceneXZ": [
+        1292.7748983727497,
+        -6101.212277369126
+      ],
+      "nearestNBStation": 453.15412153992054,
+      "lateralDistance": 411.8455989621114
+    }
+  ],
+  "clearCreek": [
+    0,
+    77.89641904478
+  ],
+  "seam": 261.41453872178556,
+  "rampCrossing": 414.77545334780393,
+  "modeledRampInterval": [
+    407.77545334780393,
+    421.77545334780393
+  ],
+  "rampCrossingXZ": [
+    954.3453242927432,
+    -5804.307084548885
+  ],
+  "lowerStation": 42.70786358332604,
+  "split": 453.1541215399204,
+  "terminal": 493.1541215399204
+}

@@ -120,6 +120,9 @@ try {
         expected: window.__cityDev?.areaCount() ?? 0
       })`).catch(() => ({ auditReady: false, loaded: 0, expected: 0 }));
       if (state.auditReady && state.expected > 0 && state.loaded === state.expected) break;
+      // The default view leaves the northernmost row unloaded; the audit covers the whole board.
+      if (state.expected > 0 && state.loaded === state.expected - 1)
+        await evaluate(cdp, `[...document.querySelectorAll('#city-info button')].find(b => b.textContent.startsWith('Show full board'))?.click()`).catch(() => undefined);
       if (Date.now() - start > 600_000)
         throw Error(`${q}: ${state.loaded}/${state.expected} areas loaded, audit ready: ${state.auditReady}`);
     }

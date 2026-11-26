@@ -1,3 +1,4 @@
+import { exitBankNormalWeight } from '../../../pipeline/prototypes/highway-four-ground/grade';
 import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { runSync, type Build } from '../core/slice';
@@ -51,6 +52,7 @@ export class GroundSurface {
     this.geometry.setAttribute('uv', new THREE.BufferAttribute(b.uv, 2));
     this.geometry.setAttribute('normal', new THREE.BufferAttribute(b.normal, 3));
     this.geometry.setIndex(new THREE.BufferAttribute(b.index, 1));
+    this.shadeExitBank(this.geometry);
   }
 
   /**
@@ -67,6 +69,8 @@ export class GroundSurface {
     // skipped (the stair still draws, uncarved) rather than failing the whole board.
     const inside = yields.filter(y => {
       const { minX, maxX, minZ, maxZ } = yieldPlanes(y);
+      // A row-clipped design grade shares its datum and edge weights with its neighbour.
+      if (y.grade) return minX >= bounds.minX && maxX <= bounds.maxX && minZ >= bounds.minZ && maxZ <= bounds.maxZ;
       const ok = minX > bounds.minX + stepM && maxX < bounds.maxX - stepM && minZ > bounds.minZ + stepM && maxZ < bounds.maxZ - stepM;
       if (!ok) console.warn('Ground yield skipped: within a cell of the board edge', y.ring);
       return ok;
@@ -97,6 +101,7 @@ export class GroundSurface {
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
     this.geometry.computeVertexNormals();
+    this.shadeExitBank(this.geometry);
   }
 
   /**
@@ -120,6 +125,7 @@ export class GroundSurface {
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
     geometry.setIndex(new THREE.BufferAttribute(index, 1));
+    this.shadeExitBank(geometry);
     return geometry;
   }
 
@@ -137,6 +143,7 @@ export class GroundSurface {
       g.setAttribute('uv', new THREE.BufferAttribute(far.uv, 2));
       g.setAttribute('normal', new THREE.BufferAttribute(far.normal, 3));
       g.setIndex(new THREE.BufferAttribute(far.index, 1));
+      this.shadeExitBank(g);
       return g;
     }
     const { pos, uv, indices } = farSurface(surfaceSpec(this.grid), this.heights, this.openings, errorM, maxCellM, lower);
@@ -145,7 +152,28 @@ export class GroundSurface {
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
+    this.shadeExitBank(geometry);
     return geometry;
+  }
+
+  private shadeExitBank(mesh: THREE.BufferGeometry) {
+    const bounds = this.grid.manifest.bounds;
+    if (bounds.minX !== -1000 || bounds.minZ !== -4900 || bounds.maxZ !== -4100) return;
+    const position = mesh.getAttribute('position'), normal = mesh.getAttribute('normal');
+    const target = new THREE.Vector3(), blended = new THREE.Vector3();
+    // Centre differences on the actual near board give coincident render
+    // vertices the same lighting, including across an original cell diagonal.
+    const radius = 3;
+    for (let i = 0; i < position.count; i++) {
+      const x = position.getX(i), z = position.getZ(i), weight = exitBankNormalWeight(x, z);
+      if (!weight) continue;
+      const west = this.sampleScene(x - radius, z), east = this.sampleScene(x + radius, z);
+      const south = this.sampleScene(x, z + radius), north = this.sampleScene(x, z - radius);
+      if (west === null || east === null || south === null || north === null) continue;
+      target.set(west - east, 2 * radius, north - south).normalize();
+      blended.set(normal.getX(i), normal.getY(i), normal.getZ(i)).lerp(target, weight).normalize();
+      normal.setXYZ(i, blended.x, blended.y, blended.z);
+    }
   }
 
   /** Draw-time patches such as light pools must follow the original triangles,

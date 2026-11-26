@@ -90,8 +90,11 @@ def obstacles(boards):
         yield LineString([project(*p) for p in platform["ring"]]).buffer(5), 2
 
 
-def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="expanded-square", extra_ground=None, neighboring_crowns=()):
-    boards = {k: json.loads((PACK / k / "context.json").read_bytes()) for k in names}
+def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="expanded-square", extra_ground=None, neighboring_crowns=(),
+         contexts=None, extra_obstacles=()):
+    # `contexts` bakes staged boards that differ from the tracked ones; `extra_obstacles` are
+    # (geometry, 1 or 2) pairs that keep trunks and crowns off ground a board does not describe.
+    boards = contexts or {k: json.loads((PACK / k / "context.json").read_bytes()) for k in names}
     if extra_ground:
         for ctx in boards.values():
             ctx["ground"].extend(extra_ground[ctx["name"]])
@@ -101,7 +104,7 @@ def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="exp
     cover, heights = sources(tile, x0, x1, z0, z1, crop)
     # Walks exclude trunks but can pass underneath an existing crown. Roadways,
     # buildings and rail clear the full width of the seasonal model.
-    blocked = rasterize(sorted(obstacles(boards), key=lambda a: a[1]), out_shape=cover.shape,
+    blocked = rasterize(sorted([*obstacles(boards), *extra_obstacles], key=lambda a: a[1]), out_shape=cover.shape,
                         transform=Affine.translation(x0, z0), all_touched=True, dtype="uint8")
     clear = ndimage.distance_transform_edt(blocked < 2)
     interior = ndimage.distance_transform_edt(cover)

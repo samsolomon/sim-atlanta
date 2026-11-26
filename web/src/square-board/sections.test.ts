@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { BufferGeometry, InstancedMesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
+import { midtownBaseNavd88M, northLookM, SquareMosaic, type NorthView } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
+import { addSection, bounds, midtownRows, connect, joins, seam, verifySeam, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
@@ -43,6 +43,21 @@ it('follows both carriageways across seven boards with open northern underpasses
     expect(through.some(route => route.roads.some(road => road.tunnel &&
       road.pts.some(([, z]) => z > 815 && z < 842)))).toBe(true);
   }
+});
+
+it('rejects a mismatched interior node on the committed R16 to Brookwood Station seam', () => {
+  const north = grid('r16'), station = grid('brookwood-station');
+  const edge = seam('r16', 'brookwood-station');
+  expect(edge).toEqual({ minX: -1000, maxX: 1800, z: -5700 });
+  verifySeam(north, station, edge);
+
+  const bytes = Uint8Array.from(file('r16', 'ground.i16')).buffer;
+  const cells = new DataView(bytes);
+  const { rows, cols, bounds, stepM } = north.manifest;
+  const x = 400;
+  const offset = 2 * ((rows - 1) * cols + (x - bounds.minX) / stepM);
+  cells.setInt16(offset, cells.getInt16(offset, true) + 1, true);
+  expect(() => verifySeam(new GroundGrid(north.manifest, bytes), station, edge)).toThrow(/400,-5700/);
 });
 
 it.each(['high', 'low'] as const)('preserves all exterior and internal seam nodes and midpoints on %s', async quality => {
@@ -150,6 +165,8 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       const heights = new Int16Array(Uint8Array.from(file(id, 'ground.i16')).buffer);
       expect(heights.reduce((min, h) => Math.min(min, h), Infinity) * 0.1).toBeGreaterThan(midtownBaseNavd88M);
     }
+    expect(mounted.size).toBe(13);
+    expect(mounted.get('r16')!.bounds).toEqual({ minX: -1000, maxX: 1800, minZ: -6500, maxZ: -5700 });
     const station = mounted.get('brookwood-station')!;
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
       const fallback = station.group.getObjectByName(id)!;
@@ -157,12 +174,12 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       expect(fallback.children.length).toBeGreaterThan(0);
     }
   } finally { for (const area of mounted.values()) area.dispose(); }
-// A deliberate twelve-board integration test. It takes about 0.9 s alone; with three
+// A deliberate thirteen-board integration test. It takes about 0.9 s alone; with three
 // full suites running at once it reached 5.3 s, so it gets a measured budget rather
 // than the 5 s default.
 }, 20_000);
 
-it('stops a direct Brookwood camera at a failed predecessor and resumes the pending target on retry', async () => {
+it('stops a direct R16 camera at a failed predecessor and resumes the pending target on retry', async () => {
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   const requested: string[] = [];
@@ -186,7 +203,7 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
   }, [], { quality: 'low', join: joins('downtown') });
   mosaic.areas.set('downtown', downtown);
   const signal = new AbortController().signal;
-  const target = { x: -81, z: -5065 };
+  const target = { x: -81, z: -6100 };
   let reached: typeof target | undefined;
   const errors: string[] = [];
   const advance = () => mosaic.approach(0, 0, 'low', signal, (_, point) => { if (point) reached = point; }, d => errors.push(d));
@@ -203,15 +220,135 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
     expect(mosaic.point(target.x, target.z).z).toBe(-3300);
     expect(reached).toBeUndefined();
     available = true;
-    mosaic.requestFullBoard();
+    mosaic.cancelTarget();
+    advance();
+    mosaic.remember(target.x, target.z);
     advance();
     await mosaic.idle();
     expect(reached).toEqual(target);
     expect(requested.filter(id => midtownRows.some(row => row === id))).toEqual([
-      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station',
+      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station', 'r16',
     ]);
   } finally { mosaic.dispose(); downtown.dispose(); }
 });
+
+it('leaves R16 out of the default full board until the camera looks north', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/north-look/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/north-look', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const errors: string[] = [];
+  // A far orbit keeps R16 unloaded even with the row in view; the mosaic applies the distance.
+  const view = (orbitM: number, inView: boolean) => (): NorthView => ({ orbitM, inView: () => inView });
+  const advance = (look: () => NorthView) =>
+    mosaic.approach(400, -1500, 'low', signal, () => {}, d => errors.push(d), look);
+  try {
+    mosaic.requestFullBoard(false);
+    advance(view(20_000, true));
+    await mosaic.idle();
+    advance(view(800, false));
+    await mosaic.idle();
+    expect(errors).toEqual([]);
+    expect(requested).toContain('brookwood-station');
+    expect(requested).not.toContain('r16');
+    expect(mosaic.framedNorthEdge()).toBe(-5700);
+    expect(mosaic.framedNorthEdge(true)).toBe(-6500);
+    // The orbit can still travel into the unloaded row.
+    expect(mosaic.northEdge).toBe(-6500);
+    advance(view(northLookM, true));
+    await mosaic.idle();
+    expect(requested.filter(id => id === 'r16')).toEqual(['r16']);
+    expect(mosaic.framedNorthEdge()).toBe(-6500);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+}, 20_000);
+
+it('loads R16 for a followed vehicle near it, from loads already under way, without moving the camera', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/north-seek/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/north-seek', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const reached: unknown[] = [];
+  const train = { x: -81, z: -6100 };
+  try {
+    // The default full board is under way when the follow arrives.
+    mosaic.requestFullBoard(false);
+    mosaic.approach(400, -1500, 'low', signal, (_, point) => { if (point) reached.push(point); }, () => {});
+    mosaic.seek(train);
+    expect(mosaic.pending(train)).toBe(true);
+    mosaic.approach(train.x, train.z, 'low', signal, (_, point) => { if (point) reached.push(point); }, () => {});
+    await mosaic.idle();
+    expect(requested.filter(id => id === 'r16')).toEqual(['r16']);
+    expect(mosaic.areas.has('r16')).toBe(true);
+    expect(mosaic.pending(train)).toBe(false);
+    expect(reached).toEqual([]);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+}, 20_000);
+
+it.each(['north-band', 'midtown-upper', 'r16'])('stops waiting for a followed vehicle once %s fails to load', async broken => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/north-fail/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (id === broken) return new Response(null, { status: 404 });
+    if (name === 'context.json') {
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/north-fail', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const train = { x: -81, z: -6100 };
+  const errors: string[] = [];
+  const advance = () => mosaic.approach(train.x, train.z, 'low', signal, () => {}, d => errors.push(d));
+  try {
+    mosaic.seek(train);
+    advance();
+    expect(mosaic.pending(train)).toBe(true);
+    await mosaic.idle();
+    // City keeps asking every frame while it follows; the failed row stays failed.
+    advance();
+    await mosaic.idle();
+    expect(errors).toEqual([broken === 'north-band' ? 'north' : broken]);
+    expect(mosaic.areas.has('r16')).toBe(false);
+    expect(mosaic.pending(train)).toBe(false);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+}, 20_000);
 
 const staged = new URL('../../public/data/', import.meta.url);
 const railInputs = ['ga/routes.json', 'scene/downtown/scene.json', 'scene/king-memorial/corridor.json'];

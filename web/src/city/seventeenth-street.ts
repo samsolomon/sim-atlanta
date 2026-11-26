@@ -1,3 +1,4 @@
+import { drapeTriangle, type TriangleSource } from "../terrain/drape";
 import survey from './fixtures/seventeenth-street.json';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
@@ -42,6 +43,7 @@ export function drawSeventeenthStreet(
   mesh: Builder,
   treads: Map<TransportRun, number[]>,
   replaced: Set<TransportRun>,
+  footingTerrain?: TriangleSource,
 ) {
   if (city.bounds.minZ !== -4900 && city.bounds.minZ !== -4100) return;
   const runs = city.terrainTransport!.roads;
@@ -227,7 +229,7 @@ export function drawSeventeenthStreet(
   }
   if (!streets.length) return;
   // Four-sided tapered members, including the corbel caps and canopy ribs.
-  function beam(a: Point, b: Point, w: number, v: number, color: string, topW = w) {
+  function beam(a: Point, b: Point, w: number, v: number, color: string, topW = w, seatFoot = false) {
     const dx = b[0] - a[0],
       dy = b[1] - a[1],
       dz = b[2] - a[2];
@@ -252,6 +254,27 @@ export function drawSeventeenthStreet(
       ]);
     const lo = corners(a, w),
       hi = corners(b, topW);
+    if (seatFoot && footingTerrain) {
+      // Clip the bottom face on the drawn terrain. Carry each split of the
+      // perimeter up the shaft side, retaining its original cap and footprint.
+      for (const ids of [[0,1,2],[0,2,3]]) {
+        const below = ids.map(i => [lo[i][0], a[1]-50, lo[i][2]]);
+        drapeTriangle(footingTerrain,below[0],below[1],below[2],0,(p,q,r) => {
+          mesh.tri(p.slice(0,3),q.slice(0,3),r.slice(0,3),color);
+          for (const [v,u] of [[p,q],[q,r],[r,p]]) {
+            const opposite = [0,1,2].find(k => Math.abs(v[k+3])<1e-8 && Math.abs(u[k+3])<1e-8);
+            if (opposite===undefined) continue;
+            const i=ids[(opposite+1)%3], j=ids[(opposite+2)%3];
+            if (Math.abs(i-j)===2) continue; // interior diagonal
+            const cap = (point: typeof p) => [0,1,2].map(k =>
+              point[3]*hi[ids[0]][k]+point[4]*hi[ids[1]][k]+point[5]*hi[ids[2]][k]);
+            mesh.quad(v.slice(0,3),u.slice(0,3),cap(u),cap(v),color);
+          }
+        });
+      }
+      quad(hi[0],hi[1],hi[2],hi[3],color);
+      return;
+    }
     for (let i = 0; i < 4; i++) {
       const j = (i + 1) % 4;
       quad(lo[i], lo[j], hi[j], hi[i], color);
@@ -275,7 +298,7 @@ export function drawSeventeenthStreet(
     for (const f of [0.13, 0.38, 0.62, 0.87]) {
       const top = seat(f, -2.8),
         base: Point = [top[0], ground(top[0], top[2]) ?? top[1], top[2]];
-      beam(base, top, 1.35, 1.65, concrete, 2.15);
+      beam(base, top, 1.35, 1.65, concrete, 2.15, true);
       beam(top, seat(f, -2.05), 2.3, 2.2, concrete, 3.3);
     }
     beam(seat(0.035, -2.2), seat(0.965, -2.2), 2.1, 1.15, concrete);

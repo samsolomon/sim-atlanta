@@ -3,6 +3,33 @@ import { addSection, bounds, midtownRows, connect, joins, type Area, type Board,
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
+export const northStudyBounds = bounds.r16;
+/**
+ * The longest orbit at which having R16 in view counts as looking north. Both full-board frames
+ * stand farther back, so an ordinary visit leaves R16 unloaded until the camera comes in
+ * northward, a destination lies inside it, or Show full board asks for it.
+ */
+export const northLookM = 5000;
+export const looksNorth = (orbitM: number, inView: () => boolean) => orbitM <= northLookM && inView();
+/** The camera as the north-row gate reads it. */
+export interface NorthView { orbitM: number; inView: () => boolean }
+/** A vehicle this close to an unmounted row loads it, so a follow has ground to run onto. */
+const seekMarginM = 600;
+
+/**
+ * The full-board view: a 15° bearing and 35° tilt, far enough back to hold the board from
+ * `north` to its south edge with margins, or its width in a tall window. Framed to the loaded
+ * edge, R16's far tip can show as bare table until the row loads (Sam, 25 November).
+ */
+export function fullBoardFrame(south: number, north: number, midtown: boolean, aspect: number) {
+  const a = Math.max(.25, aspect);
+  return {
+    azimuth: -15, tilt: 35,
+    distance: midtown ? Math.max((south - north) * 2.95, 11700 / a) : Math.max(9200, 9600 / a),
+    targetZ: (south + north) / 2,
+  };
+}
+
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
 // Lowest 5 m ground node is 239.9 m NAVD88 on the station row. Keep the tabletop below it.
@@ -67,7 +94,12 @@ export class SquareMosaic {
   get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
   get bounds(): Rect { return { ...bounds['south-band'], minZ: this.northEdge }; }
+  /** The north edge a full-board view frames: R16 counts only when asked for or already mounted. */
+  framedNorthEdge(includeNorth = false) {
+    return !this.midtown || includeNorth || this.areas.has('r16') ? this.northEdge : bounds['brookwood-station'].minZ;
+  }
   private fullBoard = false;
+  private fullNorth = false;
   readonly areas = new Map<Board, Area>();
   readonly patches = new Map<Board, TrafficArea>();
   readonly joins = joins;
@@ -76,6 +108,9 @@ export class SquareMosaic {
   private inflight = new Set<Promise<void>>();
   private failed = new Set<Section>();
   private wanted?: Point;
+  private seeking?: Point;
+  /** The newest request, which follow-up loads continue from. */
+  private latest?: () => void;
 
   mount(id: 'king' | 'auburn', area: TrafficArea) {
     try { connect(this.areas, new Map([[id, area]])); }
@@ -98,20 +133,37 @@ export class SquareMosaic {
       }
     }
   }
-  requestFullBoard() { this.fullBoard = true; this.failed.clear(); }
+  requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
   cancelTarget() { this.wanted = undefined; }
+  /** A vehicle's position: its rows load although the camera is not asking, and the camera stays. */
+  seek(point: Point) { this.seeking = point; }
+  /** True while a sought vehicle stands in a row that a load under way can still deliver. */
+  pending(p: Point) {
+    const s = this.seeking;
+    if (!this.midtown || !s) return false;
+    const row = midtownRows.findIndex(id => !this.areas.has(id) &&
+      inside(bounds[id], p.x, p.z) && inside(bounds[id], s.x, s.z, seekMarginM));
+    if (row < 0) return false;
+    // The row arrives only by way of the north band and every row before it.
+    const path: Section[] = ['north', ...midtownRows.slice(0, row + 1)];
+    return !path.some(d => this.failed.has(d)) && path.some(d => this.loading.has(d));
+  }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,
-    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void) {
+    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void, northView?: () => NorthView) {
+    this.latest = () => this.approach(x, z, quality, signal, mounted, failure, northView);
     const target = this.wanted ?? { x, z };
-    const lastRow = this.midtown ? (this.fullBoard ? midtownRows.length - 1 :
-      midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) ? i : last, -1)) : -1;
+    const looking = () => { const v = northView?.(); return !!v && looksNorth(v.orbitM, v.inView); };
+    const showNorth = this.fullNorth || (this.areas.has('brookwood-station') && !this.areas.has('r16') && looking());
+    const sought = (id: Board) => !!this.seeking && inside(bounds[id], this.seeking.x, this.seeking.z, seekMarginM);
+    const lastRow = this.midtown ? (this.fullBoard || showNorth ? midtownRows.length - 1 :
+      midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) || sought(id) ? i : last, -1)) : -1;
     const requested: Section[] = [];
     if (lastRow >= 0 || this.fullBoard || nearSection('north', x, z)) requested.push('north');
     if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
     if (lastRow >= 0 && this.areas.has('north-band')) {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
-      if (next) requested.push(next);
+      if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100) || sought('r16'))) requested.push(next);
     }
     for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
     for (const direction of requested) {
@@ -125,7 +177,7 @@ export class SquareMosaic {
         const reached = p && [...added.values()].some(a => inside(a.bounds, p.x, p.z));
         if (reached) this.wanted = undefined;
         mounted(added, reached ? p : undefined);
-        if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure);
+        if (this.fullBoard || this.wanted || this.seeking) this.latest?.();
       }).catch(error => {
         if (!signal.aborted) {
           this.failed.add(direction);

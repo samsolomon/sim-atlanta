@@ -1,3 +1,12 @@
+import { freewaySides } from './i85-ramp-study';
+import { joinGroundMaps } from './north-seam-texture';
+import { rowJoinNormals } from './north-seam-ground';
+import { mountSeamBuildings, mountStationFragments } from './north-seam-neighborhood';
+import type { TrafficArea as SeamArea } from '../square-board/sections';
+import { norcrossNorthRails, northFreightMain } from './norcross-north-study';
+import { extensions, studyRails } from './north-profile-study';
+import { maysonSupports } from './mayson-supports';
+import { mountMayson } from './mayson-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
  * vignette (ink lines, colour grade, tilt-shift) and built by the same engine (`vignette/world`).
@@ -168,6 +177,8 @@ export interface CityView {
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
+  /** Load the area a vehicle stands in, without moving the camera. */
+  seek(x: number, z: number): void;
   camera(): GroundCamera & { tilt: number };
   /** Orbit distance in metres, the last field of a `cam` link. */
   distance(): number;
@@ -292,7 +303,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // surface and generic structures if the chunk or the model is unavailable.
     railModule ??= import('./brookwood').then(mod => {
       if (eastController.signal.aborted) return;
-      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low);
+      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low, northFreightMain);
       return mod;
     }).catch(error => {
       console.warn('Brookwood station unavailable', error);
@@ -309,6 +320,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }) : undefined;
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
+  const seamNormals = rowJoinNormals();
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
@@ -374,6 +386,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     streetcarDowntown?.dispose();
     stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
+    seamNormals.reset();
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -858,11 +871,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let midtownArterials: import('./midtown-arterial-traffic').MidtownArterialTraffic | undefined;
   let midtownBuild = 0;
   async function extendMidtownArterials(added: Iterable<string>) {
-    if (!trafficOptions || !mosaic || ![...added].some(id => Object.hasOwn(midtownRowBounds, id))) return;
+    const trafficRow = (id: string) => id === 'r16' || Object.hasOwn(midtownRowBounds, id);
+    if (!trafficOptions || !mosaic || ![...added].some(trafficRow)) return;
     const build = ++midtownBuild;
     const { MidtownArterialTraffic } = await import('./midtown-arterial-traffic');
     if (build !== midtownBuild || eastController.signal.aborted) return;
-    const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
+    const boards = [...mosaic.patches].filter(([id]) => trafficRow(id))
       .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
     // Share the four-plane shader variants with downtown. The perimeter moves as rows mount.
@@ -1022,6 +1036,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       scene.add(brookwood.group);
       scenery.push(brookwood.structure);
     }
+    const stationArea = mosaic?.areas.get('brookwood-station');
+    if (stationArea) brookwood.mountLandings(stationArea.terrainAt, stationArea.terrainTriangles);
     brookwood.setNorthEdge(area.bounds.minZ);
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
       const object = area.group.getObjectByName(id);
@@ -1039,13 +1055,76 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // camera) loads now, since the view it opens on needs that area.
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
+  // R16 bare earth spans -87.6 to -34.7 m in scene coordinates.
+  const northBoundsBox = square?.northStudyBounds && new THREE.Box3(
+    new THREE.Vector3(square.northStudyBounds.minX, -88, square.northStudyBounds.minZ),
+    new THREE.Vector3(square.northStudyBounds.maxX, -34, square.northStudyBounds.maxZ));
+  const northFrustum = new THREE.Frustum();
+  const viewProjection = new THREE.Matrix4();
+  const clipCorners = [-1, 1].flatMap(z => [-1, 1].flatMap(y => [-1, 1].map(x => new THREE.Vector3(x, y, z))));
+  const worldCorners = clipCorners.map(() => new THREE.Vector3());
+  const frustumFaces = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5], [0, 1, 5, 4], [2, 3, 7, 6]];
+  const faceTriangle = new THREE.Triangle();
+  const northVisible = () => {
+    if (!northBoundsBox) return false;
+    camera.updateMatrixWorld();
+    viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    northFrustum.setFromProjectionMatrix(viewProjection);
+    if (!northFrustum.intersectsBox(northBoundsBox)) return false;
+    if (northFrustum.containsPoint(northBoundsBox.min)) return true;
+    // The plane-only rejection above can admit a wide row entirely outside a close view.
+    // For the remaining cases, a frustum face must meet the row box.
+    for (let i = 0; i < worldCorners.length; i++) worldCorners[i].copy(clipCorners[i]).unproject(camera);
+    return frustumFaces.some(([a, b, c, d]) =>
+      northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[b], worldCorners[c])) ||
+      northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[c], worldCorners[d])));
+  };
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+      const northernRow = added.get('r16');
+      if (northernRow) {
+        const station = mosaic!.areas.get('brookwood-station') as SeamArea;
+        const disposeBuildings = mountSeamBuildings(northernRow, station, quality);
+        const restoreMaps = joinGroundMaps(
+          northernRow.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
+        const structures = new THREE.Group();
+        const sides = freewaySides((x, z) => northernRow.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
+        const rails = studyRails(northernRow);
+        const supports = maysonSupports(extensions, (x, z) => {
+          const y = northernRow.terrainAt(x, z);
+          if (y === null) throw Error('Missing terrain under Mayson support');
+          return y;
+        });
+        const norcross = norcrossNorthRails(northernRow.groundAt, northernRow.grid.manifest.vertical.sceneZeroNavd88M);
+        structures.add(sides, supports, mountMayson(), rails, norcross.mesh);
+        northernRow.group.add(structures);
+        preparedBrookwood?.mountNorthFreight(norcross.freightRailhead);
+        northLine?.extend(rails);
+
+        const disposeArea = northernRow.dispose.bind(northernRow);
+        northernRow.dispose = () => {
+          const materials = new Set<THREE.Material>();
+          structures.traverse(object => {
+            if (object instanceof THREE.Mesh) {
+              object.geometry.dispose();
+              for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material);
+            }
+          });
+          for (const material of materials) material.dispose();
+          restoreMaps();
+          disposeBuildings();
+          seamNormals.reset();
+          disposeArea();
+        };
+      }
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
       if (atl) {
+        const disposeFragments = mountStationFragments(atl, quality);
+        const dispose = atl.dispose.bind(atl);
+        atl.dispose = () => { disposeFragments(); dispose(); };
         const line = createNorthLine(atl, rf, manifest.origin, trains.group);
         northLine = line;
         // The area's dispose clears its group without freeing it; free the North Line too.
@@ -1066,7 +1145,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`),
+      () => ({ orbitM: camera.position.distanceTo(controls.target), inView: northVisible }));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1221,7 +1301,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   function patchY(x: number, z: number) {
     if (mosaic) for (const a of mosaic.patches.values()) {
-      const y = a.groundAt(x, z);
+      const y = a.groundAt(x, z) ?? a.orbitGround?.(x,z) ?? null;
       if (y !== null) return y;
     }
     return null;
@@ -1517,33 +1597,30 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
     document.getElementById('city-info')?.append(squareButton);
-    const loadFullBoard = () => {
+    const loadFullBoard = (includeNorth = true) => {
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      mosaic.requestFullBoard();
+      mosaic.requestFullBoard(includeNorth);
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
       approachMosaic(400, -1500);
       approachEast(1400, 0);
       approachNorth(1400, 0);
     };
-    const frameFullBoard = () => {
-      const aspect = Math.max(.25, camera.aspect);
-      const depth = 1100 - mosaic.northEdge;
-      const distance = midtown ? Math.max(depth * 2.95, 11700 / aspect) : Math.max(9200, 9600 / aspect);
-      const centerZ = (1100 + mosaic.northEdge) / 2;
-      mosaic.remember(400, centerZ);
-      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, centerZ);
+    const frameFullBoard = (includeNorth = false) => {
+      const frame = square!.fullBoardFrame(1100, mosaic.framedNorthEdge(includeNorth), midtown, camera.aspect);
+      mosaic.remember(400, frame.targetZ);
+      setView(frame.azimuth, frame.tilt, Math.min(controls.maxDistance, frame.distance), 400, frame.targetZ);
     };
     if (rectangle || !midtown) {
-      loadFullBoard();
+      loadFullBoard(false);
       if (!drive && !brookwoodStudy && !Object.hasOwn(profileCameras, profile)) frameFullBoard();
     }
     squareButton.onclick = () => {
       manualCamera();
       glideTo = null;
       loadFullBoard();
-      frameFullBoard();
+      frameFullBoard(true);
     };
   }
 
@@ -1954,10 +2031,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // (as "out of view") while King Memorial and its rail load, then falls back to downtown.
     let followBounds: typeof trainBounds | ((p: { x: number; z: number }) => boolean) = trainBounds;
     if (fix && mosaic) {
+      mosaic.seek(fix);
       approachMosaic(fix.x, fix.z);
-      // Per mounted area, so a row that failed or is still loading counts as off the board.
+      // Per mounted area, so a failed row counts as off the board. A row still on its way to the
+      // vehicle keeps the trip, as the east board does.
       const rects = Array.from(mosaic.areas.values(), a => a.bounds);
-      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
+      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ) || mosaic.pending(p);
     } else if (fix && previewEast) {
       approachEast(fix.x, fix.z);
       if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
@@ -1996,6 +2075,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    const northEdge = mosaic?.areas.get('r16'), southEdge = mosaic?.areas.get('brookwood-station');
+    if (northEdge && southEdge) seamNormals.sync(northEdge.board.geometry, southEdge.board.geometry);
     rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
@@ -2246,6 +2327,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
     distance: () => camera.position.distanceTo(controls.target),
+    seek(x, z) {
+      mosaic?.seek({ x, z });
+      approachMosaic(controls.target.x, controls.target.z);
+    },
     onBoard(x, z, eventually = false) {
       if (eventually && mosaic) {
         const r = mosaic.bounds;

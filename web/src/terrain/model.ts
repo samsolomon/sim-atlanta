@@ -1,3 +1,4 @@
+import { golfBowlYields, golfTeeGrades } from './golf';
 import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { buildResidential } from '../city/residential';
@@ -62,7 +63,7 @@ import * as THREE from 'three';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
-import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
+import { CITY_LOW_CLUMP_SCALE, World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
@@ -79,11 +80,14 @@ import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
+import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
+import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
+import { createShepherdCenter, shepherdCenterIds, shepherdMainId } from '../city/shepherd-center';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
@@ -104,6 +108,7 @@ export interface DowntownTerrainOptions {
   simpleLeafClumps?: boolean;
   /** Optional continuous road axes for the painted terrain surface. */
   underpass?: Underpass;
+  extraSlots?: readonly OpenSlot[];
   boardRoads?: TerrainCity['roads'];
   boardDetails?: (builder: Builder, ground: (x:number,z:number)=>number|null, material: THREE.MeshLambertMaterial) => void;
   join?: TerrainJoins;
@@ -194,7 +199,7 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
 }
 
 // Sample long footprint edges too: their endpoints can both be on the banks of a cut.
-function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | null, step: number) {
+export function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | null, step: number) {
   let base = Infinity;
   for (const ring of rings) {
     for (let i = 0; i < ring.length; i++) {
@@ -225,7 +230,8 @@ function makeScenery(...args: Parameters<typeof buildScenery>) {
 function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
-  const options = { cityFacades: true, terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
+  const options = { cityFacades: true, terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048,
+    clumpScale: quality === 'low' ? CITY_LOW_CLUMP_SCALE : 1 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
@@ -311,9 +317,10 @@ let groundLodChanged = false;
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
 
 /** The openings the ground surface is cut by, so a surface built off the main thread matches. */
-export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings'>) {
+export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings' | 'extraSlots'>) {
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  return options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+  const slots = options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+  return options.extraSlots ? [...(slots ?? []), ...options.extraSlots] : slots;
 }
 
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
@@ -359,8 +366,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Forward the optional road: unconnected motorways must keep sampling bare earth.
   type Road = Parameters<NonNullable<typeof approaches>['groundAt']>[2];
   const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
-    { triangles: options.quality === 'high' ? mesh : undefined, raisedEnds: approaches?.groundAt.raisedEnds }) satisfies DrapeGround;
+    { footingTerrain: mesh, triangles: options.quality === 'high' ? mesh : undefined, raisedEnds: approaches?.groundAt.raisedEnds }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
+  const hasShepherdMain = city.buildings.some(b => b.id === shepherdMainId);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
@@ -375,7 +383,10 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
       : site.id === gazeboId ? createClaraMeer : null;
-    const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
+    const landmark = site.id === piedmontHospitalId
+      ? createPiedmontHospital(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+      : shepherdCenterIds.has(site.id) ? createShepherdCenter(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt, hasShepherdMain)
+      : site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === windsorOverPeachtreeId ? createWindsorOverPeachtree(sceneryCity.buildings, grid, options.quality)
@@ -443,7 +454,10 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
   // Carve before anything else samples the ground inside their footprints.
   const winn = winnPark(city, groundAt, options.quality);
-  const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
+  const hasPiedmont = city.buildings.some(b => b.id === piedmontHospitalId) &&
+    !sceneryCity.buildings.some(b => b.id === piedmontHospitalId);
+  const piedmont = hasPiedmont ? piedmontGarden(Object.assign((x: number, z: number) => groundAt(x, z), { triangles: mesh }), options.quality) : null;
+  const yields = [...golfBowlYields(city), ...golfTeeGrades(city, bare), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
   if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
@@ -482,7 +496,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
   const originalFinish = options.finishFor;
-  const homes = yield* buildResidential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
+  const homes = yield* buildResidential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees,
+    (x,z) => options.boardRoads && x >= 300 && x <= 425 && Math.abs(z+5700) < 70 ? mesh : undefined);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
   yield 'residential';
@@ -493,6 +508,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
+  if (piedmont) named.push(...piedmontGardenTrees);
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
   const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
@@ -559,6 +575,12 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const park = piedmontPark(city, groundAt, options.quality);
   if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
   if (winn) { winn.group.userData.perf = 'landscape'; scenery.group.add(winn.group); }
+  const piedmontLandscape = piedmont?.finish();
+  if (piedmontLandscape) {
+    piedmontLandscape.mesh.name = 'Piedmont Peachtree plaza';
+    piedmontLandscape.mesh.userData.perf = 'landscape';
+    scenery.group.add(piedmontLandscape.mesh);
+  }
   yield 'parks and batches';
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
@@ -617,7 +639,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     commitTrees,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
-    terrainAt: bare,
+    terrainAt: bare, terrainTriangles: mesh,
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
@@ -688,6 +710,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       oval?.dispose();
       park?.dispose();
       winn?.dispose();
+      piedmontLandscape?.dispose();
       houses.dispose();
       scenery.dispose();
       group.clear();

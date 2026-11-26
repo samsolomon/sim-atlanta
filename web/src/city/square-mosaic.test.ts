@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { bounds } from '../square-board/sections';
-import { mosaicPlinth, mountedBounds, nearestPoint, nearSection } from './square-mosaic';
+import { fullBoardFrame, looksNorth, mosaicPlinth, mountedBounds, nearestPoint, nearSection, northLookM } from './square-mosaic';
 
 it('clamps the camera and walnut base to the same available ground during a partial load', () => {
   const rects = [bounds.downtown, bounds['north-band'], bounds['north-corner']];
@@ -28,8 +28,9 @@ it('clips canopy to the mounted rows, so a missing north row leaves no crowns pa
   const lip = 8;
   const full = Object.values(bounds);
   // Brookwood station failed to load: the board, and its canopy, end at brookwood-south.
-  const partial = full.filter(r => r !== bounds['brookwood-station']);
-  for (const [rects, north] of [[full, -5700], [partial, -4900]] as const) {
+  const station = full.filter(r => r !== bounds.r16);
+  const partial = station.filter(r => r !== bounds['brookwood-station']);
+  for (const [rects, north] of [[full, -6500], [station, -5700], [partial, -4900]] as const) {
     const clip = mountedBounds([...rects]);
     expect(clip).toEqual({ minX: -1000, maxX: 1800, minZ: north, maxZ: 1100 });
     const base = mosaicPlinth([...rects], -48);
@@ -47,4 +48,17 @@ it('requests only the section within reach of the camera, including the short Ki
     expect(nearSection('north', x, z)).toBe(direction === 'north');
     expect(nearSection('south', x, z)).toBe(direction === 'south');
   }
+});
+
+it('frames the default board as the tilted diorama to its loaded edge, too far off to load R16', () => {
+  const north = bounds['brookwood-station'].minZ;
+  for (const aspect of [16 / 9, 1.6, 1, 390 / 844, 0.1]) {
+    const frame = fullBoardFrame(1100, north, true, aspect);
+    expect(frame).toEqual({ azimuth: -15, tilt: 35, targetZ: -2300,
+      distance: Math.max(6800 * 2.95, 11700 / Math.max(.25, aspect)) });
+    expect(looksNorth(frame.distance, () => true)).toBe(false);
+  }
+  // Show full board frames the whole rectangle, R16 included.
+  expect(fullBoardFrame(1100, bounds.r16.minZ, true, 1.6)).toMatchObject({ targetZ: -2700, distance: 7600 * 2.95 });
+  expect(looksNorth(northLookM, () => true)).toBe(true);
 });

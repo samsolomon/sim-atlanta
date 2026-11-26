@@ -74,7 +74,7 @@ try {
     await sleep(3000);
     if (!(await evaluate('location.href')).startsWith(base)) throw new Error('page left the dev server');
     for (let i = 0; i < 120; i++) {
-      if (await evaluate('window.__cityDev?.areaCount?.() === 12 && !document.body.innerText.includes("Building the city")')) break;
+      if (await evaluate('window.__cityDev?.areas?.()?.size >= 12 && !document.body.innerText.includes("Building the city")')) break;
       await sleep(1000);
     }
     await sleep(14000); // texture upload and shadow settle

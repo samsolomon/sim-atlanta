@@ -1,0 +1,12 @@
+{
+  "utcSHA": "2da149ea8b5c8f24ef69ef18cb15a1e08c1e29cd564687c8b82bef2a3407af0f",
+  "canopyHeightCrops": {
+    "r16-canopy_032002311_chm.tif": "b477a29f7d7fe3ed025e8124528afdbe0c5b7842376bef620e71be37cf3ff37d",
+    "r16-canopy_032002311_valid.npy": "e722e6d16dcbdf336ad83ca717a67470aeeb405a0334aa0b95da2d74d2797511",
+    "r16-canopy_032003200_chm.tif": "cdc42476f3d2b8a6be34bcca766b526cd1eec99ca6006eb9b3f1de576acb3094",
+    "r16-canopy_032003200_valid.npy": "8c937987893b8cf24676a9e0fa1f5c2dc970fbdd939fa340ac5b53b4e031435e"
+  },
+  "high": 3829,
+  "low": 1388,
+  "classifiedCover": 0.3822486607142857
+}

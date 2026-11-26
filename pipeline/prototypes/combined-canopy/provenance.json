@@ -1,0 +1,13 @@
+{
+  "release": "74e0f9f0a0d38f8de8d4d842f0e5cfc35af576d2",
+  "stage": "pnpm data:midtown (also run by pnpm data:city and pnpm data)",
+  "verifyFromSource": "python pipeline/prototypes/combined-canopy/rebuild.py DEM_DIRECTORY UTCMosaic2023.tif NEW_OUTPUT_DIRECTORY",
+  "inputs": {
+    "brookwood": "pipeline/prototypes/square-board/brookwood-{south,station} from 8678645f; ground.json records the USGS 3DEP tile URLs and hashes.",
+    "r16": "OSM archive and baker from 9803080e, with the verified raw R16 context from 8474a103 and DEM packet from e2058adc. Supply x74y374.tif and x74y375.tif from the URLs in square-board/r16/ground.json.",
+    "golf": "OSM course extract and registered features from private checkpoint 8474a103 under private-checkpoint/ansley/source; the imported ansley-mounted-source.json records ODbL attribution, geographic projection and raw map digest.",
+    "canopy": "City of Atlanta and Georgia Tech 2023 Urban Tree Canopy. UTCMosaic2023.tif from https://cura.design.gatech.edu/UTC/UTCMosaic2023.zip. R16 runs the standard City canopy bake (bake_r16.py) with course, parking, water, rail, highway-sightline, trail and portal exclusions; crown heights read the Meta & WRI canopy height map (Tolan et al., 2024, CC BY 4.0). The TIFF and height-crop SHA-256s and the R16 population are in r16-canopy-audit.json. Brookwood uses the canonical midtown-landscape crown selection with course exclusions.",
+    "exclusions": "highway-four/east-ways.json, northeast-trail/axis.json and norcross-north-study.json from 74e0f9f0; nr-path.json from the Rail R16 burial study.",
+    "packedContexts": "d3f24dfc, integrated as 4d6509da. hashes.json identifies the plain source and final uncompressed context bytes. rows.sha256.json from 8474a103 covers the mounted context and both terrain files for each northern row."
+  }
+}
