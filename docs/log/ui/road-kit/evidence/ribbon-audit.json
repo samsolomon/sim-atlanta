@@ -1,0 +1,504 @@
+{
+ "laneChanges": {
+  "midtown-south|diverge lane-count mismatch": 3,
+  "north-band|add": 2,
+  "auburn|diverge lane-count mismatch": 5,
+  "downtown|add": 5,
+  "outside|diverge lane-count mismatch": 1,
+  "brookwood-south|diverge lane-count mismatch": 3,
+  "auburn|add": 3,
+  "brookwood-south|drop": 3,
+  "midtown-central|add": 1,
+  "midtown-central|drop": 1,
+  "midtown-upper|diverge lane-count mismatch": 4,
+  "auburn|drop": 5,
+  "north-corner|add": 2,
+  "north-corner|drop": 4,
+  "south-band|drop": 4,
+  "midtown-south|merge lane-count mismatch": 3,
+  "r16|merge lane-count mismatch": 1,
+  "south-band|diverge lane-count mismatch": 1,
+  "north-corner|merge lane-count mismatch": 2,
+  "brookwood-south|add": 2,
+  "downtown|drop": 3,
+  "downtown|diverge lane-count mismatch": 6,
+  "midtown-south|drop": 2,
+  "midtown-upper|drop": 2,
+  "north-corner|diverge lane-count mismatch": 1,
+  "brookwood-station|diverge lane-count mismatch": 1,
+  "midtown-upper|add": 2,
+  "midtown-central|diverge lane-count mismatch": 1,
+  "north-band|drop": 1,
+  "midtown-south|add": 1,
+  "brookwood-south|merge lane-count mismatch": 1,
+  "north-band|diverge lane-count mismatch": 1
+ },
+ "overlaps": {
+  "outside|ground": {
+   "pairs": 1,
+   "m2": 43,
+   "largest": [
+    [
+     43,
+     50.7,
+     1314.2,
+     9235041,
+     291953742,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "auburn|ground": {
+   "pairs": 8,
+   "m2": 533,
+   "largest": [
+    [
+     165,
+     1214.2,
+     -379.1,
+     337901420,
+     1416661102,
+     "parallel"
+    ],
+    [
+     105,
+     1203.2,
+     -468.2,
+     39169032,
+     1416661101,
+     "merge/diverge"
+    ],
+    [
+     84,
+     1103.4,
+     235.7,
+     1450889003,
+     1450889004,
+     "merge/diverge"
+    ],
+    [
+     78,
+     1054.0,
+     -444.1,
+     435591243,
+     1021973638,
+     "merge/diverge"
+    ],
+    [
+     44,
+     1238.7,
+     -207.2,
+     9235148,
+     38945232,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "brookwood-station|ground": {
+   "pairs": 2,
+   "m2": 145,
+   "largest": [
+    [
+     110,
+     11.8,
+     -5111.2,
+     9235729,
+     369529885,
+     "merge/diverge"
+    ],
+    [
+     35,
+     -391.8,
+     -4911.5,
+     9238120,
+     29013401,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "midtown-south|ground": {
+   "pairs": 10,
+   "m2": 1705,
+   "largest": [
+    [
+     653,
+     116.3,
+     -1926.1,
+     9235746,
+     337901411,
+     "merge/diverge"
+    ],
+    [
+     443,
+     86.3,
+     -2335.5,
+     9239388,
+     337901430,
+     "merge/diverge"
+    ],
+    [
+     350,
+     134.0,
+     -2113.6,
+     38976061,
+     119686421,
+     "merge/diverge"
+    ],
+    [
+     107,
+     108.4,
+     -1793.8,
+     337901411,
+     1450813235,
+     "merge/diverge"
+    ],
+    [
+     85,
+     133.0,
+     -2043.5,
+     38976061,
+     337901447,
+     "parallel"
+    ]
+   ]
+  },
+  "north-band|ground": {
+   "pairs": 3,
+   "m2": 272,
+   "largest": [
+    [
+     208,
+     549.8,
+     -1318.2,
+     9238587,
+     337901436,
+     "merge/diverge"
+    ],
+    [
+     36,
+     88.2,
+     -1694.3,
+     9236635,
+     1467386395,
+     "merge/diverge"
+    ],
+    [
+     27,
+     284.9,
+     -1508.6,
+     9235901,
+     337901447,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "auburn|bridge": {
+   "pairs": 6,
+   "m2": 216,
+   "largest": [
+    [
+     125,
+     1211.9,
+     -421.0,
+     39169057,
+     1416661100,
+     "parallel"
+    ],
+    [
+     57,
+     1117.4,
+     220.1,
+     1450889001,
+     1450889002,
+     "parallel"
+    ],
+    [
+     19,
+     1185.6,
+     -425.0,
+     39169027,
+     1414820393,
+     "parallel"
+    ],
+    [
+     9,
+     1248.8,
+     -497.0,
+     9236432,
+     462253885,
+     "merge/diverge"
+    ],
+    [
+     3,
+     1205.3,
+     -134.5,
+     38945231,
+     1414809190,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "brookwood-south|ground": {
+   "pairs": 11,
+   "m2": 544,
+   "largest": [
+    [
+     144,
+     -119.2,
+     -4663.2,
+     9236743,
+     631611889,
+     "merge/diverge"
+    ],
+    [
+     98,
+     -285.8,
+     -4677.7,
+     27609107,
+     73954042,
+     "merge/diverge"
+    ],
+    [
+     90,
+     -149.6,
+     -4620.6,
+     28038565,
+     1314607716,
+     "parallel"
+    ],
+    [
+     79,
+     -83.4,
+     -4621.9,
+     124718374,
+     637254545,
+     "merge/diverge"
+    ],
+    [
+     42,
+     -192.9,
+     -4467.7,
+     27609021,
+     73325897,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "midtown-upper|ground": {
+   "pairs": 9,
+   "m2": 546,
+   "largest": [
+    [
+     220,
+     80.9,
+     -3414.1,
+     60783638,
+     316454376,
+     "merge/diverge"
+    ],
+    [
+     62,
+     -9.6,
+     -3977.4,
+     73954042,
+     547721399,
+     "merge/diverge"
+    ],
+    [
+     61,
+     -13.8,
+     -4003.8,
+     73954042,
+     1416307530,
+     "parallel"
+    ],
+    [
+     57,
+     -52.0,
+     -4061.9,
+     175629484,
+     531945094,
+     "merge/diverge"
+    ],
+    [
+     41,
+     -44.8,
+     -3977.6,
+     73325899,
+     531945094,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "downtown|ground": {
+   "pairs": 5,
+   "m2": 339,
+   "largest": [
+    [
+     187,
+     663.2,
+     568.4,
+     9236888,
+     119686426,
+     "merge/diverge"
+    ],
+    [
+     105,
+     752.6,
+     -1039.7,
+     1051688671,
+     1051688673,
+     "merge/diverge"
+    ],
+    [
+     31,
+     533.8,
+     -1269.2,
+     337901423,
+     435586508,
+     "merge/diverge"
+    ],
+    [
+     10,
+     557.9,
+     580.7,
+     44698161,
+     436808888,
+     "merge/diverge"
+    ],
+    [
+     6,
+     123.2,
+     -1262.0,
+     1450813222,
+     1450813229,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "r16|ground": {
+   "pairs": 2,
+   "m2": 421,
+   "largest": [
+    [
+     286,
+     1027.7,
+     -5863.6,
+     9238434,
+     369529886,
+     "merge/diverge"
+    ],
+    [
+     136,
+     1478.4,
+     -6165.5,
+     38983363,
+     306143022,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "midtown-central|ground": {
+   "pairs": 1,
+   "m2": 189,
+   "largest": [
+    [
+     189,
+     85.4,
+     -2672.2,
+     9238875,
+     316454375,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "south-band|ground": {
+   "pairs": 3,
+   "m2": 473,
+   "largest": [
+    [
+     320,
+     210.6,
+     895.7,
+     793970333,
+     877413407,
+     "merge/diverge"
+    ],
+    [
+     92,
+     301.8,
+     866.4,
+     119686422,
+     963903270,
+     "merge/diverge"
+    ],
+    [
+     60,
+     440.5,
+     1095.9,
+     28684853,
+     305894125,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "north-corner|bridge": {
+   "pairs": 1,
+   "m2": 55,
+   "largest": [
+    [
+     55,
+     1115.9,
+     -591.0,
+     38970413,
+     38974058,
+     "parallel"
+    ]
+   ]
+  },
+  "north-corner|ground": {
+   "pairs": 3,
+   "m2": 71,
+   "largest": [
+    [
+     26,
+     1003.0,
+     -771.9,
+     337901445,
+     435591244,
+     "merge/diverge"
+    ],
+    [
+     25,
+     1186.2,
+     -520.8,
+     39169033,
+     1416661101,
+     "parallel"
+    ],
+    [
+     20,
+     1160.6,
+     -666.1,
+     39169032,
+     949978958,
+     "merge/diverge"
+    ]
+   ]
+  },
+  "brookwood-south|bridge": {
+   "pairs": 1,
+   "m2": 59,
+   "largest": [
+    [
+     59,
+     -157.8,
+     -4668.7,
+     1452252493,
+     1452252495,
+     "merge/diverge"
+    ]
+   ]
+  }
+ }
+}
