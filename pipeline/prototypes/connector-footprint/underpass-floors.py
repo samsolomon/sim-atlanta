@@ -204,6 +204,13 @@ for source in ["downtown-ground", "square-board/north-band", "square-board/south
     q = np.round(result, 2)
     indices = np.flatnonzero((abs(q - old) > 0.015) & (raw != m["noData"]))
     patches[m["sha256"]] = [[int(i), float(q.flat[i])] for i in indices]
+# Lid DEM spikes (lids.py): the median class-2 return replaces a node that
+# something overhead lifted. They ride the same per-grid edits.
+for lid in json.loads((HERE / "lids.json").read_text()):
+    for sha, nodes in lid.get("groundNodes", {}).items():
+        edits = dict(map(tuple, patches.get(sha, [])))
+        edits.update({int(i): float(v) for i, v in nodes})
+        patches[sha] = [[i, v] for i, v in sorted(edits.items())]
 (HERE / "underpass-floors.json").write_text(
     json.dumps(patches, separators=(",", ":")) + "\n"
 )
