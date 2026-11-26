@@ -7,6 +7,7 @@ import { matchRibbon } from '../terrain/connector-corridor';
 import { rampStudy } from '../city/i85-ramp-study';
 import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
 import { sharedIds, joinedPaint } from '../city/north-seam-neighborhood';
+import { mountNorthRowSteps, type NorthRowMount } from '../city/north-row-mount';
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
@@ -73,7 +74,7 @@ export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).sort((a, b) 
 export type Section = Direction | MidtownRow;
 export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
-export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null };
+export type TrafficArea = Area & { connectorBoard: ConnectorBoard; orbitGround?: (x:number,z:number)=>number|null; northTread?: (x:number,z:number)=>number|null; northMount?: NorthRowMount };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -120,8 +121,7 @@ export function verifySeam(a: GroundGrid, b: GroundGrid, edge: JoiningEdge) {
   }
 }
 
-// Validate the entire addition before hiding any skirts on the mounted board.
-export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
+function verifyAddition(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
   const all = new Map([...mounted, ...additions]);
   for (const [id, area] of additions) {
     for (const other of neighbors[id]) {
@@ -129,6 +129,12 @@ export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) 
       if (adjacent) verifySeam(area.grid, adjacent.grid, seam(id, other));
     }
   }
+  return all;
+}
+
+// Validate the entire addition before hiding any skirts on the mounted board.
+export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) {
+  const all = verifyAddition(mounted, additions);
   for (const [id, area] of additions) {
     mounted.set(id, area);
     neighbors[id].forEach((other, i) => {
@@ -322,14 +328,24 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
   if (direction === 'r16') performance.mark('r16:build-start');
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
+  const north = built.get('r16'), station = mounted.get('brookwood-station') as TrafficArea | undefined;
   try {
     signal.throwIfAborted();
+    if (north && station) {
+      // R16's mount work also cuts the Station, so the seam is proved first.
+      verifyAddition(mounted, built);
+      const mount = mountNorthRowSteps(north, station, quality);
+      north.northMount = budget ? await runBudgeted(mount, { budgetMs: budget, stats: sliceStats }) : runSync(mount);
+      signal.throwIfAborted();
+    }
     connect(mounted, built);
   } catch (error) {
     // Aborted, or a seam failed validation: nothing of this section survives.
+    north?.northMount?.disposeBuildings();
     for (const area of built.values()) area.dispose();
     throw error;
   }
+  north?.northMount?.commit();
   for (const area of built.values()) area.commitTrees();
   if (direction === 'r16') performance.mark('r16:built');
   return built;

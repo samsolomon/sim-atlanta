@@ -100,7 +100,11 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
   return runSync(tessellateSteps(spec, heights, quality, openings, join, yieldList));
 }
 
-/** tessellate as a build that yields every 2 block rows (core/slice.ts); same triangles, same order. */
+/** Footprint tests after which a tessellation yields early. */
+const WORK_PER_STEP = 1_500;
+
+/** tessellate as a build that yields every 2 block rows, sooner where footprints are dense
+ * (core/slice.ts); same triangles, same order. */
 export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quality: TerrainQuality,
   openings: readonly OpenSlot[] = [], join?: TerrainJoins, yieldList: readonly GroundYield[] = []) {
     const { rows, cols, stepM, bounds } = spec;
@@ -220,6 +224,8 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       return j;
     };
     const emit = (f: number[]) => { for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]); };
+    // Face-against-footprint tests since the last yield: a dense block costs far more than a plain row.
+    let work = 0;
     let blockSlots: ReturnType<typeof slotPlanes>[] | undefined;
     let blockYields: ReturnType<typeof yieldPlanes>[] | undefined;
     const tri = (a: number, b: number, c: number) => {
@@ -231,6 +237,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       let faces = [[ia, ib, ic]];
       for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
       for (const y of blockYields ?? []) {
+        work += faces.length;
         // splitConvex can allocate temporary intersections before rejecting a face.
         // Keep a tee's extended clip lines off the neighbouring board rim.
         if (y.grade && (
@@ -265,7 +272,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       for (const f of faces) emit(f);
     };
     for (let k = 0; k < detail.length; k++) {
-      if (k % (2 * blockCols) === 2 * blockCols - 1) yield 'ground rows';
+      if (k % (2 * blockCols) === 2 * blockCols - 1 || work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
       starts[k] = indices.length;
       blockSlots = slots.get(k);
       blockYields = yieldBlocks.get(k);

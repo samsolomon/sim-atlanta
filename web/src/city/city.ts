@@ -1,4 +1,3 @@
-import { mountNorthRow } from './north-row-mount';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
 import { mountStationFragments } from './north-seam-neighborhood';
@@ -1082,7 +1081,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const northernRow = added.get('r16');
       if (northernRow) {
         const station = mosaic!.areas.get('brookwood-station') as SeamArea;
-        const { structures, rails, freightRailhead, disposeBuildings } = mountNorthRow(northernRow, station, quality);
+        const { structures, rails, freightRailhead, disposeBuildings } = northernRow.northMount!;
         const restoreMaps = joinGroundMaps(
           northernRow.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
         preparedBrookwood?.mountNorthFreight(freightRailhead);
