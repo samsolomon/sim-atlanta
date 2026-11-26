@@ -77,6 +77,17 @@ export function carInDaylight(al: Alignment, s: number) {
     t >= 0 && t <= al.line.length && trackVisible(al, t));
 }
 
+/** The share of a car's length open to the sky. Follow reads it to give way to the next car
+ * gradually: the mesh itself stays whole until carInDaylight drops it. */
+export function daylightShare(al: Alignment, s: number) {
+  const open = (t: number) => t >= 0 && t <= al.line.length && trackVisible(al, t);
+  if (open(s - CAR_LENGTH / 2) && open(s) && open(s + CAR_LENGTH / 2)) return 1;
+  const steps = 24;
+  let n = 0;
+  for (let k = 0; k <= steps; k++) if (open(s + (k / steps - .5) * CAR_LENGTH)) n++;
+  return n / (steps + 1);
+}
+
 export class CityTrains {
   readonly group = new THREE.Group();
   private tracks: CityTracks;
@@ -164,6 +175,8 @@ export class CityTrains {
         const placement = mapped?.routeId === t.routeId ? mapped.car(t.s.value, offset) : undefined;
         if (placement) {
           const car = this.car(t.id, color, role, placement);
+          car.userData.consistIndex = i;
+          car.userData.daylight = 1; // its mouth's clipping plane says how much shows
           car.position.set(placement.x, this.cut!.treadY, placement.z);
           this.direction.set(placement.x + placement.dx, this.cut!.treadY, placement.z + placement.dz);
           car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
@@ -181,6 +194,8 @@ export class CityTrains {
         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;
         const car = this.car(t.id, color, role);
+        car.userData.consistIndex = i;
+        car.userData.daylight = daylightShare(al, sc);
         car.position.set(cx, al.elev(sc) + 0.55, cz);
         const q = al.line.at(sc + dir * 4);
         this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off);

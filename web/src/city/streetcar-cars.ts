@@ -140,7 +140,9 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
         mesh.position.copy(joint).addScaledVector(forward, -zj);
         aim(mesh, new THREE.Vector3(), forward);
       }
-      for (const mesh of car) {
+      // Cab A leads, then the centre section.
+      for (const [k, mesh] of car.entries()) {
+        mesh.userData.consistIndex = IDS.length - 1 - k;
         mesh.userData.trainId = t.id;
         mesh.visible = true;
         const half = mesh.userData.lengthM / 2;

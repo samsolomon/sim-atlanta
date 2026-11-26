@@ -2,6 +2,7 @@ import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Line } from '../vignette/geom';
 import { carInDaylight, CityTracks, CityTrains } from './trains';
+import { leadFirst, VehicleFollow } from './vehicle-follow';
 
 describe('City train placement', () => {
   const crossTown = { line: new Line([[-100, 0], [100, 0]]), elev: (s: number) => s < 90 ? -4 : -12 };
@@ -29,6 +30,51 @@ describe('City train placement', () => {
     const forward = trains.group.children.find(c => c.userData.trainId)!.getWorldDirection(new Vector3());
     expect(forward.x).toBeCloseTo(1);
     expect(forward.y).toBeCloseTo(0);
+  });
+
+  it('puts the leading car first for follow in both directions, whatever the pool order', () => {
+    const bounds = { minX: -100, maxX: 100, minZ: -100, maxZ: 100 };
+    const line = new Line([[-300, 0], [300, 0]]);
+    const trains = new CityTrains([{ line, elev: () => 7 }], {
+      name: 'straight', origin: { lon: 0, lat: 0 }, bounds, notes: '', sources: [],
+      profiles: { track: { s0: 0, step: 1, z: [7] } },
+    }, bounds, new Map([['blue', '#0075b2']]), []);
+    const state = (id: string, heading: number, cars: number) => ({ id, routeId: 'blue', pathId: 'track', heading, lon: 0, lat: 0,
+      s: { value: 300, tier: 'scheduled' as const, source: 'test', asOf: '' }, headsign: '', vehicleType: 'rail',
+      lengthM: { value: cars * 23, tier: 'illustrative' as const, source: 'test', asOf: '' } });
+    for (const [heading, dir] of [[90, 1], [270, -1]] as const) {
+      // A short train listed first takes the long train's cab mesh, so the long train's new cab
+      // joins the group after its own middle cars.
+      trains.update([state('long', heading, 6)], 0);
+      trains.update([state('short', heading, 4), state('long', heading, 6)], 0);
+      const cars = leadFirst(trains.group.children.filter(c => c.userData.trainId === 'long'));
+      expect(cars).toHaveLength(6);
+      expect(cars.map(c => dir * c.x)).toEqual(cars.map(c => dir * c.x).sort((a, b) => b - a));
+    }
+  });
+
+  it('gives follow a car going under cover gradually, so its aim never steps back a car', () => {
+    const bounds = { minX: -300, maxX: 300, minZ: -100, maxZ: 100 };
+    const line = new Line([[-300, 0], [300, 0]]);
+    const trains = new CityTrains([{ line, elev: () => 7, openToSky: (s: number) => s < 300 }], {
+      name: 'mouth', origin: { lon: 0, lat: 0 }, bounds, notes: '', sources: [],
+      profiles: { track: { s0: 0, step: 1, z: [7] } },
+    }, bounds, new Map([['blue', '#0075b2']]), []);
+    const follow = new VehicleFollow();
+    follow.start({ kind: 'train', id: 't', pathId: 'track', tier: 'scheduled' });
+    let at: { x: number; z: number } | undefined;
+    // The train runs +x into a roof at x = 0, a metre a frame.
+    for (let x = -70; x <= 30; x++) {
+      const lon = x / (6371000 * Math.PI / 180);
+      trains.update([{ id: 't', routeId: 'blue', pathId: 'track', heading: 90, lon, lat: 0,
+        s: { value: 300 + x, tier: 'scheduled', source: 'test', asOf: '' }, headsign: '', vehicleType: 'rail',
+        lengthM: { value: 92, tier: 'illustrative', source: 'test', asOf: '' } }], 0);
+      const cars = leadFirst(trains.group.children.filter(c => c.userData.trainId === 't'));
+      const next = follow.frame({ id: 't', pathId: 'track', tier: 'scheduled', x, z: 0, cars, hidden: null }, bounds, (x + 70) * 16, false, at);
+      if (next && at) expect(Math.abs(next.x - at.x), `centre at ${x}`).toBeLessThan(3);
+      at = next ?? at;
+    }
+    expect(follow.phase).toBe('drawn');
   });
 
   it('uses known cover independently of elevation and retains the relative profile for unknown spans', () => {

@@ -1,6 +1,6 @@
 # Follow a Blue Line train in City
 
-> **Superseded (2026-11-23).** Follow is now on by default for every MARTA rail line, the Crescent and live MARTA buses. `?follow=0` turns it off, `?follow=<route id>` follows the nearest train on that route, and the `?follow=1` used below is no longer needed. See [the follow review sheets](log/ui/follow/README.md). The Blue Line notes below remain accurate as history.
+> **Superseded (2026-11-23).** Follow is now on by default for every MARTA rail line, the Crescent and live MARTA buses. `?follow=0` turns it off, `?follow=<route id>` follows the nearest train on that route, and the `?follow=1` used below is no longer needed. See [the follow review sheets](log/ui/follow/README.md). The Blue Line notes below remain accurate as history. Since 2026-11-25 follow frames the front car in the direction of travel, not the centre of the consist.
 
 Open the [paused local preview](http://localhost:5173/?view=map&follow=1&q=high&t=2026-11-20T14:11:25-05:00&speed=0&controls=1#19.1/33.75251/-84.38940/-148) on a running development server with downtown assets staged. Select **City**, tap a silver passenger car in the cut, then choose **Follow train** on the Blue Line card. Press **1×** to ride east. The train is scheduled trip `marta:trip:4-50520-20261120` to Indian Creek. The trip ID includes its service date. A different service date needs a new selection.
 

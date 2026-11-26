@@ -4,6 +4,7 @@ import { CityFreight, DOWNTOWN_ENTRY_MS, DOWNTOWN_SLOT_MS } from './freight';
 import { FREIGHT_LENGTH } from '../vignette/freight-stock';
 import { FREIGHT_CLIP_PLANES, FreightBatches, freightMaterial } from './freight-batches';
 import { BOX_40_SCALE } from '../vignette/intermodal';
+import { leadFirst } from './vehicle-follow';
 
 const point = (s: number, rise = .02) => ({ s, position: new THREE.Vector3(s, s * rise, 0) });
 /** Slot 0 runs up the chainage from the first section's start. */
@@ -121,4 +122,22 @@ it('writes each well\'s containers into its instance: colour + 1, 0 for none, 40
   expect([...slots].sort()).toEqual([0, 1, 2]);
   batches.dispose();
   material.dispose();
+});
+
+it('puts the leading locomotive first for follow, whichever way the train runs', () => {
+  const freight = new CityFreight([[point(0, 0), point(900, 0)], [point(910, 0), point(2000, 0)]], []);
+  for (const [slot, dir] of [[0, 1], [1, -1]]) {
+    // Far enough in that the train is astride the 10 m cover between the two sections.
+    for (let travelled = 60; travelled < 1500; travelled += 7) {
+      freight.update(DOWNTOWN_ENTRY_MS + slot * DOWNTOWN_SLOT_MS + travelled / 4.5 * 1000);
+      const cars = leadFirst(freight.poses.children);
+      if (!cars.length) continue;
+      const front = Math.max(...cars.map(c => dir * c.x));
+      expect(dir * cars[0].x, `slot ${slot} at ${travelled} m`).toBeCloseTo(front);
+    }
+    const first = [...freight.poses.children].filter(c => c.visible)
+      .sort((a, b) => a.userData.consistIndex - b.userData.consistIndex)[0];
+    expect(freight.passage(slot).units[Math.round(first.userData.consistIndex)].power).toBe(true);
+  }
+  freight.dispose();
 });

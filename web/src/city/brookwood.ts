@@ -660,7 +660,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true, north
       const run = crescentPlacement(train);
       if (!run) continue;
       crescentOnCorridor = true;
-      for (const { geometry, offset, length, trucks } of consist) {
+      for (const [index, { geometry, offset, length, trucks }] of consist.entries()) {
         const s = run.center + run.dir * offset;
         // Cars straddling a board edge are cut by the west and north clip planes.
         if (s < corridorChainage.min - length || s > corridorChainage.max + length) continue;
@@ -676,6 +676,7 @@ export function createBrookwood(sceneZero: number, instanceFreight = true, north
         car.geometry = geometry;
         car.visible = true;
         car.userData.trainId = train.id;
+        car.userData.consistIndex = index;
         car.userData.lengthM = length;
         car.userData.berthed = isBerthed(run.center);
         car.position.set((fore.x + aft.x) / 2, (bed(fore.x) + bed(aft.x)) / 2 + 0.32, (fore.z + aft.z) / 2);

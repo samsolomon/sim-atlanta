@@ -361,6 +361,7 @@ export function createNorthLine(
         if (i >= n / 2) car.rotateY(Math.PI);
         if (tops) articulate(car,run.line,place.along,run.dir*(i>=n/2?-1:1),tops,s=>height(run.line,s));
         car.userData.trainId = t.id;
+        car.userData.consistIndex = i;
         car.userData.inferredTrack = true;
         car.visible = true;
         total++;

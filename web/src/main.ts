@@ -377,7 +377,7 @@ const buses = new LiveBuses();
 // so the Map's own per-frame poll below adds no extra requests.
 buses.heartbeat(() => clock.isRealTime() && !document.hidden);
 const schedule = new Schedule(rf, tf, vts);
-if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
+if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule, __clock: clock });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);

@@ -314,6 +314,42 @@ it('loads R16 for a followed vehicle near it, from loads already under way, with
   } finally { mosaic.dispose(); downtown.dispose(); }
 }, 20_000);
 
+it.each(['north-band', 'midtown-upper', 'r16'])('stops waiting for a followed vehicle once %s fails to load', async broken => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/north-fail/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (id === broken) return new Response(null, { status: 404 });
+    if (name === 'context.json') {
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/north-fail', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const train = { x: -81, z: -6100 };
+  const errors: string[] = [];
+  const advance = () => mosaic.approach(train.x, train.z, 'low', signal, () => {}, d => errors.push(d));
+  try {
+    mosaic.seek(train);
+    advance();
+    expect(mosaic.pending(train)).toBe(true);
+    await mosaic.idle();
+    // City keeps asking every frame while it follows; the failed row stays failed.
+    advance();
+    await mosaic.idle();
+    expect(errors).toEqual([broken === 'north-band' ? 'north' : broken]);
+    expect(mosaic.areas.has('r16')).toBe(false);
+    expect(mosaic.pending(train)).toBe(false);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+}, 20_000);
+
 const staged = new URL('../../public/data/', import.meta.url);
 const railInputs = ['ga/routes.json', 'scene/downtown/scene.json', 'scene/king-memorial/corridor.json'];
 it.skipIf(!railInputs.every(path => existsSync(new URL(path, staged))))('joins the existing guideway beds at the downtown–King edge within 2 cm', () => {
