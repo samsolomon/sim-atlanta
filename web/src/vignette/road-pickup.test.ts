@@ -54,5 +54,5 @@ describe('road pickup', () => {
         geometry.dispose();
         expect(inward.slice(0, 10), `${near ? 'near' : 'far'} ${trim}: ${inward.length} back faces`).toEqual([]);
       }
-  });
+  }, 30_000); // seconds of raycasts; more under the full suite's load
 });
