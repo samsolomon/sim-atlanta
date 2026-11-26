@@ -92,3 +92,11 @@ Extend #368's steering and per-trip timetable fallback from Route 49, reusing it
 ## Task 4 note
 
 All nine named branches exist; each conflicts only in `docs/build-log.md` or not at all. Several origin tips are newer than the commits in the assignment (for example `30-allen-plaza-skin` `87d4324a`, `american-hotel` `3f897a1e`, `150-carnegie-garage` `d921686e`), so read each handoff before reusing a prior review.
+
+## Status after #575 and the #682 rework (2026-11-25 night)
+
+- **#575 merged** as `422406cb`. It saved 30.6 MB of High geometry and 30 MB of heap on that day's `main`; no ceiling changed. This supersedes decision 1, decision 2's memory figures and steps 0 and 2.
+- **#682** is a draft at `aff35820` (review range `d542c4f1..aff35820`; the old `c8e3e34e` is now `d542c4f1`). `test:perf` passes. Open: R16 mounts in one task of about 4.3 s on the Studio and 27 s at 6× on Low. Proposed follow-up PR: cut R16's ground once, cache `nearYields` per block, slice R16 by default, and add a budget route that enters R16, with an identical-geometry proof.
+- **Next limit is shader programs and night draws,** not memory: after #682, High programs 100 of 100, Low 85 of 86, High-night calls 622 of 630. Check each train step against these first; the clubhouses add a material.
+- **#482 and #476** are closed.
+- **Building review fixes for the batches:** #573 (reveal strips inside the sibling mass; none on the Juniper side), #587 (south facade 0.3 m inside `osm:way:792229255`; party-wall test too loose), #610 (two canopy plates float 5 m unsupported), #612 (crown ring fitted to the wrong circle). #578 is mergeable with two minors; #595, #598 and #614 are clean.
