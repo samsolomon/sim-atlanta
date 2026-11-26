@@ -1,0 +1,9171 @@
+{
+ "_doc": "Trimmed headless perf-run results for docs/perf-architecture-plan.md. Studio, main 1e9e7a7b (counts re-confirmed identical on 1550d9d0 by the integrator), 2026-11-26 00:15-01:10, load average 3-10, perf window NOT held for the first runs (provisional timings). Build carried a one-line probe patch exposing __cityScene under ?perf. Data copied from studio-north-expansion-pr (R16 context e8104621).",
+ "runs": [
+  {
+   "label": "low day",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 366,
+    "triangles": 1791935,
+    "programs": 85,
+    "textureMB": 108.7,
+    "geometryMB": 148.9,
+    "cpuMB": 214.2,
+    "heapAfterGcMB": 413,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 479,
+     "instances": 5157,
+     "triangles": 6497600,
+     "geometries": 477,
+     "geometryMB": 77.4,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 93.1
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 69134,
+     "geometries": 84,
+     "geometryMB": 5.7,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 43.9
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 51,
+     "instances": 865,
+     "triangles": 108276,
+     "geometries": 29,
+     "geometryMB": 2.8,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.8
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 744728,
+     "calls": 214
+    },
+    "terrain": {
+     "tri": 45167,
+     "calls": 49
+    },
+    "landscape": {
+     "tri": 61086,
+     "calls": 13
+    },
+    "trees": {
+     "tri": 521732,
+     "calls": 43
+    },
+    "transport": {
+     "tri": 295321,
+     "calls": 61
+    },
+    "untagged": {
+     "tri": 14530,
+     "calls": 4
+    },
+    "vehicles": {
+     "tri": 101248,
+     "calls": 28
+    },
+    "scenery": {
+     "tri": 2992,
+     "calls": 2
+    },
+    "post": {
+     "tri": 3,
+     "calls": 3
+    }
+   },
+   "shadowPass": {
+    "tri": 1277317,
+    "calls": 95
+   },
+   "geometryTop": [
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     42.5
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     238
+    ],
+    [
+     "stage:terrain",
+     682
+    ],
+    [
+     "stage:sidewalks and trails",
+     723
+    ],
+    [
+     "stage:streets and freight",
+     969
+    ],
+    [
+     "stage:streetcar",
+     1024
+    ],
+    [
+     "stage:MARTA",
+     1049
+    ],
+    [
+     "stage:lights",
+     1061
+    ],
+    [
+     "city:built",
+     1206
+    ],
+    [
+     "city:first-frame",
+     1314
+    ],
+    [
+     "ready",
+     1929
+    ],
+    [
+     "area:north-band+north-corner",
+     2039
+    ],
+    [
+     "area:south-band+south-corner",
+     2193
+    ],
+    [
+     "area:midtown-south",
+     2416
+    ],
+    [
+     "area:midtown-central",
+     2655
+    ],
+    [
+     "area:midtown-upper",
+     2987
+    ],
+    [
+     "area:brookwood-south",
+     3654
+    ],
+    [
+     "area:brookwood-station",
+     4114
+    ],
+    [
+     "city:prewarmed",
+     4869
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     238,
+     446
+    ],
+    [
+     729,
+     240
+    ],
+    [
+     1053,
+     155
+    ],
+    [
+     1208,
+     106
+    ],
+    [
+     1526,
+     172
+    ],
+    [
+     1699,
+     231
+    ],
+    [
+     1944,
+     108
+    ],
+    [
+     2067,
+     139
+    ],
+    [
+     2228,
+     202
+    ],
+    [
+     2479,
+     192
+    ],
+    [
+     2736,
+     267
+    ],
+    [
+     3110,
+     566
+    ],
+    [
+     3777,
+     403
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "low night",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T22%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 543,
+    "triangles": 2128824,
+    "programs": 85,
+    "textureMB": 108.7,
+    "geometryMB": 148.9,
+    "cpuMB": 214.2,
+    "heapAfterGcMB": 413,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 479,
+     "instances": 5157,
+     "triangles": 6497600,
+     "geometries": 477,
+     "geometryMB": 77.4,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 93.1
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 69134,
+     "geometries": 84,
+     "geometryMB": 5.7,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 43.9
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 53,
+     "instances": 847,
+     "triangles": 93296,
+     "geometries": 29,
+     "geometryMB": 2.8,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.8
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 1045992,
+     "calls": 344
+    },
+    "terrain": {
+     "tri": 49934,
+     "calls": 52
+    },
+    "landscape": {
+     "tri": 61086,
+     "calls": 13
+    },
+    "trees": {
+     "tri": 521732,
+     "calls": 43
+    },
+    "transport": {
+     "tri": 315049,
+     "calls": 62
+    },
+    "untagged": {
+     "tri": 18092,
+     "calls": 5
+    },
+    "vehicles": {
+     "tri": 91632,
+     "calls": 31
+    },
+    "scenery": {
+     "tri": 23476,
+     "calls": 7
+    },
+    "post": {
+     "tri": 3,
+     "calls": 3
+    }
+   },
+   "shadowPass": {
+    "tri": 586630,
+    "calls": 81
+   },
+   "geometryTop": [
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     42.5
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     220
+    ],
+    [
+     "stage:terrain",
+     632
+    ],
+    [
+     "stage:sidewalks and trails",
+     671
+    ],
+    [
+     "stage:streets and freight",
+     898
+    ],
+    [
+     "stage:streetcar",
+     948
+    ],
+    [
+     "stage:MARTA",
+     972
+    ],
+    [
+     "stage:lights",
+     986
+    ],
+    [
+     "city:built",
+     1099
+    ],
+    [
+     "city:first-frame",
+     1174
+    ],
+    [
+     "ready",
+     1759
+    ],
+    [
+     "area:north-band+north-corner",
+     1873
+    ],
+    [
+     "area:south-band+south-corner",
+     2018
+    ],
+    [
+     "area:midtown-south",
+     2231
+    ],
+    [
+     "area:midtown-central",
+     2469
+    ],
+    [
+     "area:midtown-upper",
+     2791
+    ],
+    [
+     "area:brookwood-south",
+     3437
+    ],
+    [
+     "area:brookwood-station",
+     3874
+    ],
+    [
+     "city:prewarmed",
+     4125
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     221,
+     414
+    ],
+    [
+     676,
+     221
+    ],
+    [
+     979,
+     121
+    ],
+    [
+     1368,
+     173
+    ],
+    [
+     1541,
+     218
+    ],
+    [
+     1780,
+     103
+    ],
+    [
+     1898,
+     133
+    ],
+    [
+     2051,
+     193
+    ],
+    [
+     2301,
+     183
+    ],
+    [
+     2554,
+     254
+    ],
+    [
+     2909,
+     549
+    ],
+    [
+     3558,
+     380
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "low R16 day (cam -120,-6100,-58,55,900)",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 56,
+    "triangles": 1091063,
+    "programs": 86,
+    "textureMB": 115,
+    "geometryMB": 225.8,
+    "cpuMB": 295.8,
+    "heapAfterGcMB": 495,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5854,
+     "triangles": 626734,
+     "geometries": 109,
+     "geometryMB": 57.2,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 68.7
+    },
+    "buildings": {
+     "meshes": 510,
+     "instances": 5457,
+     "triangles": 6913141,
+     "geometries": 508,
+     "geometryMB": 110.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 126
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 933130,
+     "geometries": 89,
+     "geometryMB": 37.9,
+     "textures": 13,
+     "textureMB": 57.2,
+     "cpuMB": 80.8
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 49481,
+     "triangles": 1030969,
+     "geometries": 64,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "landscape": {
+     "meshes": 19,
+     "instances": 27,
+     "triangles": 79698,
+     "geometries": 19,
+     "geometryMB": 8.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 8.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 53,
+     "instances": 565,
+     "triangles": 32472,
+     "geometries": 31,
+     "geometryMB": 3.3,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.3
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 51516,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 3168,
+     "calls": 18
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 194268,
+     "calls": 10
+    },
+    "landscape": {
+     "tri": 42171,
+     "calls": 7
+    },
+    "transport": {
+     "tri": 121654,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 557715,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 171253,
+     "calls": 16
+    },
+    "scenery": {
+     "tri": 728,
+     "calls": 2
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 800009,
+    "calls": 64
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     77.5
+    ],
+    [
+     "houses",
+     71.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "yards / landscape",
+     7.3
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "houses / houses (far-far)",
+     2.6
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     23.9
+    ],
+    [
+     " :: map 2028x596",
+     12.3
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     232
+    ],
+    [
+     "stage:terrain",
+     641
+    ],
+    [
+     "stage:sidewalks and trails",
+     678
+    ],
+    [
+     "stage:streets and freight",
+     898
+    ],
+    [
+     "stage:streetcar",
+     948
+    ],
+    [
+     "stage:MARTA",
+     973
+    ],
+    [
+     "stage:lights",
+     986
+    ],
+    [
+     "city:built",
+     1101
+    ],
+    [
+     "city:first-frame",
+     1220
+    ],
+    [
+     "area:north-band+north-corner",
+     1330
+    ],
+    [
+     "area:south-band+south-corner",
+     1485
+    ],
+    [
+     "area:midtown-south",
+     1770
+    ],
+    [
+     "ready",
+     1889
+    ],
+    [
+     "area:midtown-central",
+     2098
+    ],
+    [
+     "area:midtown-upper",
+     2707
+    ],
+    [
+     "area:brookwood-south",
+     3316
+    ],
+    [
+     "area:brookwood-station",
+     3753
+    ],
+    [
+     "area:r16",
+     8130
+    ],
+    [
+     "city:prewarmed",
+     9732
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     232,
+     411
+    ],
+    [
+     683,
+     215
+    ],
+    [
+     979,
+     124
+    ],
+    [
+     1104,
+     116
+    ],
+    [
+     1232,
+     108
+    ],
+    [
+     1356,
+     143
+    ],
+    [
+     1590,
+     192
+    ],
+    [
+     1913,
+     206
+    ],
+    [
+     2279,
+     159
+    ],
+    [
+     2461,
+     260
+    ],
+    [
+     2790,
+     546
+    ],
+    [
+     3429,
+     388
+    ],
+    [
+     3877,
+     4274
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     3937
+    ],
+    [
+     "r16:built",
+     5944
+    ]
+   ]
+  },
+  {
+   "label": "low street (cam 640,-3150,250,68,220)",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&cam=640%2C-3150%2C250%2C68%2C220",
+   "summary": {
+    "calls": 64,
+    "triangles": 1319741,
+    "programs": 86,
+    "textureMB": 108.7,
+    "geometryMB": 209.5,
+    "cpuMB": 274.8,
+    "heapAfterGcMB": 444,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 496,
+     "instances": 5174,
+     "triangles": 6749412,
+     "geometries": 494,
+     "geometryMB": 109.1,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 124.8
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1095949,
+     "geometries": 84,
+     "geometryMB": 34.6,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 72.8
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 51,
+     "instances": 560,
+     "triangles": 25824,
+     "geometries": 29,
+     "geometryMB": 2.8,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.8
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 3560,
+     "calls": 18
+    },
+    "untagged": {
+     "tri": 94,
+     "calls": 2
+    },
+    "terrain": {
+     "tri": 621791,
+     "calls": 10
+    },
+    "buildings": {
+     "tri": 228617,
+     "calls": 16
+    },
+    "trees": {
+     "tri": 368982,
+     "calls": 16
+    },
+    "scenery": {
+     "tri": 40124,
+     "calls": 6
+    },
+    "transport": {
+     "tri": 19502,
+     "calls": 3
+    },
+    "landscape": {
+     "tri": 37459,
+     "calls": 4
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 1782868,
+    "calls": 105
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     71.4
+    ],
+    [
+     "houses",
+     66.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     208
+    ],
+    [
+     "stage:terrain",
+     613
+    ],
+    [
+     "stage:sidewalks and trails",
+     650
+    ],
+    [
+     "stage:streets and freight",
+     870
+    ],
+    [
+     "stage:streetcar",
+     920
+    ],
+    [
+     "stage:MARTA",
+     944
+    ],
+    [
+     "stage:lights",
+     957
+    ],
+    [
+     "city:built",
+     1071
+    ],
+    [
+     "city:first-frame",
+     1181
+    ],
+    [
+     "area:north-band+north-corner",
+     1296
+    ],
+    [
+     "area:south-band+south-corner",
+     1443
+    ],
+    [
+     "ready",
+     1658
+    ],
+    [
+     "area:midtown-south",
+     1850
+    ],
+    [
+     "area:midtown-central",
+     2126
+    ],
+    [
+     "area:midtown-upper",
+     2728
+    ],
+    [
+     "area:brookwood-south",
+     3366
+    ],
+    [
+     "area:brookwood-station",
+     3804
+    ],
+    [
+     "city:prewarmed",
+     5255
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     209,
+     407
+    ],
+    [
+     655,
+     215
+    ],
+    [
+     950,
+     123
+    ],
+    [
+     1075,
+     107
+    ],
+    [
+     1197,
+     108
+    ],
+    [
+     1321,
+     141
+    ],
+    [
+     1659,
+     214
+    ],
+    [
+     1957,
+     191
+    ],
+    [
+     2326,
+     150
+    ],
+    [
+     2489,
+     255
+    ],
+    [
+     2840,
+     547
+    ],
+    [
+     3485,
+     383
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "low R16 night",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T22%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 57,
+    "triangles": 1093943,
+    "programs": 89,
+    "textureMB": 115,
+    "geometryMB": 225.9,
+    "cpuMB": 295.9,
+    "heapAfterGcMB": 494,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5854,
+     "triangles": 626734,
+     "geometries": 109,
+     "geometryMB": 57.2,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 68.7
+    },
+    "buildings": {
+     "meshes": 510,
+     "instances": 5457,
+     "triangles": 6913141,
+     "geometries": 508,
+     "geometryMB": 110.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 126
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 933130,
+     "geometries": 89,
+     "geometryMB": 37.9,
+     "textures": 13,
+     "textureMB": 57.2,
+     "cpuMB": 80.8
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 49481,
+     "triangles": 1030969,
+     "geometries": 64,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "landscape": {
+     "meshes": 19,
+     "instances": 27,
+     "triangles": 79698,
+     "geometries": 19,
+     "geometryMB": 8.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 8.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 55,
+     "instances": 578,
+     "triangles": 49796,
+     "geometries": 31,
+     "geometryMB": 3.4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.4
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 51516,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 3168,
+     "calls": 18
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 194268,
+     "calls": 10
+    },
+    "landscape": {
+     "tri": 42171,
+     "calls": 7
+    },
+    "transport": {
+     "tri": 121654,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 557715,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 171253,
+     "calls": 16
+    },
+    "scenery": {
+     "tri": 3608,
+     "calls": 3
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 708594,
+    "calls": 62
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     77
+    ],
+    [
+     "houses",
+     71.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "yards / landscape",
+     7.3
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "houses / houses (far-far)",
+     2.6
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     23.9
+    ],
+    [
+     " :: map 2028x596",
+     12.3
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     228
+    ],
+    [
+     "stage:terrain",
+     659
+    ],
+    [
+     "stage:sidewalks and trails",
+     697
+    ],
+    [
+     "stage:streets and freight",
+     922
+    ],
+    [
+     "stage:streetcar",
+     973
+    ],
+    [
+     "stage:MARTA",
+     997
+    ],
+    [
+     "stage:lights",
+     1011
+    ],
+    [
+     "city:built",
+     1127
+    ],
+    [
+     "city:first-frame",
+     1219
+    ],
+    [
+     "area:north-band+north-corner",
+     1342
+    ],
+    [
+     "area:south-band+south-corner",
+     1494
+    ],
+    [
+     "area:midtown-south",
+     1782
+    ],
+    [
+     "ready",
+     1903
+    ],
+    [
+     "area:midtown-central",
+     2109
+    ],
+    [
+     "area:midtown-upper",
+     2732
+    ],
+    [
+     "area:brookwood-south",
+     3286
+    ],
+    [
+     "area:brookwood-station",
+     3686
+    ],
+    [
+     "area:r16",
+     8146
+    ],
+    [
+     "city:prewarmed",
+     9753
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     229,
+     433
+    ],
+    [
+     702,
+     219
+    ],
+    [
+     1004,
+     126
+    ],
+    [
+     1231,
+     124
+    ],
+    [
+     1372,
+     133
+    ],
+    [
+     1599,
+     196
+    ],
+    [
+     1925,
+     207
+    ],
+    [
+     2295,
+     161
+    ],
+    [
+     2485,
+     269
+    ],
+    [
+     2825,
+     481
+    ],
+    [
+     3392,
+     359
+    ],
+    [
+     3810,
+     4358
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     3868
+    ],
+    [
+     "r16:built",
+     5902
+    ]
+   ]
+  },
+  {
+   "label": "high day",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T14%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 434,
+    "triangles": 6454570,
+    "programs": 100,
+    "textureMB": 772,
+    "geometryMB": 270.3,
+    "cpuMB": 602.3,
+    "heapAfterGcMB": 537,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5817,
+     "triangles": 662601,
+     "geometries": 69,
+     "geometryMB": 63.5,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 74.9
+    },
+    "buildings": {
+     "meshes": 470,
+     "instances": 8608,
+     "triangles": 6990506,
+     "geometries": 468,
+     "geometryMB": 88.5,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 104.2
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1637980,
+     "geometries": 84,
+     "geometryMB": 49.2,
+     "textures": 12,
+     "textureMB": 406.4,
+     "cpuMB": 354
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 185540,
+     "triangles": 2755692,
+     "geometries": 58,
+     "geometryMB": 18.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 18.4
+    },
+    "landscape": {
+     "meshes": 40,
+     "instances": 40,
+     "triangles": 467249,
+     "geometries": 40,
+     "geometryMB": 44.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 44.5
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 62,
+     "instances": 1083,
+     "triangles": 188184,
+     "geometries": 40,
+     "geometryMB": 3.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 57616,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 1006256,
+     "calls": 227
+    },
+    "terrain": {
+     "tri": 1607932,
+     "calls": 49
+    },
+    "landscape": {
+     "tri": 467357,
+     "calls": 40
+    },
+    "trees": {
+     "tri": 2755692,
+     "calls": 56
+    },
+    "transport": {
+     "tri": 412790,
+     "calls": 61
+    },
+    "untagged": {
+     "tri": 14530,
+     "calls": 4
+    },
+    "vehicles": {
+     "tri": 182332,
+     "calls": 39
+    },
+    "scenery": {
+     "tri": 2992,
+     "calls": 2
+    },
+    "post": {
+     "tri": 9,
+     "calls": 9
+    }
+   },
+   "shadowPass": {
+    "tri": 4180554,
+    "calls": 148
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     108.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "yards / landscape",
+     30.9
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     12.8
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     239
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     230
+    ],
+    [
+     "stage:terrain",
+     647
+    ],
+    [
+     "stage:sidewalks and trails",
+     681
+    ],
+    [
+     "stage:streets and freight",
+     963
+    ],
+    [
+     "stage:streetcar",
+     1010
+    ],
+    [
+     "stage:MARTA",
+     1032
+    ],
+    [
+     "stage:lights",
+     1044
+    ],
+    [
+     "city:built",
+     1188
+    ],
+    [
+     "city:first-frame",
+     1301
+    ],
+    [
+     "ready",
+     1733
+    ],
+    [
+     "area:north-band+north-corner",
+     2083
+    ],
+    [
+     "area:south-band+south-corner",
+     2269
+    ],
+    [
+     "area:midtown-south",
+     2541
+    ],
+    [
+     "area:midtown-central",
+     2852
+    ],
+    [
+     "area:midtown-upper",
+     3337
+    ],
+    [
+     "area:brookwood-south",
+     4214
+    ],
+    [
+     "area:brookwood-station",
+     4707
+    ],
+    [
+     "city:prewarmed",
+     4984
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     231,
+     416
+    ],
+    [
+     683,
+     279
+    ],
+    [
+     1036,
+     155
+    ],
+    [
+     1192,
+     110
+    ],
+    [
+     1315,
+     117
+    ],
+    [
+     1518,
+     216
+    ],
+    [
+     1734,
+     176
+    ],
+    [
+     1960,
+     139
+    ],
+    [
+     2117,
+     166
+    ],
+    [
+     2305,
+     252
+    ],
+    [
+     2602,
+     268
+    ],
+    [
+     2933,
+     425
+    ],
+    [
+     3457,
+     776
+    ],
+    [
+     4328,
+     453
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "high night",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T22%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 622,
+    "triangles": 6824255,
+    "programs": 100,
+    "textureMB": 772,
+    "geometryMB": 270.3,
+    "cpuMB": 602.3,
+    "heapAfterGcMB": 536,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5817,
+     "triangles": 662601,
+     "geometries": 69,
+     "geometryMB": 63.5,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 74.9
+    },
+    "buildings": {
+     "meshes": 470,
+     "instances": 8608,
+     "triangles": 6990506,
+     "geometries": 468,
+     "geometryMB": 88.5,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 104.2
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1637980,
+     "geometries": 84,
+     "geometryMB": 49.2,
+     "textures": 12,
+     "textureMB": 406.4,
+     "cpuMB": 354
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 185540,
+     "triangles": 2755692,
+     "geometries": 58,
+     "geometryMB": 18.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 18.4
+    },
+    "landscape": {
+     "meshes": 40,
+     "instances": 40,
+     "triangles": 467249,
+     "geometries": 40,
+     "geometryMB": 44.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 44.5
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 64,
+     "instances": 1047,
+     "triangles": 166096,
+     "geometries": 40,
+     "geometryMB": 3.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 57616,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 1341398,
+     "calls": 356
+    },
+    "terrain": {
+     "tri": 1618780,
+     "calls": 52
+    },
+    "landscape": {
+     "tri": 467357,
+     "calls": 40
+    },
+    "trees": {
+     "tri": 2755692,
+     "calls": 56
+    },
+    "transport": {
+     "tri": 432518,
+     "calls": 62
+    },
+    "untagged": {
+     "tri": 18092,
+     "calls": 5
+    },
+    "vehicles": {
+     "tri": 165332,
+     "calls": 42
+    },
+    "scenery": {
+     "tri": 23476,
+     "calls": 7
+    },
+    "post": {
+     "tri": 22,
+     "calls": 22
+    }
+   },
+   "shadowPass": {
+    "tri": 2741559,
+    "calls": 124
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     108.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "yards / landscape",
+     30.9
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     12.8
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     239
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     227
+    ],
+    [
+     "stage:terrain",
+     672
+    ],
+    [
+     "stage:sidewalks and trails",
+     708
+    ],
+    [
+     "stage:streets and freight",
+     994
+    ],
+    [
+     "stage:streetcar",
+     1044
+    ],
+    [
+     "stage:MARTA",
+     1066
+    ],
+    [
+     "stage:lights",
+     1079
+    ],
+    [
+     "city:built",
+     1223
+    ],
+    [
+     "city:first-frame",
+     1330
+    ],
+    [
+     "ready",
+     1991
+    ],
+    [
+     "area:south-band+south-corner",
+     2170
+    ],
+    [
+     "area:north-band+north-corner",
+     2294
+    ],
+    [
+     "area:midtown-south",
+     2571
+    ],
+    [
+     "area:midtown-central",
+     2896
+    ],
+    [
+     "city:prewarmed",
+     2938
+    ],
+    [
+     "area:midtown-upper",
+     3381
+    ],
+    [
+     "area:brookwood-south",
+     4253
+    ],
+    [
+     "area:brookwood-station",
+     4750
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     228,
+     443
+    ],
+    [
+     710,
+     284
+    ],
+    [
+     1070,
+     155
+    ],
+    [
+     1226,
+     105
+    ],
+    [
+     1343,
+     121
+    ],
+    [
+     1559,
+     166
+    ],
+    [
+     1726,
+     266
+    ],
+    [
+     2008,
+     175
+    ],
+    [
+     2198,
+     111
+    ],
+    [
+     2334,
+     253
+    ],
+    [
+     2636,
+     277
+    ],
+    [
+     2972,
+     430
+    ],
+    [
+     3496,
+     776
+    ],
+    [
+     4364,
+     460
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "high R16 day",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T14%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 85,
+    "triangles": 2727182,
+    "programs": 106,
+    "textureMB": 820.8,
+    "geometryMB": 353.1,
+    "cpuMB": 721.6,
+    "heapAfterGcMB": 644,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5879,
+     "triangles": 746862,
+     "geometries": 109,
+     "geometryMB": 72.3,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 83.8
+    },
+    "buildings": {
+     "meshes": 500,
+     "instances": 9177,
+     "triangles": 7521408,
+     "geometries": 498,
+     "geometryMB": 135.9,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 151.6
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 1906001,
+     "geometries": 89,
+     "geometryMB": 64.8,
+     "textures": 13,
+     "textureMB": 455.1,
+     "cpuMB": 406.2
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 224393,
+     "triangles": 3291947,
+     "geometries": 64,
+     "geometryMB": 22.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 22.2
+    },
+    "landscape": {
+     "meshes": 50,
+     "instances": 58,
+     "triangles": 534506,
+     "geometries": 50,
+     "geometryMB": 51,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 51
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 65,
+     "instances": 568,
+     "triangles": 36448,
+     "geometries": 43,
+     "geometryMB": 4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 58448,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 5128,
+     "calls": 30
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 1346015,
+     "calls": 15
+    },
+    "landscape": {
+     "tri": 306374,
+     "calls": 19
+    },
+    "transport": {
+     "tri": 144973,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 656842,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 258690,
+     "calls": 18
+    },
+    "scenery": {
+     "tri": 8512,
+     "calls": 4
+    },
+    "post": {
+     "tri": 10,
+     "calls": 10
+    }
+   },
+   "shadowPass": {
+    "tri": 3126450,
+    "calls": 89
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     130.3
+    ],
+    [
+     "houses",
+     86.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "yards / landscape",
+     35.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     14.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     191.2
+    ],
+    [
+     " :: map 5735x1655",
+     96.6
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     220
+    ],
+    [
+     "stage:terrain",
+     647
+    ],
+    [
+     "stage:sidewalks and trails",
+     680
+    ],
+    [
+     "stage:streets and freight",
+     970
+    ],
+    [
+     "stage:streetcar",
+     1019
+    ],
+    [
+     "stage:MARTA",
+     1041
+    ],
+    [
+     "stage:lights",
+     1053
+    ],
+    [
+     "city:built",
+     1180
+    ],
+    [
+     "city:first-frame",
+     1301
+    ],
+    [
+     "area:north-band+north-corner",
+     1444
+    ],
+    [
+     "area:south-band+south-corner",
+     1633
+    ],
+    [
+     "ready",
+     1899
+    ],
+    [
+     "area:midtown-south",
+     2152
+    ],
+    [
+     "area:midtown-central",
+     2491
+    ],
+    [
+     "area:midtown-upper",
+     3217
+    ],
+    [
+     "area:brookwood-south",
+     4034
+    ],
+    [
+     "area:brookwood-station",
+     4499
+    ],
+    [
+     "area:r16",
+     8882
+    ],
+    [
+     "city:prewarmed",
+     9671
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     221,
+     426
+    ],
+    [
+     682,
+     288
+    ],
+    [
+     1046,
+     137
+    ],
+    [
+     1184,
+     118
+    ],
+    [
+     1321,
+     134
+    ],
+    [
+     1468,
+     181
+    ],
+    [
+     1664,
+     112
+    ],
+    [
+     1776,
+     124
+    ],
+    [
+     1902,
+     275
+    ],
+    [
+     2226,
+     284
+    ],
+    [
+     2638,
+     168
+    ],
+    [
+     2830,
+     403
+    ],
+    [
+     3313,
+     743
+    ],
+    [
+     4136,
+     436
+    ],
+    [
+     4632,
+     4272
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     4696
+    ],
+    [
+     "r16:built",
+     6692
+    ]
+   ]
+  },
+  {
+   "label": "high street",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T14%3A00%3A00-05%3A00&cam=640%2C-3150%2C250%2C68%2C220",
+   "summary": {
+    "calls": 92,
+    "triangles": 3346146,
+    "programs": 103,
+    "textureMB": 772,
+    "geometryMB": 319.1,
+    "cpuMB": 651,
+    "heapAfterGcMB": 585,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5817,
+     "triangles": 662601,
+     "geometries": 69,
+     "geometryMB": 63.5,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 74.9
+    },
+    "buildings": {
+     "meshes": 487,
+     "instances": 8625,
+     "triangles": 7377917,
+     "geometries": 485,
+     "geometryMB": 137.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 153
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1637980,
+     "geometries": 84,
+     "geometryMB": 49.2,
+     "textures": 12,
+     "textureMB": 406.4,
+     "cpuMB": 354
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 185540,
+     "triangles": 2755692,
+     "geometries": 58,
+     "geometryMB": 18.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 18.4
+    },
+    "landscape": {
+     "meshes": 40,
+     "instances": 40,
+     "triangles": 467249,
+     "geometries": 40,
+     "geometryMB": 44.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 44.5
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 62,
+     "instances": 561,
+     "triangles": 30088,
+     "geometries": 40,
+     "geometryMB": 3.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 57616,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 5520,
+     "calls": 29
+    },
+    "untagged": {
+     "tri": 94,
+     "calls": 2
+    },
+    "terrain": {
+     "tri": 825354,
+     "calls": 10
+    },
+    "buildings": {
+     "tri": 352921,
+     "calls": 21
+    },
+    "trees": {
+     "tri": 1778076,
+     "calls": 22
+    },
+    "scenery": {
+     "tri": 53536,
+     "calls": 8
+    },
+    "transport": {
+     "tri": 19502,
+     "calls": 3
+    },
+    "landscape": {
+     "tri": 311133,
+     "calls": 13
+    },
+    "post": {
+     "tri": 10,
+     "calls": 10
+    }
+   },
+   "shadowPass": {
+    "tri": 4197944,
+    "calls": 135
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     108.6
+    ],
+    [
+     "houses",
+     83.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "yards / landscape",
+     30.9
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     12.8
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     239
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     228
+    ],
+    [
+     "stage:terrain",
+     652
+    ],
+    [
+     "stage:sidewalks and trails",
+     686
+    ],
+    [
+     "stage:streets and freight",
+     969
+    ],
+    [
+     "stage:streetcar",
+     1016
+    ],
+    [
+     "stage:MARTA",
+     1037
+    ],
+    [
+     "stage:lights",
+     1050
+    ],
+    [
+     "city:built",
+     1194
+    ],
+    [
+     "city:first-frame",
+     1308
+    ],
+    [
+     "area:north-band+north-corner",
+     1441
+    ],
+    [
+     "area:south-band+south-corner",
+     1620
+    ],
+    [
+     "ready",
+     1889
+    ],
+    [
+     "area:midtown-south",
+     2151
+    ],
+    [
+     "area:midtown-central",
+     2516
+    ],
+    [
+     "area:midtown-upper",
+     3337
+    ],
+    [
+     "area:brookwood-south",
+     4111
+    ],
+    [
+     "area:brookwood-station",
+     4621
+    ],
+    [
+     "city:prewarmed",
+     5354
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     228,
+     424
+    ],
+    [
+     688,
+     280
+    ],
+    [
+     1041,
+     156
+    ],
+    [
+     1198,
+     111
+    ],
+    [
+     1319,
+     135
+    ],
+    [
+     1469,
+     165
+    ],
+    [
+     1652,
+     120
+    ],
+    [
+     1773,
+     117
+    ],
+    [
+     1895,
+     280
+    ],
+    [
+     2259,
+     282
+    ],
+    [
+     2737,
+     182
+    ],
+    [
+     2944,
+     410
+    ],
+    [
+     3441,
+     688
+    ],
+    [
+     4242,
+     451
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "high R16 night",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T22%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 98,
+    "triangles": 2726267,
+    "programs": 107,
+    "textureMB": 820.8,
+    "geometryMB": 353.3,
+    "cpuMB": 721.8,
+    "heapAfterGcMB": 644,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5879,
+     "triangles": 746862,
+     "geometries": 109,
+     "geometryMB": 72.3,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 83.8
+    },
+    "buildings": {
+     "meshes": 500,
+     "instances": 9177,
+     "triangles": 7521408,
+     "geometries": 498,
+     "geometryMB": 135.9,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 151.6
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 1906001,
+     "geometries": 89,
+     "geometryMB": 64.8,
+     "textures": 13,
+     "textureMB": 455.1,
+     "cpuMB": 406.2
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 224393,
+     "triangles": 3291947,
+     "geometries": 64,
+     "geometryMB": 22.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 22.2
+    },
+    "landscape": {
+     "meshes": 50,
+     "instances": 58,
+     "triangles": 534506,
+     "geometries": 50,
+     "geometryMB": 51,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 51
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 67,
+     "instances": 580,
+     "triangles": 58204,
+     "geometries": 43,
+     "geometryMB": 4.2,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4.2
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 58448,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 4736,
+     "calls": 30
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 1346015,
+     "calls": 15
+    },
+    "landscape": {
+     "tri": 306374,
+     "calls": 19
+    },
+    "transport": {
+     "tri": 144973,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 656842,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 258690,
+     "calls": 18
+    },
+    "scenery": {
+     "tri": 8512,
+     "calls": 4
+    },
+    "post": {
+     "tri": 23,
+     "calls": 23
+    }
+   },
+   "shadowPass": {
+    "tri": 2355292,
+    "calls": 78
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     129.8
+    ],
+    [
+     "houses",
+     86.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "yards / landscape",
+     35.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     14.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     191.2
+    ],
+    [
+     " :: map 5735x1655",
+     96.6
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     212
+    ],
+    [
+     "stage:terrain",
+     628
+    ],
+    [
+     "stage:sidewalks and trails",
+     663
+    ],
+    [
+     "stage:streets and freight",
+     946
+    ],
+    [
+     "stage:streetcar",
+     993
+    ],
+    [
+     "stage:MARTA",
+     1014
+    ],
+    [
+     "stage:lights",
+     1026
+    ],
+    [
+     "city:built",
+     1167
+    ],
+    [
+     "city:first-frame",
+     1286
+    ],
+    [
+     "area:north-band+north-corner",
+     1425
+    ],
+    [
+     "area:south-band+south-corner",
+     1595
+    ],
+    [
+     "area:midtown-south",
+     1977
+    ],
+    [
+     "ready",
+     2125
+    ],
+    [
+     "area:midtown-central",
+     2426
+    ],
+    [
+     "area:midtown-upper",
+     3175
+    ],
+    [
+     "area:brookwood-south",
+     4013
+    ],
+    [
+     "area:brookwood-station",
+     4466
+    ],
+    [
+     "area:r16",
+     8958
+    ],
+    [
+     "city:prewarmed",
+     9740
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     213,
+     415
+    ],
+    [
+     665,
+     281
+    ],
+    [
+     1018,
+     152
+    ],
+    [
+     1171,
+     116
+    ],
+    [
+     1300,
+     136
+    ],
+    [
+     1450,
+     158
+    ],
+    [
+     1621,
+     107
+    ],
+    [
+     1737,
+     255
+    ],
+    [
+     1994,
+     132
+    ],
+    [
+     2165,
+     284
+    ],
+    [
+     2585,
+     166
+    ],
+    [
+     2773,
+     423
+    ],
+    [
+     3273,
+     758
+    ],
+    [
+     4093,
+     442
+    ],
+    [
+     4600,
+     4384
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     4662
+    ],
+    [
+     "r16:built",
+     6731
+    ]
+   ]
+  },
+  {
+   "label": "low 5.6 km no R16 (cam -120,-5300,-58,55,5600)",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=low&cam=-120%2C-5300%2C-58%2C55%2C5600",
+   "summary": {
+    "calls": 81,
+    "triangles": 645398,
+    "programs": 87,
+    "textureMB": 108.7,
+    "geometryMB": 150.9,
+    "cpuMB": 216.2,
+    "heapAfterGcMB": 415,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 479,
+     "instances": 5157,
+     "triangles": 6497600,
+     "geometries": 477,
+     "geometryMB": 77.4,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 93.1
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 163844,
+     "geometries": 84,
+     "geometryMB": 7.7,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 45.9
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 51,
+     "instances": 569,
+     "triangles": 33272,
+     "geometries": 29,
+     "geometryMB": 2.8,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.8
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "phases": [
+    [
+     "stage:alignments",
+     235
+    ],
+    [
+     "stage:terrain",
+     670
+    ],
+    [
+     "stage:sidewalks and trails",
+     709
+    ],
+    [
+     "stage:streets and freight",
+     944
+    ],
+    [
+     "stage:streetcar",
+     996
+    ],
+    [
+     "stage:MARTA",
+     1022
+    ],
+    [
+     "stage:lights",
+     1036
+    ],
+    [
+     "city:built",
+     1159
+    ],
+    [
+     "city:first-frame",
+     1275
+    ],
+    [
+     "area:north-band+north-corner",
+     1397
+    ],
+    [
+     "area:south-band+south-corner",
+     1548
+    ],
+    [
+     "area:midtown-south",
+     1857
+    ],
+    [
+     "ready",
+     2057
+    ],
+    [
+     "area:midtown-central",
+     2295
+    ],
+    [
+     "area:midtown-upper",
+     2913
+    ],
+    [
+     "area:brookwood-south",
+     3542
+    ],
+    [
+     "area:brookwood-station",
+     3992
+    ],
+    [
+     "city:prewarmed",
+     5184
+    ]
+   ],
+   "longTasksOver100": [],
+   "r16Marks": []
+  },
+  {
+   "label": "low 5.6 km R16 (cam -120,-6100,-58,55,5600)",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=low&cam=-120%2C-6100%2C-58%2C55%2C5600",
+   "summary": {
+    "calls": 84,
+    "triangles": 747043,
+    "programs": 88,
+    "textureMB": 115,
+    "geometryMB": 168.5,
+    "cpuMB": 238.5,
+    "heapAfterGcMB": 471,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5854,
+     "triangles": 626734,
+     "geometries": 109,
+     "geometryMB": 57.2,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 68.7
+    },
+    "buildings": {
+     "meshes": 499,
+     "instances": 5446,
+     "triangles": 6688338,
+     "geometries": 497,
+     "geometryMB": 82,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 97.7
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 192471,
+     "geometries": 89,
+     "geometryMB": 8.9,
+     "textures": 13,
+     "textureMB": 57.2,
+     "cpuMB": 51.7
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 49481,
+     "triangles": 1030969,
+     "geometries": 64,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "landscape": {
+     "meshes": 19,
+     "instances": 27,
+     "triangles": 79698,
+     "geometries": 19,
+     "geometryMB": 8.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 8.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 53,
+     "instances": 569,
+     "triangles": 35608,
+     "geometries": 31,
+     "geometryMB": 3.3,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.3
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 51516,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "phases": [
+    [
+     "stage:alignments",
+     214
+    ],
+    [
+     "stage:terrain",
+     632
+    ],
+    [
+     "stage:sidewalks and trails",
+     671
+    ],
+    [
+     "stage:streets and freight",
+     890
+    ],
+    [
+     "stage:streetcar",
+     940
+    ],
+    [
+     "stage:MARTA",
+     963
+    ],
+    [
+     "stage:lights",
+     976
+    ],
+    [
+     "city:built",
+     1091
+    ],
+    [
+     "city:first-frame",
+     1201
+    ],
+    [
+     "area:north-band+north-corner",
+     1316
+    ],
+    [
+     "area:south-band+south-corner",
+     1460
+    ],
+    [
+     "area:midtown-south",
+     1755
+    ],
+    [
+     "ready",
+     1928
+    ],
+    [
+     "area:midtown-central",
+     2132
+    ],
+    [
+     "area:midtown-upper",
+     2705
+    ],
+    [
+     "area:brookwood-south",
+     3309
+    ],
+    [
+     "area:brookwood-station",
+     3726
+    ],
+    [
+     "area:r16",
+     8033
+    ],
+    [
+     "city:prewarmed",
+     9271
+    ]
+   ],
+   "longTasksOver100": [],
+   "r16Marks": []
+  },
+  {
+   "label": "high 5.6 km no R16",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=high&cam=-120%2C-5300%2C-58%2C55%2C5600",
+   "summary": {
+    "calls": 156,
+    "triangles": 4048141,
+    "programs": 105,
+    "textureMB": 772,
+    "geometryMB": 270.3,
+    "cpuMB": 602.3,
+    "heapAfterGcMB": 536,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5817,
+     "triangles": 662601,
+     "geometries": 69,
+     "geometryMB": 63.5,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 74.9
+    },
+    "buildings": {
+     "meshes": 470,
+     "instances": 8608,
+     "triangles": 6990506,
+     "geometries": 468,
+     "geometryMB": 88.5,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 104.2
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1637980,
+     "geometries": 84,
+     "geometryMB": 49.2,
+     "textures": 12,
+     "textureMB": 406.4,
+     "cpuMB": 354
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 185540,
+     "triangles": 2755692,
+     "geometries": 58,
+     "geometryMB": 18.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 18.4
+    },
+    "landscape": {
+     "meshes": 40,
+     "instances": 40,
+     "triangles": 467249,
+     "geometries": 40,
+     "geometryMB": 44.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 44.5
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 62,
+     "instances": 614,
+     "triangles": 68384,
+     "geometries": 40,
+     "geometryMB": 3.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 57616,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "phases": [
+    [
+     "stage:alignments",
+     223
+    ],
+    [
+     "stage:terrain",
+     664
+    ],
+    [
+     "stage:sidewalks and trails",
+     700
+    ],
+    [
+     "stage:streets and freight",
+     996
+    ],
+    [
+     "stage:streetcar",
+     1046
+    ],
+    [
+     "stage:MARTA",
+     1068
+    ],
+    [
+     "stage:lights",
+     1081
+    ],
+    [
+     "city:built",
+     1209
+    ],
+    [
+     "city:first-frame",
+     1328
+    ],
+    [
+     "area:north-band+north-corner",
+     1463
+    ],
+    [
+     "area:south-band+south-corner",
+     1646
+    ],
+    [
+     "area:midtown-south",
+     2051
+    ],
+    [
+     "ready",
+     2311
+    ],
+    [
+     "area:midtown-central",
+     2634
+    ],
+    [
+     "area:midtown-upper",
+     3368
+    ],
+    [
+     "area:brookwood-south",
+     4161
+    ],
+    [
+     "area:brookwood-station",
+     4674
+    ],
+    [
+     "city:prewarmed",
+     5183
+    ]
+   ],
+   "longTasksOver100": [],
+   "r16Marks": []
+  },
+  {
+   "label": "high 5.6 km R16",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=high&cam=-120%2C-6100%2C-58%2C55%2C5600",
+   "summary": {
+    "calls": 188,
+    "triangles": 4195281,
+    "programs": 106,
+    "textureMB": 820.8,
+    "geometryMB": 310.3,
+    "cpuMB": 678.7,
+    "heapAfterGcMB": 601,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5879,
+     "triangles": 746862,
+     "geometries": 109,
+     "geometryMB": 72.3,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 83.8
+    },
+    "buildings": {
+     "meshes": 489,
+     "instances": 9166,
+     "triangles": 7181216,
+     "geometries": 487,
+     "geometryMB": 93.1,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 108.8
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 1906001,
+     "geometries": 89,
+     "geometryMB": 64.8,
+     "textures": 13,
+     "textureMB": 455.1,
+     "cpuMB": 406.2
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 224393,
+     "triangles": 3291947,
+     "geometries": 64,
+     "geometryMB": 22.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 22.2
+    },
+    "landscape": {
+     "meshes": 50,
+     "instances": 58,
+     "triangles": 534506,
+     "geometries": 50,
+     "geometryMB": 51,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 51
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 66,
+     "instances": 625,
+     "triangles": 76028,
+     "geometries": 43,
+     "geometryMB": 4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 58448,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "phases": [
+    [
+     "stage:alignments",
+     224
+    ],
+    [
+     "stage:terrain",
+     652
+    ],
+    [
+     "stage:sidewalks and trails",
+     685
+    ],
+    [
+     "stage:streets and freight",
+     964
+    ],
+    [
+     "stage:streetcar",
+     1011
+    ],
+    [
+     "stage:MARTA",
+     1030
+    ],
+    [
+     "stage:lights",
+     1042
+    ],
+    [
+     "city:built",
+     1183
+    ],
+    [
+     "city:first-frame",
+     1295
+    ],
+    [
+     "area:north-band+north-corner",
+     1427
+    ],
+    [
+     "area:south-band+south-corner",
+     1601
+    ],
+    [
+     "ready",
+     1962
+    ],
+    [
+     "area:midtown-south",
+     2224
+    ],
+    [
+     "area:midtown-central",
+     2552
+    ],
+    [
+     "area:midtown-upper",
+     3286
+    ],
+    [
+     "area:brookwood-south",
+     4133
+    ],
+    [
+     "area:brookwood-station",
+     4619
+    ],
+    [
+     "area:r16",
+     9308
+    ],
+    [
+     "city:prewarmed",
+     9759
+    ]
+   ],
+   "longTasksOver100": [],
+   "r16Marks": []
+  },
+  {
+   "label": "low after route:north",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=low&motion=route%3Anorth",
+   "summary": {
+    "calls": 105,
+    "triangles": 1496847,
+    "programs": 86,
+    "textureMB": 108.7,
+    "geometryMB": 227.6,
+    "cpuMB": 292.9,
+    "heapAfterGcMB": 473,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 503,
+     "instances": 5181,
+     "triangles": 6960531,
+     "geometries": 501,
+     "geometryMB": 135.7,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 151.3
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 802586,
+     "geometries": 84,
+     "geometryMB": 25.5,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 63.7
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 55,
+     "instances": 575,
+     "triangles": 34232,
+     "geometries": 31,
+     "geometryMB": 3.4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.4
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 431724,
+     "calls": 29
+    },
+    "terrain": {
+     "tri": 630378,
+     "calls": 16
+    },
+    "landscape": {
+     "tri": 22501,
+     "calls": 6
+    },
+    "trees": {
+     "tri": 418620,
+     "calls": 25
+    },
+    "transport": {
+     "tri": 224631,
+     "calls": 14
+    },
+    "vehicles": {
+     "tri": 7688,
+     "calls": 20
+    },
+    "untagged": {
+     "tri": 94,
+     "calls": 2
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 1315600,
+    "calls": 109
+   },
+   "geometryTop": [
+    [
+     "houses",
+     92.8
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     63
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     228
+    ],
+    [
+     "stage:terrain",
+     673
+    ],
+    [
+     "stage:sidewalks and trails",
+     712
+    ],
+    [
+     "stage:streets and freight",
+     942
+    ],
+    [
+     "stage:streetcar",
+     995
+    ],
+    [
+     "stage:MARTA",
+     1022
+    ],
+    [
+     "stage:lights",
+     1036
+    ],
+    [
+     "city:built",
+     1164
+    ],
+    [
+     "city:first-frame",
+     1281
+    ],
+    [
+     "ready",
+     1867
+    ],
+    [
+     "area:north-band+north-corner",
+     1979
+    ],
+    [
+     "area:south-band+south-corner",
+     2148
+    ],
+    [
+     "area:midtown-south",
+     2375
+    ],
+    [
+     "area:midtown-central",
+     2611
+    ],
+    [
+     "area:midtown-upper",
+     2945
+    ],
+    [
+     "area:brookwood-south",
+     3647
+    ],
+    [
+     "area:brookwood-station",
+     4104
+    ],
+    [
+     "city:prewarmed",
+     4834
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     229,
+     447
+    ],
+    [
+     717,
+     225
+    ],
+    [
+     1029,
+     136
+    ],
+    [
+     1166,
+     116
+    ],
+    [
+     1467,
+     175
+    ],
+    [
+     1657,
+     210
+    ],
+    [
+     1882,
+     110
+    ],
+    [
+     2020,
+     141
+    ],
+    [
+     2190,
+     200
+    ],
+    [
+     2433,
+     195
+    ],
+    [
+     2690,
+     271
+    ],
+    [
+     3082,
+     586
+    ],
+    [
+     3765,
+     407
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "high after route:north",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&t=2026-11-20T14%3A00%3A00-05%3A00&q=high&motion=route%3Anorth",
+   "summary": {
+    "calls": 269,
+    "triangles": 4185004,
+    "programs": 104,
+    "textureMB": 772,
+    "geometryMB": 359.8,
+    "cpuMB": 691.7,
+    "heapAfterGcMB": 627,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5817,
+     "triangles": 662601,
+     "geometries": 69,
+     "geometryMB": 63.5,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 74.9
+    },
+    "buildings": {
+     "meshes": 494,
+     "instances": 8632,
+     "triangles": 7695808,
+     "geometries": 492,
+     "geometryMB": 177.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 193
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 1637980,
+     "geometries": 84,
+     "geometryMB": 49.2,
+     "textures": 12,
+     "textureMB": 406.4,
+     "cpuMB": 354
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 185540,
+     "triangles": 2755692,
+     "geometries": 58,
+     "geometryMB": 18.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 18.4
+    },
+    "landscape": {
+     "meshes": 40,
+     "instances": 40,
+     "triangles": 467249,
+     "geometries": 40,
+     "geometryMB": 44.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 44.5
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 66,
+     "instances": 687,
+     "triangles": 48648,
+     "geometries": 42,
+     "geometryMB": 4.1,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4.1
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 57616,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 329.5,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 591841,
+     "calls": 35
+    },
+    "terrain": {
+     "tri": 1069809,
+     "calls": 16
+    },
+    "landscape": {
+     "tri": 216910,
+     "calls": 16
+    },
+    "trees": {
+     "tri": 2101668,
+     "calls": 32
+    },
+    "transport": {
+     "tri": 284672,
+     "calls": 14
+    },
+    "vehicles": {
+     "tri": 21440,
+     "calls": 31
+    },
+    "untagged": {
+     "tri": 94,
+     "calls": 2
+    },
+    "scenery": {
+     "tri": 13824,
+     "calls": 2
+    },
+    "post": {
+     "tri": 10,
+     "calls": 10
+    }
+   },
+   "shadowPass": {
+    "tri": 3778857,
+    "calls": 141
+   },
+   "geometryTop": [
+    [
+     "houses",
+     123.3
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     109.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "yards / landscape",
+     30.9
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     12.8
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     239
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     218
+    ],
+    [
+     "stage:terrain",
+     629
+    ],
+    [
+     "stage:sidewalks and trails",
+     663
+    ],
+    [
+     "stage:streets and freight",
+     944
+    ],
+    [
+     "stage:streetcar",
+     992
+    ],
+    [
+     "stage:MARTA",
+     1015
+    ],
+    [
+     "stage:lights",
+     1028
+    ],
+    [
+     "city:built",
+     1154
+    ],
+    [
+     "city:first-frame",
+     1265
+    ],
+    [
+     "ready",
+     1911
+    ],
+    [
+     "area:north-band+north-corner",
+     2037
+    ],
+    [
+     "area:south-band+south-corner",
+     2211
+    ],
+    [
+     "area:midtown-south",
+     2478
+    ],
+    [
+     "area:midtown-central",
+     2786
+    ],
+    [
+     "area:midtown-upper",
+     3268
+    ],
+    [
+     "area:brookwood-south",
+     4135
+    ],
+    [
+     "area:brookwood-station",
+     4618
+    ],
+    [
+     "city:prewarmed",
+     4922
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     218,
+     410
+    ],
+    [
+     664,
+     280
+    ],
+    [
+     1021,
+     135
+    ],
+    [
+     1157,
+     109
+    ],
+    [
+     1281,
+     120
+    ],
+    [
+     1490,
+     188
+    ],
+    [
+     1679,
+     232
+    ],
+    [
+     1927,
+     123
+    ],
+    [
+     2067,
+     158
+    ],
+    [
+     2246,
+     247
+    ],
+    [
+     2537,
+     266
+    ],
+    [
+     2867,
+     421
+    ],
+    [
+     3387,
+     766
+    ],
+    [
+     4246,
+     443
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "A16 canvas 6x CPU low default",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 373,
+    "triangles": 1799231,
+    "programs": 83,
+    "textureMB": 104.9,
+    "geometryMB": 149.6,
+    "cpuMB": 214.8,
+    "heapAfterGcMB": 414,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 479,
+     "instances": 5157,
+     "triangles": 6497600,
+     "geometries": 477,
+     "geometryMB": 77.4,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 93.1
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 69134,
+     "geometries": 84,
+     "geometryMB": 5.7,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 43.9
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 57,
+     "instances": 866,
+     "triangles": 116904,
+     "geometries": 31,
+     "geometryMB": 3.4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.4
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 17.9,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 744728,
+     "calls": 214
+    },
+    "terrain": {
+     "tri": 45167,
+     "calls": 49
+    },
+    "landscape": {
+     "tri": 61086,
+     "calls": 13
+    },
+    "trees": {
+     "tri": 521732,
+     "calls": 43
+    },
+    "transport": {
+     "tri": 295321,
+     "calls": 61
+    },
+    "untagged": {
+     "tri": 14530,
+     "calls": 4
+    },
+    "vehicles": {
+     "tri": 117400,
+     "calls": 36
+    },
+    "scenery": {
+     "tri": 2992,
+     "calls": 2
+    },
+    "post": {
+     "tri": 3,
+     "calls": 3
+    }
+   },
+   "shadowPass": {
+    "tri": 1277317,
+    "calls": 95
+   },
+   "geometryTop": [
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     43.2
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     922
+    ],
+    [
+     "stage:terrain",
+     3348
+    ],
+    [
+     "stage:sidewalks and trails",
+     3555
+    ],
+    [
+     "stage:streets and freight",
+     4889
+    ],
+    [
+     "stage:streetcar",
+     5171
+    ],
+    [
+     "stage:MARTA",
+     5308
+    ],
+    [
+     "stage:lights",
+     5358
+    ],
+    [
+     "city:built",
+     6031
+    ],
+    [
+     "city:first-frame",
+     6561
+    ],
+    [
+     "ready",
+     7545
+    ],
+    [
+     "area:north-band+north-corner",
+     8242
+    ],
+    [
+     "area:south-band+south-corner",
+     9134
+    ],
+    [
+     "area:midtown-south",
+     11933
+    ],
+    [
+     "area:midtown-central",
+     13277
+    ],
+    [
+     "area:midtown-upper",
+     15150
+    ],
+    [
+     "area:brookwood-south",
+     19317
+    ],
+    [
+     "area:brookwood-station",
+     22417
+    ],
+    [
+     "city:prewarmed",
+     24297
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     100,
+     151
+    ],
+    [
+     286,
+     157
+    ],
+    [
+     643,
+     281
+    ],
+    [
+     925,
+     2426
+    ],
+    [
+     3400,
+     155
+    ],
+    [
+     3579,
+     1311
+    ],
+    [
+     4897,
+     274
+    ],
+    [
+     5180,
+     130
+    ],
+    [
+     5315,
+     727
+    ],
+    [
+     6042,
+     523
+    ],
+    [
+     6683,
+     469
+    ],
+    [
+     7153,
+     398
+    ],
+    [
+     7651,
+     659
+    ],
+    [
+     8381,
+     840
+    ],
+    [
+     9363,
+     369
+    ],
+    [
+     9758,
+     963
+    ],
+    [
+     10816,
+     1210
+    ],
+    [
+     12226,
+     1147
+    ],
+    [
+     13635,
+     1619
+    ],
+    [
+     15254,
+     123
+    ],
+    [
+     15450,
+     121
+    ],
+    [
+     15717,
+     3736
+    ],
+    [
+     19467,
+     147
+    ],
+    [
+     19672,
+     149
+    ],
+    [
+     20022,
+     2860
+    ],
+    [
+     22887,
+     144
+    ],
+    [
+     23089,
+     156
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "A16 canvas 6x CPU low R16",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 58,
+    "triangles": 1091653,
+    "programs": 86,
+    "textureMB": 111.2,
+    "geometryMB": 227.4,
+    "cpuMB": 297.4,
+    "heapAfterGcMB": 498,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5854,
+     "triangles": 626734,
+     "geometries": 109,
+     "geometryMB": 57.2,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 68.7
+    },
+    "buildings": {
+     "meshes": 510,
+     "instances": 5457,
+     "triangles": 6913141,
+     "geometries": 508,
+     "geometryMB": 110.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 126
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 933130,
+     "geometries": 89,
+     "geometryMB": 37.9,
+     "textures": 13,
+     "textureMB": 57.2,
+     "cpuMB": 80.8
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 49481,
+     "triangles": 1030969,
+     "geometries": 64,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "landscape": {
+     "meshes": 19,
+     "instances": 27,
+     "triangles": 79698,
+     "geometries": 19,
+     "geometryMB": 8.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 8.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 70,
+     "instances": 574,
+     "triangles": 58200,
+     "geometries": 40,
+     "geometryMB": 4.9,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4.9
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 51516,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 17.9,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 3168,
+     "calls": 18
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 194268,
+     "calls": 10
+    },
+    "landscape": {
+     "tri": 42171,
+     "calls": 7
+    },
+    "transport": {
+     "tri": 121654,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 557715,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 171451,
+     "calls": 17
+    },
+    "scenery": {
+     "tri": 728,
+     "calls": 2
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 791597,
+    "calls": 63
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     78.3
+    ],
+    [
+     "houses",
+     71.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "yards / landscape",
+     7.3
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "houses / houses (far-far)",
+     2.6
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     23.9
+    ],
+    [
+     " :: map 2028x596",
+     12.3
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     1000
+    ],
+    [
+     "stage:terrain",
+     3617
+    ],
+    [
+     "stage:sidewalks and trails",
+     3847
+    ],
+    [
+     "stage:streets and freight",
+     5290
+    ],
+    [
+     "stage:streetcar",
+     5596
+    ],
+    [
+     "stage:MARTA",
+     5743
+    ],
+    [
+     "stage:lights",
+     5802
+    ],
+    [
+     "city:built",
+     6548
+    ],
+    [
+     "city:first-frame",
+     7152
+    ],
+    [
+     "area:north-band+north-corner",
+     7896
+    ],
+    [
+     "area:south-band+south-corner",
+     8819
+    ],
+    [
+     "ready",
+     9219
+    ],
+    [
+     "area:midtown-south",
+     11109
+    ],
+    [
+     "area:midtown-central",
+     12623
+    ],
+    [
+     "area:midtown-upper",
+     16173
+    ],
+    [
+     "area:brookwood-south",
+     20168
+    ],
+    [
+     "area:brookwood-station",
+     22844
+    ],
+    [
+     "area:r16",
+     51215
+    ],
+    [
+     "city:prewarmed",
+     53955
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     105,
+     167
+    ],
+    [
+     307,
+     168
+    ],
+    [
+     708,
+     292
+    ],
+    [
+     1004,
+     2618
+    ],
+    [
+     3677,
+     169
+    ],
+    [
+     3876,
+     1416
+    ],
+    [
+     5300,
+     296
+    ],
+    [
+     5604,
+     140
+    ],
+    [
+     5755,
+     813
+    ],
+    [
+     6568,
+     587
+    ],
+    [
+     7241,
+     730
+    ],
+    [
+     8040,
+     858
+    ],
+    [
+     8998,
+     226
+    ],
+    [
+     9226,
+     534
+    ],
+    [
+     9859,
+     1356
+    ],
+    [
+     11460,
+     1267
+    ],
+    [
+     12841,
+     103
+    ],
+    [
+     12986,
+     388
+    ],
+    [
+     13396,
+     1048
+    ],
+    [
+     14516,
+     1767
+    ],
+    [
+     16401,
+     118
+    ],
+    [
+     16651,
+     3636
+    ],
+    [
+     20431,
+     144
+    ],
+    [
+     20709,
+     2550
+    ],
+    [
+     23368,
+     157
+    ],
+    [
+     23638,
+     27706
+    ],
+    [
+     51345,
+     328
+    ],
+    [
+     51721,
+     138
+    ],
+    [
+     52127,
+     177
+    ],
+    [
+     52345,
+     103
+    ],
+    [
+     56072,
+     129
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     24019
+    ],
+    [
+     "r16:built",
+     37178
+    ]
+   ]
+  },
+  {
+   "label": "A16 canvas 1x low default",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00",
+   "summary": {
+    "calls": 366,
+    "triangles": 1791935,
+    "programs": 85,
+    "textureMB": 104.9,
+    "geometryMB": 148.9,
+    "cpuMB": 214.2,
+    "heapAfterGcMB": 413,
+    "areas": 12
+   },
+   "categories": {
+    "transport": {
+     "meshes": 69,
+     "instances": 5807,
+     "triangles": 545184,
+     "geometries": 69,
+     "geometryMB": 48.7,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 60.2
+    },
+    "buildings": {
+     "meshes": 479,
+     "instances": 5157,
+     "triangles": 6497600,
+     "geometries": 477,
+     "geometryMB": 77.4,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 93.1
+    },
+    "terrain": {
+     "meshes": 84,
+     "instances": 84,
+     "triangles": 69134,
+     "geometries": 84,
+     "geometryMB": 5.7,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 43.9
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42320,
+     "triangles": 892038,
+     "geometries": 58,
+     "geometryMB": 5.4,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.4
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 14,
+     "triangles": 61086,
+     "geometries": 14,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 51,
+     "instances": 865,
+     "triangles": 108276,
+     "geometries": 29,
+     "geometryMB": 2.8,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.8
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3416,
+     "triangles": 50788,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 17.9,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "buildings": {
+     "tri": 744728,
+     "calls": 214
+    },
+    "terrain": {
+     "tri": 45167,
+     "calls": 49
+    },
+    "landscape": {
+     "tri": 61086,
+     "calls": 13
+    },
+    "trees": {
+     "tri": 521732,
+     "calls": 43
+    },
+    "transport": {
+     "tri": 295321,
+     "calls": 61
+    },
+    "untagged": {
+     "tri": 14530,
+     "calls": 4
+    },
+    "vehicles": {
+     "tri": 102424,
+     "calls": 28
+    },
+    "scenery": {
+     "tri": 2992,
+     "calls": 2
+    },
+    "post": {
+     "tri": 3,
+     "calls": 3
+    }
+   },
+   "shadowPass": {
+    "tri": 1277317,
+    "calls": 95
+   },
+   "geometryTop": [
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     42.5
+    ],
+    [
+     "houses",
+     34.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     25.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     9.2
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "yards / landscape",
+     6.2
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     2.2
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     29.9
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ],
+    [
+     " :: map 580x565",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     231
+    ],
+    [
+     "stage:terrain",
+     641
+    ],
+    [
+     "stage:sidewalks and trails",
+     678
+    ],
+    [
+     "stage:streets and freight",
+     901
+    ],
+    [
+     "stage:streetcar",
+     951
+    ],
+    [
+     "stage:MARTA",
+     975
+    ],
+    [
+     "stage:lights",
+     988
+    ],
+    [
+     "city:built",
+     1103
+    ],
+    [
+     "city:first-frame",
+     1207
+    ],
+    [
+     "ready",
+     1577
+    ],
+    [
+     "area:north-band+north-corner",
+     1917
+    ],
+    [
+     "area:south-band+south-corner",
+     2067
+    ],
+    [
+     "area:midtown-south",
+     2286
+    ],
+    [
+     "area:midtown-central",
+     2525
+    ],
+    [
+     "area:midtown-upper",
+     2835
+    ],
+    [
+     "area:brookwood-south",
+     3476
+    ],
+    [
+     "area:brookwood-station",
+     3921
+    ],
+    [
+     "city:prewarmed",
+     4600
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     231,
+     413
+    ],
+    [
+     683,
+     218
+    ],
+    [
+     982,
+     122
+    ],
+    [
+     1104,
+     103
+    ],
+    [
+     1396,
+     181
+    ],
+    [
+     1578,
+     178
+    ],
+    [
+     1823,
+     106
+    ],
+    [
+     1943,
+     136
+    ],
+    [
+     2106,
+     194
+    ],
+    [
+     2356,
+     184
+    ],
+    [
+     2600,
+     252
+    ],
+    [
+     2956,
+     540
+    ],
+    [
+     3598,
+     387
+    ]
+   ],
+   "r16Marks": []
+  },
+  {
+   "label": "A16 canvas 1x low R16",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 57,
+    "triangles": 1091261,
+    "programs": 86,
+    "textureMB": 111.2,
+    "geometryMB": 225.8,
+    "cpuMB": 295.8,
+    "heapAfterGcMB": 495,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5854,
+     "triangles": 626734,
+     "geometries": 109,
+     "geometryMB": 57.2,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 68.7
+    },
+    "buildings": {
+     "meshes": 510,
+     "instances": 5457,
+     "triangles": 6913141,
+     "geometries": 508,
+     "geometryMB": 110.3,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 126
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 933130,
+     "geometries": 89,
+     "geometryMB": 37.9,
+     "textures": 13,
+     "textureMB": 57.2,
+     "cpuMB": 80.8
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 49481,
+     "triangles": 1030969,
+     "geometries": 64,
+     "geometryMB": 6.3,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.3
+    },
+    "landscape": {
+     "meshes": 19,
+     "instances": 27,
+     "triangles": 79698,
+     "geometries": 19,
+     "geometryMB": 8.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 8.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 53,
+     "instances": 565,
+     "triangles": 32472,
+     "geometries": 31,
+     "geometryMB": 3.3,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 3.3
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 51516,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 17.9,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 3168,
+     "calls": 18
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 194268,
+     "calls": 10
+    },
+    "landscape": {
+     "tri": 42171,
+     "calls": 7
+    },
+    "transport": {
+     "tri": 121654,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 557715,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 171451,
+     "calls": 17
+    },
+    "scenery": {
+     "tri": 728,
+     "calls": 2
+    },
+    "post": {
+     "tri": 4,
+     "calls": 4
+    }
+   },
+   "shadowPass": {
+    "tri": 800009,
+    "calls": 64
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     77.5
+    ],
+    [
+     "houses",
+     71.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     15.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "yards / landscape",
+     7.3
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     7
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     3.7
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     3.2
+    ],
+    [
+     "Surface transport / Freight track",
+     3.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,-2",
+     3.1
+    ],
+    [
+     "houses / houses (far-far)",
+     2.6
+    ],
+    [
+     "MARTA track and viaduct",
+     2.5
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 2028x580",
+     23.9
+    ],
+    [
+     " :: map 2028x596",
+     12.3
+    ],
+    [
+     " :: map 1448x1448",
+     10.7
+    ],
+    [
+     " :: map 2028x290",
+     6
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ],
+    [
+     " :: map 885x436",
+     2
+    ],
+    [
+     " :: emissiveMap 885x436",
+     2
+    ],
+    [
+     " :: map 580x580",
+     1.7
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     227
+    ],
+    [
+     "stage:terrain",
+     647
+    ],
+    [
+     "stage:sidewalks and trails",
+     685
+    ],
+    [
+     "stage:streets and freight",
+     906
+    ],
+    [
+     "stage:streetcar",
+     957
+    ],
+    [
+     "stage:MARTA",
+     981
+    ],
+    [
+     "stage:lights",
+     994
+    ],
+    [
+     "city:built",
+     1109
+    ],
+    [
+     "city:first-frame",
+     1232
+    ],
+    [
+     "area:north-band+north-corner",
+     1345
+    ],
+    [
+     "area:south-band+south-corner",
+     1491
+    ],
+    [
+     "area:midtown-south",
+     1790
+    ],
+    [
+     "ready",
+     1907
+    ],
+    [
+     "area:midtown-central",
+     2129
+    ],
+    [
+     "area:midtown-upper",
+     2723
+    ],
+    [
+     "area:brookwood-south",
+     3317
+    ],
+    [
+     "area:brookwood-station",
+     3756
+    ],
+    [
+     "area:r16",
+     7991
+    ],
+    [
+     "city:prewarmed",
+     9567
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     228,
+     422
+    ],
+    [
+     690,
+     216
+    ],
+    [
+     987,
+     124
+    ],
+    [
+     1112,
+     120
+    ],
+    [
+     1244,
+     111
+    ],
+    [
+     1370,
+     133
+    ],
+    [
+     1610,
+     193
+    ],
+    [
+     1805,
+     103
+    ],
+    [
+     1946,
+     203
+    ],
+    [
+     2307,
+     157
+    ],
+    [
+     2478,
+     260
+    ],
+    [
+     2799,
+     539
+    ],
+    [
+     3430,
+     390
+    ],
+    [
+     3879,
+     4132
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     3938
+    ],
+    [
+     "r16:built",
+     5876
+    ]
+   ]
+  },
+  {
+   "label": "A16 canvas 1x high R16",
+   "url": "http://127.0.0.1:4871/?view=city&perf=run&q=high&t=2026-11-20T14%3A00%3A00-05%3A00&cam=-120%2C-6100%2C-58%2C55%2C900",
+   "summary": {
+    "calls": 83,
+    "triangles": 2708654,
+    "programs": 106,
+    "textureMB": 638.6,
+    "geometryMB": 353.1,
+    "cpuMB": 721.6,
+    "heapAfterGcMB": 643,
+    "areas": 13
+   },
+   "categories": {
+    "transport": {
+     "meshes": 109,
+     "instances": 5879,
+     "triangles": 746862,
+     "geometries": 109,
+     "geometryMB": 72.3,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 83.8
+    },
+    "buildings": {
+     "meshes": 500,
+     "instances": 9177,
+     "triangles": 7521408,
+     "geometries": 498,
+     "geometryMB": 135.9,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 151.6
+    },
+    "terrain": {
+     "meshes": 89,
+     "instances": 89,
+     "triangles": 1906001,
+     "geometries": 89,
+     "geometryMB": 64.8,
+     "textures": 13,
+     "textureMB": 455.1,
+     "cpuMB": 406.2
+    },
+    "trees": {
+     "meshes": 64,
+     "instances": 224393,
+     "triangles": 3291947,
+     "geometries": 64,
+     "geometryMB": 22.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 22.2
+    },
+    "landscape": {
+     "meshes": 50,
+     "instances": 58,
+     "triangles": 534506,
+     "geometries": 50,
+     "geometryMB": 51,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 51
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18100,
+     "geometries": 7,
+     "geometryMB": 2.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2.2
+    },
+    "vehicles": {
+     "meshes": 65,
+     "instances": 567,
+     "triangles": 36056,
+     "geometries": 43,
+     "geometryMB": 4,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 4
+    },
+    "scenery": {
+     "meshes": 14,
+     "instances": 3468,
+     "triangles": 58448,
+     "geometries": 14,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 20,
+     "textureMB": 147.3,
+     "cpuMB": 0
+    }
+   },
+   "drawsByCategory": {
+    "vehicles": {
+     "tri": 4736,
+     "calls": 30
+    },
+    "untagged": {
+     "tri": 102,
+     "calls": 2
+    },
+    "trees": {
+     "tri": 1346015,
+     "calls": 15
+    },
+    "landscape": {
+     "tri": 296414,
+     "calls": 18
+    },
+    "transport": {
+     "tri": 144973,
+     "calls": 7
+    },
+    "terrain": {
+     "tri": 656842,
+     "calls": 6
+    },
+    "buildings": {
+     "tri": 251050,
+     "calls": 17
+    },
+    "scenery": {
+     "tri": 8512,
+     "calls": 4
+    },
+    "post": {
+     "tri": 10,
+     "calls": 10
+    }
+   },
+   "shadowPass": {
+    "tri": 3126450,
+    "calls": 89
+   },
+   "geometryTop": [
+    [
+     "(unnamed Mesh MeshLambertMaterial)",
+     130.3
+    ],
+    [
+     "houses",
+     86.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-1",
+     63.2
+    ],
+    [
+     "yards / landscape",
+     35.1
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-2",
+     32.3
+    ],
+    [
+     "Surface transport / Decks and embedded rails",
+     26.4
+    ],
+    [
+     "Landmark batches / landmark cell 1,-7",
+     20.1
+    ],
+    [
+     "Landmark batches / landmark cell 1,-8",
+     18.7
+    ],
+    [
+     "Surface transport / Freight track",
+     17.7
+    ],
+    [
+     "yards / ground-cover",
+     14.2
+    ],
+    [
+     "houses / houses (far block)",
+     11.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-8",
+     9.7
+    ],
+    [
+     "Landmark batches / landmark cell 1,-5",
+     6.5
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-2",
+     6.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 1,-1",
+     6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-7",
+     5.6
+    ],
+    [
+     "Landmark batches / landmark cell 0,-5",
+     5.1
+    ],
+    [
+     "Landmark batches / landmark cell 0,-9",
+     4.9
+    ],
+    [
+     "Atlanta Streetcar track / Streetcar slab and rails",
+     4.6
+    ],
+    [
+     "Landmark batches / landmark cell 1,-4",
+     4.4
+    ],
+    [
+     "Landmark batches / landmark cell 0,-6",
+     4.3
+    ],
+    [
+     "Downtown landmark batches / landmark cell 0,-3",
+     4.1
+    ],
+    [
+     "North Line guideway",
+     3.5
+    ],
+    [
+     "High Museum of Art / ground-cover",
+     3.4
+    ],
+    [
+     "Downtown landmark batches / landmark cell -1,0",
+     3.4
+    ]
+   ],
+   "textureTop": [
+    [
+     " :: map 5735x1639",
+     191.2
+    ],
+    [
+     " :: map 5735x1655",
+     96.6
+    ],
+    [
+     " :: map 4096x4096",
+     85.3
+    ],
+    [
+     " :: map 5735x820",
+     47.8
+    ],
+    [
+     " :: map 1639x1639",
+     13.7
+    ],
+    [
+     " :: map 1639x1598",
+     13.3
+    ],
+    [
+     " :: map 1639x738",
+     6.2
+    ],
+    [
+     " :: map 1682x436",
+     3.7
+    ],
+    [
+     " :: emissiveMap 1682x436",
+     3.7
+    ],
+    [
+     "Georgia Aquarium :: map 1024x160",
+     3.3
+    ],
+    [
+     "One Atlantic Center :: map 864x540",
+     2.4
+    ],
+    [
+     "One Atlantic Center :: emissiveMap 864x540",
+     2.4
+    ]
+   ],
+   "phases": [
+    [
+     "stage:alignments",
+     212
+    ],
+    [
+     "stage:terrain",
+     633
+    ],
+    [
+     "stage:sidewalks and trails",
+     667
+    ],
+    [
+     "stage:streets and freight",
+     944
+    ],
+    [
+     "stage:streetcar",
+     992
+    ],
+    [
+     "stage:MARTA",
+     1011
+    ],
+    [
+     "stage:lights",
+     1024
+    ],
+    [
+     "city:built",
+     1165
+    ],
+    [
+     "city:first-frame",
+     1286
+    ],
+    [
+     "area:north-band+north-corner",
+     1420
+    ],
+    [
+     "area:south-band+south-corner",
+     1594
+    ],
+    [
+     "area:midtown-south",
+     1972
+    ],
+    [
+     "ready",
+     2117
+    ],
+    [
+     "area:midtown-central",
+     2425
+    ],
+    [
+     "area:midtown-upper",
+     3167
+    ],
+    [
+     "area:brookwood-south",
+     4032
+    ],
+    [
+     "area:brookwood-station",
+     4511
+    ],
+    [
+     "area:r16",
+     8905
+    ],
+    [
+     "city:prewarmed",
+     9736
+    ]
+   ],
+   "longTasksOver100": [
+    [
+     213,
+     420
+    ],
+    [
+     669,
+     275
+    ],
+    [
+     1016,
+     153
+    ],
+    [
+     1169,
+     118
+    ],
+    [
+     1300,
+     133
+    ],
+    [
+     1444,
+     163
+    ],
+    [
+     1621,
+     107
+    ],
+    [
+     1735,
+     250
+    ],
+    [
+     1987,
+     130
+    ],
+    [
+     2144,
+     307
+    ],
+    [
+     2599,
+     168
+    ],
+    [
+     2782,
+     403
+    ],
+    [
+     3267,
+     786
+    ],
+    [
+     4132,
+     447
+    ],
+    [
+     4646,
+     4280
+    ]
+   ],
+   "r16Marks": [
+    [
+     "r16:build-start",
+     4714
+    ],
+    [
+     "r16:built",
+     6686
+    ]
+   ]
+  }
+ ],
+ "highDayPrograms": [
+  {
+   "id": 0,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,1,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 1,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,3,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 2,
+   "name": "",
+   "owners": [
+    "Twelve Centennial Park Tower I :: MeshLambertMaterial",
+    "One12 Courtland :: MeshLambertMaterial",
+    "world-of-coca-cola :: MeshLambertMaterial"
+   ],
+   "nOwners": 115,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 9,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,1,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 8,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,3,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 5,
+   "name": "TiltShift",
+   "owners": [],
+   "nOwners": 0,
+   "key": "0,1,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 6,
+   "name": "GlassBlur",
+   "owners": [],
+   "nOwners": 0,
+   "key": "2,3,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 7,
+   "name": "Grade",
+   "owners": [],
+   "nOwners": 0,
+   "key": "0,4,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,7,0,0,0,1,131072,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 10,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,1,142336,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 11,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,1,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 12,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,1,142336,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 13,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,1,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 14,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,7,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 15,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,3201,3,144384,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 16,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,3,142336,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 17,
+   "name": "",
+   "owners": [
+    "Westin Peachtree Plaza / Westin guest tower and Sun Dial :: MeshPhongMaterial"
+   ],
+   "nOwners": 1,
+   "key": "phong,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,132099,srgb,a=>{a.uniforms.skyline={value:t},a.unif"
+  },
+  {
+   "id": 18,
+   "name": "",
+   "owners": [
+    "191 Peachtree Tower :: MeshLambertMaterial",
+    "1180 Peachtree / 1180 curtain wall :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 19,
+   "name": "",
+   "owners": [
+    "191 Peachtree Tower :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,u=>{Nu(u,Ru(2.3,1.45,\"vStone"
+  },
+  {
+   "id": 20,
+   "name": "",
+   "owners": [
+    "Peachtree Center North Tower :: MeshLambertMaterial",
+    "Peachtree Center South Tower :: MeshLambertMaterial",
+    "Peachtree Center Harris Tower :: MeshLambertMaterial"
+   ],
+   "nOwners": 7,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 21,
+   "name": "",
+   "owners": [
+    "Truist Plaza :: MeshPhongMaterial",
+    "Georgia Power headquarters :: MeshPhongMaterial"
+   ],
+   "nOwners": 2,
+   "key": "phong,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,134147,srgb,a=>{a.uniforms.skyline={value:t},a.unif"
+  },
+  {
+   "id": 22,
+   "name": "",
+   "owners": [
+    "Atlanta Central Library :: MeshLambertMaterial",
+    "Southern Bell Telephone Company Building :: MeshLambertMaterial",
+    "Georgia-Pacific Tower :: MeshLambertMaterial"
+   ],
+   "nOwners": 15,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 23,
+   "name": "",
+   "owners": [
+    "Davison's department store :: MeshLambertMaterial",
+    "Empire Building — Robinson College :: MeshLambertMaterial",
+    "Crum and Forster Building :: MeshLambertMaterial"
+   ],
+   "nOwners": 9,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}|surfaces"
+  },
+  {
+   "id": 24,
+   "name": "",
+   "owners": [
+    "Rhodes-Haverty Building :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1025,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 25,
+   "name": "",
+   "owners": [
+    "34 Peachtree (One Park Tower) :: MeshLambertMaterial",
+    "Candler Building and 113 Peachtree storefront :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 26,
+   "name": "",
+   "owners": [
+    "Corey Tower :: MeshBasicMaterial",
+    "Atlanta Streetcar track / Streetcar wire :: MeshBasicMaterial (hidden)",
+    "Arts Center station :: MeshBasicMaterial"
+   ],
+   "nOwners": 3,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 27,
+   "name": "",
+   "owners": [
+    "Mercedes-Benz Stadium / Eight closed roof petals :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,m=>{m.vertexShader=`attribut"
+  },
+  {
+   "id": 28,
+   "name": "",
+   "owners": [
+    "Georgia State Capitol / Capitol gold dome and lantern :: MeshPhongMaterial"
+   ],
+   "nOwners": 1,
+   "key": "phong,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 29,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "bridge approaches :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,132099,srgb,w=>{w.uniforms.uContours=s,w.verte"
+  },
+  {
+   "id": 30,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "joining edge :: MeshLambertMaterial (hidden)",
+    "joining edge 1 :: MeshLambertMaterial (hidden)"
+   ],
+   "nOwners": 19,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 31,
+   "name": "",
+   "owners": [
+    "Underpass luminaires :: MeshBasicMaterial"
+   ],
+   "nOwners": 1,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 32,
+   "name": "",
+   "owners": [
+    "yards / landscape :: MeshLambertMaterial",
+    "Piedmont Park details / piedmont-furniture :: MeshLambertMaterial",
+    "High Museum of Art / landscape :: MeshLambertMaterial"
+   ],
+   "nOwners": 7,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134151,srgb,c=>{c.vertexShader=c.vertexS"
+  },
+  {
+   "id": 33,
+   "name": "",
+   "owners": [
+    "yards / landscape / planting :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134151,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 34,
+   "name": "",
+   "owners": [
+    "yards / ground-cover :: MeshLambertMaterial",
+    "High Museum of Art / ground-cover :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,132099,srgb,n=>{n.uniforms.uDetail={value:t"
+  },
+  {
+   "id": 35,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "houses :: MeshLambertMaterial (hidden)",
+    "houses / houses (far block) :: MeshLambertMaterial"
+   ],
+   "nOwners": 5,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,t=>{t.uniforms.uNight=n,t.ve"
+  },
+  {
+   "id": 36,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "30306c74-51c3-4ae2-9a93-11f9341f87ee :: MeshLambertMaterial",
+    "osm:way:39449002 :: MeshLambertMaterial"
+   ],
+   "nOwners": 4,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,7,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 37,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "species trees / clump leaves :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,7,132103,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 38,
+   "name": "",
+   "owners": [
+    "MARTA ties :: MeshLambertMaterial (hidden)",
+    "Street lamp posts :: MeshLambertMaterial (hidden)",
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 7,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,3,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 39,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "30306c74-51c3-4ae2-9a93-11f9341f87ee :: MeshLambertMaterial (hidden)",
+    "osm:way:39449002 :: MeshLambertMaterial (hidden)"
+   ],
+   "nOwners": 4,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2051,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 40,
+   "name": "",
+   "owners": [
+    "30306c74-51c3-4ae2-9a93-11f9341f87ee :: MeshLambertMaterial",
+    "osm:way:39449002 :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,3,132103,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 41,
+   "name": "",
+   "owners": [
+    "Downtown landmark batches / landmark cell 0,-1 / landmark batch :: MeshBasicMaterial"
+   ],
+   "nOwners": 1,
+   "key": "basic,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 42,
+   "name": "",
+   "owners": [
+    "Surface transport / Freight track :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 43,
+   "name": "",
+   "owners": [
+    "Georgia State platforms :: MeshBasicMaterial"
+   ],
+   "nOwners": 1,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 44,
+   "name": "",
+   "owners": [
+    "Georgia State platforms :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,132099,srgb,v=>{v.fragmentShader=v.fragm"
+  },
+  {
+   "id": 45,
+   "name": "",
+   "owners": [
+    "Illustrative freight :: MeshLambertMaterial (hidden)",
+    "Illustrative freight / freight prewarm template :: MeshLambertMaterial (hidden)"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,6,0,0,2051,132099,srgb,freight-containers-1"
+  },
+  {
+   "id": 46,
+   "name": "",
+   "owners": [
+    "Live buses :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2051,134147,srgb,xcelsior"
+  },
+  {
+   "id": 47,
+   "name": "",
+   "owners": [
+    "Illustrative downtown arterial traffic :: MeshLambertMaterial",
+    "Illustrative Connector traffic :: MeshLambertMaterial",
+    "Illustrative Midtown arterial traffic :: MeshLambertMaterial"
+   ],
+   "nOwners": 3,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,264199,132099,srgb,(d,p)=>{f(d,p),d.vertexSha"
+  },
+  {
+   "id": 48,
+   "name": "",
+   "owners": [
+    "Illustrative downtown arterial traffic / Signal heads :: MeshBasicMaterial",
+    "Illustrative Midtown arterial traffic / Signal heads :: MeshBasicMaterial"
+   ],
+   "nOwners": 2,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,7,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 49,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3075,132099,srgb,a=>{a.vertexShader=`attribute f"
+  },
+  {
+   "id": 50,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial (hidden)",
+    "Studio table :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 51,
+   "name": "",
+   "owners": [
+    "cq400 prewarm template :: MeshLambertMaterial (hidden)",
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,5,0,0,2049,132099,srgb,cq400"
+  },
+  {
+   "id": 52,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,132099,srgb,(e,t)=>{d(e,t),e.uniforms.grantNig"
+  },
+  {
+   "id": 53,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,(e,t)=>{d(e,t),e.uniforms.gr"
+  },
+  {
+   "id": 54,
+   "name": "",
+   "owners": [
+    "Surface transport / Freight track :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 55,
+   "name": "",
+   "owners": [
+    "Hilton Atlanta :: MeshBasicMaterial",
+    "Georgia Power headquarters :: MeshBasicMaterial"
+   ],
+   "nOwners": 2,
+   "key": "basic,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 56,
+   "name": "",
+   "owners": [
+    "Altitude Apartments :: MeshLambertMaterial",
+    "College Football Hall of Fame :: MeshLambertMaterial",
+    "Georgia Aquarium :: MeshLambertMaterial"
+   ],
+   "nOwners": 3,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 57,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,5123,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 58,
+   "name": "",
+   "owners": [
+    "world-of-coca-cola :: MeshLambertMaterial",
+    "Atlanta Streetcar stops :: MeshLambertMaterial",
+    "Coda :: MeshLambertMaterial"
+   ],
+   "nOwners": 4,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 59,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,5123,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 60,
+   "name": "",
+   "owners": [
+    "75 Piedmont · former Citizens Trust Bank :: MeshLambertMaterial",
+    "Fulton County Government Center / Fulton County Government Center :: MeshLambertMaterial",
+    "world-of-coca-cola :: MeshLambertMaterial"
+   ],
+   "nOwners": 3,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 61,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,5123,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 62,
+   "name": "",
+   "owners": [
+    "Hilton Atlanta :: MeshBasicMaterial",
+    "25 Park Place :: MeshBasicMaterial (hidden)",
+    "One12 Courtland :: MeshBasicMaterial (hidden)"
+   ],
+   "nOwners": 11,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 63,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,5123,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 64,
+   "name": "",
+   "owners": [
+    "Grady Memorial Hospital :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1025,1027,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 65,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "5,6,PERSPECTIVE_CAMERA,1,SAMPLES,16,NORMAL_VECTOR_TYPE,0,DEPTH_SWIZZLING,x,SCREEN_SPACE_RADIUS,0,SCREEN_SPACE_RADIUS_SCALE,100,SCENE_CLIP_BOX,1,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,f"
+  },
+  {
+   "id": 66,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "5,7,SAMPLES,16,SAMPLE_VECTORS,vec3[SAMPLES](vec3(1, 0, 0),vec3(0.7071067811865476, 0.7071067811865475, 0.06666666666666667),vec3(6.123233995736766e-17, 1, 0.13333333333333333),vec3(-0.7071067811865475, 0.7071067811865476, 0.2),vec3(-1, 1.2246467991473532e-16, "
+  },
+  {
+   "id": 67,
+   "name": "AoBlend",
+   "owners": [],
+   "nOwners": 0,
+   "key": "8,9,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 68,
+   "name": "",
+   "owners": [
+    "Atlanta Streetcar cars :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,132099,srgb,e=>{e.uniforms.stockNight=t,"
+  },
+  {
+   "id": 69,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial",
+    "bridge approaches :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,132099,srgb,w=>{w.uniforms.uContours=s,w.verte"
+  },
+  {
+   "id": 70,
+   "name": "",
+   "owners": [
+    " :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1025,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 71,
+   "name": "",
+   "owners": [
+    "osm:way:173532779 :: MeshLambertMaterial",
+    "osm:way:97337613 :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,d=>{d.uniforms.uAuburnNight="
+  },
+  {
+   "id": 72,
+   "name": "",
+   "owners": [
+    "Floyd office windows :: MeshBasicMaterial (hidden)",
+    "Georgia State Capitol / Capitol lit windows :: MeshBasicMaterial (hidden)"
+   ],
+   "nOwners": 2,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,3075,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 73,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,1,142336,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 74,
+   "name": "",
+   "owners": [
+    "Cut-and-cover underpass :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,h=>{h.uniforms.trenchNight=m,h."
+  },
+  {
+   "id": 75,
+   "name": "",
+   "owners": [
+    "Midtown deck piers :: MeshLambertMaterial",
+    "Ansley tee markers :: MeshLambertMaterial",
+    "North Line span lamps :: MeshLambertMaterial"
+   ],
+   "nOwners": 4,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 76,
+   "name": "",
+   "owners": [
+    "Electric Saturation / Electric Saturation mural :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,134147,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 77,
+   "name": "",
+   "owners": [
+    "Street lamp heads :: MeshBasicMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,3,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 78,
+   "name": "",
+   "owners": [
+    "Underpass pavement illumination :: ShaderMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "10,11,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,1025,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 79,
+   "name": "",
+   "owners": [
+    "One Atlantic Center :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,one-atlantic-ashlar"
+  },
+  {
+   "id": 80,
+   "name": "",
+   "owners": [
+    "One Atlantic Center / One Atlantic shaft :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,uv,false,false,false,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,1,134147,srgb,one-atlantic-ashlar"
+  },
+  {
+   "id": 81,
+   "name": "",
+   "owners": [
+    "Surface transport / 17th Street Bridge :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,e0=>{e0.uniforms.bridgeNight"
+  },
+  {
+   "id": 82,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,5123,srgb,1180-veil-wash-v1"
+  },
+  {
+   "id": 83,
+   "name": "",
+   "owners": [
+    "1180 Peachtree / 1180 veil 0 :: MeshLambertMaterial",
+    "1180 Peachtree / 1180 veil 1 :: MeshLambertMaterial"
+   ],
+   "nOwners": 2,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,1027,srgb,1180-veil-wash-v1"
+  },
+  {
+   "id": 84,
+   "name": "",
+   "owners": [
+    "MARTA east: guideway and King Memorial station / King Memorial platform lights :: MeshBasicMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,3075,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 85,
+   "name": "",
+   "owners": [
+    " :: ShaderMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "12,13,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,1025,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 86,
+   "name": "",
+   "owners": [
+    " :: ShaderMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "14,15,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,1025,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 87,
+   "name": "",
+   "owners": [
+    "Rhodes Hall :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,134147,srgb,onBeforeCompile(){}|surfaces"
+  },
+  {
+   "id": 88,
+   "name": "",
+   "owners": [
+    "Station seam fragments :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134147,srgb,t=>{t.uniforms.uNight=n,t.ve"
+  },
+  {
+   "id": 89,
+   "name": "",
+   "owners": [
+    "Station seam fragments :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,7,132099,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 90,
+   "name": "",
+   "owners": [
+    "yards / landscape :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134151,srgb,c=>{c.vertexShader=c.vertexS"
+  },
+  {
+   "id": 91,
+   "name": "",
+   "owners": [
+    "yards / landscape / planting :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2049,134151,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 92,
+   "name": "",
+   "owners": [
+    "yards / ground-cover :: MeshLambertMaterial"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,0,0,0,1,132099,srgb,n=>{n.uniforms.uDetail={value:t"
+  },
+  {
+   "id": 93,
+   "name": "",
+   "owners": [
+    "crescent prewarm template :: MeshLambertMaterial (hidden)"
+   ],
+   "nOwners": 1,
+   "key": "lambert,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,0,0,0,1,0,1,0,0,0,0,2,0,4,0,0,2049,132099,srgb,e=>{e.uniforms.stockNight=t,"
+  },
+  {
+   "id": 94,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "16,17,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompile(){}"
+  },
+  {
+   "id": 95,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,19,KERNEL_RADIUS,3,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompi"
+  },
+  {
+   "id": 96,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,19,KERNEL_RADIUS,5,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompi"
+  },
+  {
+   "id": 97,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,19,KERNEL_RADIUS,7,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompi"
+  },
+  {
+   "id": 98,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,19,KERNEL_RADIUS,9,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompi"
+  },
+  {
+   "id": 99,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,19,KERNEL_RADIUS,11,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeComp"
+  },
+  {
+   "id": 100,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "18,20,NUM_MIPS,5,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,131072,srgb,onBeforeCompile(){"
+  },
+  {
+   "id": 101,
+   "name": "",
+   "owners": [],
+   "nOwners": 0,
+   "key": "21,22,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1,0,srgb,onBeforeCompile(){}"
+  }
+ ]
+}

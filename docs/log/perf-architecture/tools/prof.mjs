@@ -1,0 +1,26 @@
+import { launchChrome } from '../../../../scripts/chrome-cdp.mjs';
+import { writeFileSync } from 'node:fs';
+const [url, out, cpu = '1'] = process.argv.slice(2);
+const b = await launchChrome('prof-chrome-', ['--headless=new', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader']);
+const ws = new WebSocket(b.wsUrl); await new Promise(r => ws.addEventListener('open', r, { once: true }));
+let id = 0; const pend = new Map();
+ws.addEventListener('message', ev => { const m = JSON.parse(ev.data); if (m.id && pend.has(m.id)) { pend.get(m.id)(m); pend.delete(m.id); } });
+const send = (method, params = {}) => new Promise((res, rej) => { const n = ++id; pend.set(n, m => m.error ? rej(new Error(method + m.error.message)) : res(m.result)); ws.send(JSON.stringify({ id: n, method, params })); });
+const ev = async e => (await send('Runtime.evaluate', { expression: e, returnByValue: true, awaitPromise: true })).result.value;
+await send('Runtime.enable'); await send('Page.enable'); await send('Profiler.enable');
+await send('Profiler.setSamplingInterval', { interval: 1000 });
+await send('Emulation.setDeviceMetricsOverride', { width: 384, height: 692, deviceScaleFactor: 1, mobile: true });
+if (+cpu > 1) await send('Emulation.setCPUThrottlingRate', { rate: +cpu });
+await send('Page.navigate', { url });
+await send('Profiler.start');
+const t0 = Date.now(); let done = false;
+while (Date.now() - t0 < 300000) { await new Promise(r => setTimeout(r, 1000)); try { const p = await ev('(window.__perf?.phases ?? []).map(p => p.name)'); if (p?.includes('city:prewarmed') && (!url.includes('cam=') || p.some(n => n === 'area:r16'))) { done = true; break; } } catch {} }
+await new Promise(r => setTimeout(r, 1500));
+const longTasks = await ev(`new Promise(res => { const out = []; const po = new PerformanceObserver(l => out.push(...l.getEntries())); po.observe({ type: 'longtask', buffered: true }); setTimeout(() => { po.disconnect(); res(out.map(e => [Math.round(e.startTime), Math.round(e.duration)])); }, 300); })`);
+const pn = await ev('performance.now()');
+const { profile } = await send('Profiler.stop');
+const offsetMs = profile.endTime / 1000 - pn;
+const phases = await ev('__perf.phases');
+const marks = await ev('performance.getEntriesByType("mark").map(m=>[m.name,Math.round(m.startTime)])');
+writeFileSync(out, JSON.stringify({ profile, phases, marks, done, longTasks, offsetMs }));
+ws.close(); await b.close(); console.log('done', done);
