@@ -413,7 +413,7 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
  * wall and glass) and its lit windows at night colour the box as they colour the building, and no
  * night variant or extra program is needed. Roofs carry style −1 (plain), as the near roofs do.
  */
-function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mesh; night: null } {
+export function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mesh; night: null } {
   const P: number[] = [], N: number[] = [], C: number[] = [], S: number[] = [], B: number[] = [], I: number[] = [];
   let v = 0;
   const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, st: number, base: number) => {
@@ -421,20 +421,26 @@ function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mes
   };
   for (const bx of boxes) {
     const { cx, cz, ux, uz, hx, hz, y0, y1 } = bx;
+    // A footprint ring keeps its own order: the near walls (vignette/world.ts, Builder.quad over the
+    // mapped ring) take their normal, and with it the facade's u axis and window cells, from it. A
+    // generated box runs the way that normal points outward.
     let ring: number[] = bx.ring ?? [];
-    if (!bx.ring) for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) ring.push(cx + su * hx * ux - sv * hz * uz, cz + su * hx * uz + sv * hz * ux);
-    if (ringArea2(ring) < 0) { const r2: number[] = []; for (let i = ring.length - 2; i >= 0; i -= 2) r2.push(ring[i], ring[i + 1]); ring = r2; }
+    if (!bx.ring) {
+      for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) ring.push(cx + su * hx * ux - sv * hz * uz, cz + su * hx * uz + sv * hz * ux);
+      if (ringArea2(ring) > 0) { const r2: number[] = []; for (let i = ring.length - 2; i >= 0; i -= 2) r2.push(ring[i], ring[i + 1]); ring = r2; }
+    }
     const n = ring.length / 2, st = bx.style ?? -1, base = bx.base ?? y0;
     for (let i = 0; i < n; i++) {
       const ax = ring[i * 2], az = ring[i * 2 + 1], bx2 = ring[((i + 1) % n) * 2], bz = ring[((i + 1) % n) * 2 + 1];
-      let nx = bz - az, nz = -(bx2 - ax);
+      // Builder.quad(a, c, c', a') winds (a, c, c') and (a, c', a'): its normal is (−dz, 0, dx).
+      let nx = -(bz - az), nz = bx2 - ax;
       const l = Math.hypot(nx, nz);
       if (l < 1e-3) continue;
       nx /= l; nz /= l;
       const band = (lo: number, hi: number, s: number, sb: number) => {
         const p0 = put(ax, lo, az, nx, 0, nz, bx.r, bx.g, bx.b, s, sb), p1 = put(bx2, lo, bz, nx, 0, nz, bx.r, bx.g, bx.b, s, sb);
         const p2 = put(bx2, hi, bz, nx, 0, nz, bx.r, bx.g, bx.b, s, sb), p3 = put(ax, hi, az, nx, 0, nz, bx.r, bx.g, bx.b, s, sb);
-        I.push(p0, p2, p1, p0, p3, p2);
+        I.push(p0, p1, p2, p0, p2, p3);
       };
       const split = bx.baseStyle !== undefined && bx.baseStyle >= 0 && bx.baseTop! > y0 + 0.5 && bx.baseTop! < y1 - 0.5;
       if (split) { band(y0, bx.baseTop!, bx.baseStyle!, bx.baseBase ?? base); band(bx.baseTop!, y1, st, base); }
@@ -446,7 +452,13 @@ function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mes
     const first = v;
     for (let i = 0; i < n; i++) put(ring[i * 2], y1, ring[i * 2 + 1], 0, 1, 0, roof.r, roof.g, roof.b, -1, 0);
     const pts = Array.from({ length: n }, (_, i) => new Vector2(ring[i * 2], ring[i * 2 + 1]));
-    for (const [a, b, c] of ShapeUtils.triangulateShape(pts, [])) I.push(first + a, first + c, first + b);
+    // Roof triangles face up whichever way the ring runs: three's front face is counter-clockwise
+    // seen from its normal, so (b − a) × (c − a) must point to +y.
+    for (const [a, b, c] of ShapeUtils.triangulateShape(pts, [])) {
+      const ex = pts[b].x - pts[a].x, ez = pts[b].y - pts[a].y, fx = pts[c].x - pts[a].x, fz = pts[c].y - pts[a].y;
+      const ny = ez * fx - ex * fz;
+      I.push(first + a, first + (ny > 0 ? b : c), first + (ny > 0 ? c : b));
+    }
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new BufferAttribute(new Float32Array(P), 3));
