@@ -1,4 +1,5 @@
 import { BufferAttribute, BufferGeometry, type Material, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
+import { type Build, runSync } from '../core/slice';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 
 /**
@@ -414,12 +415,20 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
  * night variant or extra program is needed. Roofs carry style −1 (plain), as the near roofs do.
  */
 export function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mesh; night: null } {
+  return runSync(styledBoxSteps(boxes, material));
+}
+
+/** styledBoxMesh as a build that yields every few boxes (core/slice.ts). */
+export function* styledBoxSteps(boxes: readonly FarBox[], material: Material): Build<{ day: Mesh; night: null }> {
   const P: number[] = [], N: number[] = [], C: number[] = [], S: number[] = [], B: number[] = [], I: number[] = [];
   let v = 0;
   const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, st: number, base: number) => {
     P.push(x, y, z); N.push(nx, ny, nz); C.push(r, g, b); S.push(st); B.push(base); return v++;
   };
+  let done = 0;
   for (const bx of boxes) {
+    if (done && done % 48 === 0) yield 'far mesh';
+    done++;
     const { cx, cz, ux, uz, hx, hz, y0, y1 } = bx;
     // A footprint ring keeps its own order: the near walls (vignette/world.ts, Builder.quad over the
     // mapped ring) take their normal, and with it the facade's u axis and window cells, from it. A

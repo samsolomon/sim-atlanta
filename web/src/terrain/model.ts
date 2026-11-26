@@ -80,7 +80,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, type FarBox } from '../city/far-board';
+import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, styledBoxSteps, type FarBox } from '../city/far-board';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
@@ -107,6 +107,9 @@ type Tree = [number, number, number, number];
 type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
+  /** Low: leave the far-board buildings out of this build; the caller builds them with buildFar.
+   * For a board built before the page is ready. */
+  deferFarBoxes?: boolean;
   simpleLeafClumps?: boolean;
   /** Optional continuous road axes for the painted terrain surface. */
   underpass?: Underpass;
@@ -237,7 +240,7 @@ function makeScenery(...args: Parameters<typeof buildScenery>) {
 
 /** makeScenery as a build: buildings yield every few, then trees (core/slice.ts). */
 function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
+  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear, deferFarBoxes }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
   const options = { cityFacades: true, terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048,
     clumpScale: quality === 'low' ? CITY_LOW_CLUMP_SCALE : 1 };
@@ -249,6 +252,7 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   // branch) breaks memory out by category: 'buildings', 'trees' or 'landscape'.
   const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
   let before = world.group.children.length;
+  world.deferFarBoxes = !!deferFarBoxes;
   // Houses stay in the data (lamps and trees keep clear of them) but are drawn by house-lod.ts.
   yield* world.buildingSteps(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor, quality,
     farBoard && quality === 'low');
@@ -317,10 +321,10 @@ function* whileAlive<T>(build: Build<T>, alive: () => boolean): Build<T | null> 
     yield r.value;
   }
 }
-function queueVeryFar<T>(build: () => Build<T>, done: (value: T) => void, alive: () => boolean) {
-  veryFarChain = veryFarChain.then(() => !alive() ? null : runBudgeted(whileAlive(build(), alive), {
+function queueVeryFar<T>(build: () => Build<T>, done: (value: T) => void, alive: () => boolean): Promise<void> {
+  return veryFarChain = veryFarChain.then(() => !alive() ? null : runBudgeted(whileAlive(build(), alive), {
     budgetMs: () => (sliceInput.dragging ? 1 : VERY_FAR_BUDGET_MS), stats: veryFarStats,
-  })).then(v => { if (v !== null) done(v as T); }, () => {});
+  })).then(v => { if (v !== null) done(v as T); }, e => { console.warn('A far-form build failed', e); });
 }
 let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
@@ -625,23 +629,32 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // The far boxes draw with the generic buildings' material (city/far-board.ts styledBoxMesh).
   const buildingMaterial = scenery.group.children.find((o): o is THREE.Mesh => o.userData.building && (o as THREE.Mesh).isMesh && !(o as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
   const farHidden: THREE.Object3D[] = [];
+  // deferFarBoxes (downtown, built before the page is ready): nothing of the far form is built
+  // here. The boxes collect, and buildFar fits and meshes them afterwards, in slices.
+  let farPending = false, farVersion = 0;
   if (farBoard && options.quality === 'low') {
-    // Houses: their per-house boxes from house-lod.ts (the plan's oriented rect, eave height,
-    // wall colour and a roof-coloured top), shared with studio-tree-lab's far-far form.
-    farBoxes.push(...scenery.farBoxes, ...houses.boxes);
-    grounded(farBoxes);
     // Landmark groups and their cell batches are flagged as buildings too; they stay unless boxed.
     const keptLandmarks = new Set<THREE.Object3D>([...landmarks.map(l => l.group).filter(g => !boxedFromAfar(g.name)), ...(batches && !FAR_LANDMARKS ? [batches.group] : [])]);
     farHidden.push(...scenery.group.children.filter(o => (o.userData.building || o.userData.roofClutter) && !keptLandmarks.has(o)), houses.group,
       ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
-    const t0 = performance.now();
-    farMesh = farBoxMesh(farBoxes, inCarved, buildingMaterial);
-    if (import.meta.env.DEV) console.info('City far-board mesh', JSON.stringify({ boxes: farBoxes.length, tris: (farMesh.day.geometry.index?.count ?? 0) / 3, ms: Math.round(performance.now() - t0) }));
-    scenery.group.add(farMesh.day, ...(farMesh.night ? [farMesh.night] : []));
-    yield 'far-board buildings';
+    // Only the styled mesh can be added late: it draws with a material City has already clipped.
+    farPending = !!options.deferFarBoxes && !!buildingMaterial;
+    if (!farPending) {
+      yield* scenery.fitFarBoxesSteps();
+      // Houses: their per-house boxes from house-lod.ts (the plan's oriented rect, eave height,
+      // wall colour and a roof-coloured top), shared with studio-tree-lab's far-far form.
+      farBoxes.push(...scenery.farBoxes, ...houses.boxes);
+      grounded(farBoxes);
+      const t0 = performance.now();
+      farMesh = farBoxMesh(farBoxes, inCarved, buildingMaterial);
+      if (import.meta.env.DEV) console.info('City far-board mesh', JSON.stringify({ boxes: farBoxes.length, tris: (farMesh.day.geometry.index?.count ?? 0) / 3, ms: Math.round(performance.now() - t0) }));
+      scenery.group.add(farMesh.day, ...(farMesh.night ? [farMesh.night] : []));
+      yield 'far-board buildings';
+    }
   }
   /** Add buildings to the far form: their boxes join the mesh, and their roots hide with it. */
   const addFarBuildings = (boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) => {
+    if (farPending) { farBoxes.push(...boxes); farHidden.push(...roots); farVersion++; return; }
     if (!farMesh) return;
     farBoxes.push(...boxes);
     grounded(farBoxes);
@@ -660,13 +673,37 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   };
   /** After a carve: re-ground the far boxes on the cut terrain (grounded() lowers each to the lowest
    * drawn ground under it), so none floats over a cut, then rebuild the far mesh. */
-  const lowerFarBoxes = () => { if (farMesh) addFarBuildings([], []); };
+  const lowerFarBoxes = () => { if (farPending) farVersion++; else if (farMesh) addFarBuildings([], []); };
   /** Show the boxes (far) or the buildings (near). */
   const showFar = (on: boolean) => {
     farOn = on;
-    if (farMesh) { farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight; }
+    if (!farMesh) return; // no far form (yet): the buildings stay as they are
+    farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight;
     for (const o of farHidden) o.visible = !on;
   };
+  /** The deferred far form: fit the boxes, ground them on the terrain as it then is and mesh them.
+   * A carve or an added building part way through starts the mesh again. */
+  function* farSteps() {
+    yield* scenery.fitFarBoxesSteps();
+    farBoxes.push(...scenery.farBoxes, ...houses.boxes);
+    for (;;) {
+      const version = farVersion;
+      grounded(farBoxes);
+      yield 'far grounded';
+      const next = yield* styledBoxSteps(farBoxes.slice(), buildingMaterial!);
+      if (version === farVersion) return next;
+      next.day.geometry.dispose();
+    }
+  }
+  let farBuild: Promise<void> | null = null;
+  const buildFar = () => farBuild ??= !farPending ? Promise.resolve() : queueVeryFar(farSteps, next => {
+    if (disposed) { next.day.geometry.dispose(); return; }
+    farPending = false;
+    farMesh = next;
+    scenery.group.add(next.day);
+    showFar(false); // update() switches to it at the next frame if the camera is far enough
+    groundLodChanged = true;
+  }, () => !disposed);
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
@@ -715,7 +752,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         options.quality, grid.manifest.stepM, groundAt, { finishFor: options.finishFor });
       fragment.group.name = candidate.id;
       scenery.group.add(fragment.group);
-      if (farMesh) addFarBuildings(fragment.farBoxes, [fragment.group]);
+      if (farMesh || farPending) addFarBuildings(fragment.farBoxes, [fragment.group]);
     }
   }
   // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
@@ -736,6 +773,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
+    /** Build a deferred far form (deferFarBoxes), spread over frames. Resolves once it can show,
+     * or at once when there is nothing to build. */
+    buildFar,
     /** Low's far-board boxes as they stand (read-only; for checks). */
     get farBoxes() { return farBoxes as readonly FarBox[]; },
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
