@@ -725,7 +725,11 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       const mb = members[0];
       skip('alone in its cell', mb.mesh, mb.root);
       // From afar it can still join its area's far mesh, if nothing about its look changes.
-      if (areaFar && mb.bake && !(mb.mesh.material as Mat).map && mb.run.split(';').every(l => l === mb.day))
+      // Rain darkens vertex-coloured Lambert materials only (World.setWet): a plain Lambert one would
+      // darken once its colour moved into the vertices, so it stays as it is.
+      const mat = mb.mesh.material as Mat;
+      const wetSafe = mat.type !== 'MeshLambertMaterial' || mat.vertexColors;
+      if (areaFar && mb.bake && wetSafe && !mat.map && mb.run.split(';').every(l => l === mb.day))
         alone.push({ mesh: mb.mesh, bake: mb.bake, key: `${key}#${mb.day}`, look: mb.day });
       continue;
     }
@@ -870,14 +874,13 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       entry(d.key, d.material, full).groups.push(d);
     }
     for (const a of alone) entry(a.key, a.mesh.material as Mat, a.mesh).alone.push(a);
-    // Each area mesh gets a still copy of its look's material (no new program: same parameters),
-    // made in the order of its members' earliest material id. three draws opaque meshes in
-    // material-id order with a less-or-equal depth test, so exact coplanar ties between members of
-    // different looks resolve as they did. A copy of an alone mesh's material is whitened, as a
-    // batch's is, since its colour moves into the vertices.
+    // An area mesh draws with its look's own batch material, which sync() and the weather keep as
+    // its groups' (no new program). A look only alone meshes have gets a copy of the first one's
+    // material, whitened as a batch's is, since its colour moves into the vertices. Made in the
+    // order of the members' earliest material id, as three draws opaque meshes.
     for (const [key, e] of [...byKey].sort((x, y) => x[1].minId - y[1].minId)) {
-      const material = e.material.clone() as Mat;
-      if (!e.groups.length) { material.color?.set(0xffffff); material.vertexColors = true; }
+      let material = e.material;
+      if (!e.groups.length) { material = e.material.clone() as Mat; material.color?.set(0xffffff); material.vertexColors = true; }
       const mesh = new Mesh(new BufferGeometry(), material);
       mesh.name = 'landmark batch (area far)';
       mesh.castShadow = false;
