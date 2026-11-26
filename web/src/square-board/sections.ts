@@ -34,8 +34,9 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
-import { runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
+import { runBudgeted, runSync, sliceBudget, sliceInput, sectionWorkMs, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
+import { BAKED_AREAS, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
 /**
@@ -161,19 +162,38 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
+  const baked = await readBake(path, id, quality, grid, signal);
   const study = id === 'r16' ? rampStudySteps(grid, quality, joins(id)) : undefined;
   const ramp = study && (budget ? await runBudgeted(study, { budgetMs: budget, stats: sliceStats }) : runSync(study));
   // The orbit and the lower road still use the original exposed surface.
   const drawnGrid=ramp ? eastPortalBank(grid) : grid;
   const trail = ramp && northeastTrailStudy(grid.manifest.bounds, ramp.originalHeight);
   const slots = ramp && [...ramp.slots, ...(trail?.slots ?? [])];
-  return { id, grid:drawnGrid, context, ramp, trail, slots };
+  return { id, grid:drawnGrid, context, ramp, trail, slots, baked };
+}
+
+/**
+ * The area's baked ground (terrain/ground-bake.ts), when it has one for this grid and tier, or
+ * null: missing, unreadable or stale bakes count as fallbacks and the area builds as before.
+ */
+async function readBake(path: string, id: string, quality: TerrainQuality, grid: GroundGrid, signal: AbortSignal): Promise<BakedGround | null> {
+  if (!BAKED_AREAS.has(id) || bakeOff || surfaceWorker()) return null;
+  const miss = (why: string) => { bakeStats.fallbacks++; bakeStats.reasons.push(`${id} ${quality}: ${why}`); return null; };
+  let r: Response;
+  try { r = await fetch(`${path}/${bakeFile(quality)}`, { signal }); } catch (e) { if (signal.aborted) throw e; return miss('bake not fetched'); }
+  if (!r.ok) return miss(`bake ${r.status}`);
+  const baked = decodeBake(await r.arrayBuffer());
+  if (!baked) return miss('bake unreadable');
+  if (baked.id !== id || baked.quality !== quality || baked.gridSha256 !== grid.manifest.sha256) return miss('bake for another grid');
+  return baked;
 }
 
 /** Work a page adds to a row's build, as its last steps before the row connects to the board. */
 export type PrepareRow = (id: Board, area: TrafficArea) => Build<void> | undefined;
 
-export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid; prepare?: PrepareRow }) {
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid; prepare?: PrepareRow;
+  /** The bake script: record this row's ground (terrain/ground-bake.ts) instead of replaying a bake. */
+  record?: (id: Board) => BakeRecorder | undefined }) {
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
@@ -198,7 +218,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
   try {
-    for (const [patchIndex, { id, grid, context, ramp, trail, slots }] of patches.entries()) {
+    for (const [patchIndex, { id, grid, context, ramp, trail, slots, baked }] of patches.entries()) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
         context.terrainTransport = { version: 1, roads: [], rail: northLineRail(id, brookwoodCorridorRail(railRows[id as keyof typeof railRows] as TransportRun[], grid)) };
       }
@@ -223,6 +243,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
         surface: takeSurface(patchIndex),
+        bake: (rec => rec ? { record: rec } : baked ? { replay: new BakeReplay(baked) } : undefined)(options?.record?.(id)),
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
         // Sliced: dress the trees for today now, not in one pass when the section mounts.
@@ -317,7 +338,11 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
   if (direction === 'r16') performance.mark('r16:build-start');
+  const workBefore = sliceStats.totalMs;
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
+  if (budget) sectionWorkMs[direction] = Math.round(sliceStats.totalMs - workBefore);
+  // A replayed bake that the mount left stale (fewer carves than baked) builds its ground now.
+  for (const area of built.values()) area.groundSurface.endBake();
   const north = built.get('r16'), station = mounted.get('brookwood-station') as TrafficArea | undefined;
   try {
     signal.throwIfAborted();

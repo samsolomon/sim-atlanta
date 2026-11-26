@@ -130,6 +130,8 @@ export function sliceBudget() {
 }
 /** Sliced-build stats across every area this page loaded, for the perf harness. */
 export const sliceStats = emptySliceStats();
+/** Main-thread build work per sliced section (ms, its slices summed), keyed by the section's name. */
+export const sectionWorkMs: Record<string, number> = {};
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 
 /** Yield after every unit (tests: proves a build is independent of where it yields). */

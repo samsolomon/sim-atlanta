@@ -68,6 +68,7 @@ import { CITY_LOW_CLUMP_SCALE, World, clipRing, type BuildingFinish, type VBuild
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
+import type { GroundBake } from './ground-bake';
 import { GroundSurface, joinList, type BuiltSurface, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
@@ -131,6 +132,8 @@ export interface DowntownTerrainOptions {
   rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
   /** The ground surface, already built off the main thread (terrain/surface-worker.ts). */
   surface?: BuiltSurface;
+  /** Baked ground (terrain/ground-bake.ts): record the mount's surface, or replay a bake of it. */
+  bake?: GroundBake;
   /** Leave City-wide tree registration to the caller's commitTrees() (sliced section builds). */
   deferTrees?: boolean;
   /**
@@ -353,9 +356,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const openings = terrainOpenings(grid, options);
-  const mesh = yield* GroundSurface.steps(grid, options.quality, openings, options.join, options.surface);
-  // The area's closures keep `options`; don't let them keep the prebuilt surface's arrays too.
-  if (options.surface) options = { ...options, surface: undefined };
+  const mesh = yield* GroundSurface.steps(grid, options.quality, openings, options.join, options.surface, options.bake);
+  // The area's closures keep `options`; don't let them keep the prebuilt surface's arrays (or a bake) too.
+  if (options.surface || options.bake) options = { ...options, surface: undefined, bake: undefined };
   yield 'ground surface';
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
@@ -819,6 +822,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
+    /** The near ground surface (baked ground: its bake state, and the end of a replay). */
+    groundSurface: mesh,
     /**
      * Swap the board between its near and far ground by the camera's distance to the board's
      * box: far beyond FAR_GROUND_M, near again inside 0.9 × that. Allocation-free (it runs every

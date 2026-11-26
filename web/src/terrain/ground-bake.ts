@@ -1,0 +1,187 @@
+/**
+ * Baked ground (docs/perf-architecture-plan.md §4.1a): what an area's near ground surface does
+ * during its mount, built in Node by `pnpm data:bake`.
+ *
+ * A mount builds the surface once and then re-cuts it on every carve (golf, yards, decks...), and
+ * between carves its builders read the surface as it stands then (cuttings, tee grades, terraces,
+ * the High drape). With a bake, the browser still builds the first surface and every yield exactly
+ * as before, but skips the re-cuts. Each re-cut is a *stage* of the bake, stored one of two ways,
+ * whichever is smaller:
+ * - a **tape** of the reads made until the next re-cut (inputs and outputs), each read checked
+ *   against its recorded inputs and answered from the tape;
+ * - the **surface** that re-cut built, which the browser adopts, so reads run on it as usual.
+ * The last stage is always a surface: the one the mount leaves. Every stage also checks the yields
+ * carved so far. Any mismatch rebuilds the surface in the browser on the spot (counted in
+ * `bakeStats.fallbacks`), so a stale bake is slower, never wrong.
+ */
+
+/** Surface reads a tape can stand in for. */
+export const Read = { Sample: 0, TrianglesIn: 1 } as const;
+export type Read = typeof Read[keyof typeof Read];
+const INPUTS = [2, 4] as const;
+
+export interface BakedArrays {
+  pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array;
+  starts: Uint32Array; blockCols: number;
+}
+
+/** One re-cut: the yields carved by then (count and ring checksum), and its tape or its surface. */
+export interface BakedStage { yields: number; yieldRingSum: number; tape?: Float64Array; surface?: BakedArrays }
+
+export interface BakedGround {
+  id: string; quality: string; gridSha256: string;
+  /** The mount's re-cuts in order; the last has the surface the mount leaves. */
+  stages: BakedStage[];
+}
+
+/** Counts for the perf summary and tests: bakes adopted, and fallbacks to the in-browser build. */
+export const bakeStats = { adopted: 0, fallbacks: 0, reasons: [] as string[] };
+
+export const ringSum = (yields: readonly { ring: readonly (readonly [number, number])[] }[]) =>
+  yields.reduce((s, y) => s + y.ring.reduce((t, [x, z]) => t + x * 1.000003 + z, 0), 0);
+
+const arraysBytes = (a: BakedArrays) => a.pos.byteLength + a.uv.byteLength + a.normal.byteLength + a.index.byteLength + a.starts.byteLength;
+
+/** Records a mount in Node: each re-cut's surface and yields, and the reads after it. */
+export class BakeRecorder {
+  /** Builds so far, the first included. */
+  builds = 0;
+  inBuild = false;
+  private readonly stages: { yields: number; yieldRingSum: number; surface: BakedArrays; reads: number[] }[] = [];
+  /** A build finished: from the second on, a stage starts. */
+  built(surface: () => BakedArrays, yields: number, yieldRingSum: number) {
+    if (++this.builds >= 2) this.stages.push({ yields, yieldRingSum, surface: surface(), reads: [] });
+  }
+  record(kind: Read, input: number[], output: number[]) {
+    // Reads made inside a build (yield floors, exit-bank shading) do not happen when it is skipped;
+    // reads before the first re-cut see the first surface, which the browser builds as usual.
+    if (this.inBuild || !this.stages.length) return;
+    this.stages[this.stages.length - 1].reads.push(kind, ...input, output.length, ...output);
+  }
+  /** The bake: every stage but the last as a tape or a surface, whichever is smaller (`tapes`: always a tape, for tests). */
+  bake(meta: { id: string; quality: string; gridSha256: string }, tapes: 'smaller' | 'always' = 'smaller'): BakedGround {
+    return {
+      ...meta,
+      stages: this.stages.map((s, i) => {
+        const last = i === this.stages.length - 1;
+        const tape = last ? null : Float64Array.from(s.reads);
+        return tape && (tapes === 'always' || tape.byteLength < arraysBytes(s.surface))
+          ? { yields: s.yields, yieldRingSum: s.yieldRingSum, tape }
+          : { yields: s.yields, yieldRingSum: s.yieldRingSum, surface: s.surface };
+      }),
+    };
+  }
+}
+
+/** Replays a bake while an area mounts in the browser. */
+export class BakeReplay {
+  /** Builds seen so far (the first included). */
+  builds = 0;
+  /** The surface skipped a re-cut whose stage is a tape: reads come from it. */
+  stale = false;
+  failed = false;
+  private tape: Float64Array | null = null;
+  private at = 0;
+  constructor(readonly baked: BakedGround) {}
+  /** The stage a re-cut starts (call with builds already counted), or null past the last. */
+  stage() { return this.baked.stages[this.builds - 2] ?? null; }
+  /** Enter a stage: its tape replaces the last one, which must have been read through. */
+  enter(stage: BakedStage) {
+    this.tape = stage.tape ?? null;
+    this.at = 0;
+    this.stale = !!stage.tape;
+  }
+  /** Whether the current tape (if any) was read through. */
+  get consumed() { return !this.tape || this.at === this.tape.length; }
+  /** The recorded output of the next read, or null when it is not the read recorded. */
+  take(kind: Read, input: readonly number[]): Float64Array | null {
+    const t = this.tape;
+    if (!t || this.at >= t.length || t[this.at] !== kind) return null;
+    for (let i = 0; i < INPUTS[kind]; i++) if (t[this.at + 1 + i] !== input[i]) return null;
+    const n = t[this.at + 1 + INPUTS[kind]], from = this.at + 2 + INPUTS[kind];
+    this.at = from + n;
+    return t.subarray(from, from + n);
+  }
+  fail(reason: string) {
+    if (this.failed) return;
+    this.failed = true;
+    this.stale = false;
+    bakeStats.fallbacks++;
+    bakeStats.reasons.push(`${this.baked.id} ${this.baked.quality}: ${reason}`);
+    if (import.meta.env?.DEV) console.warn('Baked ground fell back to the in-browser build:', this.baked.id, reason);
+  }
+}
+
+/** Options a surface takes: record (bake script) or replay (a page with a bake). */
+export interface GroundBake { record?: BakeRecorder; replay?: BakeReplay }
+
+const MAGIC = 0x4b425247; // 'GRBK'
+const VERSION = 2;
+type Typed = Float32Array | Float64Array | Uint32Array | Uint16Array;
+const TYPES = { Float32Array, Float64Array, Uint32Array, Uint16Array } as const;
+const SURFACE = ['pos', 'uv', 'normal', 'index', 'starts'] as const;
+
+/** One file: magic, version, header length, JSON header, then the arrays in header order, each 8-byte aligned. */
+export function encodeBake(b: BakedGround): Uint8Array {
+  const arrays: Typed[] = [];
+  const layout = (a: Typed) => { arrays.push(a); return { type: a.constructor.name, length: a.length }; };
+  const header = {
+    id: b.id, quality: b.quality, gridSha256: b.gridSha256,
+    stages: b.stages.map(s => ({
+      yields: s.yields, yieldRingSum: s.yieldRingSum,
+      tape: s.tape ? layout(s.tape) : undefined,
+      surface: s.surface ? { blockCols: s.surface.blockCols, ...Object.fromEntries(SURFACE.map(k => [k, layout(s.surface![k])])) } : undefined,
+    })),
+  };
+  const json = new TextEncoder().encode(JSON.stringify(header));
+  const align = (n: number) => (n + 7) & ~7;
+  let size = align(12 + json.length);
+  for (const a of arrays) size += align(a.byteLength);
+  const out = new Uint8Array(size), view = new DataView(out.buffer);
+  view.setUint32(0, MAGIC, true); view.setUint32(4, VERSION, true); view.setUint32(8, json.length, true);
+  out.set(json, 12);
+  let at = align(12 + json.length);
+  for (const a of arrays) { out.set(new Uint8Array(a.buffer, a.byteOffset, a.byteLength), at); at += align(a.byteLength); }
+  return out;
+}
+
+/** The bake in a file, or null when it is not one this code reads. */
+export function decodeBake(buffer: ArrayBuffer): BakedGround | null {
+  if (buffer.byteLength < 12) return null;
+  const view = new DataView(buffer);
+  if (view.getUint32(0, true) !== MAGIC || view.getUint32(4, true) !== VERSION) return null;
+  const length = view.getUint32(8, true);
+  const header = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 12, length)));
+  const align = (n: number) => (n + 7) & ~7;
+  let at = align(12 + length), bad = false;
+  const read = (l: { type: keyof typeof TYPES; length: number }) => {
+    const T = TYPES[l.type];
+    if (!T || at + l.length * T.BYTES_PER_ELEMENT > buffer.byteLength) { bad = true; return new Float32Array(0); }
+    const a = new T(buffer, at, l.length);
+    at += align(l.length * T.BYTES_PER_ELEMENT);
+    return a;
+  };
+  type Layout = { type: keyof typeof TYPES; length: number };
+  const stages: BakedStage[] = (header.stages as { yields: number; yieldRingSum: number; tape?: Layout; surface?: Record<string, Layout> & { blockCols: number } }[]).map(s => {
+    const stage: BakedStage = { yields: s.yields, yieldRingSum: s.yieldRingSum };
+    if (s.tape) stage.tape = read(s.tape) as Float64Array;
+    if (s.surface) {
+      const [pos, uv, normal, index, starts] = SURFACE.map(k => read(s.surface![k]));
+      stage.surface = { pos, uv, normal, index, starts, blockCols: s.surface.blockCols } as BakedArrays;
+    }
+    return stage;
+  });
+  if (bad || !stages.length || !stages[stages.length - 1].surface) return null;
+  return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, stages };
+}
+
+/** `?perf&bake=0` builds every area's ground in the browser, for A/B runs. */
+export const bakeOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('bake') === '0';
+})();
+
+/** Areas with a bake (slice 1: the Midtown row with the most carving, Ansley Park's). */
+export const BAKED_AREAS: ReadonlySet<string> = new Set(['brookwood-south']);
+export const bakeFile = (quality: string) => `ground-bake-${quality}.bin`;
