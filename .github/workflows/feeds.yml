@@ -1,0 +1,32 @@
+# Watches the public MARTA and Amtrak timetables: weekly, and by hand from the Actions tab. When a
+# feed has changed from pipeline/feeds.json, or ends within 21 days, it keeps one issue up to date
+# ("MARTA feed: new / expiring"). It changes no data and deploys nothing: a new feed ships with the
+# next release. No secrets beyond the workflow's own token, which may only write issues.
+name: Feed watch
+
+on:
+  schedule:
+    - cron: '23 13 * * 1' # Mondays, 08:23 or 09:23 in Atlanta
+  workflow_dispatch:
+
+concurrency:
+  group: feed-watch
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Compare the published feeds with the record
+        run: python3 pipeline/scripts/feed_watch.py issue
+        env:
+          GH_TOKEN: ${{ github.token }}
