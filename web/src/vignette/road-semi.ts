@@ -1,5 +1,4 @@
-import * as THREE from 'three';
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { faceKit, packFaces } from './face-kit';
 
 /**
  * Long-hood sleeper tractor (Peterbilt 589-style proportions, no badges or lettering) coupled to a
@@ -57,68 +56,10 @@ const bodyPaint = '#ffffff',
   vanFrame = '#8c9294';
 
 
-type V = number[];
-type Face = { points: V[]; color: string };
-
-const sub = (a: V, b: V) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const centroid = (pts: V[]) => [0, 1, 2].map((i) => pts.reduce((s, p) => s + p[i], 0) / pts.length);
-/** Newell normal, unnormalised; zero for a degenerate face. */
-function newell(pts: V[]) {
-  const n = [0, 0, 0];
-  for (let i = 0; i < pts.length; i++) {
-    const a = pts[i],
-      b = pts[(i + 1) % pts.length];
-    n[0] += (a[1] - b[1]) * (a[2] + b[2]);
-    n[1] += (a[2] - b[2]) * (a[0] + b[0]);
-    n[2] += (a[0] - b[0]) * (a[1] + b[1]);
-  }
-  return n;
-}
-
-/**
- * Face kit. The study wound faces inconsistently, so every face here is turned to point away from an
- * interior point: a loose panel names one, a skin uses the centroid of the rings either side.
- */
+/** The face kit plus the semi's truck wheels. */
 function kit() {
-  const faces: Face[] = [];
-  function panel(points: V[], color: string, away: V) {
-    const n = newell(points);
-    if (Math.hypot(n[0], n[1], n[2]) < 1e-10) return;
-    const d = sub(centroid(points), away);
-    faces.push({ points: n[0] * d[0] + n[1] * d[1] + n[2] * d[2] < 0 ? points.slice().reverse() : points, color });
-  }
-  function skin(rings: V[][], color: string, closed = true) {
-    const c = rings.map(centroid);
-    if (closed) {
-      panel(rings[0], color, c[1]);
-      panel(rings[rings.length - 1], color, c[c.length - 2]);
-    }
-    for (let i = 1; i < rings.length; i++) {
-      const mid = c[i - 1].map((v, j) => (v + c[i][j]) / 2);
-      for (let j = 0; j < rings[i].length; j++) {
-        const k = (j + 1) % rings[i].length;
-        panel([rings[i - 1][j], rings[i - 1][k], rings[i][k], rings[i][j]], color, mid);
-      }
-    }
-  }
-  function box(x: number, y: number, z: number, w: number, h: number, l: number, color: string) {
-    skin(
-      [-1, 1].map((s) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [x + (a * w) / 2, y + (b * h) / 2, z + (s * l) / 2])),
-      color,
-    );
-  }
-  function round(x: number, y: number, z: number, axis: 'x' | 'y' | 'z', levels: number[][], color: string, n = 12) {
-    skin(
-      levels.map(([d, r]) =>
-        Array.from({ length: n }, (_, j) => {
-          const a = r * Math.cos((j * 2 * Math.PI) / n),
-            b = r * Math.sin((j * 2 * Math.PI) / n);
-          return axis === 'x' ? [x + d, y + a, z + b] : axis === 'y' ? [x + a, y + d, z + b] : [x + a, y + b, z + d];
-        }),
-      ),
-      color,
-    );
-  }
+  const k = faceKit();
+  const { panel, round } = k;
   /** Truck wheel: tyre, rim, hub and eight studs close up; an octagonal drum with a hub disc far off. */
   function wheel(x: number, r: number, z: number, side: number, near: boolean) {
     const w = 0.26,
@@ -151,14 +92,7 @@ function kit() {
     if (near) round(x, r, z, 'x', [[-0.13, r * 0.918], [-0.1, r], [0.1, r], [0.13, r * 0.918]], tyre, 16);
     else round(x, r, z, 'x', [[-0.13, r], [0.13, r]], tyre, 8);
   }
-  /** A flat lamp facing out along +z (axis 'z') or away from the centre line (axis 'x'). */
-  function lamp(x: number, y: number, z: number, w: number, h: number, axis: 'x' | 'z', color: string) {
-    const pts = axis === 'z'
-      ? [[x - w / 2, y - h / 2, z], [x + w / 2, y - h / 2, z], [x + w / 2, y + h / 2, z], [x - w / 2, y + h / 2, z]]
-      : [[x, y - h / 2, z - w / 2], [x, y - h / 2, z + w / 2], [x, y + h / 2, z + w / 2], [x, y + h / 2, z - w / 2]];
-    panel(pts, color, axis === 'z' ? [x, y, z - 1] : [0, y, z]);
-  }
-  return { faces, panel, skin, box, round, wheel, innerDual, lamp };
+  return { ...k, wheel, innerDual };
 }
 
 type Kit = ReturnType<typeof kit>;
@@ -330,25 +264,5 @@ export function roadSemiGeometry({ near = false, paint = bodyPaint } = {}) {
   const k = kit();
   tractor(k, near);
   dryVan(k, near);
-  const centre = (SEMI_FRONT + SEMI_REAR) / 2;
-  const positions: number[] = [],
-    colors: number[] = [],
-    kinds: number[] = [];
-  const tint = new THREE.Color();
-  for (const { points, color } of k.faces) {
-    const kind = kindOf(color);
-    tint.set(kind === 0 ? paint : color);
-    for (let i = 1; i + 1 < points.length; i++)
-      for (const p of [points[0], points[i], points[i + 1]]) {
-        positions.push(p[0], p[1], p[2] - centre);
-        colors.push(tint.r, tint.g, tint.b);
-        kinds.push(kind);
-      }
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setAttribute('aKind', new THREE.Float32BufferAttribute(kinds, 1));
-  geometry.computeVertexNormals();
-  return mergeVertices(geometry);
+  return packFaces(k.faces, kindOf, paint, -(SEMI_FRONT + SEMI_REAR) / 2);
 }

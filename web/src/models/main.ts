@@ -17,6 +17,7 @@ import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-cons
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { roadSemiGeometry, SEMI_LENGTH } from '../vignette/road-semi';
+import { PICKUP_LENGTH, PICKUP_PAINTS, roadPickupGeometry, type PickupTrim } from '../vignette/road-pickup';
 import { VARIANT_FAMILIES, entryFor, familyOf, labOpen, resolveModel, writeEntryParams, type VariantState } from './variants';
 import { LENGTH, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
@@ -84,6 +85,7 @@ const models = {
   cq400: 'Stadler CQ400',
   xe60: 'New Flyer XE60 articulated electric',
   semi589: 'Long-hood sleeper tractor · 53 ft dry van',
+  f150: 'Full-size crew-cab pickup (F-150 SuperCrew-like)',
   xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
@@ -716,6 +718,32 @@ function build() {
     setJoint();
     return;
   }
+  if (model === 'f150') {
+    // High shows the close form (Lab only); Low shows the form City traffic would draw.
+    document.getElementById('tier')!.hidden = false;
+    const near = treeQuality === 'high';
+    const trim = (variantState.trim === 'xl' ? 'xl' : 'xlt') as PickupTrim;
+    const paint = PICKUP_PAINTS[variantState.paint]?.hex ?? PICKUP_PAINTS.white.hex;
+    const material = vehicleMaterial(night);
+    const truck = new THREE.Mesh(roadPickupGeometry({ near, paint, trim }), material);
+    const sedan = new THREE.Mesh(vehicleGeometry('sedan'), material);
+    sedan.position.z = -PICKUP_LENGTH / 2 - 3 - LENGTH.sedan / 2;
+    cars = [truck];
+    props = [sedan];
+    for (const part of [truck, sedan]) { part.castShadow = part.receiveShadow = true; scene.add(part); }
+    const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+    const other = roadPickupGeometry({ near: !near, trim }), today = vehicleGeometry('pickup');
+    landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? truck.geometry : other).toLocaleString()} (Lab only), `
+      + `traffic ${triangles(near ? other : truck.geometry).toLocaleString()} (City High), today's generic pickup ${triangles(today).toLocaleString()}.`;
+    other.dispose(); today.dispose();
+    landscapeReport.hidden = false;
+    document.getElementById('blurb')!.textContent = `A full-size crew-cab pickup in the proportions of a current Ford F-150 SuperCrew with the 5.5 ft box (145.4 in wheelbase, ${PICKUP_LENGTH.toFixed(2)} m), a midsize sedan behind for scale. No badges, oval or lettering; traffic is illustrative. `;
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/road-pickup.md';
+    link.textContent = 'Dimensions and reference photos';
+    document.getElementById('blurb')!.append(link);
+    return;
+  }
   if (model === 'semi589') {
     // High shows the close form (Lab only); Low shows the form City traffic would draw at every distance.
     document.getElementById('tier')!.hidden = false;
@@ -1048,6 +1076,15 @@ const BUS_VIEWS: Record<string, ViewPreset> = {
   'Rear': { pos: [0, 1.8, -30], target: [0, 1.6, -6], fov: 13 },
   'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
 };
+/** The pickup is centred on its 5.9 m footprint; the scale sedan follows 3 m behind. */
+const PICKUP_VIEWS: Record<string, ViewPreset> = {
+  'Front': { pos: [0, 1.4, 24], target: [0, 1.1, 2.5], fov: 14 },
+  '¾ front': { pos: [-7.5, 2.8, 9], target: [0, 1.0, 0.6], fov: 34 },
+  'Side': { pos: [-24, 1.4, -3.2], target: [0, 1.0, -3.2], fov: 30 },
+  'Rear': { pos: [7.5, 3.6, -19], target: [0, 1.1, -1.5], fov: 24 },
+  'Top': { pos: [0.01, 24, -3], target: [0, 0, -3], fov: 40 },
+  'Eye level': { pos: [-4.2, 1.6, 9.5], target: [0, 1.15, 1.5], fov: 46 },
+};
 /** The rig is centred on its 22.9 m footprint; the scale sedan follows 4 m behind the van. */
 const SEMI_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.0, 46], target: [0, 2.0, 8], fov: 12 },
@@ -1107,7 +1144,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, f150: PICKUP_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = entry;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -1165,7 +1202,7 @@ function variantControls() {
   document.getElementById('title')!.textContent = title;
   document.title = title + ' · Model Lab · Sim Atlanta';
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'semi589', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'semi589', 'f150', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
