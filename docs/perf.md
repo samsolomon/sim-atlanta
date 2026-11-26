@@ -53,6 +53,9 @@ vehicle layers, and downtown landmarks (buildings). An object's `userData.perf` 
 | `shadow=off` or `shadow=512` | No shadow map, or another map size |
 | `nopass=ink,grade,tilt,bloom,gtao` | Disable post passes (`ink` also drops the foliage mask) |
 | `post=off` | Render straight to the canvas, with no composer |
+| `farboard=off` | Low: no far-board boxes (generic buildings and houses keep their near form at every distance) |
+| `farlandmarks=1` | Low: landmarks join the far-board boxes too (the version that popped; for comparison only) |
+| `hidelm=glass`, `hooked`, `plain` or `all` | Low: while an area shows its far form, hide its landmark meshes of that kind (transparent; own shader via `onBeforeCompile`, `customProgramCacheKey` or `ShaderMaterial`; the rest) with nothing in their place. A mesh with several materials counts under each kind it has. Ignored with `farlandmarks=1` |
 
 ## Device protocol
 

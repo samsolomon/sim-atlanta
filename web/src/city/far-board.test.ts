@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { MeshLambertMaterial } from 'three';
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, ShaderMaterial } from 'three';
 import { Builder } from '../vignette/geom';
-import { dominantWallStyle, styledBoxMesh } from './far-board';
+import { dominantWallStyle, landmarkKind, landmarkParts, styledBoxMesh } from './far-board';
 
 /** One wall quad (two triangles) w × h metres at height y0, all in one style. */
 function wall(pos: number[], style: number[], st: number, w: number, y0: number, h: number) {
@@ -68,4 +68,25 @@ it("gives each far wall the near wall's normal and facade axis, whichever way it
     }
     expect(walls).toBe(8);
   }
+});
+
+it('sorts landmark meshes for the hidelm A/B by what they cost to shade', () => {
+  const hooked = new MeshLambertMaterial();
+  hooked.onBeforeCompile = () => {};
+  const keyed = new MeshLambertMaterial();
+  keyed.customProgramCacheKey = () => 'k';
+  expect(landmarkKind(new MeshLambertMaterial())).toBe('plain');
+  expect(landmarkKind(new MeshBasicMaterial({ transparent: true }))).toBe('glass');
+  expect(landmarkKind(hooked)).toBe('hooked');
+  expect(landmarkKind(keyed)).toBe('hooked');
+  expect(landmarkKind(new ShaderMaterial())).toBe('hooked');
+  const box = new BoxGeometry();
+  const glass = new Mesh(box, new MeshBasicMaterial({ transparent: true }));
+  const plain = new Mesh(box, new MeshLambertMaterial());
+  const both = new Mesh(box, [new MeshLambertMaterial(), hooked]);
+  const root = new Group().add(glass, new Group().add(plain, both));
+  expect(landmarkParts([root], 'glass')).toEqual([glass]);
+  expect(landmarkParts([root], 'hooked')).toEqual([both]);
+  expect(landmarkParts([root], 'plain')).toEqual([plain, both]);
+  expect(landmarkParts([root], 'all')).toEqual([glass, plain, both]);
 });

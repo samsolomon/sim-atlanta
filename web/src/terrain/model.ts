@@ -81,7 +81,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, styledBoxSteps, type FarBox } from '../city/far-board';
+import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, HIDE_LANDMARKS, landmarkParts, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, styledBoxSteps, type FarBox } from '../city/far-board';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
@@ -632,6 +632,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // The far boxes draw with the generic buildings' material (city/far-board.ts styledBoxMesh).
   const buildingMaterial = scenery.group.children.find((o): o is THREE.Mesh => o.userData.building && (o as THREE.Mesh).isMesh && !(o as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
   const farHidden: THREE.Object3D[] = [];
+  // `?perf&hidelm=…` (city/far-board.ts): landmark meshes of one kind leave the main and shadow
+  // passes while the far form shows. Layers, not `visible`, so their own visibility is untouched.
+  const lmHidden: THREE.Object3D[] = [];
   // deferFarBoxes (downtown, built before the page is ready): nothing of the far form is built
   // here. The boxes collect, and buildFar fits and meshes them afterwards, in slices.
   let farPending = false, farVersion = 0;
@@ -640,6 +643,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const keptLandmarks = new Set<THREE.Object3D>([...landmarks.map(l => l.group).filter(g => !boxedFromAfar(g.name)), ...(batches && !FAR_LANDMARKS ? [batches.group] : [])]);
     farHidden.push(...scenery.group.children.filter(o => (o.userData.building || o.userData.roofClutter) && !keptLandmarks.has(o)), houses.group,
       ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
+    if (HIDE_LANDMARKS) lmHidden.push(...landmarkParts([...keptLandmarks], HIDE_LANDMARKS));
     // Only the styled mesh can be added late: it draws with a material City has already clipped.
     farPending = !!options.deferFarBoxes && !!buildingMaterial;
     if (!farPending) {
@@ -680,6 +684,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   /** Show the boxes (far) or the buildings (near). */
   const showFar = (on: boolean) => {
     farOn = on;
+    for (const o of lmHidden) { if (on) o.layers.disable(0); else o.layers.enable(0); }
     if (!farMesh) return; // no far form (yet): the buildings stay as they are
     farMesh.day.visible = on && (!farNight || !farMesh.night); if (farMesh.night) farMesh.night.visible = on && farNight;
     for (const o of farHidden) o.visible = !on;
@@ -862,6 +867,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
      * group) to its far-board form: their far boxes join the mesh, and the roots hide with it.
      */
     addFar(boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) { addFarBuildings(boxes, roots); },
+    /** Landmark meshes that leave the view while the far form shows (`?perf&hidelm`, a device A/B). */
+    hideWhenFar(objects: readonly THREE.Object3D[]) { lmHidden.push(...objects); showFar(farOn); },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },

@@ -153,7 +153,7 @@ const GLIDE_PER_60HZ_FRAME = 0.12;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { boxedFromAfar, boxesFromObject, FAR_LANDMARKS } from './far-board';
+import { boxedFromAfar, boxesFromObject, FAR_LANDMARKS, HIDE_LANDMARKS, landmarkParts } from './far-board';
 import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { cameraWatch, releaseCamera, runBudgeted, runSync, sliceBudget, sliceInput, sliceStats, type Build } from '../core/slice';
@@ -737,6 +737,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           }
         }
         terrain!.addFar(farBoxesDowntown, farRoots);
+        if (low && HIDE_LANDMARKS) terrain!.hideWhenFar(landmarkParts(downtownBatches ? [...landmarks, downtownBatches.group] : landmarks, HIDE_LANDMARKS));
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
