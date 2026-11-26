@@ -131,7 +131,8 @@ export class CityBuses {
   private light(x: number, z: number, a: number, run: TransportRun) {
     const fx = Math.sin(a), fz = Math.cos(a);
     const nx = x + fx * (BUS_LENGTH / 2 - 0.5), nz = z + fz * (BUS_LENGTH / 2 - 0.5); // just under the bumper
-    const ex = nx + fx * POOL.bus.length, ez = nz + fz * POOL.bus.length;
+    const ahead = BUS_LENGTH / 2 + POOL.bus.length; // the documented reach, from the bumper itself
+    const ex = x + fx * ahead, ez = z + fz * ahead;
     const ny = this.surface(nx, nz, run), ey = this.surface(ex, ez, run);
     if (ny !== null && ey !== null) this.lights!.add(nx, ny, nz, ex, ey, ez, POOL.bus.width, POOL.bus.power);
   }

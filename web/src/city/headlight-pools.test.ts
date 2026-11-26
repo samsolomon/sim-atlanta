@@ -83,15 +83,20 @@ describe('road traffic headlight pools', () => {
     expect(fleet.visibleCars).toBeGreaterThan(0);
     expect(pools.length).toBeGreaterThan(0);
     expect(pools.length).toBeLessThanOrEqual(fleet.visibleCars);
-    for (const { near, far, width } of pools) {
+    for (const { near, far, width, power } of pools) {
       // Both ends lie on the deck that carries the car, never on a surface elsewhere.
       expect(near.y).toBeCloseTo(2 + near.x * 0.05, 3);
       expect(far.y).toBeCloseTo(2 + far.x * 0.05, 3);
+      // From 0.5 m under the bumper to the reach ahead of it, on this straight street exactly.
       const reach = Math.hypot(far.x - near.x, far.z - near.z);
-      expect(reach).toBeGreaterThan(POOL.car.length - 1);
-      expect(reach).toBeLessThan(POOL.truck.length + 1);
+      const kind = width === POOL.truck.width ? POOL.truck : POOL.car;
+      expect(reach).toBeCloseTo(kind.length + 0.5, 3);
       expect([POOL.car.width, POOL.truck.width]).toContain(width);
+      expect(power).toBeGreaterThan(0);
+      expect(power).toBeLessThanOrEqual(kind.power);
     }
+    // Street pools at their tuned power (fading trips may be dimmer, none brighter).
+    expect(Math.max(...pools.map((p) => p.power))).toBeCloseTo(POOL.car.power, 5);
     // Pools point both ways along the two-way street: the lane's direction of travel.
     expect(new Set(pools.map((p) => Math.sign(p.far.x - p.near.x)))).toEqual(new Set([-1, 1]));
     fleet.dispose();

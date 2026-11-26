@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { S70_LAYOUT } from '../vignette/streetcar';
+import { POOL } from './headlight-pools';
 import { leadFirst } from './vehicle-follow';
 import { alongAt, createStreetcarCars, pointAlong, pointAt, streetcarCovers, streetcarPaths } from './streetcar-cars';
 
@@ -176,6 +177,8 @@ it('lights the street ahead of cab A at night, on the drawn height, and not wher
   expect(pools).toHaveLength(1);
   expect(pools[0].near.y).toBe(0.5);
   expect(pools[0].far.x).toBeGreaterThan(pools[0].near.x); // cab A leads along +s
+  // From 0.5 m under cab A's bumper to the full reach ahead of it.
+  expect(pools[0].far.distanceTo(pools[0].near)).toBeCloseTo(POOL.bus.length + 0.5, 1);
   pools.length = 0;
   // Further on, the car is drawn but the street its pool would light is not.
   expect(cars.update([state(40)], 1)).toBe(1);
