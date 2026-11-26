@@ -734,7 +734,7 @@ function build() {
     const triangles = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
     const other = roadPickupGeometry({ near: !near, trim }), today = vehicleGeometry('pickup');
     landscapeReport.textContent = `${near ? 'Close' : 'Traffic'} form shown. Triangles: close ${triangles(near ? truck.geometry : other).toLocaleString()} (Lab only), `
-      + `traffic ${triangles(near ? other : truck.geometry).toLocaleString()} (City High), today's generic pickup ${triangles(today).toLocaleString()}.`;
+      + `traffic ${triangles(near ? other : truck.geometry).toLocaleString()} (City High, if adopted), today's generic pickup ${triangles(today).toLocaleString()}.`;
     other.dispose(); today.dispose();
     landscapeReport.hidden = false;
     document.getElementById('blurb')!.textContent = `A full-size crew-cab pickup in the proportions of a current Ford F-150 SuperCrew with the 5.5 ft box (145.4 in wheelbase, ${PICKUP_LENGTH.toFixed(2)} m), a midsize sedan behind for scale. No badges, oval or lettering; traffic is illustrative. `;
