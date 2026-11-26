@@ -188,3 +188,19 @@ D still passes: all 15 ways are 100% found and matched, the smallest has 10 stat
 
 `pipeline/scripts/test_gate_sites.py` (run by `pnpm test`) checks only that the committed gate evidence is consistent: the 439abf84 reference against the D result, Capitol passing, and the lid found. It reads JSON, so it cannot catch a code regression. `web/src/terrain/lids.test.ts` holds the code: the lid roads draw on the board, and the drawn ground sits at the lid top. **Open, outside D:** the south-band board carries the covered Connector under the lid as a plain ground road (OSM `covered=yes` is not mapped to a tunnel there), so its centreline reads the lid top. D2's spike correction moves it 1.99 m at (367.4, 760.3), back to the lid level. Whether its cars should run under the lid is a separate item.
 
+
+### The covered Connector as a tunnel (after D)
+
+Sam reviewed D's south-portal still on 2026-11-26: "What's happening under the highway? The Connector just stops and goes into a cliff." Under Capitol Gateway the Connector runs on eight covered ways (OSM `covered=yes`). The board is a heightfield, so its top is the lid and nothing is drawn under it. The open cut's roads ran into a ground wall at each mouth, and the cars vanished there. Sam chose to model the tunnel (2026-11-26).
+
+`web/src/terrain/capitol-tunnel.ts` follows the North Line portal at Brookwood:
+
+- **Mouths.** There are ten, one at every end of a covered way that meets an open one: four at the north-east end and six at the south-west. Each tube spans its way's surveyed section plus a 1.2 m shoulder each side.
+- **Tube.** A concrete headwall rises from the 5.2 m clearance to the lid edge. A tube runs 30 m in under the lid, with walls, ceiling and floor fading to a black end cap. Two rows of crown lamps run every 6 m. They glow by day and brighten at night.
+- **Board cut.** One covered slot per mouth cuts the board from 2 m outside the mouth to the tube's end, but only up to the ceiling (`cutHeightM`). The lid's own streets above stay whole.
+- **Seam.** The north-east mouths straddle the z = 700 seam between the downtown and south-band boards, so both boards cut the same slots.
+- **Floor levels.** Each mouth's floor is the open cut's board just outside it. The levels are pinned in `MOUTH_FLOORS`, and `capitol-tunnel.test.ts` holds them to the committed ground grids. The lid top stands 6.0–10.4 m over these floors, so every tube fits.
+- **Cars.** On a covered way a car keeps the mouth's floor for 22 m, then vanishes in the dark, as the North Line's trains do. Before this it vanished at the mouth.
+- **The lid road.** `lidRoads` flags the south band's eight motorway records on the covered ways as `tunnel`, so nothing samples the lid top for the freeway under it. Before this, Grok's 1.99 m centreline change came from that record.
+
+**Truth tiers.** The covered ways come from OSM, and the cut floor and lid top from lidar. The headwall form, tube depth, clearance and lamps are illustrative: there is no photograph of the mouths in this repo yet.
