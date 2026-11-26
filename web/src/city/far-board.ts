@@ -19,6 +19,8 @@ export interface FarBox {
   /** The building's dominant wall style (vignette/world.ts aStyle) and its wall base height, for
    * drawing the box with the generic building material. */
   style?: number; base?: number;
+  /** A ground-floor band in its own style, up to `baseTop` (scene y), with its own wall base. */
+  baseStyle?: number; baseTop?: number; baseBase?: number;
 }
 
 /**
@@ -115,7 +117,7 @@ export function orientedRect(xs: ArrayLike<number>, zs: ArrayLike<number>) {
  * when nothing else is there: painted over a whole far box, one lights most of a tower at night.
  */
 export function dominantWallStyle(pos: ArrayLike<number>, style: ArrayLike<number>, start: number, end: number) {
-  const area = new Map<number, number>(), first = new Map<number, number>();
+  const area = new Map<number, number>(), first = new Map<number, number>(), top = new Map<number, number>();
   for (let t = start; t + 2 < end; t += 3) {
     const st = style[t] ?? -1;
     if (st < 0) continue;
@@ -124,12 +126,17 @@ export function dominantWallStyle(pos: ArrayLike<number>, style: ArrayLike<numbe
     const bx = pos[o + 6] - pos[o], by = pos[o + 7] - pos[o + 1], bz = pos[o + 8] - pos[o + 2];
     area.set(st, (area.get(st) ?? 0) + Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx) / 2);
     if (!first.has(st)) first.set(st, t);
+    top.set(st, Math.max(top.get(st) ?? -Infinity, pos[o + 1], pos[o + 4], pos[o + 7]));
   }
   const isBase = (st: number) => st >= 51.5 && st <= 55.5;
   let best = -1, most = 0;
   for (const [st, a] of area) if (!isBase(st) && a > most) { most = a; best = st; }
   if (best < 0) for (const [st, a] of area) if (a > most) { most = a; best = st; }
-  return { style: best, first: first.get(best) ?? start };
+  // The ground-floor band, kept apart when the building has one under another style: its lit
+  // shopfronts and lobbies light differently from the floors above.
+  let baseStyle = -1, baseArea = 0;
+  if (!isBase(best)) for (const [st, a] of area) if (isBase(st) && a > baseArea) { baseArea = a; baseStyle = st; }
+  return { style: best, first: first.get(best) ?? start, baseStyle, baseTop: baseStyle >= 0 ? top.get(baseStyle)! : -Infinity, baseFirst: first.get(baseStyle) ?? start };
 }
 
 /** A far box from a Builder vertex range (positions and colours as flat number arrays). */
@@ -424,9 +431,14 @@ function styledBoxMesh(boxes: readonly FarBox[], material: Material): { day: Mes
       const l = Math.hypot(nx, nz);
       if (l < 1e-3) continue;
       nx /= l; nz /= l;
-      const p0 = put(ax, y0, az, nx, 0, nz, bx.r, bx.g, bx.b, st, base), p1 = put(bx2, y0, bz, nx, 0, nz, bx.r, bx.g, bx.b, st, base);
-      const p2 = put(bx2, y1, bz, nx, 0, nz, bx.r, bx.g, bx.b, st, base), p3 = put(ax, y1, az, nx, 0, nz, bx.r, bx.g, bx.b, st, base);
-      I.push(p0, p2, p1, p0, p3, p2);
+      const band = (lo: number, hi: number, s: number, sb: number) => {
+        const p0 = put(ax, lo, az, nx, 0, nz, bx.r, bx.g, bx.b, s, sb), p1 = put(bx2, lo, bz, nx, 0, nz, bx.r, bx.g, bx.b, s, sb);
+        const p2 = put(bx2, hi, bz, nx, 0, nz, bx.r, bx.g, bx.b, s, sb), p3 = put(ax, hi, az, nx, 0, nz, bx.r, bx.g, bx.b, s, sb);
+        I.push(p0, p2, p1, p0, p3, p2);
+      };
+      const split = bx.baseStyle !== undefined && bx.baseStyle >= 0 && bx.baseTop! > y0 + 0.5 && bx.baseTop! < y1 - 0.5;
+      if (split) { band(y0, bx.baseTop!, bx.baseStyle!, bx.baseBase ?? base); band(bx.baseTop!, y1, st, base); }
+      else band(y0, y1, st, base);
     }
     // The roof's own colour: the near form's roof clutter is under a pixel at the switch, and a
     // clutter-weighted mean read visibly greyer than the near roofs (2026-11-26 stills).

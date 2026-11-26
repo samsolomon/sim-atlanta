@@ -16,6 +16,9 @@ it('picks the wall style covering the most area, and never a ground-floor base s
   const pick = dominantWallStyle(pos, style, 0, pos.length / 3);
   expect(pick.style).toBe(21);
   expect(pick.first).toBe(6);
+  // The base is kept apart as the ground-floor band, up to its top.
+  expect(pick.baseStyle).toBe(53);
+  expect(pick.baseTop).toBe(4);
   // A building that is only a base keeps it.
   const only = dominantWallStyle(pos, style, 0, 6);
   expect(only.style).toBe(53);

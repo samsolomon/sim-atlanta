@@ -35,14 +35,17 @@ it('grounds scenery, omits decks, forwards wet/season/night and releases its own
   expect(area.groundAt(20, 30)).toBe(-6);
   const facades = area.scenery.children.filter(o => o instanceof THREE.Mesh && o.geometry.hasAttribute('aBase') && o.name !== 'far-board buildings') as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[];
   expect(facades).toHaveLength(1);
-  // Low's far form draws the same building with the facades' own material and the building's
-  // dominant wall style, never a ground-floor base style painted up the whole box.
+  // Low's far form draws the same building with the facades' own material: the building's
+  // dominant wall style above, and a ground-floor base style only within the near form's base band.
   const far = area.scenery.children.find(o => o.name === 'far-board buildings') as THREE.Mesh | undefined;
   expect(far?.material).toBe(facades[0].material);
-  const farStyle = far!.geometry.getAttribute('aStyle');
-  const farWalls = Array.from({ length: farStyle.count }, (_, i) => farStyle.getX(i)).filter(v => v >= 0);
-  expect(farWalls.length).toBeGreaterThan(0);
-  expect(farWalls.every(v => v < BaseStyle.Lobby)).toBe(true);
+  const farStyle = far!.geometry.getAttribute('aStyle'), farPos = far!.geometry.getAttribute('position');
+  const nearStyle = facades[0].geometry.getAttribute('aStyle'), nearPos = facades[0].geometry.getAttribute('position');
+  let nearBaseTop = -Infinity;
+  for (let i = 0; i < nearStyle.count; i++) if (nearStyle.getX(i) >= BaseStyle.Lobby) nearBaseTop = Math.max(nearBaseTop, nearPos.getY(i));
+  const farWalls = Array.from({ length: farStyle.count }, (_, i) => i).filter(i => farStyle.getX(i) >= 0);
+  expect(farWalls.some(i => farStyle.getX(i) < BaseStyle.Lobby)).toBe(true);
+  for (const i of farWalls) if (farStyle.getX(i) >= BaseStyle.Lobby) expect(farPos.getY(i)).toBeLessThanOrEqual(nearBaseTop + 1e-4);
   const mesh = facades[0], base = mesh.geometry.getAttribute('aBase'), pos = mesh.geometry.getAttribute('position');
   const style = mesh.geometry.getAttribute('aStyle');
   const materialBases = new Set<number>(), shaftBases = new Set<number>(), roofHeights = new Set<number>();

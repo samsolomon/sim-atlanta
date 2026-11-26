@@ -736,6 +736,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
+    /** Low's far-board boxes as they stand (read-only; for checks). */
+    get farBoxes() { return farBoxes as readonly FarBox[]; },
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
     /** Register this area's City-wide trees (no-op unless built with deferTrees). */
     commitTrees,
@@ -755,6 +757,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     holdGround() {
       if (held) throw Error('This board is already held');
       const hold = held = mesh.hold(), carves = carved.length;
+      // Carves lower the far boxes onto the cut (lowerFarBoxes) and may drop ones left standing
+      // clear of it; a revert puts the list back as it was.
+      const farBefore = farBoxes.map(b => ({ ...b }));
       if (board.geometry === nearGeometry) board.geometry = hold.shown;
       const end = () => {
         if (board.geometry === hold.shown) board.geometry = nearGeometry;
@@ -764,7 +769,12 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       };
       return {
         release() { if (held === hold) end(); },
-        revert() { if (held !== hold) return; hold.revert(); carved.length = carves; end(); },
+        revert() {
+          if (held !== hold) return;
+          hold.revert(); carved.length = carves;
+          if (farMesh) { farBoxes.length = 0; farBoxes.push(...farBefore); addFarBuildings([], []); }
+          end();
+        },
       };
     },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */

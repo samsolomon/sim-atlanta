@@ -880,9 +880,13 @@ export class World {
     const farBox = () => {
       const end = b.pos.length / 3;
       if (withFarBoxes && end - bdStart >= 3) {
-        const { style: wallStyle, first } = dominantWallStyle(b.pos, style, bdStart, end);
+        const { style: wallStyle, first, baseStyle, baseTop, baseFirst } = dominantWallStyle(b.pos, style, bdStart, end);
         const box = boxFromVertices(b.pos, b.col, bdStart, end, 1, farRing);
-        if (box) this.farBoxes.push(wallStyle >= 0 ? { ...box, style: wallStyle, base: base[first] ?? box.y0 } : box);
+        // Walls on the building's own footprint (not its oriented box) put the shader's window cells
+        // where the near form has them, so the far form lights the same windows at night.
+        const walled = box && farRing && farRing.length >= 6 ? { ...box, ring: farRing } : box;
+        if (walled) this.farBoxes.push(wallStyle >= 0 ? { ...walled, style: wallStyle, base: base[first] ?? walled.y0,
+          ...(baseStyle >= 0 ? { baseStyle, baseTop, baseBase: base[baseFirst] ?? walled.y0 } : {}) } : walled);
       }
       bdStart = end;
     };
