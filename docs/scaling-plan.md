@@ -13,8 +13,9 @@ not a phone.
 
 1. **Memory is the wall, and we are at it.** Low geometry is 150–178 MB against a 190 MB ceiling
    (M, coordinator). A resident km² of full detail costs about 7.6–7.9 MB of Low geometry (M,
-   R16's matched pair), so a phone can hold about **20 km² of full detail: today's board**. Every
-   km² past that has to be coarse or unloaded. The full square is 1,239 km².
+   R16's matched pair), so under that ceiling a phone holds about **20 km² of full detail: today's
+   board**. Every km² past that has to be coarse or unloaded. The full square is 1,239 km². The
+   190 MB is our budget, not a measured kill limit. Increment 0 measures Safari's real memory.
 2. **Headroom is gone on every tier.** That covers High night calls (629 of 630), High programs
    (94 of 100) and Low geometry (above). Until it is restored, a feature that adds to a full
    budget ships with an equal cut in the same PR (§4).
@@ -30,9 +31,9 @@ not a phone.
 5. **The felt freeze is boot, and the fix is slicing.** `stage:terrain` (2.3–3.0 s at 6×) and
    streets and freight (1.1–1.3 s) are single tasks before ready. Most of that time goes to
    landmark builders, batching and transport, not ground. The integrator owns the slicing.
-6. **Unload doesn't need the bake.** v1 put unload behind joined-seam baking. A neighbour's carves
-   can be rebuilt from its yield list without the unloaded area's yields. The hold/revert added
-   for sliced mounts already does this inside a mount (§3.2).
+6. **Unload doesn't need the bake.** v1 put unload behind joined-seam baking. The hold and revert
+   added for sliced mounts already restore a neighbour's ground before a mount commits. Keeping
+   that snapshot until the area unloads covers the rest (§3.2).
 7. **Far levels add memory unless something is freed.** Far forms are held beside near forms:
    #613 cost +9 MB and C +18 MB. #613's boxes cost about 0.43 MB/km². Over the square that is
    about 530 MB, so the horizon needs a form about 20× cheaper per km² (§3.3).
@@ -111,9 +112,14 @@ Low (the phone tier). Today's board is 21.2 km² (19.0 plus R16's 2.24).
 
 What follows:
 
-- **The resident window of full detail is about 20 km² on Low, for good.** At 7.6 MB/km² and a
-  160 MB working budget (190 minus the reserve in §4), there is no room for a 22nd km² until
-  something is unloaded or packed. Packing generic buildings and houses (v1: about −18 MB on
+- **The resident window of full detail is about 20 km² on Low, for good.** Today's 21 km² use
+  150–178 MB. With 165 MB usable (190 minus the reserve in §4), the room left is 0–15 MB, which
+  is 0–2 km² at the marginal 7.9 MB/km². Nothing more fits until something is unloaded or packed.
+- **The ceiling is our number, not the phone's.** `geometryMB` is estimated from the scene
+  (docs/perf.md), and Safari's real per-tab limit on the iPhone 15 Pro hasn't been measured.
+  Increment 0 records Safari's memory at the default view and after `route:north`. If the real
+  limit is much higher, the window grows, but the per-km² cost and the need to unload don't
+  change. Packing generic buildings and houses (v1: about −18 MB on
   generic buildings alone, E) buys roughly 2–3 km², not a direction.
 - **Coarse has to be about 20× cheaper per km² than #613's boxes.** Proposed split (E):
   - an L1 ring (out to about 8 km from the camera, ~200 km²) at ≤ 80 KB/km², about 16 MB;
@@ -129,19 +135,27 @@ What follows:
 **Load.** As R16 does today: lazy, sliced, on approach, behind fog or the coarse form. This
 already works. Sliced mounts reach a longest task of 185–335 ms at 6× (M, docs/perf.md).
 
-**Unload, without the bake.** An area's dispose already frees its own meshes and, for R16, its seam
-extras: `restoreMaps()`, `disposeBuildings()` and `seamNormals.reset()` (`city.ts` near line 1127).
-What is missing is undoing the carves it made in a neighbour (R16 re-cuts Brookwood Station's
-ground). The design:
+**Unload, without the bake.** R16's dispose already undoes most of its seam work:
+`restoreMaps()`, the seam buildings' `dispose` (which shows the Station's fragments again) and
+`seamNormals.reset()` (`city.ts` near line 1127, `north-seam-neighborhood.ts`). One gap is left. The
+seam cut in the Station's ground is reverted by `holdGround().revert()`, and that does nothing
+once `commit()` has called `release()`. Today it doesn't matter, because no seam building has a
+yard and the cut list is empty. The first yard would leave a cut in the Station after R16 unloads.
 
-1. Each yield a mount adds to a neighbour is tagged with the mounting area's id. `carved` already
-   records the yields in order (`terrain/model.ts`).
-2. On unload, the neighbour re-tessellates from its `carved` list without that id's yields, as a
-   sliced build. This reuses `carveSteps` and `holdGround`: the old ground stays drawn until the
-   rebuild releases. `holdGround().revert()` already does this for an abandoned mount.
-3. Far boxes go back the way `revert` puts them back (`farBefore`).
-4. The cost is one re-tessellation of the neighbour, about 200–300 ms of work at 1× (M, row mounts
-   in Node), spread over frames.
+Re-tessellating the neighbour without the unloaded area's yields was the first idea, and it is
+wrong. Yields are closures that sample the surface when they are built (v1 §4.1a), so any yield
+built after the seam cut holds floors read from the cut ground. Instead:
+
+1. **Keep the hold's snapshot until unload.** `release()` shows the carved ground but keeps the
+   pre-carve arrays (and `farBefore`). The area's dispose calls `revert()`, which restores them.
+   Cost: one copy of the neighbour's near ground arrays per mounted seam, about 1–2 MB on Low (E).
+   That counts against the budget.
+2. **If the neighbour was carved again after the seam cut** (by a third area, say), the snapshot
+   is stale. Rebuild the neighbour whole as a sliced mount (it builds in steps already), and log
+   it in dev and in the perf summary.
+3. **Test:** mount R16, commit, unload, and fingerprint the Station (as `sliced-build.test.ts`
+   does) against a Station that never had R16. Add a seam building with a yard in the fixture,
+   so the test fails with the snapshot dropped.
 
 Eviction then works by distance, with hysteresis and an LRU under the per-tier memory budget,
 as v1 §4.2 describes. The near-house leak is fixed first, as the same rule at the smallest
@@ -280,13 +294,13 @@ The ranking assumes triangles are the phone currency. **Increment 0 can reorder 
 
 | # | Increment | Phone win | Cost (agent-h) | Risk | Owner |
 |---:|---|---|---:|---|---|
-| 0 | **Device A/B, no code.** iPhone and A16 on main 2026bf31: default and Midtown street at 14:00 and 22:00, with `farboard=off`, `shadow=off`, `nopass=ink,grade,tilt,bloom,gtao`, `post=off`, `pr=0.6`. Also a Safari timeline and an A16 GPU trace for the 1–3 fps GPU gap | None directly; it sets the currency. M: 2026-11-23 found pixel ratio worth nothing | 1 + coordinator device time (~2 h) | Low | Coordinator, with a frozen build from me |
+| 0 | **Device A/B, no code.** iPhone and A16 on main 2026bf31: default and Midtown street at 14:00 and 22:00, with `farboard=off`, `shadow=off`, `nopass=ink,grade,tilt,bloom,gtao`, `post=off`, `pr=0.6` and `farlandmarks=1` (the boxed landmarks). Also a Safari timeline, Safari's memory at the default view and after `route:north`, and an A16 GPU trace for the 1–3 fps GPU gap | None directly; it sets the currency. M: 2026-11-23 found pixel ratio worth nothing | 1 + coordinator device time (~2 h) | Low | Coordinator, with a frozen build from me |
 | 1 | **Slice boot**: landmark builders, `batchLandmarks`, `createDowntownTerrain`, `createSurfaceTransport` through `runBudgeted`, plus a boot long-task gate | iPhone freeze before ready (~10 s) turned into frames. E: longest pre-ready task 2.3 s → ≤ 300 ms at 6×. No fps change | 6–10 | Medium: keep surface reads and carve order unchanged (bake seam); byte-identical fingerprints as #621 | **Integrator** |
 | 2a | **Night windows ride the wall draw** (v1 increment 4) | E: −100–130 High-night calls; Low 22:00 is 521 calls. Restores High night | 6–10 | Medium: night look; matched-frame pixel diff | Materials owner |
 | 2b | **Programs phase A plus the lint** (v1 §5) | E: −30 High programs. Restores programs; phone fps ~0 | 8–12 | Medium: side, flat and alpha moves shift pixels | Materials owner |
 | 2c | **Free near houses; pack generic buildings and houses** | E: Low geometry −18 MB (packing) and flat after routes (house leak). Restores Low geometry | 6–10 | Low–medium: Int16 cube size ≤ 500 m | Streaming owner |
 | 2d | **Per-view budgets, growth check, boot gate** (v1 increment 0) | None; it stops silent regressions (#613's boot cost, the street view over its ceiling) | 6–10 | Low | Streaming owner |
-| 3 | **Area unload** via yield-list re-carve (§3.2), R16 first; eviction by distance with hysteresis | Memory flat with travel; required for any expansion. E: frees ~17.6 MB of Low geometry per row unloaded | 15–20 | Medium: seams; follow and deep links into an unloaded area (#682's rules) | Streaming owner |
+| 3 | **Area unload**: the seam snapshot kept until unload (§3.2), R16 first; eviction by distance with hysteresis | Memory flat with travel; required for any expansion. E: frees ~17.6 MB of Low geometry per row unloaded | 15–20 | Medium: seams; follow and deep links into an unloaded area (#682's rules) | Streaming owner |
 | 4 | **Close the GPU gap**, from increment 0's traces | E: up to +1–3 fps on the iPhone | 2–6 | Unknown until traced | Me, with the coordinator |
 | 5 | **Landmark far forms without pop**: silhouette and colour-matched far versions on the kit material for landmarks past 15 km, glass and hooked included, blink-tested | M upper bound: 26 → 36 fps (boxed, which popped). E: +10–25% iPhone | 15–25 | High: the look of approved landmarks; Sam's sheet | Far-LOD owner |
 | 6 | **800 m tiles and the ring manager** (#435's lattice, index, `immutable` static files) | Enables Stage 2 | 25–35 | Medium: pan hitches, file count | Streaming owner |
@@ -301,6 +315,9 @@ change whose only win is calls.
 integrator). Then 2a–2d, which restore the reserve. Increment 3 is the gate for the next
 expansion. 4 and 5 follow increment 0's result. 6 and 7 come before South. 8 and 9 come when a
 feature or an area needs them.
+
+**Deploy.** Increments 6, 7 and 9 change pipeline output, so each needs `pnpm data`, a `web/dist`
+rebuild and a redeploy, and each PR says so. The others need only a rebuild.
 
 **Integration owners** (per AGENTS.md): streaming (2c, 2d, 3, 6), materials (2a, 2b, 8), far LOD
 (5, 7), boot (1, integrator).
@@ -333,3 +350,25 @@ work per row entered, sliced (M: ≤ 335 ms longest task at 6×).
 2. **For Sam, via the coordinator: the reserve sizes in §4.** Until they are restored, features that
    add to a full budget need an offset in the same PR. Does that hold for building skins already
    in the queue?
+
+## Architect review (2026-11-26)
+
+I ran `architect-plan-review` on the first draft and checked its claims against main 2026bf31.
+
+- **Significant, fixed (§3.2):** the unload design re-tessellated the neighbour without the
+  unloaded area's yields. Yields sample the surface when they are built, so later yields would keep
+  floors read from the cut ground. The check also showed that the seam cut's `revert()` does
+  nothing after `commit()`, so today's dispose path can't undo it. It is harmless only because the
+  cut list is empty. The plan now keeps the hold's snapshot until unload, rebuilds the neighbour if
+  it was carved again, and adds a fixture test with a yard.
+- **Significant, fixed (§0, §3.1, increment 0):** "memory is the wall" rested on our own 190 MB
+  ceiling and estimated `geometryMB`. Increment 0 now measures Safari's real memory. The
+  resident-window arithmetic now uses the marginal cost per km².
+- **Minor, fixed:** increment 0 adds `farlandmarks=1` (the boxed landmarks are still on main
+  behind it), and §5 names which increments need `pnpm data`.
+- **Confirmed:** R16's dispose restores maps, seam buildings and normals (`city.ts`,
+  `north-seam-neighborhood.ts`). `?perf&farboard=off` exists (`terrain/model.ts`). `HouseTile`
+  still never frees its near group. Increments 2a–2d from v1 have not landed.
+- **Not folded in:** separate sources for 629/630 and the A16's −143 calls. They are quoted from
+  the coordinator and tagged that way. The stage memory figures in §6 stay estimates until 2c and 3
+  land.
