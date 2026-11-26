@@ -116,14 +116,16 @@ export function createThePeach(buildings: VBuilding[], site: VBuilding, grid: Gr
   body.addGeometry(new CylinderGeometry(R - .6, .7, 2.1, 16, 1, true).scale(-1, 1, 1).translate(cx, deckY - 1.05, cz), '#9fa3a4');
   // The peach, after the sculpture's vertical metal slices: 12 solid gores on a peach profile,
   // a little taller than wide, with a point at the bottom and a suture groove down the
-  // Peachtree-facing side. Gold grades to a red-pink blush toward Peachtree; each slice is a
+  // Peachtree-facing side. Warm golden-peach grades to a red-pink blush over half to two-thirds of the south and east sides; each slice is a
   // shade lighter or darker than its neighbour, so the ribs read up close.
   const G = 12, H = PEACH_R * 1.06;
   const profile: [y: number, r: number][] = [[1, .1], [.88, .5], [.6, .84], [.24, .99], [-.12, .99],
     [-.48, .85], [-.8, .55], [-1.02, .18], [-1.14, 0]];
   const py = deckY - 1.2 + H * 1.14; // the lower third sits inside the ring, as in the 2016 view
-  const blush: P2 = [-.77, .63], suture = Math.atan2(blush[1], blush[0]);
-  const gold = new Color('#f1cf68'), peach = new Color('#f3a878'), red = new Color('#d83b62'), tint = new Color();
+  // Blush faces between the Peachtree approach (south) and the I-85 side (east), the two
+  // views that see it most; the suture runs down that side too.
+  const blush: P2 = [.6, .8], suture = Math.atan2(blush[1], blush[0]);
+  const gold = new Color('#f4c27c'), peach = new Color('#f2958a'), red = new Color('#df5576'), tint = new Color();
   const point = (k: number, g: number, scale = 1): number[] => {
     const [y, r] = profile[k], phi = suture + g / G * 2 * Math.PI;
     const groove = g % G === 0 && k > 0 && k < profile.length - 1 ? .8 : 1;
@@ -141,8 +143,8 @@ export function createThePeach(buildings: VBuilding[], site: VBuilding, grid: Gr
     const facing = Math.cos(mid) * blush[0] + Math.sin(mid) * blush[1];
     for (let k = 0; k < profile.length - 1; k++) {
       const y = (profile[k][0] + profile[k + 1][0]) / 2;
-      const t = Math.min(1, Math.max(0, .45 + .55 * facing + .18 * y));
-      if (t < .5) tint.lerpColors(gold, peach, t / .5); else tint.lerpColors(peach, red, (t - .5) / .5);
+      const t = Math.min(1, Math.max(0, .3 + .62 * facing + .1 * y));
+      if (t < .42) tint.lerpColors(gold, peach, t / .42); else tint.lerpColors(peach, red, Math.min(1, (t - .42) / .45));
       tint.offsetHSL(0, 0, g % 2 ? -.025 : .02);
       const color = '#' + tint.getHexString();
       const a = point(k, g), b = point(k, g + 1), c = point(k + 1, g + 1), d = point(k + 1, g);

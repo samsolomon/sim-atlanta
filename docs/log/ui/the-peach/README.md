@@ -19,7 +19,7 @@ Landmark skin `web/src/city/the-peach.ts`. It replaces `osm:way:265351172` ("The
 - Mast to 49.5 m, with the ring platform 11.6 m across at 49.5 m.
 - Peach about 8.2 m across and 9.4 m tall. Its lower third sits inside the ring, with a stem and leaf to about 59 m.
 
-**Peach (revised after Sam's review).** It follows the sculpture's vertical metal slices: 12 solid gores on a peach profile, with thin dark ribs on the slice edges. The peach is slightly taller than wide, with a point at the bottom. A suture groove runs down the Peachtree-facing side. Each slice is shaded a step lighter or darker than its neighbour. The colour grades from golden yellow to a red-pink blush toward Peachtree, and the ad wrap is a thin plain cream band.
+**Peach (revised after Sam's review).** It follows the sculpture's vertical metal slices: 12 solid gores on a peach profile, with thin dark ribs on the slice edges. The peach is slightly taller than wide, with a point at the bottom. A suture groove runs down the Peachtree-facing side. Each slice is shaded a step lighter or darker than its neighbour. The colour grades from warm golden-peach to a pink blush, which covers about half to two-thirds of the side seen from the Peachtree approach and the close camera (Sam, second review), and the ad wrap is a thin plain cream band.
 
 **Not drawn.** The ad wrap is a plain cream band with no lettering, and the rooftop and east-facade advertising signs are left blank. No logos appear.
 
