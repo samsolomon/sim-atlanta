@@ -2,7 +2,7 @@
 
 Phase 1 of applying the Brookwood bridge, overpass, sidewalk and lane-transition primitives (PR #682) to the Downtown Connector. This document is measurement and registration only. No geometry changed. Repairs wait for #682 to merge and the coordinator's go.
 
-**Status, November 25.** C is repaired on `samsolomon/connector-c-floors`; see [C repair](#c-repair-branch-samsolomonconnector-c-floors). The phase-1 sections below keep their measurements as registered.
+**Status, November 26.** C is merged (#685). A is repaired on `samsolomon/connector-a-auburn`; see [A repair](#a-repair-branch-samsolomonconnector-a-auburn). [C repair](#c-repair-branch-samsolomonconnector-c-floors). The phase-1 sections below keep their measurements as registered.
 
 Measured on `samsolomon/connector-repairs` at **c8e3e34e** (PR #682 head), dev server, both tiers, clock pinned to 2026-11-20 14:00 EST, clear weather, 1200 × 720 viewport. Ground grids are byte-identical to `pipeline/prototypes/square-board/*/ground.i16`. Contexts were restaged with this head's `stage-*` scripts. Stills: [`log/ui/connector-repairs/`](log/ui/connector-repairs/). Camera matrices: `cameras/`. Signed probe output: `evidence/`. Probe scripts (scratch tools, not app code): `probes/`.
 
@@ -123,6 +123,66 @@ The drawn decks follow `sweet-auburn-decks.json`: USGS GA B2 2018 class-17 retur
 - **"Road underneath stops at the carve" is not reproduced numerically.** The board under Auburn and Edgewood is continuous (largest 1 m jump 0.04 m). This is a visual-only finding. Sam, please confirm the spot in A2/A3. Candidates are the street paint at the Leonard Tate portals (1096, 134) and (1119, 240), or the streetcar slab ending at the deck carve.
 
 **Repair.** Deck continuity: one slab per physical viaduct, grouped across OSM way splits and both lanes of a split. Fit one cross-section with crossfall, not per-way level profiles. Put parapets only on the structure's outside edges and at physical gores. The 17th Street slab is the pattern. Under-road pass-through: Auburn, Edgewood and Leonard Tate keep their street, walks and streetcar under the slab, with soffit clearance checked over the full width. Ramp grading with a maximum grade: carry 1450888998 → 1450888999 → 9239463 on one graded profile from the exposed class-2 ends, with no terrain dip under the deck. Retarget its ribbon kind from `ground` to deck where the lidar measured a deck.
+
+### A repair (branch `samsolomon/connector-a-auburn`)
+
+**Two causes.**
+- **Offset slabs.** Each mapped way was drawn as its own slab, flat across its width at its own lidar centreline median. Neighbouring ways on one viaduct therefore met 0.39–0.81 m apart, with parapets between them, even though the real deck is continuous with a 2–3% crossfall.
+- **Dips and jumps at Leonard Tate.** The Leonard Tate correction lowers the board along the street that passes under the freeway, over x 1075–1140, z 115–260, including a margin behind each wall. The deck survey only treated stations within 24 m of the street's centre line as "over the underpass", ignoring road width. Ways whose drawn width reached the lowered nodes were draped down into the cut where their deck spans ended. That produced the SB ramp 8.40 m drop and the NB main deck starting 5.85 m up.
+
+**Fix.**
+- **One viaduct surface.** `viaductSurfaces` in `web/src/city/sweet-auburn-transport.ts` considers profiled ways that come within 30 m of the Auburn–Edgewood box (x 1150–1265, z −250…40). It fuses those that run side by side with another candidate (within 22 m, parallel within 25°, within 1.2 m in height). A local weighted plane through all their lidar samples is the one surface both edges of every member slab sample. Each fit uses only samples within 1.5 m of the run's own level, so a ramp under a flyover never borrows the flyover.
+- **Ties inside the fit, no fades.** The ends that must meet something else get weighted tie samples across their end row, so the surface itself lands there, eased exactly onto the tie within 1.5 m:
+  - an *abutment*, where no other fused deck lies within 12 m, tied at its own surveyed height;
+  - a *handoff*, where an unfused run continues, tied at the height the receiving run draws.
+
+  Every member samples the same function, so no slab can step against another. Two earlier attempts each failed review: a radial fade (round 1) twisted an abutment, and a global fade toward each run's own profile (round 2) stepped neighbours up to 0.49 m near z −194.
+- **No barriers inside one viaduct.** Parapets between members are skipped. The survey notes and street views show striped separation at Edgewood. The NB/SB median barrier and the outside parapets stay.
+- **Freeway top over the opening.** `deck-survey.py` now also counts a station as over the underpass when a node `underpass_grid` lowers lies within 15 m (half the widest carriageway). The unmodified survey first reproduced the committed `sweet-auburn-decks.json` byte for byte. The rerun changes 7 ways and adds 2: the SB ramp 9239463 (first 28.7 m) and the NB main from the board seam (last 20 m). The underpass node edits are unchanged.
+- **No terrain through decks, only over the Leonard Tate roof.** Decks get `yieldsGround`, a per-point predicate: within 30 m of a board node `underpass_grid` edits. That is the 15 m reach the survey uses plus half a slab. At those stations a `GroundYield` lowers only ground that would show through, to 5 cm under the tread; it never trenches under a deck resting on its fill. Way 9238785 at (1148.5, 190.1) keeps its ground exactly. Fused decks are cut into 6 m tread bands, so markings stay above the surface.
+
+**Results (Low = High).**
+
+| Check | Phase 1 | Now |
+|---|---|---|
+| Touching-slab step, Auburn z −180, SB main / HOV | +0.488 m | one tread |
+| Touching-slab step, Auburn z −180, NB | +0.387 m | +0.052 m |
+| Touching-slab step, Edgewood z −60 | +0.811 / +0.693 m | ≤ 0.039 m |
+| SB ramp 1450888999 → 9239463 | ends 8.402 m above the ground ramp | joint passes |
+| NB slab 1450889003 / 1450889004 start | 5.854 / 4.171 m in air | continuous |
+| Two-track joint probe, 81 tracks | — | all pass except the unchanged 2.1 mm board seam from phase 1 |
+| Way 1414820398 span start (1169.67, −461.07) | — | tread minus 0.12 m lift sits −0.084 to +0.102 m from the ground across ±2 m, with no yield under it |
+| Open ends > 0.5 m | — | 3, all phase-1 items |
+
+The z 30 "−0.95 m" lateral sample is the median barrier, unchanged and visible in the stills. Of the three open ends, 38970415 and 1081674705 look continuous in close frames, so they are probe layer artifacts. 28686579 is 0.62 m and was unchanged by this repair.
+
+**Checks.**
+- `web/src/city/sweet-auburn-viaduct.test.ts` builds the Sweet Auburn transport over the lowered grid on Low and High. It requires:
+  - the drawn tread to match within 3 cm across the four former seams;
+  - a deck at the measured freeway top over both Leonard Tate ends;
+  - way 1414820398's span start to land on its ground;
+  - no tread step over 5 cm across the deck at z −194 and z −234…−205;
+  - carving the drawn ground with every yield to leave the span start and (1148.5, 190.1) within 5 cm;
+  - every deck yield to sit within 30 m of an edited roof node.
+
+  It fails on the original code, on e5b8efb9 (yield under the span start) and on 015e9385 (0.475 m step at z −194, x 1206.25).
+- The full web suite passes.
+- The 439abf84 calibration with `--expect combined` passes on both tiers, byte-identical to 1d04eadc ([result](log/ui/connector-repairs/a-auburn/evidence/calibration-combined.json)).
+
+**Cost.** The auburn board, before → after, the same on both tiers for the deck:
+- Deck: 34,314 → 41,284 triangles.
+- Board: High 51,200 → 54,445; Low 35,112 → 37,891.
+
+That is about +10k triangles per tier and needs a `pnpm test:perf` window. Deploy: rebuild `web/dist` only; no `pnpm data` (the survey JSON is bundled from `pipeline/prototypes`).
+
+**Before and after, identical camera matrices.**
+- [Edgewood, High](log/ui/connector-repairs/a-auburn/A3-edgewood-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A3-edgewood-low-before-after.jpg)
+- [Auburn, High](log/ui/connector-repairs/a-auburn/A2-auburn-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A2-auburn-low-before-after.jpg)
+- [Ramp over Leonard Tate, High](log/ui/connector-repairs/a-auburn/A4-ramp-drop-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A4-ramp-drop-low-before-after.jpg)
+- [NB slab start, High](log/ui/connector-repairs/a-auburn/A5-slab-start-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A5-slab-start-low-before-after.jpg)
+- [Overview, High](log/ui/connector-repairs/a-auburn/A1-overview-high-before-after.jpg) · [Low](log/ui/connector-repairs/a-auburn/A1-overview-low-before-after.jpg)
+
+**Still open.** Sam's "road underneath stops at the carve" was never reproduced numerically, because the board under Auburn and Edgewood is continuous. It needs Sam's exact view.
 
 ## B. Freedom Parkway interchange and the Jackson Street bridge (priority 3)
 
