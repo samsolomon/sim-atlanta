@@ -1,4 +1,4 @@
-import { capitolTunnel, capitolTunnelSlots } from '../terrain/capitol-tunnel';
+import { capitolTunnel, capitolTunnelGround, capitolTunnelSlots } from '../terrain/capitol-tunnel';
 import { eastLandingYields } from '../../../pipeline/prototypes/highway-four-ground/landing';
 import { eastHighwayApproaches, eastLandingTriangles } from '../../../pipeline/prototypes/highway-four/east';
 import { golfFlags, teeMarkers } from '../terrain/golf';
@@ -151,6 +151,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   if (brookwood) return brookwood(manifest, terrain);
   if (northBand) return northConnectorGround(manifest, bytes);
   if (path.endsWith('/midtown-south')) underpassGround(northAvenue, manifest, terrain);
+  if (path.endsWith('/south-band')) capitolTunnelGround(manifest, terrain);
   return new GroundGrid(manifest, terrain);
 }
 

@@ -1,4 +1,4 @@
-import { capitolTunnelSlots } from '../terrain/capitol-tunnel';
+import { capitolTunnelGround, capitolTunnelSlots } from '../terrain/capitol-tunnel';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
 import { mountStationFragments } from './north-seam-neighborhood';
@@ -285,7 +285,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
         asset('ground.i16').then(r => r.arrayBuffer()),
       ]);
-      grid = new GroundGrid(spec, bytes);
+      // The Capitol tunnel's north-east portals are cut into the bank on this board too.
+      grid = new GroundGrid(spec, capitolTunnelGround(spec, bytes));
     } catch {
       options.signal?.throwIfAborted();
       // Older or partially refreshed caches can still render the legacy profiles.

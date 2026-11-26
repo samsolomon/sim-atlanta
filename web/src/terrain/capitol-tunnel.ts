@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import { ribbons, sectionAt, type Ribbon } from './connector-corridor';
 import type { OpenSlot } from './openings';
+import type { GroundManifest } from './grid';
 
 /**
  * The covered Connector under the Capitol Gateway lid, as a tunnel with lit mouths.
@@ -99,16 +100,44 @@ export function capitolTunnelSlots(): OpenSlot[] {
     const k = mouthKey(m), floor = MOUTH_FLOORS[k];
     if (floor === undefined) continue;
     const bed = floor - 0.4, at = (a: number) => point(m, a, 0);
-    // From the apron to BOX_M in, the lidar cliff is cut away entirely: the portal box (headwall,
-    // side walls and a roof at the lid's level) stands there instead, as a real lid edge does.
-    const [ax, az] = at(-APRON_M), [bx, bz] = at(BOX_M);
-    slots.push({ start: [ax, bed, az], end: [bx, bed, bz], halfWidthM: m.halfWidth + 0.6, crossAxis: m.right });
-    // Behind it, the tube's box only up to just under the lid, so the lid's streets stay whole.
+    // In front of the face the bank is cut away to open air, between the wing walls.
+    const [ax, az] = at(-APRON_M), [fx, fz] = at(-FACE_M);
+    slots.push({ start: [ax, bed, az], end: [fx, bed, fz], halfWidthM: m.halfWidth + 0.6, crossAxis: m.right });
+    // From the face, the tube's box only up to just under the lid (raised around the portal by
+    // capitolTunnelGround), so the bank and the lid's streets above stay whole.
     const [x1, z1] = at(TUNNEL_DEPTH_M);
-    slots.push({ start: [bx, bed, bz], end: [x1, bed, z1], halfWidthM: m.halfWidth + 0.5,
+    slots.push({ start: [fx, bed, fz], end: [x1, bed, z1], halfWidthM: m.halfWidth + 0.5,
       crossAxis: m.right, cutHeightM: MOUTH_LIDS[k] - 0.3 + 0.4 });
   }
   return slots;
+}
+
+/**
+ * Cut the portals into the bank: around each mouth, raise the board's grid nodes to the top of
+ * its headwall, over the tube from the face to a cell past the portal, and one cell to each side.
+ * The lid's own ground then meets the headwall, the apron's cut leaves a clean face there, and
+ * the bank slopes away beyond, with no box standing proud of the cut. Run on both boards the
+ * north-east mouths straddle (downtown and the south band), before either builds its surface.
+ */
+export function capitolTunnelGround(manifest: GroundManifest, bytes: ArrayBuffer) {
+  const data = new DataView(bytes), { bounds, stepM, rows, cols, scaleM, offsetM, noData } = manifest;
+  const zero = manifest.vertical.sceneZeroNavd88M;
+  for (const m of capitolMouths()) {
+    const k = mouthKey(m), floor = MOUTH_FLOORS[k];
+    if (floor === undefined) continue;
+    const top = floor + MOUTH_LIDS[k] + 0.2 + zero;
+    const reach = m.halfWidth + 0.6 + stepM, front = -FACE_M, back = BOX_M + stepM;
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+      const x = bounds.minX + col * stepM, z = bounds.minZ + row * stepM;
+      const dx = x - m.at[0], dz = z - m.at[1];
+      const along = dx * m.dir[0] + dz * m.dir[1], across = dx * m.right[0] + dz * m.right[1] - m.offset;
+      if (along < front || along > back || Math.abs(across) > reach) continue;
+      const i = 2 * (row * cols + col), raw = data.getInt16(i, true);
+      if (raw === noData || raw * scaleM + offsetM >= top) continue;
+      data.setInt16(i, Math.round((top - offsetM) / scaleM), true);
+    }
+  }
+  return bytes;
 }
 
 let pinned: (Mouth & { floor: number })[] | undefined;
@@ -135,7 +164,7 @@ export function capitolTunnelFloor(mouths: readonly (Mouth & { floor: number })[
 export function capitolTunnel(ground: (x: number, z: number) => number | null) {
   const body = new Builder(), lamps = new Builder();
   const mouths: (Mouth & { floor: number })[] = [];
-  const concrete = '#aaa293', face = '#9d9587', lidTop = '#a9b37f';
+  const concrete = '#aaa293', face = '#9d9587', bank = '#9fab78';
   const shade = (along: number) =>
     '#' + new THREE.Color('#5a574f').lerp(new THREE.Color('#070706'), Math.pow(Math.min(1, along / 18), 0.7)).getHexString();
   for (const m of capitolMouths()) {
@@ -145,23 +174,21 @@ export function capitolTunnel(ground: (x: number, z: number) => number | null) {
     const w = m.halfWidth, ceiling = floor + clearance(mouthKey(m));
     const top = Math.max(ceiling + 0.8, ground(...point(m, 6, 0)) ?? ceiling + 0.8);
     const v = (along: number, across: number, y: number) => { const [x, z] = point(m, along, across); return [x, y, z]; };
-    // Headwall: a vertical face from the opening up to the lid's level, FACE_M out from the
-    // mapped mouth (the top of the lidar cliff stays behind it), with a cap and a pier each
-    // side; wing walls run out along the open apron, sloping down to 1 m at its end.
+    // Headwall: a vertical face from the opening up to the lid's level (the bank around it is
+    // raised to meet it, capitolTunnelGround), FACE_M out from the mapped mouth, with a cap and
+    // a pier each side; wing walls slope down with the bank along the open apron.
     const f = -FACE_M, wallTop = floor + MOUTH_LIDS[mouthKey(m)] + 0.2;
     body.quad(v(f, -w - 0.6, ceiling), v(f, w + 0.6, ceiling), v(f, w + 0.6, wallTop), v(f, -w - 0.6, wallTop), face);
     body.quad(v(f - 0.4, -w - 0.6, wallTop), v(f - 0.4, w + 0.6, wallTop), v(f + 0.4, w + 0.6, wallTop), v(f + 0.4, -w - 0.6, wallTop), concrete);
     body.quad(v(f - 0.4, -w - 0.6, ceiling - 0.05), v(f - 0.4, w + 0.6, ceiling - 0.05), v(f - 0.4, w + 0.6, wallTop), v(f - 0.4, -w - 0.6, wallTop), concrete);
-    // The roof over the box, at the lid's level, back to where the lid itself is whole.
-    body.quad(v(f + 0.4, -w - 0.6, wallTop), v(f + 0.4, w + 0.6, wallTop), v(BOX_M + 0.3, w + 0.6, wallTop), v(BOX_M + 0.3, -w - 0.6, wallTop), lidTop);
-    // Its back, down to the ceiling, seals the cut where the lid behind it is lower.
-    body.quad(v(BOX_M + 0.3, -w - 0.6, ceiling - 0.05), v(BOX_M + 0.3, w + 0.6, ceiling - 0.05), v(BOX_M + 0.3, w + 0.6, wallTop), v(BOX_M + 0.3, -w - 0.6, wallTop), concrete);
+    // Where the bank still slopes down to the face within one grid cell, a ground-coloured
+    // slab just under the raised bank closes it; elsewhere the bank hides it.
+    body.quad(v(f + 0.4, -w - 0.6, wallTop - 0.05), v(f + 0.4, w + 0.6, wallTop - 0.05), v(BOX_M, w + 0.6, wallTop - 0.05), v(BOX_M, -w - 0.6, wallTop - 0.05), bank);
     for (const side of [-1, 1]) {
       const x0 = side * w, x1 = side * (w + 0.6);
       body.quad(v(f - 0.4, x0, floor - 0.1), v(f - 0.4, x1, floor - 0.1), v(f - 0.4, x1, wallTop), v(f - 0.4, x0, wallTop), concrete);
-      // Wing wall along the apron, and the box's side wall along the cut back to the lid.
+      // Wing wall along the apron's cut, sloping down from the headwall's top with the bank.
       body.quad(v(-APRON_M - 0.2, x1, floor - 0.1), v(f - 0.4, x1, floor - 0.1), v(f - 0.4, x1, wallTop), v(-APRON_M - 0.2, x1, floor + 1), face);
-      body.quad(v(f - 0.4, x1, floor - 0.1), v(BOX_M + 0.3, x1, floor - 0.1), v(BOX_M + 0.3, x1, wallTop), v(f - 0.4, x1, wallTop), concrete);
     }
     // The tube: walls, ceiling and floor in 1.5 m steps, darkening inward, closed by a black cap.
     for (let a = -FACE_M - 0.4; a < TUNNEL_DEPTH_M; a += 1.5) {

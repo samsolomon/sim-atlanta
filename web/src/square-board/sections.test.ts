@@ -1,3 +1,4 @@
+import { capitolTunnelGround } from '../terrain/capitol-tunnel';
 import { capitolTunnelSlots } from '../terrain/capitol-tunnel';
 import { slotPlanes } from '../terrain/openings';
 import { createHash } from 'node:crypto';
@@ -20,7 +21,9 @@ function file(id: Board, name: string) {
   return readFileSync(new URL(path + '/' + name, source));
 }
 function grid(id: Board) {
-  return new GroundGrid(JSON.parse(file(id, 'ground.json').toString()), Uint8Array.from(file(id, 'ground.i16')).buffer);
+  // Downtown carries the Capitol tunnel's north-east portals, as City's own grid does.
+  const manifest = JSON.parse(file(id, 'ground.json').toString()), bytes = Uint8Array.from(file(id, 'ground.i16')).buffer;
+  return new GroundGrid(manifest, id === 'downtown' ? capitolTunnelGround(manifest, bytes) : bytes);
 }
 afterEach(() => vi.unstubAllGlobals());
 

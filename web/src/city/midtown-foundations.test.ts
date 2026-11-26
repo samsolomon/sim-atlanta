@@ -1,3 +1,4 @@
+import { capitolTunnelGround } from '../terrain/capitol-tunnel';
 import { HouseTile } from './house-lod';
 import { existsSync, readFileSync } from 'node:fs';
 import { Mesh, Raycaster, Vector3 } from 'three';
@@ -114,7 +115,8 @@ it.each(['low', 'high'] as const)('keeps every rendered generic roof in the rect
     ? bytes(new URL('square-board/' + url.split('/square-board/')[1], proto))
     : bytes(new URL(url.split('/scene/')[1], scene))));
   const manifest: GroundManifest = json(new URL('downtown-ground/ground.json', proto));
-  const grid = new GroundGrid(manifest, bytes(new URL('downtown-ground/ground.i16', proto)));
+  // Downtown carries the Capitol tunnel's north-east portals, as City's own grid does.
+  const grid = new GroundGrid(manifest, capitolTunnelGround(manifest, bytes(new URL('downtown-ground/ground.i16', proto))));
   const signal = new AbortController().signal;
   const city: TerrainCity = staged ? json(new URL('downtown/vignette.json', scene))
     : { bounds: manifest.bounds, buildings: [], roads: [], rail: [] };
