@@ -439,8 +439,18 @@ export class RoadTraffic {
     this.samples = this.lanesStepped = 0;
     if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
     else this.step(clockMs, darkness, perfOverrides.trafficNoCull ? undefined : view);
-    perf.traffic(performance.now() - started, this.visibleCars, this.samples, this.lanesStepped);
+    const ms = performance.now() - started;
+    perf.traffic(ms, this.visibleCars, this.samples, this.lanesStepped);
+    if (perf.trafficTiming) perf.trafficLayer(this.group.name, { ms, queueMs: this.queueMs, heightMs: this.heightMs, planeMs: this.planeMs,
+      cars: this.visibleCars, samples: this.samples, lanes: this.lanesStepped, planes: this.planes });
+    this.queueMs = this.heightMs = this.planeMs = this.planes = 0;
   }
+
+  /** Per-update phase times and counts for `?perf` (perf.trafficLayer), reset after each update. */
+  private queueMs = 0;
+  private heightMs = 0;
+  private planeMs = 0;
+  private planes = 0;
 
   /** Road-surface samples and lanes stepped in the current update, for `?perf` (per-frame means). */
   private samples = 0;
@@ -451,6 +461,7 @@ export class RoadTraffic {
   }
 
   private step(clockMs: number, darkness: number, view?: THREE.Frustum) {
+    const timing = perf.trafficTiming;
     this.night.value = darkness;
     const counts = this.meshCounts;
     counts.clear();
@@ -494,7 +505,9 @@ export class RoadTraffic {
           trip.start = (Math.floor((seconds * v + active[i].phase) / period) * period - active[i].phase) / v;
           trip.length = LENGTH[active[i].kind];
         }
+        const q0 = timing ? performance.now() : 0;
         positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds, lane.brakes);
+        if (timing) this.queueMs += performance.now() - q0;
       }
       if (!inView) continue;
       const line = course.line;
@@ -513,7 +526,10 @@ export class RoadTraffic {
           if (!view.intersectsBox(this.frustumBox)) continue;
         }
         const [front, rear, centre] = this.axles;
-        if (!this.axle(lane, s + half, box, front) || !this.axle(lane, s - half, box, rear) || !this.axle(lane, s, box, centre)) continue;
+        const h0 = timing ? performance.now() : 0;
+        const seated = this.axle(lane, s + half, box, front) && this.axle(lane, s - half, box, rear) && this.axle(lane, s, box, centre);
+        if (timing) this.heightMs += performance.now() - h0;
+        if (!seated) continue;
         const { x, y, z } = centre;
         const dx = front.x - rear.x, dz = front.z - rear.z, horizontal = Math.hypot(dx, dz);
         if (!horizontal) continue;
@@ -540,8 +556,10 @@ export class RoadTraffic {
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
         const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
         const owner = this.opts.fitWheelPlane && !perfOverrides.wheelPlaneOff && course.roads[Math.min(course.roads.length - 1, Math.floor(line.vertexAt(s)))];
+        const p0 = timing ? performance.now() : 0;
         const plane = owner && this.opts.fitWheelPlane?.(owner, x, z) ? wheelPlane(this.contactAxles.get(slot.kind)!,
           (at, px, pz) => this.exactHeight(lane, at, px, pz), s, x, z, ux, uz) : undefined;
+        if (timing && plane !== undefined) { this.planeMs += performance.now() - p0; this.planes++; }
         if (plane) {
           // Forward and lateral tangents share the fitted plane. Orthonormalize
           // before writing the matrix so crossfall does not shear the body.
