@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { S70_LAYOUT } from '../vignette/streetcar';
+import { leadFirst } from './vehicle-follow';
 import { alongAt, createStreetcarCars, pointAlong, pointAt, streetcarCovers, streetcarPaths } from './streetcar-cars';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -28,6 +29,9 @@ it('articulates the S70 through a 20 m curve with every joint closed and every t
     expect(cars.update([state], 0)).toBe(1);
     const [B, C, A] = cars.cars();
     for (const m of [B, C, A]) m.updateMatrixWorld(true);
+    // Follow frames cab A, which leads, though the pool lists it last.
+    expect(leadFirst(cars.cars())[0].x).toBeCloseTo(A.position.x);
+    expect(leadFirst(cars.cars())[0].z).toBeCloseTo(A.position.z);
     const local = (id: 'A' | 'B' | 'C', z: number) =>
       new Vector3(0, 0, z - (S70_LAYOUT.sections[id].from + S70_LAYOUT.sections[id].to) / 2);
     for (const [mesh, id] of [

@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Schedule } from '../sched/engine';
 import { consistLength } from '../vignette/crescent-stock';
 import fixture from './fixtures/brookwood-timetable.json';
 import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
-import { corridorChainage, crescentPlacement } from './brookwood';
+import { corridorChainage, createBrookwood, crescentPlacement } from './brookwood';
 import { corridor } from './brookwood-corridor';
-import { createNorcrossFreight, NORCROSS_LINE } from './brookwood-freight';
+import { createNorcrossFreight, FREIGHT_SLOT_MS, NORCROSS_LINE } from './brookwood-freight';
+import { leadFirst } from './vehicle-follow';
 
 // Keep the recorded service day and geometry together: rolling GTFS feeds expire
 // historical dates, so local pnpm data must not change this regression's input.
@@ -36,6 +37,46 @@ describe('Brookwood corridor trains', () => {
         expect(Math.abs(run[i].center - run[i - 1].center)).toBeLessThan(400);
       }
     }
+  });
+
+  it('puts the leading locomotive of the Norcross freight first in both directions', () => {
+    const freight = createNorcrossFreight(corridor.main2.pts, () => 0, []);
+    for (const slot of [0, 1]) {
+      const at = (seconds: number) => slot * FREIGHT_SLOT_MS + seconds * 1000;
+      freight.update(at(120), false);
+      const before = leadFirst(freight.poses.children)[0];
+      freight.update(at(121), false);
+      const cars = leadFirst(freight.poses.children), lead = cars[0];
+      expect(cars.length).toBeGreaterThan(3);
+      // Every other car is behind the lead along its direction of travel.
+      const dx = lead.x - before.x, dz = lead.z - before.z;
+      for (const car of cars.slice(1)) expect((car.x - lead.x) * dx + (car.z - lead.z) * dz).toBeLessThan(0);
+      const shown = freight.poses.children.filter(c => c.visible);
+      expect(shown.find(c => c.userData.consistIndex === 0)).toBeDefined();
+    }
+    freight.dispose();
+  });
+
+  it('puts the Crescent locomotive first for follow in both directions', () => {
+    const context = new Proxy({}, { get: (_, key) => key === 'measureText' ? () => ({ width: 1 }) : () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context, width: 1, height: 1 }) });
+    const brookwood = createBrookwood(0);
+    brookwood.setNorthEdge(-5700);
+    for (const dir of [1, -1]) {
+      // A placement with the whole consist on the board, and the next one along.
+      const i = placed.findIndex(p => p.dir === dir && Math.abs(p.center) < 100);
+      const at = (t: number) => {
+        brookwood.update(schedule.trainsAt(new Date(t)), 0);
+        return leadFirst(brookwood.cars.children);
+      };
+      const [lead, ...rest] = at(placed[i].t), moved = at(placed[i].t + step)[0];
+      expect(rest.length).toBeGreaterThan(3);
+      const dx = moved.x - lead.x, dz = moved.z - lead.z;
+      expect(Math.hypot(dx, dz)).toBeGreaterThan(0);
+      for (const car of rest) expect((car.x - lead.x) * dx + (car.z - lead.z) * dz).toBeLessThan(0);
+    }
+    brookwood.dispose();
+    vi.unstubAllGlobals();
   });
 
   it('keeps the illustrative Main 2 freight clear of every Crescent near the island', () => {
