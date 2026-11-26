@@ -13,20 +13,30 @@ city-view Claude.
 
 ## In progress
 
-**#613 far board, now on `samsolomon/far-board-v2` (head cdd6d76a, from main 068b32ed).** No PR yet.
-- **Ported** onto the north rows, slicing, the Peach and the ramp decks.
-- **Landmarks keep their own form** (their cell batches' far versions) by default. Boxes stand in only
-  for generic buildings and houses. `?perf&farlandmarks=1` boxes landmarks too, as #613 did.
-- **Generic boxes draw with the generic buildings' material,** with each wall's style and base, so
-  facades and night windows match the near form. That removes the night mesh and its program.
-- **Switch:** 15 km, back at 13.5 km (the coordinator's decision).
-- **Measured (Low, default view):** 369 → 343 calls by day, 547 → 521 at night, −12% triangles,
-  +4.8 MB geometry. With boxed landmarks: 205 / 219 calls.
-- **Waiting on the coordinator's iPhone A/B** of `farboard=off`, the default (landmarks kept) and
-  `farlandmarks=1`. Then a decision: ship as is, and/or follow-up C (merge each area's plain
-  landmark batch classes into one far mesh past 15 km; about −100 calls with the same look).
-- **Not yet done:** the zoom video on the final head (an older recording exists; ffmpeg is now
-  installed via brew), matched composites, full tests, test:perf.
+**#613 far board, version A (landmarks kept): head 4f97f653 on main 6c5aa4e6, for release 19.**
+- `pnpm test` and build pass. Stills and zoom videos are in `docs/log/far-board-v2/`.
+- iPhone: 23.4 → about 26 fps (boxed landmarks gave 36.2).
+- Waiting on Grok (via the coordinator) and `test:perf` (the integrator has it queued third).
+- Generic boxes draw with the generic buildings' material (`styledBoxMesh`). The wall style is chosen
+  by area (`dominantWallStyle`).
+
+**C (decided follow-up): one far mesh per area for plain landmark batches.** Design, not started:
+- **Where:** inside `materials/landmark-batch.ts`. Add `batches.buildAreaFar()`, built after `farReady`,
+  and `batches.setAreaFar(on)`, called from model.ts's `showFar` next to the box mesh.
+- **What merges:** a `DayGroup` merges when its group is alike at every night probe (no lit-window
+  runs) and its material is plain vertex colour (StaticLandmarkMaterial-like: no maps, no hooks).
+  Copy its far index range (the `far` mesh's index into the class buffer) out of the packed buffer:
+  unpack each mesh's transform cube to the scenery frame, then repack. Merge into one mesh per look
+  (`lookOf` key), drawn with that look's existing material, so no new program.
+- **While the area is far:** for merged groups, hide `d.far` and keep the full mesh's `hideFromView`,
+  so landmark shadows don't change. Add a `merged` flag that `show()` respects, so a cell's own LOD
+  transition can't re-show `d.far`. Groups that aren't alike (lit windows at night) keep their own
+  far version.
+- **Target:** at the default view, calls 343 → roughly 240 by day (boxed landmarks gave 205), with
+  nothing visible changing. Check it with matched stills at 14 km (forced) and at the default view,
+  day and night: the pixel diff of A against A+C should be about 0.
+- **Checks:** the shared/material class, so the full set plus `test:perf`. Then the coordinator's
+  iPhone A/B.
 
 ## Queued
 
