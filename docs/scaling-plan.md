@@ -32,8 +32,9 @@ not a phone.
    streets and freight (1.1–1.3 s) are single tasks before ready. Most of that time goes to
    landmark builders, batching and transport, not ground. The integrator owns the slicing.
 6. **Unload doesn't need the bake.** v1 put unload behind joined-seam baking. The hold and revert
-   added for sliced mounts already restore a neighbour's ground before a mount commits. Keeping
-   that snapshot until the area unloads covers the rest (§3.2).
+   added for sliced mounts already restore a neighbour's ground before a mount commits. Unload
+   needs that snapshot kept until the area goes, plus four undo paths that don't exist yet
+   (§3.2). That is real work, but it isn't a bake.
 7. **Far levels add memory unless something is freed.** Far forms are held beside near forms:
    #613 cost +9 MB and C +18 MB. #613's boxes cost about 0.43 MB/km². Over the square that is
    about 530 MB, so the horizon needs a form about 20× cheaper per km² (§3.3).
@@ -69,11 +70,13 @@ Main is now 2026bf31 (#705 merged). No phone run exists on it yet.
 
 Plainly, so the next plan doesn't inherit these.
 
-1. **"Ground work is most of the main thread" (v1 §0.3, §2.6).** I generalised R16's mount, where
-   ground is 98% of the work, to boot. v1 put ground at 43% of boot and buildings at 0.08 s. The
-   integrator's profile shows landmark builders and batching at about 1.7 s of downtown's boot at
-   6×, and bakeable ground at about 0.6 s. My buckets matched call chains wrongly. v1's own
-   "Other, 1.01 s" bucket was hiding the landmark builders.
+1. **"Ground work is most of the main thread" was wrong for boot before ready (v1 §0.3, §2.6).**
+   v1's 1× buckets covered boot plus all 12 area mounts, and put buildings at 0.08 s. The
+   integrator's 6× profile of downtown before ready puts landmark builders and batching at about
+   1.7 s (roughly 0.3 s at 1×), so v1 under-counted buildings about 3.5×, and bakeable ground
+   there is about 0.6 s. Ground does still dominate the graded area mounts (R16, brookwood-south).
+   The error was carrying that to downtown's boot, which is where the iPhone freezes. Where v1
+   filed the landmark builders is unverified; its "Other, 1.01 s" bucket is the likely place.
 2. **Baking as the main-thread lever (v1 increment 5).** It works where ground is graded and seated
    (brookwood-south, R16). Elsewhere it costs 1.5–4.5 MB per row and saves nothing.
 3. **Unload had to wait for the bake (v1 §4.2, critical path 0 → 2 → 5 → 6 → 9).** That was the
@@ -135,12 +138,25 @@ What follows:
 **Load.** As R16 does today: lazy, sliced, on approach, behind fog or the coarse form. This
 already works. Sliced mounts reach a longest task of 185–335 ms at 6× (M, docs/perf.md).
 
-**Unload, without the bake.** R16's dispose already undoes most of its seam work:
+**Unload, without the bake.** No area unloads today. Dispose runs only at City teardown, so its
+undo paths have never been exercised. R16's dispose does undo part of its seam work:
 `restoreMaps()`, the seam buildings' `dispose` (which shows the Station's fragments again) and
-`seamNormals.reset()` (`city.ts` near line 1127, `north-seam-neighborhood.ts`). One gap is left. The
-seam cut in the Station's ground is reverted by `holdGround().revert()`, and that does nothing
-once `commit()` has called `release()`. Today it doesn't matter, because no seam building has a
-yard and the cut list is empty. The first yard would leave a cut in the Station after R16 unloads.
+`seamNormals.reset()` (`city.ts` near line 1127, `north-seam-neighborhood.ts`). The gaps, checked
+on main 2026bf31:
+
+| Mount effect | Undo today | Needed |
+|---|---|---|
+| Seam cut in the Station's ground (`holdGround`, then `release` at commit) | `revert()` does nothing after `release()` | The kept snapshot, below |
+| `connect()` → `openJoin` hides each neighbour's joining-edge wall | None: there is no `closeJoin` | `closeJoin`, and removal from `mounted` |
+| `northLine.extend(rails)` (`city.ts` 1144) | None | A `retract`. North Line trains stop at the loaded end and draw on the coarse level past it (v1 §4.2's vehicle rule) |
+| `preparedBrookwood.mountNorthFreight` (freight edge and height, `brookwood.ts` 731) | None | Restore the edge and height function |
+| City-wide tree registration (`commitTrees`) and far boxes | Area dispose unregisters some (yard planting; `terrain/model.ts` near 897) | Verify for every registry in the unload test |
+
+Today the seam cut doesn't matter, because no seam building has a yard and the cut list is empty.
+The first yard would leave a cut in the Station after R16 unloads.
+
+**Eviction order.** An area whose seam layers stand on a neighbour (R16 on the Station) unloads
+before that neighbour, never after. The ring manager evicts dependants first.
 
 Re-tessellating the neighbour without the unloaded area's yields was the first idea, and it is
 wrong. Yields are closures that sample the surface when they are built (v1 §4.1a), so any yield
@@ -154,8 +170,9 @@ built after the seam cut holds floors read from the cut ground. Instead:
    is stale. Rebuild the neighbour whole as a sliced mount (it builds in steps already), and log
    it in dev and in the perf summary.
 3. **Test:** mount R16, commit, unload, and fingerprint the Station (as `sliced-build.test.ts`
-   does) against a Station that never had R16. Add a seam building with a yard in the fixture,
-   so the test fails with the snapshot dropped.
+   does) against a Station that never had R16: ground, joining walls, fragments, freight edge,
+   North Line extent and tree registries. Add a seam building with a yard in the fixture, so the
+   test fails with the snapshot dropped.
 
 Eviction then works by distance, with hysteresis and an LRU under the per-tier memory budget,
 as v1 §4.2 describes. The near-house leak is fixed first, as the same rule at the smallest
@@ -294,13 +311,13 @@ The ranking assumes triangles are the phone currency. **Increment 0 can reorder 
 
 | # | Increment | Phone win | Cost (agent-h) | Risk | Owner |
 |---:|---|---|---:|---|---|
-| 0 | **Device A/B, no code.** iPhone and A16 on main 2026bf31: default and Midtown street at 14:00 and 22:00, with `farboard=off`, `shadow=off`, `nopass=ink,grade,tilt,bloom,gtao`, `post=off`, `pr=0.6` and `farlandmarks=1` (the boxed landmarks). Also a Safari timeline, Safari's memory at the default view and after `route:north`, and an A16 GPU trace for the 1–3 fps GPU gap | None directly; it sets the currency. M: 2026-11-23 found pixel ratio worth nothing | 1 + coordinator device time (~2 h) | Low | Coordinator, with a frozen build from me |
+| 0 | **Device A/B** (one perf-only switch, no product change). iPhone and A16 on main 2026bf31: default and Midtown street at 14:00 and 22:00, with `farboard=off`, `shadow=off`, `nopass=ink,grade,tilt,bloom,gtao`, `post=off`, `pr=0.6`, and a `pr=` sweep with `farlandmarks=1` (the boxed landmarks) on and off. One new switch, `?perf&hidelm=glass|hooked`, hides those far landmarks alone, so the boxed result can be split into triangles, transparency and shading. Also a Safari timeline, Safari's memory at the default view and after `route:north`, and an A16 GPU trace for the 1–3 fps GPU gap | None directly; it sets the currency. M: 2026-11-23 found pixel ratio worth nothing | 2–3 + coordinator device time (~2 h) | Low | Coordinator, with a frozen build from me |
 | 1 | **Slice boot**: landmark builders, `batchLandmarks`, `createDowntownTerrain`, `createSurfaceTransport` through `runBudgeted`, plus a boot long-task gate | iPhone freeze before ready (~10 s) turned into frames. E: longest pre-ready task 2.3 s → ≤ 300 ms at 6×. No fps change | 6–10 | Medium: keep surface reads and carve order unchanged (bake seam); byte-identical fingerprints as #621 | **Integrator** |
 | 2a | **Night windows ride the wall draw** (v1 increment 4) | E: −100–130 High-night calls; Low 22:00 is 521 calls. Restores High night | 6–10 | Medium: night look; matched-frame pixel diff | Materials owner |
 | 2b | **Programs phase A plus the lint** (v1 §5) | E: −30 High programs. Restores programs; phone fps ~0 | 8–12 | Medium: side, flat and alpha moves shift pixels | Materials owner |
 | 2c | **Free near houses; pack generic buildings and houses** | E: Low geometry −18 MB (packing) and flat after routes (house leak). Restores Low geometry | 6–10 | Low–medium: Int16 cube size ≤ 500 m | Streaming owner |
 | 2d | **Per-view budgets, growth check, boot gate** (v1 increment 0) | None; it stops silent regressions (#613's boot cost, the street view over its ceiling) | 6–10 | Low | Streaming owner |
-| 3 | **Area unload**: the seam snapshot kept until unload (§3.2), R16 first; eviction by distance with hysteresis | Memory flat with travel; required for any expansion. E: frees ~17.6 MB of Low geometry per row unloaded | 15–20 | Medium: seams; follow and deep links into an unloaded area (#682's rules) | Streaming owner |
+| 3 | **Area unload**: the seam snapshot kept until unload (§3.2), R16 first; eviction by distance with hysteresis | Memory flat with travel; required for any expansion. E: frees ~17.6 MB of Low geometry per row unloaded | 20–30 | Medium–high: five undo paths that have never run (§3.2), eviction order, and follow and deep links into an unloaded area (#682's rules) | Streaming owner |
 | 4 | **Close the GPU gap**, from increment 0's traces | E: up to +1–3 fps on the iPhone | 2–6 | Unknown until traced | Me, with the coordinator |
 | 5 | **Landmark far forms without pop**: silhouette and colour-matched far versions on the kit material for landmarks past 15 km, glass and hooked included, blink-tested | M upper bound: 26 → 36 fps (boxed, which popped). E: +10–25% iPhone | 15–25 | High: the look of approved landmarks; Sam's sheet | Far-LOD owner |
 | 6 | **800 m tiles and the ring manager** (#435's lattice, index, `immutable` static files) | Enables Stage 2 | 25–35 | Medium: pan hitches, file count | Streaming owner |
@@ -347,7 +364,8 @@ work per row entered, sliced (M: ≤ 335 ms longest task at 6×).
 ## 8. Questions
 
 1. **For the coordinator: should #704 be parked or merged?** I recommend parking it (§3.5).
-2. **For Sam, via the coordinator: the reserve sizes in §4.** Until they are restored, features that
+2. **For the coordinator: which head is High night 629/630 from?** #613's final head measured 587.
+3. **For Sam, via the coordinator: the reserve sizes in §4.** Until they are restored, features that
    add to a full budget need an offset in the same PR. Does that hold for building skins already
    in the queue?
 
@@ -369,6 +387,17 @@ I ran `architect-plan-review` on the first draft and checked its claims against 
 - **Confirmed:** R16's dispose restores maps, seam buildings and normals (`city.ts`,
   `north-seam-neighborhood.ts`). `?perf&farboard=off` exists (`terrain/model.ts`). `HouseTile`
   still never frees its near group. Increments 2a–2d from v1 have not landed.
+- **Significant, fixed after a second check (§3.2, increment 3):** the draft said "one gap is
+  left" for unload. Main also has no undo for `openJoin`, `northLine.extend` or
+  `mountNorthFreight`, and tree registries are only partly unregistered. The plan now lists them
+  with an eviction-order rule, and increment 3 is re-rated to 20–30 h, medium–high risk.
+- **Fixed:** §2 item 1 compared v1's 1× whole-load buckets with the integrator's 6× pre-ready
+  profile. It is now scoped to boot before ready, with the size of the error (about 3.5×).
+  Increment 0 gains a `hidelm` switch, because the existing switches can't separate triangles from
+  glass and hooked shading.
+- **Open:** High night is 629 in the brief, but #613's body shows 627 mid-PR and 587 at its final
+  head. Which head 629 comes from decides whether 2a is a restore or a nice-to-have. I've asked the
+  coordinator.
 - **Not folded in:** separate sources for 629/630 and the A16's −143 calls. They are quoted from
   the coordinator and tagged that way. The stage memory figures in §6 stay estimates until 2c and 3
   land.
