@@ -191,6 +191,11 @@ Raised in Grok's review of D, and written up for Sam. No code.
 - **The inconsistency.** The south-band board's own road list (`context.json`) carries the same mainline as an ordinary motorway, with `bridge` and `tunnel` both false. Anything that samples that record reads the lid top. That is why Grok saw its centreline move 1.99 m at (367.4, 760.3) when D2 removed the DEM spike there. Connector traffic does not use that record, so no car is placed on the lid today.
 - **The question for Sam.** Should the covered Connector be a modelled tunnel: portal walls and ceilings at both mouths, lit interiors, and cars that drive in and stay visible a few car lengths into the dark? Or should the lid simply hide it, as now? A modelled tunnel would make the mouths read correctly from the street and at night, cost about one draw per portal, and need the board's road list to carry `tunnel` so that nothing else can drape on the lid.
 
+## Carried nits (from the Capitol tunnel, #701)
+
+- **Bank slab shelf.** Where the raised bank still slopes within one 5 m grid cell of a portal face, the closing slab shows as a slightly lighter shelf. It belongs to abutments and fill (part 3): grade the bank to the headwall instead of closing it with a slab.
+- **Nubs at road level.** A couple of tunnel openings show small dark nubs where the apron's cut meets the bed. They belong to the overlap rule's ground checks (part 1 or part 3).
+
 ## Order of work
 
 1. **Overlap rule plus merge/diverge.** This fixes Sam's A5 and J3, and is the largest visible error at grade.
