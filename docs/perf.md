@@ -152,8 +152,9 @@ code, and release 18's `test:perf` failed on it once at 0.858 ms. Alternating ru
 | `b80c49f7` (before the tread index) | 4 | 0.843–0.888 | not reported |
 
 `068b32ed` itself had read 0.50 and 0.61 ms that morning; why the machine slowed is unknown. The new
-1.0 ms ceiling would pass the unindexed builds, so **`connectorMs` is the check that catches this
-regression** on the Studio: all four full-scan runs exceed its 0.4 ms. Its own margin over the current
+1.0 ms ceiling would pass seven of the eight unindexed runs above (only 1.048 fails it), so
+**`connectorMs` is the check that catches this regression** on the Studio: all four full-scan runs
+exceed its 0.4 ms. Its own margin over the current
 build is small (0.348 at most). If it starts failing on unchanged code, don't raise it past about
 0.45 ms without a better check.
 
