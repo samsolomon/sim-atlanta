@@ -52,14 +52,14 @@ it('meets the downtown half of 38974028 at the x = 1000 seam at one height', () 
   // Downtown's baked run starts where north-corner clips the way.
   const seam: P2 = [1000, -802.35];
   const pts = way(38974028).pts.filter(([x]) => x < 1000) as P2[];
-  const downtown = { terrainTransport: { version: 1, rail: [], roads: [{ kind: 'bridge', cls: 'motorway', pts: [seam, ...pts] }] } } as unknown as TerrainCity;
+  const downtown = { roads: [], terrainTransport: { version: 1, rail: [], roads: [{ kind: 'bridge', cls: 'motorway', pts: [seam, ...pts] }] } } as unknown as TerrainCity;
   applyRampDecks(downtown);
   const south = downtown.terrainTransport!.roads;
   expect(same(south[0].pts[0], seam) && same(south.at(-1)!.pts.at(-1)!, pts.at(-1)!)).toBe(true);
   const [a] = heightAt(north, seam), [b] = heightAt(south, seam);
   expect(Math.abs(a - b)).toBeLessThan(.002);
   // Already-surveyed runs keep their own profile.
-  const surveyed = { terrainTransport: { version: 1, rail: [], roads: [{ ...south[0], deckNavd88M: south[0].pts.map(() => 1) }] } } as unknown as TerrainCity;
+  const surveyed = { roads: [], terrainTransport: { version: 1, rail: [], roads: [{ ...south[0], deckNavd88M: south[0].pts.map(() => 1) }] } } as unknown as TerrainCity;
   expect(applyRampDecks(surveyed).terrainTransport!.roads[0].deckNavd88M!.every(h => h === 1)).toBe(true);
 });
 
@@ -139,4 +139,28 @@ it.each(['low', 'high'] as const)('clears the three-level stack on %s', quality 
     // leaves at least 4.5 m; the mainline passes about 10 m under 38974058.
     expect(top(38970413, 1115.8, -591) - top(38974058, 1115.8, -591) - .95).toBeGreaterThan(4.5);
   } finally { decks.dispose(); ground.geometry.dispose(); }
+});
+
+it('draws the MLK SB ramp tree as one deck across its ways, onto the MLK west approach', () => {
+  const ways = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/connector-footprint/ways.json', import.meta.url), 'utf8'));
+  const pts = (...ids: number[]) => ids.flatMap((id, k) => (k ? ways[id].pts.slice(1) : ways[id].pts)) as P2[];
+  // Downtown merges 9236952, 436808889 and 755543582 into one ground road with
+  // no baked run; the bridge-tagged link's ground run spans 755543580 and 755543583.
+  const climb = { cls: 'motorway', sub: 'link', bridge: false, pts: pts(9236952, 436808889, 755543582) };
+  const link = { kind: 'ground', cls: 'motorway', sub: 'link', pts: pts(755543580, 755543583) };
+  const city = { roads: [climb], terrainTransport: { version: 1, rail: [], roads: [link] } } as unknown as TerrainCity;
+  applyRampDecks(city);
+  expect(city.roads[0].bridge).toBe(true);
+  const runs = city.terrainTransport!.roads;
+  // One deck from the 436808889 tie through the 755543582 joint: no break there.
+  const joint = [593.93, 576.07];
+  const climbing = runs.filter(r => r.deckNavd88M && r.pts.some(p => same(p, joint)));
+  expect(climbing.length).toBe(1);
+  expect(climbing[0].deckWeight![0]).toBe(0);
+  // 755543580 eases onto the approach and runs 2.5 m under it, 3 cm below its 313.23 m.
+  const top = runs.find(r => r.deckNavd88M && same(r.pts[0], [561.1, 584.44]))!;
+  expect(Math.abs(top.deckNavd88M!.at(-1)! + .12 - 313.2)).toBeLessThan(.02);
+  // Past 2.5 m along 755543583 the approach owns the pavement: the rest stays a plain run.
+  const end = runs.find(r => same(r.pts.at(-1)!, [551.31, 601.54]))!;
+  expect(end.deckNavd88M).toBeUndefined();
 });

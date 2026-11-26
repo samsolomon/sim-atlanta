@@ -31,7 +31,7 @@ Covered lower roads under the Baker cap (1051688672/74/75) track only 24–56% o
 
 ## Crossing register
 
-All gaps are tracked upper surface minus tracked lower surface. None is a modelled clearance.
+All gaps are tracked upper surface minus tracked lower surface. None is a modelled clearance. Crossing heights come from `ramp-register.py`'s `at()`, which interpolates the tracked `own` stations within 7.5 m of the crossing. Where only one station is in reach, it copies that station. The 305.83 m for 38974058 at the three-level stack is the s = 70 station copied this way (no station sits nearer the crossing), so read it as an estimate, not a measurement at that point. The drawn stack uses the spans, which put 38974058 at 305.24 m there.
 
 | Plan point (x, z) | Upper | Lower | Gap |
 |---|---|---|---|
@@ -142,6 +142,33 @@ Step 2 lists 9235707 (its last 17 m), 38974058, the first 10 m of 38974043 and *
 `ramp-decks.test.ts` names the stack clearance, the joints and the seam height, plus Grok's request on step 1: no 38974051 span from 80 m on, where the Baker junction deck takes over. Each fails with its fix reverted.
 
 **Stills** (day, matched frozen cameras; BEFORE is step 1): [S1 High: the climb under the flyover](log/ui/connector-repairs/b2-stack/S1-high-before-after.jpg) · [S1 Low](log/ui/connector-repairs/b2-stack/S1-low-before-after.jpg) · [S2 High: the three-level stack](log/ui/connector-repairs/b2-stack/S2-high-before-after.jpg) · [S2 Low](log/ui/connector-repairs/b2-stack/S2-low-before-after.jpg) · [S3 High: onto 38974043's fill](log/ui/connector-repairs/b2-stack/S3-high-before-after.jpg) · [S3 Low](log/ui/connector-repairs/b2-stack/S3-low-before-after.jpg) · [S4 High: the z = −520 seam](log/ui/connector-repairs/b2-stack/S4-high-before-after.jpg) · [S4 Low](log/ui/connector-repairs/b2-stack/S4-low-before-after.jpg). Cameras: `cam=1140,-610,200,60,260`, `1112,-596,250,72,110`, `1228,-652,160,62,70`, `1112,-524,200,62,70`, with `&dev&mindist=20`.
+
+**Deploy.** A `web/dist` rebuild only.
+
+### Step 3: the MLK SB ramp tree
+
+Step 3 lists 436808889, 755543582, 44698161, 436808888, 755543580 and the first 2.5 m of 755543583. The phase-1 taper finding reads them as elevated ramps that the covered-pavement taper pulls down 1–6 m. They now ride their own lidar profiles over the tapered ground, which stays as it is beneath them.
+
+**What the downtown board needed.** Downtown merges 9236952, 436808889 and 755543582 into one ground road with no baked transport run. The bridge-tagged MLK link's ground run spans two ways (755543580 and 755543583). So `rampSpans` now maps spans onto any polyline that runs along one or more registered ways, and spans of consecutive ways that meet at a vertex merge into one deck. `applyRampDecks` also slices downtown ground roads that carry a span and marks them as structure, as `auburnTransport` does on the boards. Steps 1 and 2 come out the same: north-corner byte-identical, downtown within 1.3e-5 m (float order of interpolation).
+
+**The top end.** The MLK street bridge's west approach (`street-bridges.json`, `streetPortals`) already draws 755543583 at about 313.2 m. Before this step, 755543580 ran on the tapered ground at 306.5 m into the approach's 6.7 m face. `ramp-decks.py` now clips 755543583 to its first 2.5 m (`CLIP`) and pins both ways' ends to 313.08 m (`MEETS`), eased over the last 10 m. So the tread runs 4 cm under the approach surface and 2.5 m under its diagonal edge. Ending the deck at the approach's edge left a wedge of air up to 1 m wide on the outer side (probe grid in `evidence/`).
+
+**The fork at (561.1, 584.44).** 44698161, 436808888 and 755543580 split from 755543582 here. Their Connector ribbons start the diverging ramps at no width, so the gore pavement for the first 3–4 m is 44698161's deck. The ramps then rise or fall on their own grades: 755543580 stands 0.2 m above 44698161 4 m from the nose. Cars there found no tread on their own piece, which would have hidden them (`NO_ROAD`). `cityRoadHeight` now rides a bridge piece that shares the car's piece's end vertex, within 10 m of it. A deck crossing overhead never shares one (`road-height.test.ts`).
+
+**Measured (both tiers identical; probes and outputs in [b2-mlk](log/ui/connector-repairs/b2-mlk/)):**
+
+| Check | Result |
+|---|---|
+| Drawn tread minus profile, centreline and ±1.6 m | 0.087–0.121 m on 436808889 and 755543582. At the fork the top surface is the shared gore deck, 0.13–0.37 m above 436808888's own falling profile |
+| Joints | 436808889 → 755543582 is one deck. The fork vertex carries one height on all four ways |
+| Ties (436808889 s 35, 44698161 s 15, 436808888 s 5) | Tread = drawn terrain + 0.12 m |
+| The MLK west approach | Tread 313.225 m at s 11.5 against the approach's 313.229 m at s 12. The approach lies 3–12 cm over the deck where they overlap. No open edge across ±2 m |
+| Any other surface through the tread | None, except the MLK approach overlay above, by design |
+| Cars | Every sample has a height. Car minus profile 0.114–0.209 m on own decks; on the shared gore pavement (436808888 to s 4, 755543580 to s 3) they ride the drawn surface |
+| 439abf84 gate, warm, Low and High | Byte-identical |
+| Triangles | +3,544 deck triangles on both tiers |
+
+**Stills** (day, matched frozen cameras; BEFORE is step 2): [M1 High: the ramp tree](log/ui/connector-repairs/b2-mlk/M1-high-before-after.jpg) · [M1 Low](log/ui/connector-repairs/b2-mlk/M1-low-before-after.jpg) · [M2 High: the fork](log/ui/connector-repairs/b2-mlk/M2-high-before-after.jpg) · [M2 Low](log/ui/connector-repairs/b2-mlk/M2-low-before-after.jpg) · [M3 High: onto the MLK west approach](log/ui/connector-repairs/b2-mlk/M3-high-before-after.jpg) · [M3 Low](log/ui/connector-repairs/b2-mlk/M3-low-before-after.jpg) · [M4 High: 436808889 climbing](log/ui/connector-repairs/b2-mlk/M4-high-before-after.jpg) · [M4 Low](log/ui/connector-repairs/b2-mlk/M4-low-before-after.jpg). Cameras: `cam=600,570,200,58,220`, `560,586,200,62,45`, `556,592,110,62,45`, `625,566,300,72,90`, with `&dev&mindist=20`.
 
 **Deploy.** A `web/dist` rebuild only.
 

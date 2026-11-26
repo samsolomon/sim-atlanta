@@ -22,7 +22,22 @@ STEPS = {
     # 38970413 belongs here, not step 4: lifting 38974058 alone leaves 1.0 m under
     # its clearance-inferred deck at the three-level stack (1115.8, -591.0).
     "stack": [9235707, 38974058, 38974043, 38970413],
+    # The MLK SB ramps climb to the MLK deck on their own structure, over ground
+    # the covered-pavement taper lowers (connector-repairs.md, taper follow-up).
+    "mlk": [436808889, 755543582, 44698161, 436808888, 755543580, 755543583],
 }
+# Only these stations of a way are drawn here (clipped, not just filtered).
+# The MLK street bridge's west approach (street-bridges.json, streetPortals)
+# draws 755543583 at about 313.2 m; the ramp runs 2.5 m under its diagonal
+# edge so no wedge of air opens beside it.
+CLIP = {755543583: (0, 2.5)}
+# Span rows pinned to a structure drawn from another survey: way -> [(station,
+# NAVD88 profile height)]. Other rows within EASE metres move by a share of the
+# pin's offset, so the ramp eases onto it. Profiled decks draw their tread
+# 0.12 m above the profile: 313.08 keeps the tread 3 cm under the approach's
+# 313.23 m (City probe, b2-mlk/evidence), so the approach stays on top.
+MEETS = {755543580: [(11.6, 313.08)], 755543583: [(0.0, 313.08), (2.5, 313.08)]}
+EASE = 10.0
 # Only these stretches of longer ways belong to a step (station window, metres).
 # 38974051 from 75 m on is the Baker junction deck's own approach
 # (junction-decks.json, drawn by junctionPortals): a span there would double it.
@@ -77,6 +92,18 @@ def spans_for(way, length):
 _AUBURN = {}
 
 
+def clip(span, lo, hi):
+    """The part of a span between stations lo and hi, with interpolated ends."""
+    def at(s):
+        for a, b in zip(span, span[1:]):
+            if a[0] <= s <= b[0]:
+                return round(a[1] + (b[1] - a[1]) * (s - a[0]) / ((b[0] - a[0]) or 1), 2)
+        return span[0][1] if s < span[0][0] else span[-1][1]
+    lo, hi = max(lo, span[0][0]), min(hi, span[-1][0])
+    inner = [r for r in span if lo < r[0] < hi]
+    return [[lo, at(lo)], *inner, [hi, at(hi)]]
+
+
 def road_length(road):
     """Length of a surveyed road, from its polyline on the Sweet Auburn board."""
     if not _AUBURN:
@@ -111,8 +138,22 @@ def main():
             length = float(sum(math.dist(a, b) for a, b in zip(pts, pts[1:])))
             lo, hi = WINDOWS.get(wid, (0, 1e9))
             spans = [sp for sp in spans_for(by_id[wid], length) if sp[-1][0] >= lo and sp[0][0] <= hi]
+            if wid in CLIP:
+                c0, c1 = CLIP[wid]
+                spans = [clip(sp, c0, c1) for sp in spans if sp[-1][0] > c0 and sp[0][0] < c1]
             if spans:
                 out.append({"step": step, "way": wid, "pts": pts, "lengthM": round(length, 2), "spans": spans})
+    for e in out:
+        for at, h in MEETS.get(e["way"], []):
+            for sp in e["spans"]:
+                end = next((r for r in sp if abs(r[0] - at) < 0.05), None)
+                if end is None:
+                    continue
+                offset = h - end[1]
+                for r in sp:
+                    share = 1 - abs(at - r[0]) / EASE
+                    if share > 0 and len(r) < 3:
+                        r[1] = round(r[1] + share * offset, 2)
     # Shared endpoints between listed ways land at one height.
     ends = {}
     for e in out:

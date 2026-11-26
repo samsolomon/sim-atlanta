@@ -35,41 +35,32 @@ function profileAt(span: number[][], s: number) {
 /** Share of the measured deck at a station: 0 on a tie row, where the deck meets the drawn terrain. */
 export const deckWeightAt = (span: number[][], s: number) => span.some(r => r[2] && Math.abs(r[0] - s) < .05) ? 0 : 1;
 
-/** Slice one run against one way's spans; null when the run is not on the way. */
-function slice(run: TransportRun, way: Way): TransportRun[] | null {
-  const stations = run.pts.map(p => along(way.pts, p));
-  if (stations.some(s => s.distance > .05)) return null;
-  const s0 = stations[0].station, s1 = stations.at(-1)!.station;
-  const forward = s1 >= s0;
-  const at = (k: number) => stations[k].station;
-  // Station breaks: run vertices plus span ends inside the run.
-  const cuts = new Set<number>([s0, s1]);
-  for (const sp of way.spans) for (const s of [sp[0][0], sp.at(-1)![0], ...sp.map(r => r[0])])
-    // Survey stations are rounded to the centimetre: a span end that close to a
-    // run vertex is that vertex, or a sliver piece would open the joint.
-    if (s > Math.min(s0, s1) && s < Math.max(s0, s1) && run.pts.every((_, k) => Math.abs(s - at(k)) > .05)) cuts.add(s);
-  run.pts.forEach((_, k) => cuts.add(at(k)));
-  const ordered = [...cuts].sort((a, b) => forward ? a-b : b-a);
+/** Cut a run into ground pieces and profiled deck pieces at its span ends. */
+function sliceRun(run: TransportRun, spans: number[][][]): TransportRun[] {
+  const cum = [0];
+  for (let k = 1; k < run.pts.length; k++) cum.push(cum[k-1] + Math.hypot(run.pts[k][0]-run.pts[k-1][0], run.pts[k][1]-run.pts[k-1][1]));
+  const length = cum.at(-1)!;
+  // Station breaks: run vertices plus span rows inside the run. Survey stations
+  // are rounded to the centimetre: a row that close to a run vertex is that
+  // vertex, or a sliver piece would open the joint.
+  const cuts = new Set<number>(cum);
+  for (const sp of spans) for (const [s] of sp)
+    if (s > 0 && s < length && cum.every(c => Math.abs(s - c) > .05)) cuts.add(s);
+  const ordered = [...cuts].sort((a, b) => a - b);
   const point = (s: number): P2 => {
-    for (let k = 1; k < run.pts.length; k++) {
-      const [a, b] = [at(k-1), at(k)];
-      if ((s - a) * (s - b) <= 0 && a !== b) {
-        const t = (s - a) / (b - a), p = run.pts[k-1], q = run.pts[k];
-        return [p[0] + t*(q[0]-p[0]), p[1] + t*(q[1]-p[1])];
-      }
-    }
-    return Math.abs(s - s0) < Math.abs(s - s1) ? run.pts[0] : run.pts.at(-1)!;
+    const k = cum.indexOf(s);
+    if (k >= 0) return run.pts[k];
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < s) i++;
+    const t = (s - cum[i-1]) / (cum[i] - cum[i-1]), p = run.pts[i-1], q = run.pts[i];
+    return [p[0] + t*(q[0]-p[0]), p[1] + t*(q[1]-p[1])];
   };
-  const spanOf = (s: number) => way.spans.find(sp => s >= sp[0][0] - .05 && s <= sp.at(-1)![0] + .05);
+  const spanOf = (s: number) => spans.find(sp => s >= sp[0][0] - .05 && s <= sp.at(-1)![0] + .05);
   const pieces: TransportRun[] = [];
   let current: { deck: number[][] | undefined; stations: number[] } | null = null;
   const flush = () => {
     if (!current || current.stations.length < 2) return;
-    const pts = current.stations.map(point);
-    // Keep the run's own end vertices exactly, so neighbouring runs still join.
-    if (current.stations[0] === s0) pts[0] = run.pts[0];
-    if (current.stations.at(-1) === s1) pts[pts.length-1] = run.pts.at(-1)!;
-    const deck = current.deck;
+    const pts = current.stations.map(point), deck = current.deck;
     pieces.push(deck
       ? { ...run, kind: 'bridge', pts, deckNavd88M: current.stations.map(s => profileAt(deck, s)),
         ...(deck.some(r => r[2]) && { deckWeight: current.stations.map(s => deckWeightAt(deck, s)) }) }
@@ -85,45 +76,69 @@ function slice(run: TransportRun, way: Way): TransportRun[] | null {
     current.stations.push(b);
   }
   flush();
-  return pieces.some(p => p.deckNavd88M) ? pieces : null;
+  return pieces;
 }
 
-/** Deck spans for one board road in its own stations, or null when it is not a
- * registered ramp. A board road is a clipped piece of the OSM way. */
+/** Deck spans for a board polyline in its own stations, or null when no part of
+ * it is a registered ramp. A board road may be a clipped piece of one OSM way or
+ * several ways merged end to end; spans of consecutive ways that meet at a shared
+ * vertex become one span, so the deck does not break there. */
 export function rampSpans(pts: P2[]): number[][][] | null {
   if (pts.length < 2) return null;
+  const cum = [0];
+  for (let k = 1; k < pts.length; k++) cum.push(cum[k-1] + Math.hypot(pts[k][0]-pts[k-1][0], pts[k][1]-pts[k-1][1]));
+  const spans: number[][][] = [];
   for (const way of survey.ways) {
     const stations = pts.map(p => along(way.pts, p));
-    if (stations.some(s => s.distance > .05)) continue;
-    const offset = stations[0].station;
-    if (stations.at(-1)!.station <= offset) continue;
-    // The road's own length, so its end stations land on its end vertices.
-    const length = pts.slice(1).reduce((sum, p, k) => sum + Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1]), 0);
-    const snap = (s: number) => Math.abs(s) < .05 ? 0 : Math.abs(s - length) < .05 ? length : s;
-    const spans: number[][][] = [];
-    for (const span of way.spans) {
-      const local = span.map(([s, ...rest]) => [snap(s - offset), ...rest]);
-      const lo = Math.max(0, local[0][0]), hi = Math.min(length, local.at(-1)![0]);
-      if (hi - lo < .001) continue;
-      const end = (at: number) => local.find(r => r[0] === at) ?? [at, profileAt(local, at)];
-      spans.push([end(lo), ...local.filter(([s]) => s > lo && s < hi), end(hi)]);
+    for (let k = 0; k < pts.length;) {
+      if (stations[k].distance > .05) { k++; continue; }
+      let j = k;
+      while (j + 1 < pts.length && stations[j+1].distance <= .05) j++;
+      // The vertices k..j run along this way, in its direction.
+      if (j > k && stations[j].station > stations[k].station) {
+        const lo0 = cum[k], hi0 = cum[j], offset = stations[k].station - lo0;
+        const snap = (s: number) => Math.abs(s - lo0) < .05 ? lo0 : Math.abs(s - hi0) < .05 ? hi0 : s;
+        for (const span of way.spans) {
+          const local = span.map(([s, ...rest]) => [snap(s - offset), ...rest]);
+          const lo = Math.max(lo0, local[0][0]), hi = Math.min(hi0, local.at(-1)![0]);
+          if (hi - lo < .001) continue;
+          const end = (at: number) => local.find(r => r[0] === at) ?? [at, profileAt(local, at)];
+          spans.push([end(lo), ...local.filter(([s]) => s > lo && s < hi), end(hi)]);
+        }
+      }
+      k = j + 1;
     }
-    return spans.length ? spans : null;
   }
-  return null;
+  if (!spans.length) return null;
+  spans.sort((a, b) => a[0][0] - b[0][0]);
+  const merged = [spans[0]];
+  for (const span of spans.slice(1)) {
+    const last = merged.at(-1)!;
+    if (Math.abs(span[0][0] - last.at(-1)![0]) < .05) last.push(...span.slice(1));
+    else merged.push(span);
+  }
+  return merged;
 }
 
-/** Replace the board's matching motorway runs with their sliced, profiled pieces (in place). */
+/** Replace the board's matching motorway runs with their sliced, profiled pieces
+ * (in place). Downtown ground roads that carry a ramp span (the MLK SB ramps)
+ * have no baked run: they get pieces of their own and are marked as structure,
+ * as auburnTransport does, so the board stops drawing them as plain ground. */
 export function applyRampDecks<T extends TerrainCity>(city: T): T {
   const data = city.terrainTransport;
   if (!data) return city;
   const roads: TransportRun[] = [];
   for (const run of data.roads) {
-    if (run.cls !== 'motorway' || run.deckNavd88M || run.pts.length < 2) { roads.push(run); continue; }
-    let pieces: TransportRun[] | null = null;
-    for (const way of survey.ways) if ((pieces = slice(run, way))) break;
-    roads.push(...(pieces ?? [run]));
+    const spans = run.cls === 'motorway' && !run.deckNavd88M && run.pts.length > 1 ? rampSpans(run.pts) : null;
+    roads.push(...(spans ? sliceRun(run, spans) : [run]));
   }
+  city.roads = city.roads.map(road => {
+    if (road.cls !== 'motorway' || road.bridge || road.tunnel || road.pts.length < 2) return road;
+    const spans = rampSpans(road.pts);
+    if (!spans) return road;
+    roads.push(...sliceRun({ cls: road.cls, name: road.name, sub: road.sub ?? undefined, pts: road.pts, kind: 'ground' }, spans));
+    return { ...road, bridge: true };
+  });
   data.roads = roads;
   return city;
 }
