@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { capitolMouths, capitolTunnel, capitolTunnelSlots, MOUTH_FLOORS, mouthFloor, mouthKey, TUNNEL_VISIBLE_M } from './capitol-tunnel';
+import { capitolMouths, capitolTunnel, capitolTunnelSlots, MOUTH_FLOORS, MOUTH_LIDS, mouthFloor, mouthKey, TUNNEL_DEPTH_M, TUNNEL_VISIBLE_M } from './capitol-tunnel';
 import { GroundGrid } from './grid';
 
 const src = new URL('../../../pipeline/prototypes/', import.meta.url);
@@ -21,17 +21,24 @@ describe('the covered Connector under Capitol Gateway as a tunnel', () => {
     for (const m of mouths) expect(Math.abs(mouthFloor(m, ground)! - MOUTH_FLOORS[mouthKey(m)]), mouthKey(m)).toBeLessThan(0.01);
   });
 
-  it('fits each tube under the lid: the lid top stands over the ceiling a little way in', () => {
+  it('keeps every tube and its cut under the lid, so the lid streets are never cut through', () => {
     for (const m of mouths) {
-      const top = ground(m.at[0] + m.dir[0] * 10, m.at[1] + m.dir[1] * 10)!;
-      expect(top - MOUTH_FLOORS[mouthKey(m)], mouthKey(m)).toBeGreaterThan(5.2 + 0.4);
+      const k = mouthKey(m), f = MOUTH_FLOORS[k];
+      let lid = Infinity;
+      for (let a = 4; a <= TUNNEL_DEPTH_M + 1; a++) for (let c = -m.halfWidth; c <= m.halfWidth; c++) {
+        const h = ground(m.at[0] + m.dir[0] * a + m.right[0] * (c + m.offset), m.at[1] + m.dir[1] * a + m.right[1] * (c + m.offset));
+        if (h !== null) lid = Math.min(lid, h - f);
+      }
+      expect(Math.abs(lid - MOUTH_LIDS[k]), k).toBeLessThan(0.02);
+      // Room for a ceiling at least 4.5 m up, 0.75 m under the lid.
+      expect(MOUTH_LIDS[k] - 0.75, k).toBeGreaterThan(4.5);
     }
   });
 
   it('cuts one covered slot per mouth, below the lid top, and shows cars only near the mouths', () => {
     const slots = capitolTunnelSlots();
-    expect(slots.length).toBe(10);
-    for (const slot of slots) expect(slot.cutHeightM).toBeGreaterThan(5.2);
+    expect(slots.length).toBe(20);
+    for (const slot of slots.filter(s => s.cutHeightM)) expect(slot.cutHeightM! - 0.4).toBeLessThan(Math.max(...Object.values(MOUTH_LIDS)) - 0.29);
     const tunnel = capitolTunnel(ground);
     try {
       const m = tunnel.mouths[0];

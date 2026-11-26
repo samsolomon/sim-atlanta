@@ -78,17 +78,35 @@ export const MOUTH_FLOORS: Record<string, number> = {
   '39160890/0 start': -20.27, '39160890/0 end': -20.94, '435734520/0 end': -20.22, '435734523/0 end': -19.87,
   '580328711/0 start': -21.76, '580328712/0 start': -22.85,
 };
+/** The lowest lid top over each tube from 4 m in (metres above its floor), from the same grids.
+ * Each tube's ceiling stays 0.75 m under it and its cut 0.3 m under it, so the lid's surface,
+ * with the streets drawn on it, is never cut through. */
+export const MOUTH_LIDS: Record<string, number> = {
+  '39160886/0 start': 5.53, '39160888/0 start': 9.80, '39160888/0 end': 5.86, '39160889/0 end': 6.29,
+  '39160890/0 start': 6.25, '39160890/0 end': 7.10, '435734520/0 end': 7.14, '435734523/0 end': 7.24,
+  '580328711/0 start': 7.11, '580328712/0 start': 5.31,
+};
+const clearance = (key: string) => Math.min(CLEARANCE_M, MOUTH_LIDS[key] - 0.75);
 export const mouthKey = (m: Pick<Mouth, 'ribbon' | 's'>) => `${m.ribbon.key} ${m.s === 0 ? 'start' : 'end'}`;
 
-/** Board openings: each tube's box, from 2 m outside the mouth to its depth, up to the ceiling. */
+/** The lidar cliff at a mouth starts a 5 m grid cell outside the mapped mouth, so each tube's
+ * board cut and floor begin this far out; otherwise the cliff's foot stands in the opening. */
+const APRON_M = 6, FACE_M = 2, BOX_M = 5;
+/** Board openings: each tube's box, from the apron to its depth, up to the ceiling. */
 export function capitolTunnelSlots(): OpenSlot[] {
   const slots: OpenSlot[] = [];
   for (const m of capitolMouths()) {
-    const floor = MOUTH_FLOORS[mouthKey(m)];
+    const k = mouthKey(m), floor = MOUTH_FLOORS[k];
     if (floor === undefined) continue;
-    const [x0, z0] = point(m, -2, 0), [x1, z1] = point(m, TUNNEL_DEPTH_M, 0);
-    slots.push({ start: [x0, floor - 0.4, z0], end: [x1, floor - 0.4, z1], halfWidthM: m.halfWidth + 0.5,
-      crossAxis: m.right, cutHeightM: CLEARANCE_M + 0.9 });
+    const bed = floor - 0.4, at = (a: number) => point(m, a, 0);
+    // From the apron to BOX_M in, the lidar cliff is cut away entirely: the portal box (headwall,
+    // side walls and a roof at the lid's level) stands there instead, as a real lid edge does.
+    const [ax, az] = at(-APRON_M), [bx, bz] = at(BOX_M);
+    slots.push({ start: [ax, bed, az], end: [bx, bed, bz], halfWidthM: m.halfWidth + 0.6, crossAxis: m.right });
+    // Behind it, the tube's box only up to just under the lid, so the lid's streets stay whole.
+    const [x1, z1] = at(TUNNEL_DEPTH_M);
+    slots.push({ start: [bx, bed, bz], end: [x1, bed, z1], halfWidthM: m.halfWidth + 0.5,
+      crossAxis: m.right, cutHeightM: MOUTH_LIDS[k] - 0.3 + 0.4 });
   }
   return slots;
 }
@@ -116,34 +134,64 @@ export function capitolTunnelFloor(mouths: readonly (Mouth & { floor: number })[
 export function capitolTunnel(ground: (x: number, z: number) => number | null) {
   const body = new Builder(), lamps = new Builder();
   const mouths: (Mouth & { floor: number })[] = [];
-  const concrete = '#aaa293', face = '#9d9587';
+  const concrete = '#aaa293', face = '#9d9587', lidTop = '#a9b37f';
   const shade = (along: number) =>
     '#' + new THREE.Color('#5a574f').lerp(new THREE.Color('#070706'), Math.pow(Math.min(1, along / 18), 0.7)).getHexString();
   for (const m of capitolMouths()) {
     const floor = MOUTH_FLOORS[mouthKey(m)];
     if (floor === undefined) continue;
     mouths.push({ ...m, floor });
-    const w = m.halfWidth, ceiling = floor + CLEARANCE_M;
+    const w = m.halfWidth, ceiling = floor + clearance(mouthKey(m));
     const top = Math.max(ceiling + 0.8, ground(...point(m, 6, 0)) ?? ceiling + 0.8);
     const v = (along: number, across: number, y: number) => { const [x, z] = point(m, along, across); return [x, y, z]; };
-    // Headwall: the face above the opening up to the lid edge, and a pier each side.
-    body.quad(v(0, -w - 0.6, ceiling), v(0, w + 0.6, ceiling), v(0, w + 0.6, top + 0.35), v(0, -w - 0.6, top + 0.35), face);
-    body.quad(v(-0.4, -w - 0.6, ceiling - 0.05), v(-0.4, w + 0.6, ceiling - 0.05), v(-0.4, w + 0.6, top + 0.35), v(-0.4, -w - 0.6, top + 0.35), concrete);
-    body.quad(v(-0.4, -w - 0.6, top + 0.35), v(-0.4, w + 0.6, top + 0.35), v(0, w + 0.6, top + 0.35), v(0, -w - 0.6, top + 0.35), concrete);
+    // Headwall: a vertical face from the opening up to the lid's level, FACE_M out from the
+    // mapped mouth (the top of the lidar cliff stays behind it), with a cap and a pier each
+    // side; wing walls run out along the open apron, sloping down to 1 m at its end.
+    const f = -FACE_M, wallTop = floor + MOUTH_LIDS[mouthKey(m)] + 0.2;
+    body.quad(v(f, -w - 0.6, ceiling), v(f, w + 0.6, ceiling), v(f, w + 0.6, wallTop), v(f, -w - 0.6, wallTop), face);
+    body.quad(v(f - 0.4, -w - 0.6, wallTop), v(f - 0.4, w + 0.6, wallTop), v(f + 0.4, w + 0.6, wallTop), v(f + 0.4, -w - 0.6, wallTop), concrete);
+    body.quad(v(f - 0.4, -w - 0.6, ceiling - 0.05), v(f - 0.4, w + 0.6, ceiling - 0.05), v(f - 0.4, w + 0.6, wallTop), v(f - 0.4, -w - 0.6, wallTop), concrete);
+    // The roof over the box, at the lid's level, back to where the lid itself is whole.
+    body.quad(v(f + 0.4, -w - 0.6, wallTop), v(f + 0.4, w + 0.6, wallTop), v(BOX_M + 0.3, w + 0.6, wallTop), v(BOX_M + 0.3, -w - 0.6, wallTop), lidTop);
+    // Its back, down to the ceiling, seals the cut where the lid behind it is lower.
+    body.quad(v(BOX_M + 0.3, -w - 0.6, ceiling - 0.05), v(BOX_M + 0.3, w + 0.6, ceiling - 0.05), v(BOX_M + 0.3, w + 0.6, wallTop), v(BOX_M + 0.3, -w - 0.6, wallTop), concrete);
     for (const side of [-1, 1]) {
       const x0 = side * w, x1 = side * (w + 0.6);
-      body.quad(v(-0.4, x0, floor - 0.1), v(-0.4, x1, floor - 0.1), v(-0.4, x1, top + 0.35), v(-0.4, x0, top + 0.35), concrete);
+      body.quad(v(f - 0.4, x0, floor - 0.1), v(f - 0.4, x1, floor - 0.1), v(f - 0.4, x1, wallTop), v(f - 0.4, x0, wallTop), concrete);
+      // Wing wall along the apron, and the box's side wall along the cut back to the lid.
+      body.quad(v(-APRON_M - 0.2, x1, floor - 0.1), v(f - 0.4, x1, floor - 0.1), v(f - 0.4, x1, wallTop), v(-APRON_M - 0.2, x1, floor + 1), face);
+      body.quad(v(f - 0.4, x1, floor - 0.1), v(BOX_M + 0.3, x1, floor - 0.1), v(BOX_M + 0.3, x1, wallTop), v(f - 0.4, x1, wallTop), concrete);
     }
     // The tube: walls, ceiling and floor in 1.5 m steps, darkening inward, closed by a black cap.
-    for (let a = -0.4; a < TUNNEL_DEPTH_M; a += 1.5) {
+    for (let a = -FACE_M - 0.4; a < TUNNEL_DEPTH_M; a += 1.5) {
       const b = Math.min(TUNNEL_DEPTH_M, a + 1.5), col = shade((a + b) / 2);
       for (const side of [-w, w]) body.quad(v(a, side, floor - 0.1), v(a, side, ceiling), v(b, side, ceiling), v(b, side, floor - 0.1), col);
       body.quad(v(a, -w, ceiling), v(a, w, ceiling), v(b, w, ceiling), v(b, -w, ceiling), col);
       body.quad(v(a, -w, floor + 0.02), v(b, -w, floor + 0.02), v(b, w, floor + 0.02), v(a, w, floor + 0.02), a < 4 ? '#4d4f55' : col);
     }
-    // The floor carries on 2.2 m outside the mouth, over the slot's cut.
-    body.quad(v(-2.2, -w - 0.6, floor + 0.02), v(-0.4, -w - 0.6, floor + 0.02), v(-0.4, w + 0.6, floor + 0.02), v(-2.2, w + 0.6, floor + 0.02), '#4d4f55');
+    // The floor carries on over the apron, where the slot cuts the cliff's foot away.
+    body.quad(v(-APRON_M - 0.2, -w - 0.6, floor + 0.02), v(-FACE_M - 0.4, -w - 0.6, floor + 0.02), v(-FACE_M - 0.4, w + 0.6, floor + 0.02), v(-APRON_M - 0.2, w + 0.6, floor + 0.02), '#4d4f55');
     body.quad(v(TUNNEL_DEPTH_M, -w, floor - 0.1), v(TUNNEL_DEPTH_M, w, floor - 0.1), v(TUNNEL_DEPTH_M, w, ceiling), v(TUNNEL_DEPTH_M, -w, ceiling), '#050505');
+    // Lit mouths: a light strip along each wall for the first 10 m, and lamps under the
+    // headwall, so the entrances read at night as well as by day (illustrative).
+    for (const side of [-1, 1]) {
+      const x = side * (w - 0.05);
+      // Both windings: the glow material is single-sided, like the North Line portal's lamps,
+      // so it shares that program.
+      const a = v(f + 0.2, x, floor + 2.2), b = v(10, x, floor + 2.2), c = v(10, x, floor + 2.6), d = v(f + 0.2, x, floor + 2.6);
+      lamps.quad(a, b, c, d, '#ffe2b0');
+      lamps.quad(d, c, b, a, '#ffe2b0');
+    }
+    // The pavement under the lamps, lit warm for 12 m and fading into the tube.
+    for (let a = f + 0.2; a < 12; a += 3) {
+      const t = Math.min(1, (a - f) / (14 - f)), col = '#' + new THREE.Color('#55565c').lerp(new THREE.Color('#2a2a2e'), t).getHexString();
+      lamps.quad(v(a, -w + 0.1, floor + 0.04), v(Math.min(12, a + 3), -w + 0.1, floor + 0.04), v(Math.min(12, a + 3), w - 0.1, floor + 0.04), v(a, w - 0.1, floor + 0.04), col);
+      lamps.quad(v(a, w - 0.1, floor + 0.04), v(Math.min(12, a + 3), w - 0.1, floor + 0.04), v(Math.min(12, a + 3), -w + 0.1, floor + 0.04), v(a, -w + 0.1, floor + 0.04), col);
+    }
+    for (let across = -w + 1.5; across < w - 1; across += 3) {
+      const [x, z] = point(m, f + 0.6, across);
+      lamps.box(0.7, 0.12, 0.7, x, ceiling - 0.08, z, '#ffe7bd');
+    }
     // Crown lamps in two rows, every 6 m (illustrative).
     for (let a = 2; a < TUNNEL_DEPTH_M - 4; a += 6)
       for (const across of [-w / 2, w / 2]) {
@@ -157,14 +205,14 @@ export function capitolTunnel(ground: (x: number, z: number) => number | null) {
   // Under the lid: it receives shadow at the mouths but casts none (no extra shadow draw).
   mesh.receiveShadow = true;
   mesh.name = 'Capitol Gateway tunnel portals';
-  const glow = new THREE.Mesh(lamps.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffdfb0', emissiveIntensity: 0.35 }));
+  const glow = new THREE.Mesh(lamps.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffdfb0', emissiveIntensity: 0 }));
   glow.name = 'Capitol Gateway tunnel lamps';
   group.add(mesh, glow);
   return {
     group, mouths,
     floorAt: (x: number, z: number) => capitolTunnelFloor(mouths, x, z),
-    /** Tunnel lamps burn all day; the night factor brightens them. */
-    setNight(factor: number) { (glow.material as THREE.MeshLambertMaterial).emissiveIntensity = 0.35 + 0.65 * factor; },
+    /** The lamps and the pavement they light glow as night falls; by day the mouth's own shade reads. */
+    setNight(factor: number) { (glow.material as THREE.MeshLambertMaterial).emissiveIntensity = 0.45 * factor; },
     dispose() {
       mesh.geometry.dispose(); (mesh.material as THREE.Material).dispose();
       glow.geometry.dispose(); (glow.material as THREE.Material).dispose();
