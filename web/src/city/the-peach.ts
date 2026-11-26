@@ -125,7 +125,7 @@ export function createThePeach(buildings: VBuilding[], site: VBuilding, grid: Gr
   // Blush faces between the Peachtree approach (south) and the I-85 side (east), the two
   // views that see it most; the suture runs down that side too.
   const blush: P2 = [.6, .8], suture = Math.atan2(blush[1], blush[0]);
-  const gold = new Color('#f4c27c'), peach = new Color('#f2958a'), red = new Color('#df5576'), tint = new Color();
+  const gold = new Color('#f4c27c'), peach = new Color('#f5a993'), red = new Color('#eb6f78'), tint = new Color();
   const point = (k: number, g: number, scale = 1): number[] => {
     const [y, r] = profile[k], phi = suture + g / G * 2 * Math.PI;
     const groove = g % G === 0 && k > 0 && k < profile.length - 1 ? .8 : 1;
