@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Schedule } from '../sched/engine';
 import { consistLength } from '../vignette/crescent-stock';
 import fixture from './fixtures/brookwood-timetable.json';
 import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
-import { corridorChainage, crescentPlacement } from './brookwood';
+import { corridorChainage, createBrookwood, crescentPlacement } from './brookwood';
 import { corridor } from './brookwood-corridor';
 import { createNorcrossFreight, FREIGHT_SLOT_MS, NORCROSS_LINE } from './brookwood-freight';
 import { leadFirst } from './vehicle-follow';
@@ -55,6 +55,28 @@ describe('Brookwood corridor trains', () => {
       expect(shown.find(c => c.userData.consistIndex === 0)).toBeDefined();
     }
     freight.dispose();
+  });
+
+  it('puts the Crescent locomotive first for follow in both directions', () => {
+    const context = new Proxy({}, { get: (_, key) => key === 'measureText' ? () => ({ width: 1 }) : () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => context, width: 1, height: 1 }) });
+    const brookwood = createBrookwood(0);
+    brookwood.setNorthEdge(-5700);
+    for (const dir of [1, -1]) {
+      // A placement with the whole consist on the board, and the next one along.
+      const i = placed.findIndex(p => p.dir === dir && Math.abs(p.center) < 100);
+      const at = (t: number) => {
+        brookwood.update(schedule.trainsAt(new Date(t)), 0);
+        return leadFirst(brookwood.cars.children);
+      };
+      const [lead, ...rest] = at(placed[i].t), moved = at(placed[i].t + step)[0];
+      expect(rest.length).toBeGreaterThan(3);
+      const dx = moved.x - lead.x, dz = moved.z - lead.z;
+      expect(Math.hypot(dx, dz)).toBeGreaterThan(0);
+      for (const car of rest) expect((car.x - lead.x) * dx + (car.z - lead.z) * dz).toBeLessThan(0);
+    }
+    brookwood.dispose();
+    vi.unstubAllGlobals();
   });
 
   it('keeps the illustrative Main 2 freight clear of every Crescent near the island', () => {

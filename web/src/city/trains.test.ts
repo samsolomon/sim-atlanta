@@ -39,14 +39,16 @@ describe('City train placement', () => {
       name: 'straight', origin: { lon: 0, lat: 0 }, bounds, notes: '', sources: [],
       profiles: { track: { s0: 0, step: 1, z: [7] } },
     }, bounds, new Map([['blue', '#0075b2']]), []);
-    const state = (id: string, heading: number) => ({ id, routeId: 'blue', pathId: 'track', heading, lon: 0, lat: 0,
+    const state = (id: string, heading: number, cars: number) => ({ id, routeId: 'blue', pathId: 'track', heading, lon: 0, lat: 0,
       s: { value: 300, tier: 'scheduled' as const, source: 'test', asOf: '' }, headsign: '', vehicleType: 'rail',
-      lengthM: { value: 92, tier: 'illustrative' as const, source: 'test', asOf: '' } });
-    // The second update reuses the first's pooled meshes for the reversed trip.
-    for (const [id, heading, dir] of [['east', 90, 1], ['west', 270, -1]] as const) {
-      trains.update([state(id, heading)], 0);
-      const cars = leadFirst(trains.group.children.filter(c => c.userData.trainId === id));
-      expect(cars).toHaveLength(4);
+      lengthM: { value: cars * 23, tier: 'illustrative' as const, source: 'test', asOf: '' } });
+    for (const [heading, dir] of [[90, 1], [270, -1]] as const) {
+      // A short train listed first takes the long train's cab mesh, so the long train's new cab
+      // joins the group after its own middle cars.
+      trains.update([state('long', heading, 6)], 0);
+      trains.update([state('short', heading, 4), state('long', heading, 6)], 0);
+      const cars = leadFirst(trains.group.children.filter(c => c.userData.trainId === 'long'));
+      expect(cars).toHaveLength(6);
       expect(cars.map(c => dir * c.x)).toEqual(cars.map(c => dir * c.x).sort((a, b) => b - a));
     }
   });
