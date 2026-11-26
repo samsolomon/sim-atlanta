@@ -1,3 +1,4 @@
+import { capitolTunnelFloorAt } from '../terrain/capitol-tunnel';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as THREE from 'three';
@@ -158,13 +159,16 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       new ConnectorTraffic({ city: vd, hourly, roadHeight, quality: 'high' }),
     ]) {
       const inner = layer as unknown as Inner;
+      // Connector traffic keeps cars in view a few lengths into the Capitol tunnel's tubes.
+      const connector = layer instanceof ConnectorTraffic;
       let worst = 0, mismatched = 0, samples = 0;
       for (const lane of inner.lanes) {
         const { line, roads } = lane.course;
         for (let s = 0; s <= line.length; s += .5) {
           const vertex = line.vertexAt(s), i = Math.min(Math.floor(vertex), line.pts.length - 2), f = vertex - i;
           const x = line.pts[i][0] + (line.pts[i + 1][0] - line.pts[i][0]) * f, z = line.pts[i][1] + (line.pts[i + 1][1] - line.pts[i][1]) * f;
-          const exact = roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(vertex))]);
+          const road = roads[Math.min(roads.length - 1, Math.floor(vertex))];
+          const exact = connector ? capitolTunnelFloorAt(x, z) ?? roadHeight(x, z, road) : roadHeight(x, z, road);
           const got = inner.heightAt(lane, s, x, z);
           samples++;
           if ((exact === null) !== (got === null)) mismatched++;

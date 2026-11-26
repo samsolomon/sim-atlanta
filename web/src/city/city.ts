@@ -1,3 +1,4 @@
+import { capitolTunnelGround, capitolTunnelSlots } from '../terrain/capitol-tunnel';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
 import { mountStationFragments } from './north-seam-neighborhood';
@@ -277,13 +278,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   applyRampDecks(vd);
   // The downtown edge of the Capitol Gateway lid draws its streets on the lid.
   applyLids(vd);
-  let grid: GroundGrid | undefined;
+  let grid: GroundGrid | undefined, groundBytes: ArrayBuffer | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
     try {
       const [spec, bytes] = await Promise.all([
         asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
         asset('ground.i16').then(r => r.arrayBuffer()),
       ]);
+      groundBytes = bytes;
       grid = new GroundGrid(spec, bytes);
     } catch {
       options.signal?.throwIfAborted();
@@ -341,6 +343,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     })();
   }
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
+  // With the south band, which draws the Capitol tunnel, downtown's edge of its north-east
+  // portals is cut into the bank too. Downtown alone (board=downtown, or no square board) keeps
+  // its ground and no tunnel cut.
+  if (mosaic && grid && groundBytes) grid = new GroundGrid(grid.manifest, capitolTunnelGround(grid.manifest, groundBytes));
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -628,7 +634,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])], deferFarBoxes: true });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;

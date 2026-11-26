@@ -1,6 +1,7 @@
 import lids from '../../../pipeline/prototypes/connector-footprint/lids.json';
 import type { P2 } from '../vignette/geom';
 import type { TerrainCity, TransportRun } from './transport-data';
+import { matchRibbon } from './connector-corridor';
 
 /**
  * Freeway lids whose top is the board (lids.py). The 2019 classifier labels the
@@ -55,9 +56,20 @@ function splitAtLids(pts: P2[]): { pts: P2[]; lid: boolean }[] {
   return pieces;
 }
 
-/** Bridge-tagged roads that lie wholly on a lid are drawn on the board (south band). */
+/** Bridge-tagged roads that lie wholly on a lid are drawn on the board (south band). The
+ * freeway under the lid is a tunnel, not a ground road on the lid top: its board record is
+ * flagged so nothing samples the lid for it (capitol-tunnel.ts draws the mouths). */
 export function lidRoads<T extends TerrainCity>(city: T): T {
-  return { ...city, roads: city.roads.map(road => road.bridge && road.pts.every(p => onLid(p)) ? { ...road, bridge: false } : road) };
+  return { ...city, roads: city.roads.map(road => {
+    if (road.bridge && road.pts.every(p => onLid(p))) return { ...road, bridge: false };
+    if (road.cls === 'motorway' && !road.tunnel && underLid(road)) return { ...road, tunnel: true };
+    return road;
+  }) };
+}
+/** A motorway record on a covered Connector way (OSM covered=yes, connector-corridor's tunnel
+ * ribbons): the freeway under the lid. */
+function underLid(road: { pts: P2[]; sub?: string | null }) {
+  return road.pts.length > 1 && !!matchRibbon(road.pts[0], road.pts[1], road.sub === 'link', 'tunnel');
 }
 
 /** Baked bridge runs (downtown vignette.json) are cut at a lid outline; the

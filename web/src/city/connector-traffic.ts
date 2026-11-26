@@ -1,3 +1,4 @@
+import { capitolTunnelFloorAt } from '../terrain/capitol-tunnel';
 import { onStudyTread, usesExit250 } from '../../../pipeline/prototypes/highway-four/contact';
 import { connectorTrafficRoutes, type TrafficLane } from './connector-traffic-routes';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
@@ -38,7 +39,11 @@ export class ConnectorTraffic extends RoadTraffic {
     // A joined board can be L-shaped. Resolve each axle against the board under it;
     // the bounding rectangle alone includes empty space outside the diorama.
     const roadHeight: ConnectorBoard['roadHeight'] = (x, z, run) => {
-      if (run.tunnel) return null; // the complete directed interval is covered
+      // At a Capitol Gateway mouth the board is cut away from the apron in: cars drive on the
+      // tube's floor there, stay in view a few lengths in, then vanish (covered).
+      const mouth = capitolTunnelFloorAt(x, z);
+      if (mouth !== null) return mouth;
+      if (run.tunnel) return null;
       for (const board of boards) {
         const b = board.city.bounds;
         if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ)

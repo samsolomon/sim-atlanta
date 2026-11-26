@@ -1,3 +1,4 @@
+import { capitolTunnelGround } from './capitol-tunnel';
 import { northAvenue } from './north-ave';
 import { readFileSync } from 'node:fs';
 import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
@@ -15,7 +16,11 @@ function file(id: Board, name: string) {
   const path = id === 'downtown' ? 'downtown-ground' : id === 'king' ? 'king-memorial/ground' : id === 'auburn' ? 'sweet-auburn/ground' : 'square-board/' + id;
   return readFileSync(new URL(path + '/' + name, source));
 }
-const grid = (id: Board) => new GroundGrid(JSON.parse(file(id, 'ground.json').toString()), Uint8Array.from(file(id, 'ground.i16')).buffer);
+// Downtown carries the Capitol tunnel's north-east portals, as City's own grid does.
+const grid = (id: Board) => {
+  const manifest = JSON.parse(file(id, 'ground.json').toString()), bytes = Uint8Array.from(file(id, 'ground.i16')).buffer;
+  return new GroundGrid(manifest, id === 'downtown' ? capitolTunnelGround(manifest, bytes) : bytes);
+};
 afterEach(() => vi.unstubAllGlobals());
 
 /**
