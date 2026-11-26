@@ -4,6 +4,13 @@ import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
 export const northStudyBounds = bounds.r16;
+/**
+ * The longest orbit at which having R16 in view counts as looking north. Both full-board frames
+ * stand farther back, so an ordinary visit leaves R16 unloaded until the camera comes in
+ * northward, a destination lies inside it, or Show full board asks for it.
+ */
+export const northLookM = 5000;
+export const looksNorth = (orbitM: number, inView: () => boolean) => orbitM <= northLookM && inView();
 
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
@@ -69,6 +76,10 @@ export class SquareMosaic {
   get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
   get bounds(): Rect { return { ...bounds['south-band'], minZ: this.northEdge }; }
+  /** The north edge a full-board view frames: R16 counts only when asked for or already mounted. */
+  framedNorthEdge(includeNorth = false) {
+    return !this.midtown || includeNorth || this.areas.has('r16') ? this.northEdge : bounds['brookwood-station'].minZ;
+  }
   private fullBoard = false;
   private fullNorth = false;
   readonly areas = new Map<Board, Area>();

@@ -1143,7 +1143,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`), northVisible);
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`),
+      () => !!square?.looksNorth(camera.position.distanceTo(controls.target), northVisible));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1604,11 +1605,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       approachEast(1400, 0);
       approachNorth(1400, 0);
     };
-    const frameFullBoard = () => {
+    const frameFullBoard = (includeNorth = false) => {
       const aspect = Math.max(.25, camera.aspect);
-      const depth = 1100 - mosaic.northEdge;
+      const edge = mosaic.framedNorthEdge(includeNorth);
+      const depth = 1100 - edge;
       const distance = midtown ? Math.max(depth * 2.95, 11700 / aspect) : Math.max(9200, 9600 / aspect);
-      const centerZ = (1100 + mosaic.northEdge) / 2;
+      const centerZ = (1100 + edge) / 2;
       mosaic.remember(400, centerZ);
       setView(-15, 35, Math.min(controls.maxDistance, distance), 400, centerZ);
     };
@@ -1620,7 +1622,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       manualCamera();
       glideTo = null;
       loadFullBoard();
-      frameFullBoard();
+      frameFullBoard(true);
     };
   }
 
