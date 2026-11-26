@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ArterialTraffic } from './arterial-traffic';
 import { ConnectorTraffic } from './connector-traffic';
 import { loadArterials } from './arterials';
-import type { RoadTraffic } from './road-traffic';
+import { LaneHeightStore, type RoadTraffic } from './road-traffic';
 
 const data = resolve(__dirname, '../../public/data/scene/downtown');
 const staged = ['vignette.json', 'arterials.json', 'traffic.json'].every(f => existsSync(resolve(data, f)));
@@ -175,5 +175,30 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       expect(mismatched).toBe(0);
       expect(worst).toBeLessThan(.02);
     }
+  });
+});
+
+describe.skipIf(!staged)('road heights shared across rebuilds and pre-filled in spare frames', () => {
+  const vd = staged ? J('vignette.json') : null!;
+  const hourly = staged ? J('traffic.json').hourly : null!;
+  // A slope with a 3 m step: steps across it must sample exactly, as at a deck edge.
+  const roadHeight = (x: number, z: number) => 0.031 * x - 0.017 * z + 4 + (x > 150 ? 3 : 0);
+  const make = (heightStore?: LaneHeightStore) => new ConnectorTraffic({ city: vd, hourly, roadHeight, quality: 'low', heightStore });
+  const evening = (layer: RoadTraffic) => {
+    const start = Date.parse('2026-11-20T16:30:00-05:00'), out: number[][][] = [];
+    for (let k = 0; k < 20; k++) { paths(layer).step(start + k * 47_300, .2); out.push(cars(layer)); }
+    return out;
+  };
+  it('poses the same cars after a pre-fill and after a rebuild that reuses the heights', () => {
+    const fresh = evening(make());
+    const store = new LaneHeightStore();
+    const filled = make(store);
+    let rounds = 0;
+    while (filled.prefill(5000) && rounds++ < 10_000) { /* fill every step */ }
+    const prefilled = evening(filled);
+    store.generation++;
+    const rebuilt = evening(make(store));
+    for (let k = 0; k < fresh.length; k++) { expectSame(prefilled[k], fresh[k]); expectSame(rebuilt[k], fresh[k]); }
+    expect(fresh.flat().length).toBeGreaterThan(100);
   });
 });

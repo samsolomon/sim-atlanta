@@ -79,7 +79,66 @@ const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as cons
 const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
 type Kind = typeof models[number];
 type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
+/** A lane's cached road heights (see LaneState), shared through a LaneHeightStore. */
+interface LaneHeights { heights: Float64Array; runs: Int32Array; vertexHeights: Float64Array; smooth: Uint8Array }
+interface StoredLane extends LaneHeights { roads: VRoad[]; minX: number; maxX: number; minZ: number; maxZ: number; claimed: number }
+type Rect = { minX: number; maxX: number; minZ: number; maxZ: number };
+
+/**
+ * Cached road heights that outlive a traffic layer. City rebuilds its traffic layers whenever an
+ * area mounts, and each rebuild used to start with empty caches, so every lane paid its first-use
+ * samples again (8 per 2 m step). A rebuilt lane with the same geometry and the same road objects
+ * takes back the arrays its predecessor filled. When an area mounts, only lanes near it are cleared
+ * (`invalidate`); the rest keep their heights, which the new ground cannot have changed.
+ */
+/** Road samples City spends per spare frame pre-filling height steps (about 0.1 ms on the Studio,
+ * a few ms at most on a phone), across all traffic layers. */
+export const TRAFFIC_PREFILL_SAMPLES = 24;
+
+export class LaneHeightStore {
+  private readonly lanes = new Map<string, StoredLane[]>();
+  /** Bumped by City at each area mount; lanes no layer has claimed for two generations are dropped. */
+  generation = 0;
+
+  /** `scope` names the layer: two layers can sample the same road through different height functions. */
+  claim(course: TrafficCourse, n: number, scope: string): LaneHeights {
+    const { pts } = course.line;
+    let h = 0x811c9dc5 ^ pts.length;
+    for (const [x, z] of pts) h = Math.imul(Math.imul(h ^ Math.round(x * 1000), 0x01000193) ^ Math.round(z * 1000), 0x01000193);
+    const key = `${scope}:${h >>> 0}:${course.line.length.toFixed(3)}`;
+    const list = this.lanes.get(key) ?? [];
+    const found = list.find(e => e.heights.length === n && e.vertexHeights.length === pts.length &&
+      e.roads.length === course.roads.length && e.roads.every((r, i) => r === course.roads[i]));
+    if (found) { found.claimed = this.generation; return found; }
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const [x, z] of pts) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); }
+    const entry: StoredLane = { roads: course.roads, minX, maxX, minZ, maxZ, claimed: this.generation,
+      heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n),
+      vertexHeights: new Float64Array(pts.length).fill(NaN), smooth: new Uint8Array(n) };
+    list.push(entry);
+    this.lanes.set(key, list);
+    return entry;
+  }
+
+  /** Clear lanes within `marginM` of any rect (all lanes without rects), and drop long-unclaimed ones. */
+  invalidate(rects?: readonly Rect[], marginM = 150) {
+    for (const [key, list] of this.lanes) {
+      const kept = list.filter(e => e.claimed >= this.generation - 1);
+      for (const e of kept) {
+        if (rects && !rects.some(r => e.maxX >= r.minX - marginM && e.minX <= r.maxX + marginM &&
+          e.maxZ >= r.minZ - marginM && e.minZ <= r.maxZ + marginM)) continue;
+        e.heights.fill(NaN); e.vertexHeights.fill(NaN); e.smooth.fill(0);
+      }
+      if (kept.length) this.lanes.set(key, kept); else this.lanes.delete(key);
+    }
+  }
+
+  get size() { let n = 0; for (const list of this.lanes.values()) n += list.length; return n; }
+}
+
 export interface RoadTrafficOptions {
+  /** Road heights shared across rebuilt layers (City passes one store to every layer). */
+  heightStore?: LaneHeightStore;
   city: TerrainCity;
   quality: 'low' | 'high';
   /** Give an eligible movement one existing slot when rounding omitted its course. */
@@ -351,8 +410,9 @@ export class RoadTraffic {
         timed: !course.closed && (!!course.signals?.length || !!queue),
         period: course.line.length + offstage(course),
         active: [], brakes: [], trips: slots.map(() => ({ start: 0, length: 0 })),
-        heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
-        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
+        corner: corners(course.line, n),
+        ...(this.opts.heightStore?.claim(course, n, this.group.name) ?? { heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n),
+          vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n) }),
       }];
     });
   }
@@ -371,20 +431,51 @@ export class RoadTraffic {
       const a = this.profile(lane, i);
       return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
-    let smooth = lane.smooth[i];
-    if (!smooth) {
-      // First use of this step: keep interpolating only if the drawn road agrees at its eighths,
-      // which catches deck edges, steps in the surface and terrain folds.
-      smooth = 1;
-      for (const t of CHECKS) {
-        const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
-        const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
-        if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
-      }
-      lane.smooth[i] = smooth;
-    }
+    const smooth = lane.smooth[i] || this.testStep(lane, i, s0, span);
     return smooth === 1 ? this.interpolate(lane, i, s0, span, s) : this.exactHeight(lane, s, x, z);
   }
+
+  /** First use of a step: keep interpolating only if the drawn road agrees at its eighths,
+   * which catches deck edges, steps in the surface and terrain folds. */
+  private testStep(lane: LaneState, i: number, s0: number, span: number) {
+    let smooth = 1;
+    for (const t of CHECKS) {
+      const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
+      const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
+      if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
+    }
+    return lane.smooth[i] = smooth;
+  }
+
+  private prefillLane = 0;
+  private prefillStep = 0;
+  /**
+   * Fill untested height steps ahead of the cars, stopping once `maxSamples` road samples are spent
+   * (City calls it with a small budget while no area is building). It computes exactly what a car's
+   * first visit would, so poses don't change; it only moves that sampling out of busy frames.
+   * Returns false once every lane is filled.
+   */
+  prefill(maxSamples: number) {
+    const started = performance.now(), start = this.samples;
+    const more = this.fill(start + maxSamples);
+    perf.traffic(performance.now() - started, 0, this.samples - start, 0);
+    return more;
+  }
+
+  private fill(until: number) {
+    while (this.prefillLane < this.lanes.length) {
+      if (this.samples >= until) return true;
+      const lane = this.lanes[this.prefillLane], length = lane.course.line.length;
+      const i = this.prefillStep, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+      if (!(span > 0)) { this.prefillLane++; this.prefillStep = 0; continue; }
+      this.prefillStep++;
+      if (!lane.smooth[i]) this.testStep(lane, i, s0, span);
+    }
+    return false;
+  }
+
+  /** Start filling again from the first lane (after caches were cleared). */
+  restartPrefill() { this.prefillLane = this.prefillStep = 0; }
 
   /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
   private interpolate(lane: LaneState, i: number, s0: number, span: number, s: number): number | null {

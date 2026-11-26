@@ -66,7 +66,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, wheelPlaneOff: false, sampleWeightOff: false, clumpScale: null, shadowGapOld: false, farShadowM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, wheelPlaneOff: false, sampleWeightOff: false, clumpScale: null, heightStoreOff: false, shadowGapOld: false, farShadowM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -90,6 +90,8 @@ export const perfOverrides = (() => {
     sampleWeightOff: params.get('sampleweight') === '1',
     /** &clumpscale=1: Low's leaf-clump size multiplier (1.35 since #682), for a device fill-rate A/B. */
     clumpScale: Number(params.get('clumpscale')) > 0 ? Number(params.get('clumpscale')) : null,
+    /** &heightstore=off: traffic layers keep their own height caches and every area mount clears all of them (before 2026-11-26). */
+    heightStoreOff: params.get('heightstore') === 'off',
   };
 })();
 

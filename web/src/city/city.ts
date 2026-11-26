@@ -59,6 +59,7 @@ import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
+import { LaneHeightStore, TRAFFIC_PREFILL_SAMPLES } from './road-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
@@ -835,18 +836,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   (buses.mesh.material as THREE.Material).clippingPlanes = edges;
   scene.add(buses.mesh);
   const hourly = trafficData?.hourly;
+  /** Road heights every traffic layer has sampled, kept across the rebuilds an area mount causes. */
+  const trafficHeights = perfOverrides.heightStoreOff ? undefined : new LaneHeightStore();
   const trafficOptions = terrain && Array.isArray(hourly?.weekday) && Array.isArray(hourly?.weekend)
-    ? { city: vd, quality, hourly, clippingPlanes: edges,
+    ? { city: vd, quality, hourly, clippingPlanes: edges, heightStore: trafficHeights,
         // A model car never drives through a live bus or a drawn streetcar: it skips that frame.
         busOccupies: (x: number, y: number, z: number, lengthM: number, headingRad: number) =>
           buses.occupies(x, y, z, lengthM, headingRad) || streetcarCovers(streetcar, x, y, z, lengthM, headingRad),
         roadHeight: cityRoadHeight(vd, terrain.groundAt, transport?.deckAt) }
     : undefined;
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
-  /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
-  let trafficHeightsStale = false;
-  function extendConnectorTraffic() {
-    trafficHeightsStale = true;
+  /** Set when an area mounts: ground and joins may change near it, so cached car heights there
+   * refresh next frame. 'all' when the mounted area's extent is not known. */
+  let trafficHeightsStale: { minX: number; maxX: number; minZ: number; maxZ: number }[] | 'all' | null = null;
+  function extendConnectorTraffic(changed?: readonly { minX: number; maxX: number; minZ: number; maxZ: number }[]) {
+    if (trafficHeights) trafficHeights.generation++;
+    trafficHeightsStale = !changed || trafficHeightsStale === 'all' ? 'all' : [...(trafficHeightsStale ?? []), ...changed];
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
     if (east) clippingPlanes[1].constant = east.bounds.maxX;
@@ -1119,7 +1124,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
-      extendConnectorTraffic();
+      extendConnectorTraffic([...added.values()].map(a => a.bounds));
       void extendMidtownArterials(added.keys());
       const first = added.keys().next().value!;
       areaResult(first === 'north-band' ? 'north' : first === 'south-band' ? 'south' : first, null);
@@ -2049,14 +2054,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
     if (trafficHeightsStale) {
-      trafficHeightsStale = false;
-      for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
+      if (trafficHeights) trafficHeights.invalidate(trafficHeightsStale === 'all' ? undefined : trafficHeightsStale);
+      else for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
+      trafficHeightsStale = null;
+      for (const layer of [traffic, arterials, midtownArterials]) layer?.restartPrefill();
     }
     camera.updateMatrixWorld();
     trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     traffic?.update(sceneTime, atm.dark, trafficView);
     arterials?.update(sceneTime, atm.dark, trafficView);
     midtownArterials?.update(sceneTime, atm.dark, trafficView);
+    // Spare frames fill untested road-height steps, so cars' first visits stop costing samples.
+    if (!sliceInput.building && !sliceInput.dragging) {
+      for (const layer of [traffic, arterials, midtownArterials]) if (layer?.prefill(TRAFFIC_PREFILL_SAMPLES)) break;
+    }
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
