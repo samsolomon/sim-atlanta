@@ -1,4 +1,5 @@
 // Stations refer to a continuous directed carrier. Elevations use the caller's scene datum.
+import { runSync, type Build } from '../../../web/src/core/slice';
 import { Builder, Line, type P2 } from '../../../web/src/vignette/geom';
 export interface RoadWall {
   side: 'left'|'right';
@@ -10,11 +11,16 @@ export interface RoadWall {
 }
 
 export function drawRoadWall(builder:Builder, profile:RoadWall) {
+  runSync(drawRoadWallSteps(builder,profile));
+}
+/** drawRoadWall as a build that yields every few dozen sections (same facets, same order). */
+export function* drawRoadWallSteps(builder:Builder, profile:RoadWall): Build<void> {
   const [start,end]=profile.bounds;
   const stations=new Set([start,end,...profile.breaks,...profile.interruptions.flatMap(g=>[g.from,g.to])]);
   for(let s=Math.ceil(start/2)*2;s<end;s+=2)stations.add(s);
   const ordered=[...stations].filter(s=>s>=start&&s<=end).sort((a,b)=>a-b);
   for(let i=1;i<ordered.length;i++){
+    if(i%48===0) yield 'freeway sides';
     const lo=ordered[i-1],hi=ordered[i],mid=(lo+hi)/2;
     if(hi-lo<1e-7 || profile.interruptions.some(g=>mid>=g.from&&mid<g.to))continue;
     const a=profile.section(lo,profile.side), b=profile.section(hi,profile.side);

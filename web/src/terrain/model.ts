@@ -339,7 +339,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const openings = terrainOpenings(grid, options);
-  const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
+  const mesh = yield* GroundSurface.steps(grid, options.quality, openings, options.join, options.surface);
   // The area's closures keep `options`; don't let them keep the prebuilt surface's arrays too.
   if (options.surface) options = { ...options, surface: undefined };
   yield 'ground surface';

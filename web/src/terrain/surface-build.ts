@@ -290,7 +290,10 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             // Never bridge a void with a coarse face. Omit the entire invalid source cell.
             if (!Number.isFinite(heights[a] + heights[a + 1] + heights[b] + heights[b + 1])) continue;
             tri(a, b, a + 1);
+            // A block crowded with footprints costs a step per triangle, not per block.
+            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
             tri(b, b + 1, a + 1);
+            if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
           }
         }
         continue;
@@ -306,9 +309,13 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       if (bz && detail[k - blockCols]) ring.push(nw + 1);
       if (ring.length === 4) {
         tri(nw, sw, ne);
+        if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
         tri(sw, se, ne);
       } else {
-        for (let i = 0; i < ring.length; i++) tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
+        for (let i = 0; i < ring.length; i++) {
+          tri(nw + cols + 1, ring[i], ring[(i + 1) % ring.length]);
+          if (work > WORK_PER_STEP) { yield 'ground rows'; work = 0; }
+        }
       }
     }
     starts[detail.length] = indices.length;

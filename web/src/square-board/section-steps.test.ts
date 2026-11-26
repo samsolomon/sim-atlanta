@@ -56,7 +56,8 @@ async function blocksOf(quality: TerrainQuality) {
   return out;
 }
 
-const LIMIT_MS = 25;
+/** At 1x. A step runs inside one frame, so this is about 200 ms on a phone-class CPU at 6x. */
+const LIMIT_MS = 32;
 
 it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', data))).each(['low', 'high'] as const)(`mounting the Station and R16 never holds the main thread over ${LIMIT_MS} ms at 1x (%s)`, async quality => {
   const ctx: object = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
@@ -66,11 +67,12 @@ it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', dat
   });
   try {
     // The fastest of up to five builds per block: a slow block stays slow, a busy machine's does not.
+    // The limit scales with the best reference time seen, so a busy moment cannot loosen it.
     const best = new Map<string, number>();
-    let slow = 1;
+    let slow = Infinity;
     const over = () => [...best].filter(([, ms]) => ms > LIMIT_MS * slow);
     for (let run = 0; run < 5 && (run < 2 || over().length); run++) {
-      slow = Math.max(slow, slowness());
+      slow = Math.min(slow, slowness());
       for (const [label, ms] of await blocksOf(quality)) best.set(label, Math.min(best.get(label) ?? Infinity, ms));
     }
     expect(best.size).toBeGreaterThan(200);

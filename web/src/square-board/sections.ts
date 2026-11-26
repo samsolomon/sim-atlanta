@@ -4,7 +4,7 @@ import { golfFlags, teeMarkers } from '../terrain/golf';
 import { northeastTrailStudy } from '../city/northeast-trail-study';
 import { eastPortalBank } from '../../../pipeline/prototypes/i85-openings/rear-bank';
 import { matchRibbon } from '../terrain/connector-corridor';
-import { rampStudy } from '../city/i85-ramp-study';
+import { rampStudySteps } from '../city/i85-ramp-study';
 import { northFreeway } from '../../../pipeline/prototypes/north-freeway/carrier';
 import { sharedIds, joinedPaint } from '../city/north-seam-neighborhood';
 import { mountNorthRowSteps, type NorthRowMount } from '../city/north-row-mount';
@@ -167,7 +167,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return new GroundGrid(manifest, terrain);
 }
 
-async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
+async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, budget: (() => number) | null, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band', id === 'r16' || id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
@@ -175,7 +175,8 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
-  const ramp = id === 'r16' ? rampStudy(grid, quality, joins(id)) : undefined;
+  const study = id === 'r16' ? rampStudySteps(grid, quality, joins(id)) : undefined;
+  const ramp = study && (budget ? await runBudgeted(study, { budgetMs: budget, stats: sliceStats }) : runSync(study));
   // The orbit and the lower road still use the original exposed surface.
   const drawnGrid=ramp ? eastPortalBank(grid) : grid;
   const trail = ramp && northeastTrailStudy(grid.manifest.bounds, ramp.originalHeight);
@@ -187,8 +188,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
+  const budget = sliceBudget(quality);
   const [patches] = await Promise.all([
-    Promise.all(ids.map(id => readPatch(id, quality, signal, options?.dataRoot, options?.brookwood))),
+    Promise.all(ids.map(id => readPatch(id, quality, signal, budget, options?.dataRoot, options?.brookwood))),
     // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).
     Promise.resolve().then(() => loadPlaces((options?.dataRoot ?? '/data') + '/ga/neighborhoods.json')).catch(() => undefined),
   ]);
@@ -203,7 +205,6 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
   // low, all typed-array stores, in a heap snapshot diff).
   const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
-  const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
   // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {

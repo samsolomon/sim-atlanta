@@ -36,9 +36,17 @@ export class GroundSurface {
   /** Only the far mesh is kept from a prebuilt surface: a carve replaces the near arrays. */
   private prebuiltFar?: BuiltSurface['far'];
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
-    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface) {
+    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface, deferred = false) {
     if (built) this.adopt(built);
-    else this.build();
+    else if (!deferred) this.build();
+  }
+
+  /** The constructor as a build that yields while it first tessellates (sliced section builds). */
+  static *steps(grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [],
+    join?: TerrainJoins, built?: BuiltSurface): Build<GroundSurface> {
+    const surface = new GroundSurface(grid, quality, openings, join, built, true);
+    if (!built) yield* surface.buildSteps();
+    return surface;
   }
 
   /** Take a mesh built off the main thread; a later carve rebuilds here as usual. */

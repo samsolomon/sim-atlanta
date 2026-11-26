@@ -7,7 +7,7 @@ import { Group } from 'three';
 import type { Build } from '../core/slice';
 import type { TerrainQuality } from '../terrain/surface';
 import type { TrafficArea } from '../square-board/sections';
-import { freewaySides } from './i85-ramp-study';
+import { freewaySidesSteps } from './i85-ramp-study';
 import { mountSeamBuildingsSteps } from './north-seam-neighborhood';
 import { norcrossNorthRails } from './norcross-north-study';
 import { extensions, studyRailsSteps } from './north-profile-study';
@@ -19,7 +19,7 @@ export type NorthRowMount = ReturnType<typeof mountNorthRowSteps> extends Build<
 export function* mountNorthRowSteps(north: TrafficArea, station: TrafficArea, quality: TerrainQuality) {
   const seam = yield* mountSeamBuildingsSteps(north, station, quality);
   const structures = new Group();
-  const sides = freewaySides((x, z) => north.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
+  const sides = yield* freewaySidesSteps((x, z) => north.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
   yield 'freeway sides';
   const rails = yield* studyRailsSteps(north);
   const supports = maysonSupports(extensions, (x, z) => {
