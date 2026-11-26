@@ -23,6 +23,7 @@ import { cityRoadHeight } from '../city/road-height';
 import { Line, segDist } from '../vignette/geom';
 import { roadWidth } from './transport-data';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
+import { applyRampDecks } from './ramp-decks';
 
 const root = new URL('../../../pipeline/prototypes/', import.meta.url);
 const staged = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
@@ -220,7 +221,9 @@ it('keeps the Ellis road top and its outgoing grade continuous across the east l
 // lane every 0.5 m (four points per 2 m height step) through cityRoadHeight. Tolerance 0.
 it('finds the same deck heights with the tread index as with the full scan, on every board', () => {
   const boards = BOARDS.map(id => {
-    const { grid, city } = board(id), zero = grid.manifest.vertical.sceneZeroNavd88M;
+    // City applies the surveyed Connector ramp decks to downtown before building its transport.
+    const { grid, city: source } = board(id), zero = grid.manifest.vertical.sceneZeroNavd88M;
+    const city = id === 'downtown' ? applyRampDecks(source) : source;
     const surface = new GroundSurface(grid, 'low'), bare = surface.sampleScene.bind(surface);
     const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
     return { id, city, groundAt: approach.groundAt, transport: createSurfaceTransport(city, grid, approach.groundAt) };
