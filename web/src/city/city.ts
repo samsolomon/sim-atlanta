@@ -1,12 +1,9 @@
-import { freewaySides } from './i85-ramp-study';
+import { mountNorthRow } from './north-row-mount';
 import { joinGroundMaps } from './north-seam-texture';
 import { rowJoinNormals } from './north-seam-ground';
-import { mountSeamBuildings, mountStationFragments } from './north-seam-neighborhood';
+import { mountStationFragments } from './north-seam-neighborhood';
 import type { TrafficArea as SeamArea } from '../square-board/sections';
-import { norcrossNorthRails, northFreightMain } from './norcross-north-study';
-import { extensions, studyRails } from './north-profile-study';
-import { maysonSupports } from './mayson-supports';
-import { mountMayson } from './mayson-study';
+import { northFreightMain } from './norcross-north-study';
 /**
  * City: downtown Atlanta as a model-railway diorama, in the same style as the East Portal
  * vignette (ink lines, colour grade, tilt-shift) and built by the same engine (`vignette/world`).
@@ -1085,21 +1082,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const northernRow = added.get('r16');
       if (northernRow) {
         const station = mosaic!.areas.get('brookwood-station') as SeamArea;
-        const disposeBuildings = mountSeamBuildings(northernRow, station, quality);
+        const { structures, rails, freightRailhead, disposeBuildings } = mountNorthRow(northernRow, station, quality);
         const restoreMaps = joinGroundMaps(
           northernRow.board.material.map as THREE.CanvasTexture, station.board.material.map as THREE.CanvasTexture);
-        const structures = new THREE.Group();
-        const sides = freewaySides((x, z) => northernRow.northTread?.(x, z) ?? station.northTread?.(x, z) ?? null);
-        const rails = studyRails(northernRow);
-        const supports = maysonSupports(extensions, (x, z) => {
-          const y = northernRow.terrainAt(x, z);
-          if (y === null) throw Error('Missing terrain under Mayson support');
-          return y;
-        });
-        const norcross = norcrossNorthRails(northernRow.groundAt, northernRow.grid.manifest.vertical.sceneZeroNavd88M);
-        structures.add(sides, supports, mountMayson(), rails, norcross.mesh);
-        northernRow.group.add(structures);
-        preparedBrookwood?.mountNorthFreight(norcross.freightRailhead);
+        preparedBrookwood?.mountNorthFreight(freightRailhead);
         northLine?.extend(rails);
 
         const disposeArea = northernRow.dispose.bind(northernRow);
