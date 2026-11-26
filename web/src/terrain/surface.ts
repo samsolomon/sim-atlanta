@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { runSync, type Build } from '../core/slice';
 import { type OpenSlot } from './openings';
+import { bakeStats, heightsPrint, Read, yieldPrint, type BakedArrays, type GroundBake } from './ground-bake';
 import { farSurface, farSurfaceSteps, typedSteps, vertexNormalsSteps, nodeHeights, tessellateSteps, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
@@ -36,17 +37,50 @@ export class GroundSurface {
   /** Only the far mesh is kept from a prebuilt surface: a carve replaces the near arrays. */
   private prebuiltFar?: BuiltSurface['far'];
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
-    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface, deferred = false) {
-    if (built) this.adopt(built);
+    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins, built?: BuiltSurface, deferred = false,
+    private readonly bake: GroundBake = {}) {
+    if (built) { this.adopt(built); this.bake = {}; }
     else if (!deferred) this.build();
   }
 
   /** The constructor as a build that yields while it first tessellates (sliced section builds). */
   static *steps(grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [],
-    join?: TerrainJoins, built?: BuiltSurface): Build<GroundSurface> {
-    const surface = new GroundSurface(grid, quality, openings, join, built, true);
+    join?: TerrainJoins, built?: BuiltSurface, bake?: GroundBake): Build<GroundSurface> {
+    const surface = new GroundSurface(grid, quality, openings, join, built, true, built ? {} : bake);
     if (!built) yield* surface.buildSteps();
     return surface;
+  }
+
+  /** A copy of the surface's arrays as they stand (the bake script stores these). */
+  private arraysNow(): BakedArrays {
+    const g = this.geometry;
+    return {
+      pos: (g.getAttribute('position').array as Float32Array).slice(), uv: (g.getAttribute('uv').array as Float32Array).slice(),
+      normal: (g.getAttribute('normal').array as Float32Array).slice(), index: (g.index!.array as Uint32Array | Uint16Array).slice(),
+      starts: this.starts.slice(), blockCols: this.blockCols,
+    };
+  }
+
+  /**
+   * The mount is over. A replay that skipped re-cuts the mount never finished (fewer carves than
+   * baked) builds the surface here, so it is never left stale.
+   */
+  endBake() {
+    const replay = this.bake.replay;
+    if (replay && !replay.failed && replay.builds < replay.baked.stages.length + 1) this.recover('fewer carves than baked');
+  }
+
+  /** A replayed bake cannot answer: build the surface here, now, from the yields carved so far. */
+  private recover(reason: string) {
+    const replay = this.bake.replay!;
+    const skipped = replay.stale;
+    replay.fail(reason);
+    if (!skipped) return;
+    // Build the surface the skipped re-cut stood for: the yields carved as of that stage. A carve
+    // in progress (this.yields already holds its own) then builds on it as usual.
+    const all = this.yields;
+    this.yields = all.slice(0, replay.enteredYields);
+    try { runSync(this.tessellate()); } finally { this.yields = all; }
   }
 
   /** Take a mesh built off the main thread; a later carve rebuilds here as usual. */
@@ -95,6 +129,7 @@ export class GroundSurface {
    * frees what only `shown` still holds, once nothing draws it.
    */
   hold() {
+    if (this.bake.replay?.stale) this.recover('held while stale');
     const shown = new THREE.BufferGeometry();
     for (const [name, attribute] of Object.entries(this.geometry.attributes)) shown.setAttribute(name, attribute);
     shown.setIndex(this.geometry.index);
@@ -121,6 +156,46 @@ export class GroundSurface {
   private build() { runSync(this.buildSteps()); }
 
   private *buildSteps() {
+    const { record, replay } = this.bake;
+    if (replay && !replay.failed && ++replay.builds >= 2) {
+      // A re-cut during the mount: check the yields, then take its stage instead of building.
+      const stage = replay.stage();
+      if (stage) {
+        const why = !replay.consumed ? 'tape not read through'
+          : this.yields.length !== stage.yields || yieldPrint(this.yields) !== stage.yieldPrint ? 'different yields' : null;
+        // The yield probe can itself fail the replay (a floor that samples the stale surface); then
+        // this re-cut builds here like any other.
+        if (!why && !replay.failed) {
+          replay.enter(stage);
+          if (stage.surface) this.adoptBaked(stage.surface);
+          if (stage === replay.baked.stages[replay.baked.stages.length - 1]) bakeStats.adopted++;
+          return;
+        }
+        if (why) replay.fail(why);
+      }
+    }
+    if (record) record.inBuild = true;
+    try { yield* this.tessellate(); } finally {
+      // Printed while still in the build: a floor that samples the surface must not reach the tape.
+      if (record) { const print = yieldPrint(this.yields); record.inBuild = false; record.built(() => this.arraysNow(), this.yields.length, print, heightsPrint(this.heights)); }
+    }
+    // The first build: a bake recorded on other ground (a regraded grid, or the raw grid when
+    // the grading module failed to load) is not used at all.
+    if (replay && !replay.failed && replay.builds === 1 && heightsPrint(this.heights) !== replay.baked.heights) replay.fail('different ground');
+  }
+
+  /** A baked surface (already shaded), as its re-cut would have left it. */
+  private adoptBaked(b: BakedArrays) {
+    this.starts = b.starts;
+    this.blockCols = b.blockCols;
+    this.geometry.boundingBox = this.geometry.boundingSphere = null;
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(b.pos, 3));
+    this.geometry.setAttribute('uv', new THREE.BufferAttribute(b.uv, 2));
+    this.geometry.setIndex(new THREE.BufferAttribute(b.index, 1));
+    this.geometry.setAttribute('normal', new THREE.BufferAttribute(b.normal, 3));
+  }
+
+  private *tessellate() {
     const spec = surfaceSpec(this.grid);
     if (!this.heights) {
       const { heights, minY } = nodeHeights(spec, (r, c) => this.grid.node(r, c));
@@ -220,6 +295,8 @@ export class GroundSurface {
   /** Draw-time patches such as light pools must follow the original triangles,
    * including voids and the low-quality terrain tessellation. */
   trianglesNear(x: number,z: number,radius:number, visit:(a:number,b:number,c:number)=>void) {
+    // Its callers read the vertices it names, which a skipped re-cut does not have.
+    if (this.bake.replay?.stale) this.recover('trianglesNear while stale');
     const {bounds,stepM}=this.grid.manifest, size=2*stepM;
     const index=this.geometry.index!;
     const rows=(this.starts.length-1)/this.blockCols;
@@ -232,6 +309,23 @@ export class GroundSurface {
 
   /** Drawn triangles whose block overlaps the box (see terrain/drape.ts). */
   trianglesIn(minX: number, maxX: number, minZ: number, maxZ: number,
+    visit: (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number) => void) {
+    const { record, replay } = this.bake;
+    if (replay?.stale) {
+      const out = replay.take(Read.TrianglesIn, [minX, maxX, minZ, maxZ]);
+      if (out) { for (let i = 0; i < out.length; i += 9) visit(out[i], out[i + 1], out[i + 2], out[i + 3], out[i + 4], out[i + 5], out[i + 6], out[i + 7], out[i + 8]); return; }
+      this.recover('trianglesIn read differs');
+    }
+    if (record && !record.inBuild && record.builds >= 2) {
+      const seen: number[] = [];
+      this.trianglesInNow(minX, maxX, minZ, maxZ, (...t) => { seen.push(...t); visit(...t); });
+      record.record(Read.TrianglesIn, [minX, maxX, minZ, maxZ], seen);
+      return;
+    }
+    this.trianglesInNow(minX, maxX, minZ, maxZ, visit);
+  }
+
+  private trianglesInNow(minX: number, maxX: number, minZ: number, maxZ: number,
     visit: (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number) => void) {
     const { bounds, stepM } = this.grid.manifest, size = 2 * stepM;
     const index = this.geometry.index!, p = this.geometry.getAttribute('position');
@@ -249,6 +343,18 @@ export class GroundSurface {
 
   /** Scene y on the actual drawn triangle, for placement at this quality. */
   sampleScene(x: number, z: number): number | null {
+    const { record, replay } = this.bake;
+    if (replay?.stale) {
+      const out = replay.take(Read.Sample, [x, z]);
+      if (out) return Number.isNaN(out[0]) ? null : out[0];
+      this.recover('sample differs');
+    }
+    const y = this.sampleNow(x, z);
+    if (record && !record.inBuild && record.builds >= 2) record.record(Read.Sample, [x, z], [y ?? NaN]);
+    return y;
+  }
+
+  private sampleNow(x: number, z: number): number | null {
     const { bounds, stepM, rows, cols } = this.grid.manifest;
     if (!(x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ)) return null;
     const u = (x - bounds.minX) / stepM / 2, v = (z - bounds.minZ) / stepM / 2;

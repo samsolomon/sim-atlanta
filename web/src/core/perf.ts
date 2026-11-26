@@ -13,7 +13,8 @@
  * mipmaps; attribute array lengths), not driver readings.
  */
 import type * as THREE from 'three';
-import { sliceInput } from './slice';
+import { sectionWorkMs, sliceInput } from './slice';
+import { bakeStats } from '../terrain/ground-bake';
 
 /** `scenery` is a terrain area's mixed scenery group until its builders tag buildings, trees and yards. */
 export type PerfCategory = 'terrain' | 'transport' | 'buildings' | 'trees' | 'vehicles' | 'landscape' | 'scenery' | 'other';
@@ -643,6 +644,10 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
     longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
     longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
     longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),
+    // Baked ground (terrain/ground-bake.ts): bakes adopted and fallbacks (with why), and each
+    // sliced section's main-thread build work in ms (its slices summed), for ?perf&bake=0 A/B runs.
+    groundBake: { adopted: bakeStats.adopted, fallbacks: bakeStats.fallbacks, reasons: bakeStats.reasons.slice(0, 8) },
+    sectionWorkMs: { ...sectionWorkMs },
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;

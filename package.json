@@ -2,7 +2,8 @@
   "name": "sim-atlanta",
   "private": true,
   "scripts": {
-    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places && pnpm data:city",
+    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places && pnpm data:city && pnpm data:bake",
+    "data:bake": "pnpm --filter web exec vitest run --config vite.bake.config.ts",
     "dev": "pnpm --filter web dev",
     "dev:worker": "pnpm --filter worker dev",
     "secrets:local": "umask 077 && printf 'MARTA_API_KEY=%s\\n' \"$(op read 'op://Personal/sim-atlanta-marta-api/credential')\" > worker/.dev.vars",

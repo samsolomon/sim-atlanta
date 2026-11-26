@@ -101,6 +101,14 @@ choose a tier yourself.
   Midtown and Brookwood rows to an older checkout. For a fresh checkout run the full
   `pnpm data` command before building or testing. City loads the r16 terrain as the
   camera approaches it or when a user chooses Show full board.
+- **Baked ground** ([design](docs/handoffs/studio-baked-ground.md)). `pnpm data:bake`, the last
+  step of `pnpm data`, records the ground surface work of the rows in `BAKED_AREAS`
+  (`web/src/terrain/ground-bake.ts`) into `ground-bake-<tier>.bin.gz`.
+  - **Re-bake after any edit on the bake path:** the terrain module, the highway grading, the
+    underpass floors or the Brookwood grid. Each bake carries a hash of those sources, so a stale
+    bake is never used. City warns in the console and builds the ground itself, and
+    `ground-bake.test.ts` fails.
+  - **Release packaging must run `pnpm data:bake`** on the release commit before `pnpm build`.
 - [Northern source manifest](pipeline/prototypes/combined-canopy/provenance.json) records
   the pinned course, canopy, rail and terrain inputs. Staging checks the source hash,
   decompressed context bytes and both ground files for each of the three northern rows.

@@ -86,6 +86,11 @@ jobs:
             web/public/data
           key: ${{ steps.data.outputs.cache-primary-key }}
 
+      # Baked ground depends on web code (src/terrain and the grading it imports), which the data
+      # cache key does not cover: re-bake on every run so a restored bake is never stale (~30 s).
+      - name: Bake ground
+        run: pnpm data:bake
+
       # Data tests skip themselves when files are missing; make that impossible here.
       - name: Check the map data is present
         run: |
