@@ -26,6 +26,7 @@ import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
 import { carries, followLabel, inCityArea, type Selection } from './core/carry';
 import { mountGlassDebug, setGlassMode } from './ui/glass';
+import { labOpenRequest, viewUrl } from './models/variants';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -1009,10 +1010,14 @@ function closeCity(keepMapView = false, writeUrl = true) {
 let labRoot: HTMLElement | null = null;
 let labView: { enter(): void; openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
+/** The loaded Lab's own API: open any id (with its controls) and read the current entry and state. */
+let labApi: typeof import('./models/main').lab | null = null;
 let sceneTitle = document.title;
 let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
+  // "See the model" from City names one model; read it before the first await clears it.
+  const requested = pendingModel;
   hideCard();
   if (diorama && cityLoading.hidden) {
     leaving++;
@@ -1038,7 +1043,7 @@ async function openModels() {
   setViewParam('models');
   // One mount, however often Models is chosen while the lab is still loading.
   labReady ??= (async () => {
-    await import('./models/main');
+    labApi = (await import('./models/main')).lab;
     const { mountModelsView } = await import('./ui/next/models-view');
     labView = mountModelsView(labRoot!, { dev: params.has('dev') });
     const night = labRoot!.querySelector('#night');
@@ -1057,10 +1062,11 @@ async function openModels() {
   }
   if (!inModels()) return;
   labView?.enter();
-  const target = new URL(location.href).searchParams.get('model');
-  if (target && labView?.model() !== target) {
-    labRoot.querySelector<HTMLButtonElement>(`.library [data-model="${CSS.escape(target)}"]`)?.click();
-  }
+  // Through the Lab, not a picker click: a former per-state id (City's "See the model" names lead
+  // units like es44acNs) has no button of its own, only a family entry and a control preset.
+  // A City request opens that model's own preset; a plain return keeps the Lab's state.
+  const request = labOpenRequest(requested, location.href);
+  if (request) labApi?.open(request);
   setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
@@ -1080,16 +1086,8 @@ function labZoom(dir: 1 | -1) {
 
 function setViewParam(v: View) {
   const u = new URL(location.href);
-  u.searchParams.set('view', v);
-  if (v === 'models') {
-    const id = pendingModel ?? u.searchParams.get('model') ?? labView?.model() ?? u.searchParams.get('v') ?? 'cq400';
-    u.searchParams.set('model', id);
-    u.searchParams.delete('v');
-  } else {
-    u.searchParams.delete('model');
-    u.searchParams.delete('v');
-  }
-  history.replaceState(history.state, '', u);
+  // models/variants.ts: also clears the Lab's control keys on leaving Models and for "See the model".
+  history.replaceState(history.state, '', viewUrl(u.href, v, pendingModel, labView?.model() ?? null));
 }
 
 document.getElementById('early-map')!.hidden = true;
@@ -1294,8 +1292,10 @@ const shellOptions: ShellOptions = {
   viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
   shareTarget() {
     if (inModels()) {
-      const model = labView?.model();
-      return model ? { view: 'models' as const, model } : null;
+      // The entry and its controls (load, paint, scheme), so the link opens the same state.
+      const current = labApi?.current();
+      const model = current?.entry ?? labView?.model();
+      return model ? { view: 'models' as const, model, params: current?.state } : null;
     }
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;

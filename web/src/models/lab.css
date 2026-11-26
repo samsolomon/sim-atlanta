@@ -26,6 +26,8 @@ html:has(> body.lab), body.lab { margin: 0; height: 100%; }
 .lab .model-group button[aria-pressed=true] { background: var(--ink); color: var(--paper); font-weight: 600; }
 .lab .settings { padding-top: 14px; display: grid; gap: 14px; }
 .lab fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+/* A model family's controls (load, paint, scheme) sit in the settings grid as its own rows. */
+.lab .variant-controls { display: contents; }
 .lab legend { padding: 0; margin-bottom: 5px; }
 .lab .settings button, .lab .file-button { display: inline-block; color: var(--ink); font-size: 12.5px; font-weight: 550; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; padding: 5px 9px; margin: 2px 4px 2px 0; }
 .lab .settings button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--paper); }

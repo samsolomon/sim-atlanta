@@ -34,6 +34,12 @@ describe('model links', () => {
     expect(url.searchParams.has('ui')).toBe(false);
     expect(url.searchParams.has('t')).toBe(false);
   });
+  it('carry the entry controls, so a shared AC44 in the NS-like scheme opens NS-like', () => {
+    const url = new URL(shareUrl('https://sim.example/?view=models&model=cm44ac&scheme=ns&load=empty', { view: 'models', model: 'cm44ac', params: { scheme: 'ns' } }, 'live', at));
+    expect(url.searchParams.get('model')).toBe('cm44ac');
+    expect(url.searchParams.get('scheme')).toBe('ns');
+    expect(url.searchParams.has('load')).toBe(false); // only the target's own state
+  });
 });
 
 describe('static share routes', () => {

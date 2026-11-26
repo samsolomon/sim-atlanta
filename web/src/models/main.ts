@@ -17,6 +17,7 @@ import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-cons
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { roadSemiGeometry, SEMI_LENGTH } from '../vignette/road-semi';
+import { VARIANT_FAMILIES, entryFor, familyOf, labOpen, resolveModel, writeEntryParams, type VariantState } from './variants';
 import { LENGTH, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -118,6 +119,8 @@ const models = {
   ...LANDSCAPE_KINDS,
   ...HOUSE_KINDS,
   ...MATERIAL_KINDS,
+  // Picker entries for model families that are not themselves one of the ids above (models/variants.ts).
+  ...Object.fromEntries(VARIANT_FAMILIES.map(f => [f.id, f.label])) as Record<string, string>,
 } as const;
 // Species in the lab's Trees section; 'generic' is City's current tree, the baseline.
 const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
@@ -156,8 +159,20 @@ const embedded = !!el.closest('#lab-root');
 const modelParams = new URLSearchParams(location.search);
 const requested = (embedded && modelParams.get('model')) || modelParams.get('v');
 const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400', streetcar: 's70' };
-let model: Model = requested && Object.hasOwn(models, requested)
-  ? requested as Model : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
+const initial = entryFor(requested && Object.hasOwn(aliases, requested) && !Object.hasOwn(models, requested) ? aliases[requested]
+  : requested && Object.hasOwn(models, requested) ? requested : 'cq400', modelParams);
+/** The picker entry; for a model family it differs from `model`, which is what build() draws. */
+let entry: string = initial.entry;
+let variantState: VariantState = initial.state;
+let wellLoad: [string | null, string | null] | undefined;
+let model: Model = (() => { const r = resolveModel(entry, variantState); wellLoad = r.well; return r.model as Model; })();
+// A former per-state id (?v=freightCoalEmpty) opens its family; rewrite the link to the entry and its state.
+if (familyOf(entry)) {
+  const url = new URL(location.href);
+  writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
+  if (embedded) url.searchParams.delete('v');
+  history.replaceState(history.state, '', url);
+}
 function isPassengerUnit(id: Model): id is keyof typeof stockNames {
   return Object.hasOwn(stockNames, id);
 }
@@ -644,7 +659,7 @@ function build() {
   if (isFreightModel(model)) {
     const unit = freightModels[model];
     if (unit === 'grainHopper' || unit === 'tank' || unit.startsWith('well') || unit.startsWith('gondola') || unit.startsWith('centerbeam') || unit === 'autorack' || unit.startsWith('coal')) document.getElementById('tier')!.hidden = false;
-    const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: true, low: treeQuality === 'low' }), passengerMaterial(night));
+    const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: true, low: treeQuality === 'low', well: wellLoad }), passengerMaterial(night));
     mesh.position.y = .125;
     mesh.castShadow = mesh.receiveShadow = true;
     scene.add(mesh); cars = [mesh];
@@ -672,6 +687,9 @@ function build() {
       sd70ace: 'EMD road locomotive with a broad safety cab, brow headlights and six-axle running gear, in an NS-like scheme. ',
       gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
     })[model] + 'Lab study; no logos or numbers. ';
+    // A well-car load with no former entry (Empty, or a recoloured single) describes itself.
+    if (wellLoad) blurb.textContent = (wellLoad[0] ? wellLoad[1] ? 'Single-unit well car carrying two 53-foot domestic containers, one above the other. '
+      : 'Single-unit well car carrying one 53-foot domestic container, the upper slot empty. ' : 'Single-unit well car running empty. ') + 'Lab study; no logos or numbers. ';
     const link = document.createElement('a');
     const notes = unit.startsWith('boxcar') || unit.startsWith('well') || unit === 'grainHopper' || unit === 'tank' || unit.startsWith('gondola') || unit.startsWith('centerbeam') || unit === 'autorack' || unit.startsWith('coal') ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/' + notes;
@@ -1090,25 +1108,69 @@ function setModel(id: Model) {
   }
   camera.far = id === 'crescent' ? 1800 : 400;
   presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
-  modelSelect.value = id;
+  modelSelect.value = entry;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
-    button.setAttribute('aria-pressed', String(button.dataset.model === id)));
+    button.setAttribute('aria-pressed', String(button.dataset.model === entry)));
   build();
+  variantControls();
   view(id === 'generic' || id === 'lineup' || isMaterial(id) || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
 }
+/** Open a picker entry: a family opens on its default state, except that choosing the entry already
+ * shown (the app's Reset view) keeps its controls. */
 function selectModel(id: Model) {
+  if (id === entry) applyEntry(entry, variantState);
+  else applyEntry(entryFor(id).entry, entryFor(id).state);
+}
+function applyEntry(next: string, state: VariantState) {
+  entry = next;
+  variantState = state;
   const url = new URL(location.href);
-  url.searchParams.set(embedded ? 'model' : 'v', id);
+  writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
   if (embedded) url.searchParams.delete('v');
   history.replaceState(history.state, '', url);
-  setModel(id);
+  const r = resolveModel(entry, variantState);
+  wellLoad = r.well;
+  setModel(r.model as Model);
+}
+/** One fieldset per control of the current family (load, paint, scheme, containers), state in the URL. */
+function variantControls() {
+  const box = document.getElementById('variant-controls')!;
+  box.replaceChildren();
+  const family = familyOf(entry);
+  if (!family) return;
+  for (const control of family.controls) {
+    const set = document.createElement('fieldset');
+    set.id = `variant-${control.key}`;
+    set.append(Object.assign(document.createElement('legend'), { textContent: control.legend }));
+    // The well car's containers have nothing to show when it runs empty.
+    set.hidden = control.key === 'containers' && variantState.load === 'empty';
+    box.append(set);
+    for (const option of control.options) mk(set.id, option.label, () => {
+      variantState = { ...variantState, [control.key]: option.value };
+      const url = new URL(location.href);
+      writeEntryParams(url, embedded ? 'model' : 'v', entry, variantState);
+      history.replaceState(history.state, '', url);
+      const r = resolveModel(entry, variantState);
+      wellLoad = r.well;
+      // Same model family, same views: rebuild in place and keep the camera.
+      model = r.model as Model;
+      build();
+      variantControls();
+    }, variantState[control.key] === option.value);
+  }
+  // The title names the entry and its state, e.g. "53-foot well car · Empty".
+  const title = [family.label, ...family.controls.filter(c => !(c.key === 'containers' && variantState.load === 'empty'))
+    .map(c => c.options.find(o => o.value === variantState[c.key])?.label)].filter(Boolean).join(' · ');
+  document.getElementById('title')!.textContent = title;
+  document.title = title + ' · Model Lab · Sim Atlanta';
 }
 for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'semi589', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
-  for (const id of ids) {
+  // One entry per physical model: a family's state and paint members fold into its entry.
+  for (const id of [...new Set((ids as readonly string[]).map(id => entryFor(id).entry))] as Model[]) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.model = id;
@@ -1315,3 +1377,18 @@ function crownStats() {
   return { pixels: n, luminance: +(lum / Math.max(1, n)).toFixed(3), saturation: +(sat / Math.max(1, n)).toFixed(3) };
 }
 Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame === 0, crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+
+/**
+ * The app's handle on an already-loaded Lab (web/src/main.ts): the current entry and control state
+ * (for Share), and opening any id, including a former per-state id from City's "See the model".
+ */
+export const lab = {
+  current: () => ({ entry, state: { ...variantState } }),
+  /** Open a request from the app (models/variants.ts labOpenRequest); the URL is always rewritten. */
+  open(request: { id: string; params?: URLSearchParams; preset: boolean }) {
+    const { next, url } = labOpen({ entry, state: variantState }, request, location.href, embedded);
+    history.replaceState(history.state, '', url);
+    if (next) applyEntry(next.entry, next.state);
+    return !!next;
+  },
+};

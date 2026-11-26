@@ -87,7 +87,7 @@ function container(b: Builder, y0: number, color: string, low: boolean, slot: 1 
  * container vertex tags; the bottom and top boxes are always modelled 53 ft, centred on the car, so
  * City's shader can shorten either to 40 ft or hide it.
  */
-export function wellCarBody(b: Builder, load: WellLoad, low: boolean): ContainerTag[] {
+export function wellCarBody(b: Builder, load: WellLoad, low: boolean, override?: [string | null, string | null]): ContainerTag[] {
   const frame = '#3b3f42', girder = '#4a4e51', deck = '#55595c';
   const half = WELL_LENGTH / 2;
   // End platforms over the trucks, with a bulkhead at each end of the well.
@@ -104,9 +104,9 @@ export function wellCarBody(b: Builder, load: WellLoad, low: boolean): Container
     if (!low) for (let z = -WELL_HALF + 1.1; z < WELL_HALF - 0.6; z += 2.2) b.box(0.05, 1.0, 0.1, s * 1.5, 0.95, z, frame); // stiffeners
   }
   b.box(2.7, 0.1, 2 * WELL_HALF, 0, FLOOR - 0.05, 0, frame); // well floor
-  const [bottom, top] = WELL_LOADS[load];
+  const [bottom, top] = override ?? WELL_LOADS[load];
   const tags: ContainerTag[] = [];
-  container(b, FLOOR, bottom, low, 1, tags);
+  if (bottom) container(b, FLOOR, bottom, low, 1, tags);
   if (top) container(b, FLOOR + BOX_H, top, low, 2, tags);
   return tags;
 }
