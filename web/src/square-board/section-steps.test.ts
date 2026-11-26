@@ -63,7 +63,15 @@ it.skipIf(!staged(ROWS) || !existsSync(new URL('scene/downtown/ground.json', dat
   const ctx: object = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   vi.stubGlobal('fetch', async (url: string) => {
-    try { return new Response(bytes(new URL(url.split('/data/')[1], data))); } catch { return new Response(null, { status: 404 }); }
+    let r: Response;
+    try { r = new Response(bytes(new URL(url.split('/data/')[1], data))); } catch { return new Response(null, { status: 404 }); }
+    // The clock starts once an area's files are read: what follows holds the main thread, so
+    // work done on them outside any step (the ramp setup, say) counts with the first one.
+    if (url.includes('/square-board/')) for (const read of ['json', 'arrayBuffer'] as const) {
+      const body = r[read].bind(r);
+      r[read] = async () => { const value = await body(); probe.mark = performance.now(); return value as never; };
+    }
+    return r;
   });
   try {
     // The fastest of up to five builds per block: a slow block stays slow, a busy machine's does not.

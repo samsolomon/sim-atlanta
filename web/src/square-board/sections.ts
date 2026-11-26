@@ -34,7 +34,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
-import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
+import { emptySliceStats, frameShare, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -44,15 +44,12 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
  */
 /**
- * Each section's build is spread over frames: 4 ms of work per frame on low, 8 ms on high, half
- * that while the camera is dragged (the sliced-build gate: no long task while an area mounts).
- * ?slice=0 builds each section in one task, for comparisons and profiles; so does Node.
+ * Each section's build is spread over frames, a share of each (frameShare in core/slice.ts; the
+ * sliced-build gate: no long task while an area mounts). ?slice=0 builds each section in one
+ * task, for comparisons and profiles; so does Node.
  */
-function sliceBudget(quality: TerrainQuality): (() => number) | null {
-  if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0') return null;
-  const ms = quality === 'low' ? 4 : 8;
-  // Half the share while the user drags, so a moving camera stays smooth.
-  return () => sliceInput.dragging ? ms / 2 : ms;
+function sliceBudget() {
+  return typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0' ? null : frameShare;
 }
 /** Sliced-build stats across every section this page loaded, for the perf harness. */
 export const sliceStats = emptySliceStats();
@@ -167,7 +164,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return new GroundGrid(manifest, terrain);
 }
 
-async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, budget: (() => number) | null, dataRoot = '/data', brookwood?: BrookwoodGrid) {
+async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal: AbortSignal, budget: ((restMs: number) => number) | null, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band', id === 'r16' || id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
@@ -188,7 +185,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
-  const budget = sliceBudget(quality);
+  const budget = sliceBudget();
   const [patches] = await Promise.all([
     Promise.all(ids.map(id => readPatch(id, quality, signal, budget, options?.dataRoot, options?.brookwood))),
     // Neighbourhood outlines, for the rollout's Ansley Park rules (failures leave them off).

@@ -135,6 +135,23 @@ Calibration on the Studio (2026-11-24, load average ~30):
 - At 1x, nothing exceeded 50 ms.
 
 
+### Mounting R16 (`low-r16`, `high-r16`)
+
+R16 is the one area the default view leaves unloaded. `route:r16` flies north from z=-5200 to z=-6100 at a 900 m orbit and
+back over a 40 s sample, after the default view has settled. A run fails unless all 13 areas are mounted and R16 finished
+mounting inside the sample (`r16BuiltInSample`). Only `longestTaskMs` is a ceiling. The targets repeat the default view's
+ceilings, so each run prints how far R16 takes memory, calls and programs past them; those ceilings are not raised.
+
+### Sliced area builds
+
+Every area builds in steps. Each frame, building gets half of what the rest of the last frame cost, from 4 to 24 ms,
+split between the builds under way and halved while the camera is dragged (`?slice=0` builds each area in one task). A run settles only once no build is under way (`__perf.building`). The trade is
+time for smoothness: on the Studio at 6x CPU the default board fills in 41.5 s instead of 20.7 s, and the longest task
+after ready falls from 3.1 s to 1.0 s (2026-11-26; not yet measured on the A16).
+
+`src/square-board/section-steps.test.ts` mounts the Station and R16 as a page would and fails if the main thread is held
+over 32 ms at 1x between two frames, which also catches work moved back outside the steps.
+
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
 Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on the pre-rollout baseline (d1411a9e), candidate (fb699bbb), and candidate with the far mask forced on:

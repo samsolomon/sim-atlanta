@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { emptySliceStats, runBudgeted, runEveryStep, runSync, sliceInput, type Build } from './slice';
+import { emptySliceStats, frameShare, runBudgeted, runEveryStep, runSync, sliceInput, type Build } from './slice';
 
 function* work(units: number, msEach: number, clock: { t: number }): Build<number> {
   let sum = 0;
@@ -39,4 +39,23 @@ it('counts builds in progress for other background work to defer to', async () =
   await runBudgeted(work(4, 2, c), { budgetMs: () => 2, nextFrame: async () => { seen = sliceInput.building; }, now: () => c.t });
   expect(seen).toBe(1);
   expect(sliceInput.building).toBe(0);
+});
+
+it('gives a build half of what the rest of the frame cost, within bounds', () => {
+  expect(frameShare(0)).toBe(4);
+  expect(frameShare(16)).toBe(8);
+  expect(frameShare(37)).toBe(18.5);
+  expect(frameShare(400)).toBe(24);
+  sliceInput.building = 2;
+  sliceInput.dragging = true;
+  try { expect(frameShare(40)).toBe(5); } finally { sliceInput.building = 0; sliceInput.dragging = false; }
+});
+
+it('measures the rest of a frame without any build\'s own work', async () => {
+  const c = { t: 0 };
+  const rests: number[] = [];
+  // Between this build's slices: 30 ms of drawing and 5 ms of another build's work.
+  const nextFrame = async () => { c.t += 35; sliceInput.workedMs += 5; };
+  await runBudgeted(work(6, 2, c), { budgetMs: rest => { rests.push(rest); return 4; }, nextFrame, now: () => c.t });
+  expect(rests).toEqual([0, 30, 30, 30]);
 });
