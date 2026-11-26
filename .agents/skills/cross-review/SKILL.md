@@ -12,8 +12,10 @@ description: Have another model review this branch's diff read-only before a PR 
    folder. Delete the diff file afterwards. Run it in the background if your harness allows that.
    If the user asked for Codex or Claude instead, run `pnpm review`
    (`pnpm review -- --reviewer codex|claude`, `--base <ref>` for another base).
-3. If the run exits non-zero or ends without MERGEABLE or NEEDS FIXES, the review **did not
-   run**. Report the reason. Don't treat it as a clean review.
+3. A review that did not run is not a clean review: report the reason. For Grok that means a
+   non-zero exit, or output that ends without MERGEABLE or NEEDS FIXES. For `pnpm review` it
+   means a non-zero exit (it gives no verdict line, and says `nothing to review` for a branch
+   with no changes).
 4. Triage each finding against the charter:
    - CONFIRMED and in your diff: fix it.
    - PLAUSIBLE: record it for the PR body, and don't edit for it.

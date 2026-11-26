@@ -1,7 +1,8 @@
 # Studio integrator handoff (2026-11-26)
 
 The Studio integrator packages releases on the Mac Studio, owns its performance window and
-works for the coordinator on the MacBook Air. Nothing merges or deploys without their go.
+works for the coordinator on the MacBook Air. Nothing merges or deploys without the
+coordinator's go.
 
 ## Done
 
@@ -28,6 +29,7 @@ works for the coordinator on the MacBook Air. Nothing merges or deploys without 
 
 ## Studio rules
 
-- Before a timed run, have every other agent stop builds, tests and headless browsers, and wait
-  for their replies. Another agent's runs have overlapped release timings.
+- Before a timed run, have every other agent stop builds, test suites and headless browsers,
+  and wait for their replies. Lightweight work, such as editing or a Grok review, continues.
+  Another agent's runs have overlapped release timings.
 - Stop only processes you started, by process ID.

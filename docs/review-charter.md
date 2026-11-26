@@ -44,13 +44,14 @@ Run it read-only, from your worktree, with the diff in a file **inside the workt
 agent cannot read outside it). Don't commit that file, and delete it afterwards.
 
 ```sh
-git diff origin/main..HEAD > review-diff.tmp
+git diff origin/main...HEAD > review-diff.tmp   # three dots: this branch's changes only
+OUT=$(mktemp "${TMPDIR:-/tmp}/grok-review.XXXXXX")
 opencode run --agent plan -m xai/grok-4.7 "You are a read-only code reviewer. Do not edit, create
-or delete files, and do not run builds, tests, servers or browsers. Review <PR or range> under
-docs/review-charter.md and the finding list in the Review section of AGENTS.md. The diff is in
-./review-diff.tmp. Report each finding with severity, file and line, and the concrete input that
-makes it fire. End with exactly MERGEABLE or NEEDS FIXES." < /dev/null > <scratch>/review.txt
-rm review-diff.tmp
+or delete files, and do not run builds, tests, servers or browsers. Review this branch's changes
+against origin/main under docs/review-charter.md and the finding list in the Review section of
+AGENTS.md. The diff is in ./review-diff.tmp. Report each finding with severity, file and line,
+and the concrete input that makes it fire. End with exactly MERGEABLE or NEEDS FIXES." < /dev/null > "$OUT"
+rm review-diff.tmp; cat "$OUT"
 ```
 
 It takes a few minutes. Redirecting stdin from `/dev/null` keeps it from waiting for input.
