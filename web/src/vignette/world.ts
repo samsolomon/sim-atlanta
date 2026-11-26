@@ -100,6 +100,8 @@ export interface WorldOptions {
   terrain: 'trench' | 'flat';
   /** Leaf clumps per deciduous canopy (10 on desktop, fewer on phones). */
   clumps: number;
+  /** Multiplies each leaf clump's size, to cover more ground with fewer of them (City on phones). */
+  clumpScale?: number;
   /** Largest side of the night light map in texels. */
   lightMapMax: number;
 }
@@ -1233,7 +1235,7 @@ export class World {
           canopy.setMatrixAt(k++, zero);
           continue;
         }
-        const size = R * (i === 0 ? 0.7 : 0.5 + r() * 0.14);
+        const size = R * (i === 0 ? 0.7 : 0.5 + r() * 0.14) * (this.opts.clumpScale ?? 1);
         q.setFromEuler(new THREE.Euler(r() * 6.3, r() * 6.3, r() * 6.3));
         m.compose(v.set(cx + ox, cy + oy - (1 - canopyLeft) * R * 0.3, cz + oz), q, sc3.set(size, size * 0.85, size));
         canopy.setMatrixAt(k, m);
