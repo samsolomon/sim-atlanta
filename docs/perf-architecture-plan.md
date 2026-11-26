@@ -25,7 +25,10 @@ gives one task per area).
   Slicing took R16's mount from 4.1 s (27.7 s at 6×) to under 0.4 s per task.
 - **With R16 mounted:** Low geometry 241.5 MB, heap 510 MB, 88 programs. High geometry 372.9 MB,
   heap 666 MB, 105 programs. The memory and program findings in §2 still hold.
-- Increment 1 has landed.
+- Increment 1 has landed in part. Slicing covers the north and south patches and the Midtown,
+  Brookwood and R16 rows. Downtown, `loadEast` (King Memorial) and `loadNorth` (Sweet Auburn) are
+  still one task each. `loadNorth` is the worst task after ready: 1.04–1.09 s at 6× on Low (66b8a295),
+  about 750–800 ms of it in the parapet strips calling `inConnectorLanes`.
 
 ## 0. Summary
 
@@ -611,7 +614,7 @@ touches the look. "Gate" marks what must land before the next expansion.
 | # | Increment | Pillar | Effort (h) | Reuses | Gate |
 |---:|---|---|---:|---|---|
 | 0 | Per-view budgets: street and north-edge views, the growth check, the A16 and iPhone proxies; ceilings at today's figures | 5 | 6–10 | perf-run, program-sweep | **Gate** |
-| 1 | Area slicing lands: R16 mount in the budgeted build (landed in release 17, 66b8a295) | 1 | done | #611, #621, `area-build-slicing` | **Gate** |
+| 1 | Area slicing: the patches and the Midtown, Brookwood and R16 rows landed in release 17 (66b8a295). Remaining: slice downtown, `loadEast` and `loadNorth`, starting with Sweet Auburn's parapet strips and `inConnectorLanes` (1.04–1.09 s at 6×) | 1 | 4–8 (remainder) | #611, #621, `area-build-slicing` | **Gate** |
 | 2 | Dispose near house tiles outside the near band; pack generic buildings and houses like #575 | 2 | 6–10 | #575, #442 | **Gate** (gets street and route back under ceilings) |
 | 3 | Programs phase A plus the program-rule lint | 4 | 8–12 | library, prewarm | **Gate** (High is at 100/100) |
 | 4 | Night windows and lit panes ride the wall draw | 4 | 6–10 | #441 | **Gate** (High night is at 622/630; Low 22:00 is at 543 calls, unbudgeted, on draw-bound phones) |
