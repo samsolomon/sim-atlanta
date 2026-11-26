@@ -47,8 +47,22 @@ and replayed in the browser. `?perf&bake=0` turns it off.
   - Baking the first build too saves ~42 ms at 1× for about one more surface of download.
   - Byte-plane shuffling before gzip would likely shrink the files a lot.
   - Packing to Int16 can't stay byte-identical.
-- **More rows:** brookwood-station needs care, because R16's seam re-cuts it after its mount (that
-  runs live after the replay, which is correct but not baked).
+- **More rows: not worth it today.** Measured 2026-11-26 in Node at 1×, best of 3, mount with
+  bake=0 → with the bake. These are within noise:
+
+  | Row | Low | High | Gzipped size |
+  |---|---|---|---|
+  | midtown-upper | 242 → 253 ms | 362 → 365 ms | 1.5 / 3.3 MB |
+  | brookwood-station | 279 → 280 ms | 297 → 284 ms | 4.4 / 4.5 MB |
+  | midtown-south | 211 → 210 ms | 239 → 238 ms | 1.5 / 1.6 MB |
+
+  The coordinator's bar was about 300 ms saved at 6×, roughly 30 ms at 1× going by
+  brookwood-south's ratio. brookwood-south's saving comes from its own grading and conformed cut
+  edges (`gradeSouthboundSteps` acts there and on r16 only), not from yields in general.
+  - **r16** is the other row with grading and `seatLandingEdges`, but its seam work with the
+    Station re-cuts both rows at mount. It would need the joined-seam bake (§4.1).
+  - **brookwood-station** bakes correctly as it stands: R16's seam re-cut runs live after the
+    replay.
 
 ## Deploy
 
