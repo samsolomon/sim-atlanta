@@ -36,7 +36,8 @@ export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_T
  * a `stockLight` attribute (see passengerMaterial): head, ditch and number-board lamps at the end that
  * leads (`leadFront`, or `leadRear` for long hood forward). Plain Lambert materials ignore it.
  */
-export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear = false, low = false } = {}) {
+/** `well` (Model Lab only) overrides a well car's lower and upper container colours; null leaves a slot empty. */
+export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear = false, low = false, well }: { leadFront?: boolean; leadRear?: boolean; low?: boolean; well?: [string | null, string | null] } = {}) {
   const b = new Builder();
   if (!isBoxcar(unit) && !isWell(unit) && !isGondola(unit) && !isCenterbeam(unit) && unit !== 'autorack' && unit !== 'coalLoaded' && unit !== 'coalEmpty' && unit !== 'grainHopper' && unit !== 'tank') {
     const lamps = new Builder();
@@ -65,7 +66,7 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
   for (const end of [-1, 1]) b.box(.46, .32, .65, 0, .98, end * (length / 2 - .32), frame);
   let tags: ContainerTag[] = [];
   if (unit === 'grainHopper') grainHopperBody(b, low);
-  else if (isWell(unit)) tags = wellCarBody(b, unit, low);
+  else if (isWell(unit)) tags = wellCarBody(b, unit, low, well);
   else if (unit === 'tank') tankCarBody(b, low);
   else if (isGondola(unit)) gondolaBody(b, unit, low);
   else if (isCenterbeam(unit)) centerbeamBody(b, unit, low);

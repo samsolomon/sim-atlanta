@@ -32,6 +32,7 @@ export const LAB_HTML = `
           <fieldset id="tree-size" hidden><legend>Size class</legend><p id="tree-report" class="platform-report"></p></fieldset>
           <fieldset id="season" hidden><legend>Season</legend><p id="season-report" class="platform-report"></p></fieldset>
           <fieldset id="articulation" hidden><legend>Articulation</legend><label>Joint angle <input id="joint-angle" type="range" min="-35" max="35" value="0"></label><output id="joint-value" for="joint-angle">0°</output><button type="button" id="joint-reset">Straight</button></fieldset>
+          <div id="variant-controls" class="variant-controls"></div>
           <fieldset id="tier" hidden><legend>Detail</legend></fieldset>
           <fieldset id="rendering" hidden><legend>Ginkgo rendering</legend><p id="variant-report" class="platform-report"></p></fieldset>
           <fieldset id="count" hidden><legend>Trees (cost test)</legend><p id="perf-report" class="platform-report"></p></fieldset>
