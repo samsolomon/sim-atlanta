@@ -1,23 +1,50 @@
-# Handoff: Studio vehicles (2026-11-26)
+# Handoff: Studio vehicles (2026-11-26, evening)
+
+The vehicles agent builds road vehicles from reference photos, first in the Model Lab and then in City traffic. It works one vehicle at a time, and each needs Sam's approval. The Air coordinator relays Sam's decisions and merge go-aheads. Reply to the coordinator's latest message with `orca orchestration reply --id <their msg id>`. Send only decisions, blockers and completion.
 
 ## Done
-- **Semi (#693, merged at 53f84990, for release 19).** A long-hood sleeper tractor in Peterbilt 589 proportions, pulling a generic 53 ft dry van, 22.97 m long. It replaced the 19.16 m rigid semi on City's High tier. The model is in `web/src/vignette/road-semi.ts`, and the notes, sources and estimates are in `docs/road-semi.md`.
-  - The traffic form is 1,624 triangles; the Lab-only close form is 7,618.
-  - Amber markers are kind 5 inside `vehicleMaterial`. The van box is kind 6, and its paint index rides on the `braking` float as `lamp + 2 × index` (`vanPaintIndex`). Neither added a program.
-  - test:perf against 068b32ed: Low unchanged; High +3,620 triangles, programs 98 = 98.
-- **Model Lab families (#694, merged at b9a567fc).** Each physical model has one picker entry, with Load, Paint, Scheme and Containers controls (`web/src/models/variants.ts`). Vehicles went from 39 entries to 27.
-  - Every former `?v=` id redirects to its family with the matching preset.
-  - The app opens Lab ids through `lab.open(labOpenRequest(…))`, and leaving Models clears the control keys (`viewUrl`).
-  - The well car has a Lab-only Empty state.
-- **Headlight-pool plan (#695, docs only, awaiting review).** `docs/headlight-pools-plan.md`. It costs +1 program and +1 night call; High at night is at 626 of 630 calls.
+| Work | PR | State |
+|---|---|---|
+| Peterbilt 589-like sleeper semi and 53 ft van (`road-semi.ts`, `docs/road-semi.md`) | #693 | Merged 53f84990 |
+| Model Lab families: one entry per model, with Load, Paint, Scheme and Containers controls (`models/variants.ts`) | #694 | Merged b9a567fc |
+| F-150 SuperCrew-like pickup in the Lab (`road-pickup.ts`, `docs/road-pickup.md`, shared `face-kit.ts`) | #698 | Merged f259f243 |
+| Headlight pools for every lit vehicle at night on High, with freight lamps lit (`city/headlight-pools.ts`, `docs/headlight-pools.md`) | #700 | Merged b7234ed4, rides release 19 |
+| This handoff, plus the pools plan that `headlight-pools.ts` links to | #695 | Docs only |
+
+**Headlight pools in numbers.** Pools add +1 program and +1 call at night on High; Low is unchanged. After Sam's tweak, street pools are power 0.7 with reach of 12 m (car), 15 m (truck) and 14 m (bus and streetcar); rail is 20 m at power 0.65. Each pool starts 0.5 m under the front bumper. `?pools=0` (dev) turns them off for matched stills.
+
+## In flight
+- **F-150 in City High traffic: #706** (`samsolomon/f150-traffic`). Grok round 1 returned MERGEABLE, and the PR is waiting on test:perf. The integrator queued the window after release 19 packaging. The script is ready at `<scratchpad>/pp-f150.sh`: branch against the merge-base b7234ed4 (worktree `<scratchpad>/base`), plus a close Connector view at 17:15.
+  - When the numbers are in, add them to the #706 body and send the coordinator the head.
+  - Afterwards, rebase onto main, which now includes #704's baked ground, and let CI rerun.
+  - Then remove the scratch worktrees: `git worktree remove --force` for `f150`, `base` and `plan`.
+- **Design of #706.** The XLT-like trim is `pickup` and the XL-like trim is `work`, each its own instanced mesh: +1 draw, 0 programs. Trim and paint come from the slot's existing passenger draw (`passengerKind`), so no other slot moves. The East Portal vignette keeps the generic `pickup` from `vehicles.ts`.
 
 ## Next (each needs Sam's approval)
-- Build the headlight pools if #695 is approved.
-- Vehicles, one at a time, each with a Model Lab entry that merges even before traffic: F-150, Model Y, Rivian R2, and a Waymo-style robotaxi (an I-Pace-like crossover with a roof dome, no branding). The everyday-cars study on `codex/sedan-rear-polish` has starting silhouettes.
-- PR #541's hatch, pickup and van could fold in later. Its rigid semi is superseded.
+1. **Model Y-like crossover.** Lab first. Traffic can wait for Sam's go.
+2. **Rivian R2-like.**
+3. **Waymo-style robotaxi.** An I-Pace-like crossover with a roof sensor dome and no branding.
+
+Pattern that worked for the F-150:
+- Gather daytime and night photos in a fresh Orca tab, and record the links and estimated dimensions in a `docs/road-<model>.md`.
+- Build a near form for the Lab and a far form for traffic, under about 1,400 triangles, using `face-kit.ts`.
+- Use `vehicleMaterial` kinds (0 paint, 1 headlamp, 2 tail, 3 glass, 4 fixed, 5 amber) so no program is added.
+- Write a raycast winding test with a 30 s timeout.
+- Add a Lab family entry in `models/main.ts` and `variants.ts`.
+- Send Sam a side-by-side with the reference (raw.githubusercontent links, not blob pages).
+
+Sam took three passes on the F-150 before calling it real: belt height, tyre fill in the arches, and the grille and lamp graphic carried most of it.
 
 ## Gotchas
-- Before any heavy run, check `orca orchestration inbox` for a "Studio busy" notice; timed perf runs only in the integrator's window.
-- In zsh, unquoted `$VAR` does not word-split. Write commands out, or use arrays.
-- City close-ups: `?dev&mindist=5` now keeps a short near plane. `__cityDev.controls` is exposed, but the orbit target is pinned to terrain, so solve the tilt for street-eye on decks, or pick a semi near grade.
-- Headless captures with `scripts/chrome-cdp.mjs` `launchChrome` need `--disable-backgrounding-occluded-windows` and `--disable-renderer-backgrounding`, or rAF stalls.
+- **Shared Studio.**
+  - Check `orca orchestration inbox` for holds before any build, test, install or browser run. vitest and tsc count.
+  - Run test:perf only in the integrator's window.
+  - Kill only PIDs you started, and drive only a Chrome you launched (`scripts/chrome-cdp.mjs` `launchChrome`).
+- **Review.** Run Grok yourself with the diff file inside the worktree; opencode rejects paths outside it. Stop after two rounds.
+- **City close-ups.**
+  - Use `?dev&mindist=5` and `__setView(bearing, tilt, dist, x, z, zoom)`.
+  - A target in a cut or on an undrawn surface aims high. Accept a frame only when `__cityDev.controls.target.y` is within about 1 m of the subject's y.
+  - Traffic instance indices aren't stable. For matched before/after frames, record the world position in the after run and frame the same point in the before run, with `speed=0`.
+- **Captures.** Headless needs `--disable-backgrounding-occluded-windows`, `--disable-renderer-backgrounding` and `--disable-background-timer-throttling`, or rAF stalls.
+- **zsh.** Unquoted `$VAR` does not word-split. Write commands out.
+- **Rebases.** Every PR appends to `docs/build-log.md`, so rebases conflict there. Keep both entries.
