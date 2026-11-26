@@ -199,7 +199,7 @@ Sam reviewed D's south-portal still on 2026-11-26: "What's happening under the h
 - **Tube.** A concrete headwall rises from the 5.2 m clearance to the lid edge. A tube runs 30 m in under the lid, with walls, ceiling and floor fading to a black end cap. Two rows of crown lamps run every 6 m. They glow by day and brighten at night.
 - **Board cut.** One covered slot per mouth cuts the board from 2 m outside the mouth to the tube's end, but only up to the ceiling (`cutHeightM`). The lid's own streets above stay whole.
 - **Seam.** The north-east mouths straddle the z = 700 seam between the downtown and south-band boards, so both boards cut the same slots.
-- **Floor levels.** Each mouth's floor is the open cut's board just outside it. The levels are pinned in `MOUTH_FLOORS`, and `capitol-tunnel.test.ts` holds them to the committed ground grids. The lid top stands 6.0–10.4 m over these floors, so every tube fits.
+- **Floor levels.** Each mouth's floor is the open cut's board just outside it. The levels are pinned in `MOUTH_FLOORS`, and `capitol-tunnel.test.ts` holds them to the committed ground grids. Six metres in, the lid top stands 6.4–10.5 m over these floors, so every tube fits under it.
 - **Cars.** On a covered way a car keeps the mouth's floor for 22 m, then vanishes in the dark, as the North Line's trains do. Before this it vanished at the mouth.
 - **The lid road.** `lidRoads` flags the south band's eight motorway records on the covered ways as `tunnel`, so nothing samples the lid top for the freeway under it. Before this, Grok's 1.99 m centreline change came from that record.
 
