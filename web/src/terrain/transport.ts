@@ -97,6 +97,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   const footbridgeYields: GroundYield[] = [];
+  const deckYields: GroundYield[] = [];
   const ballastRuns: BallastQuad[][] = [];
   // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
   const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
@@ -338,7 +339,9 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         const length = Math.hypot(p[0]-other[0], p[2]-other[2]) || 1;
         return [p[0]+distance*(p[0]-other[0])/length, p[1], p[2]+distance*(p[2]-other[2])/length];
       };
-      for (const distance of [-.28, .7, 1.8]) {
+      // On one fused viaduct (sweet-auburn-transport.ts viaductSurfaces) the next
+      // member's lanes start beyond both shoulders: striped separation, no barrier.
+      for (const distance of run.deckSurface ? [-.28, .7, 1.8, 2.6, 3.7] : [-.28, .7, 1.8]) {
         const p = offset(a, otherA, distance), q = offset(b, otherB, distance);
         if (inConnectorLanes(p[0], p[2], .18) || inConnectorLanes(q[0], q[2], .18) ||
           inConnectorLanes((p[0]+q[0])/2, (p[2]+q[2])/2, .18)) return;
@@ -385,6 +388,8 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const vertex = line.vertexAt(s);
             const index = Math.min(Math.floor(vertex), profile.length - 2);
             y = profile[index] + (profile[index+1]-profile[index])*(vertex-index) - sceneZero;
+            const surface = run.deckSurface?.(x, z);
+            if (surface != null) y = surface - sceneZero;
             if (run.deckWeight) {
               const weights = run.deckWeight;
               const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
@@ -419,6 +424,22 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (!drawQuad) ballast = null;
         if (prev && drawQuad) {
           const [a, b] = prev, [d, c] = section;
+          // A fused viaduct deck (sweet-auburn-transport.ts) can sit on the class-2
+          // freeway surface where the board keeps that same height beside the
+          // Leonard Tate opening. Lower the drawn ground under its own footprint to
+          // just below the slab so terrain never shows through the tread.
+          if (run.deckSurface && use === 'road' && depth > 0) {
+            const floorY = Math.min(a[1], b[1], c[1], d[1]) - depth - .05;
+            const ring = [a, b, c, d].map(([x, , z]) => [x, z] as [number, number]);
+            // Only a convex quad with real area: coincident stations make slivers.
+            const turns = ring.map(([x0, z0], k) => {
+              const [x1, z1] = ring[(k+1)%4], [x2, z2] = ring[(k+2)%4];
+              return (x1-x0)*(z2-z1)-(z1-z0)*(x2-x1);
+            });
+            const convex = turns.every(t => t > 1e-4) || turns.every(t => t < -1e-4);
+            if (convex && [a, b, c, d].some(([x, , z]) => (groundAt(x, z) ?? -Infinity) > floorY))
+              deckYields.push({ ring, floor: () => floorY });
+          }
           if (southFootbridge && depth > 0) {
             const floorY = Math.min(a[1], b[1], c[1], d[1]) - .05;
             footbridgeYields.push({ ring: [a, b, c, d].map(([x, , z]) => [x, z]), floor: () => floorY });
@@ -524,9 +545,13 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (ok && fall <= LANDING_BANK_M) cuts = keepColumns(candidates.map(f => f * width), rows, LANDING_TOLERANCE_M).map(i => candidates[i]);
       }
       const landing = cuts.length > 2;
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : cuts.length - 1;
+      // A fused viaduct deck follows a measured surface with crossfall. Lane-width
+      // bands keep its tread within a centimetre or two of that surface, under the
+      // markings drawn 3 cm above it.
+      const uniform = !!run.deckWeight || (!!run.deckSurface && !landing);
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : uniform ? Math.ceil(width / 3) : cuts.length - 1;
       for (let i = 0; i < bands; i++) {
-        const [l, r] = run.deckWeight ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
+        const [l, r] = uniform ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
         strip(width * l, width * r, DECK_LIFT, color,
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
@@ -676,7 +701,8 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     meshes.push(mesh);
   }
   const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
-  cutting.push(...footbridgeYields);
+  cutting.push(...footbridgeYields, ...deckYields.filter(y => y.ring.every(([x, z]) =>
+    x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ)));
   // The mesh attributes now own their copies. Drop build-time arrays held by the transport closures.
   const hasBridge = seventeenth.pos.length > 0;
   for (const builder of [structures, seventeenth, freight]) {

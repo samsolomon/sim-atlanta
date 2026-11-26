@@ -12,6 +12,11 @@ export interface TransportRun {
   pts: P2[];
   /** Road pavement NAVD88 metres at each vertex of a lidar-profiled structural run. */
   deckNavd88M?: number[];
+  /** One measured surface for every run on the same physical viaduct, in NAVD88
+   * metres at a plan position. Both slab edges sample it, so neighbouring ways
+   * meet at the same height and the deck keeps its measured crossfall. Null
+   * falls back to the centreline profile. */
+  deckSurface?: (x: number, z: number) => number | null;
   /** Share of the deck profile at each approach vertex. Zero meets local terrain. */
   deckWeight?: number[];
   /** Original directed centerline before resampling a measured deck or its approach. */
