@@ -20,14 +20,14 @@ A midsize sedan follows 3 m behind for scale. City traffic doesn't draw it yet (
 | Front bumper to back of cab | 155.6 in (3.952 m) | same |
 | Box floor length, load floor | 67.1 in (1.704 m); 0.866 m (4x4) | same |
 | Tyres | 275/65R18 (XLT 4x4), radius 0.408 m | same |
-| Hood height, belt, windshield rake, glass band, arch radius, box top length | **estimated** from the Commons photos below | — |
+| Hood line about 1.40 m, belt 1.36 m, glass to 1.90 m, box rail 1.34 m, rocker 0.64 m, arch radius 0.52 m plus a 9 cm flare lip, door cuts (front door to the B-pillar, long rear door) | **estimated** from the Commons photos below | — |
 
 ## Detail and cost
 
 | Form | Triangles | Vertices | Use |
 |---|---:|---:|---|
-| Close | 2,720 | — | Model Lab only |
-| Traffic | 928 | 1,772 | City High, if adopted |
+| Close | 3,046 | — | Model Lab only |
+| Traffic | 1,114 | — | City High, if adopted |
 | Today's generic `pickup` (vehicles.ts) | 432 | 1,296 | City High traffic |
 
 It uses the shared `vehicleMaterial` kinds: 0 paint, 1 headlamps and C-clamp running lamps, 2 tail lamps, 3 glass, 4 trim, and 5 amber markers. It adds no program. Faces come from the shared `face-kit.ts` (the semi's kit, now shared), and a test raycasts both forms and both trims for back faces.
