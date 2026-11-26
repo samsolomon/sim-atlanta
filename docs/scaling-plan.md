@@ -45,7 +45,7 @@ not a phone.
 
 | Finding | Number | Source |
 |---|---|---|
-| Headroom, High night calls | 629 / 630 | M, coordinator, main |
+| Headroom, High night calls | 629 / 630 | M, #701's `test:perf` on its rebased head (+3 over its base); to re-measure on 92e71e45 |
 | Headroom, High programs | 94 / 100 (93 by day) | M, coordinator; #613 final head |
 | Headroom, Low geometry | 150–178 MB / 190 (by view and run) | M, coordinator; #613 final head 175.3 MB |
 | Boot, `stage:terrain` | 2,710–2,960 ms at 6× on f0c5ef55 (one task); 2,312 ms median after #705 | M, integrator boot profile; #705 |
@@ -250,11 +250,11 @@ estimate; measure each when it is built.
 Downtown's ground isn't one of those areas. Its bake would save at most 0.6 s, and the integrator's
 slicing turns that time into frames anyway.
 
-**#704 (brookwood-south) — recommendation: park it, don't merge.** The saving is 0.5 s of a
-mount that is already sliced and happens after ready. That means faster fill, not a shorter
-freeze. Merging costs 5.7 MB of hosted files, a release-checklist step and a stale-bake risk on
-every ground change. Keep the branch as the proven mechanism for the first heavy area. **This is
-the coordinator's call** (question 1 below).
+**#704 (brookwood-south): park it (coordinator, 2026-11-26).** It is already merged and ships in
+release 19. The saving is 0.5 s of a mount that is already sliced and happens after ready, which
+means faster fill, not a shorter freeze. A follow-up PR after increment 0 turns the bake off by
+default and stops shipping the bake files. It keeps the code and the CI step for the first heavy
+area, so visitors stop downloading 1.8–3.9 MB for that gain.
 
 ### 3.6 What must be true before the next expansion
 
@@ -361,13 +361,15 @@ work per row entered, sliced (M: ≤ 335 ms longest task at 6×).
   and the unload-after-bake dependency. §3's "proposed" column where it assumed far LOD saves
   memory or that L2 packs to Int16.
 
-## 8. Questions
+## 8. Decisions (2026-11-26)
 
-1. **For the coordinator: should #704 be parked or merged?** I recommend parking it (§3.5).
-2. **For the coordinator: which head is High night 629/630 from?** #613's final head measured 587.
-3. **For Sam, via the coordinator: the reserve sizes in §4.** Until they are restored, features that
-   add to a full budget need an offset in the same PR. Does that hold for building skins already
-   in the queue?
+1. **#704:** park it. It ships in release 19, and then a follow-up turns the bake off by default
+   (§3.5).
+2. **High night 629/630** came from #701's rebased head. #613's 587 came before #700 and #701.
+   Re-measure on 92e71e45 (release 19).
+3. **Sam adopted the reserves in §4:** Low geometry 25 MB, High programs 10, High night calls 40.
+   The offset rule includes queued building skins, and PR bodies give before and after numbers.
+   They are encoded in `perf-budget.json` and the review charter.
 
 ## Architect review (2026-11-26)
 
@@ -395,7 +397,7 @@ I ran `architect-plan-review` on the first draft and checked its claims against 
   profile. It is now scoped to boot before ready, with the size of the error (about 3.5×).
   Increment 0 gains a `hidelm` switch, because the existing switches can't separate triangles from
   glass and hooked shading.
-- **Open:** High night is 629 in the brief, but #613's body shows 627 mid-PR and 587 at its final
+- **Answered since:** High night is 629 in the brief, but #613's body shows 627 mid-PR and 587 at its final
   head. Which head 629 comes from decides whether 2a is a restore or a nice-to-have. I've asked the
   coordinator.
 - **Not folded in:** separate sources for 629/630 and the A16's −143 calls. They are quoted from
