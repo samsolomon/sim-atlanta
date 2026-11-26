@@ -1,6 +1,6 @@
 # Tests and the web build on every pull request and push to main. No secrets: nothing here needs a
-# MARTA or 511GA key, and nothing deploys. Not covered: the share preview images, `pnpm test:perf`,
-# visual checks and device runs (see AGENTS.md).
+# MARTA or 511GA key, and nothing deploys. Not covered: the three browser tests (no GPU), the share
+# preview images, `pnpm test:perf`, visual checks and device runs (see AGENTS.md).
 name: CI
 
 on:
@@ -93,8 +93,14 @@ jobs:
           test -s web/public/data/ga/timetable.json
           test -s web/public/data/scene/square-board/r16/context.json
 
+      # The runner has no GPU, and City in software rendering misses the browser tests' time limits
+      # even on a fast desktop. They run in every local `pnpm test` on a machine with a GPU.
       - name: Tests (Rust, pipeline, web, Worker)
-        run: pnpm test:release
+        run: |
+          echo "::notice::Skipped in CI (no GPU): web/tests board-exterior, camera-input and follow-north."
+          pnpm test:release
+        env:
+          SKIP_BROWSER_TESTS: '1'
 
       - name: Type check and build
         run: pnpm --filter web build:app
