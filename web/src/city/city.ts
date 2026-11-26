@@ -703,7 +703,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const boxed = landmarks.filter(g => boxedFromAfar(g.name));
         const farBoxesDowntown = low ? boxed.flatMap(g => boxesFromObject(g, terrain!.scenery)) : [];
         const farRoots: THREE.Object3D[] = [...boxed];
-        if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); farRoots.push(bodies); }
+        if (landmarkBatchOff) { const bodies = batchLandmarkBodies(landmarks); world.group.add(bodies); if (FAR_LANDMARKS) farRoots.push(bodies); }
         else {
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.

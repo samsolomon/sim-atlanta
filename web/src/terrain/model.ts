@@ -630,7 +630,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     // wall colour and a roof-coloured top), shared with studio-tree-lab's far-far form.
     farBoxes.push(...scenery.farBoxes, ...houses.boxes);
     grounded(farBoxes);
-    farHidden.push(...scenery.group.children.filter(o => o.userData.building || o.userData.roofClutter), houses.group,
+    // Landmark groups and their cell batches are flagged as buildings too; they stay unless boxed.
+    const keptLandmarks = new Set<THREE.Object3D>([...landmarks.map(l => l.group).filter(g => !boxedFromAfar(g.name)), ...(batches && !FAR_LANDMARKS ? [batches.group] : [])]);
+    farHidden.push(...scenery.group.children.filter(o => (o.userData.building || o.userData.roofClutter) && !keptLandmarks.has(o)), houses.group,
       ...landmarks.map(l => l.group).filter(g => boxedFromAfar(g.name)), ...(batches && FAR_LANDMARKS ? [batches.group] : []));
     const t0 = performance.now();
     farMesh = farBoxMesh(farBoxes, inCarved, buildingMaterial);
