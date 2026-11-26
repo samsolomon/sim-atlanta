@@ -75,29 +75,29 @@ interface LaneState {
 }
 
 /** Every kind City may draw. Low keeps sedan, SUV and box truck; high adds hatch, the F-150-like pickup
- * (XLT-like `pickup` and XL-like work truck `work`), van and the semi (illustrative mix, picked once per
- * slot in slotsFor). */
-const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'work', 'van', 'semi'] as const;
+ * (XLT-like, or the XL-like work trim on a flagged slot, from one mesh), van and the semi (illustrative
+ * mix, picked once per slot in slotsFor). */
+const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as const;
 /** High-tier car mix, as cumulative shares of the non-truck slots. */
 const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
 type Kind = typeof models[number];
 /** Footprint length by kind: the pickups are the F-150-like traffic form, not the vignette's generic one. */
-const KIND_LENGTH: Record<Kind, number> = { ...LENGTH, pickup: PICKUP_LENGTH, work: PICKUP_LENGTH };
+const KIND_LENGTH: Record<Kind, number> = { ...LENGTH, pickup: PICKUP_LENGTH };
 /** About 1 in 4 pickups is the work trim (Sam, 2026-11-26). */
 export const WORK_PICKUP_SHARE = 0.25;
 const PICKUP_COLORS = Object.values(PICKUP_PAINTS).map(p => p.hex);
 /** Work trucks are mostly fleet white, otherwise silver or grey. */
 const WORK_COLORS = [PICKUP_PAINTS.white.hex, PICKUP_PAINTS.white.hex, PICKUP_PAINTS.white.hex, PICKUP_PAINTS.silver.hex, PICKUP_PAINTS.grey.hex];
 function kindGeometry(kind: Kind) {
-  if (kind === 'pickup') return roadPickupGeometry({ trim: 'xlt' });
-  if (kind === 'work') return roadPickupGeometry({ trim: 'xl' });
+  // One mesh for both trims: the XL-like colours ride in `aAlt`, chosen per instance (see vehicleMaterial).
+  if (kind === 'pickup') return roadPickupGeometry({ trim: 'xlt', alt: 'xl' });
   return vehicleGeometry(kind);
 }
 /**
  * The high-tier passenger kind and, for a pickup, its trim and paint, from the passenger share alone, so no
  * extra random draw shifts any other slot's phase, threshold or paint.
  */
-export function passengerKind(passenger: number): { kind: Kind; paint?: string } {
+export function passengerKind(passenger: number): { kind: Kind; work?: boolean; paint?: string } {
   let lower = 0;
   for (const [kind, upTo] of CAR_MIX) {
     if (passenger < upTo) {
@@ -106,7 +106,7 @@ export function passengerKind(passenger: number): { kind: Kind; paint?: string }
       const work = f < WORK_PICKUP_SHARE;
       const g = work ? f / WORK_PICKUP_SHARE : (f - WORK_PICKUP_SHARE) / (1 - WORK_PICKUP_SHARE);
       const colors = work ? WORK_COLORS : PICKUP_COLORS;
-      return { kind: work ? 'work' : 'pickup', paint: colors[Math.min(colors.length - 1, Math.floor(g * colors.length))] };
+      return { kind: 'pickup', work, paint: colors[Math.min(colors.length - 1, Math.floor(g * colors.length))] };
     }
     lower = upTo;
   }
@@ -165,6 +165,8 @@ interface Slot {
   threshold: number;
   kind: Kind;
   color: THREE.Color;
+  /** A pickup drawn in the XL-like work trim (its mesh's alternate colours). */
+  work?: boolean;
 }
 
 // A monotone distance map concentrates existing cars at a bottleneck. Value and
@@ -211,7 +213,7 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
       const phase = (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane));
       const threshold = random();
       let color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
-      let kind: Kind;
+      let kind: Kind, work = false;
       if (u < lane.truckShare) {
         kind = quality === 'high' && u < lane.truckShare * (lane.semiShare ?? .15) ? 'semi' : 'box';
       } else if (quality === 'high') {
@@ -219,11 +221,12 @@ export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, see
         const passenger = (u - lane.truckShare) / (1 - lane.truckShare);
         const pick = passengerKind(passenger);
         kind = pick.kind;
+        work = !!pick.work;
         if (pick.paint) color = new THREE.Color(pick.paint);
       } else {
         kind = u < lane.truckShare + .35 ? 'suv' : 'sedan';
       }
-      slots.push({ lane, phase, threshold, kind, color });
+      slots.push({ lane, phase, threshold, kind, color, ...(work ? { work } : {}) });
     }
   }
   return slots;
@@ -589,7 +592,8 @@ export class RoadTraffic {
         const braking = timed != null ? (lane.queue?.brakes ?? lane.brakes)[i] : course.rush && free < course.rush.center &&
           rushDistance(free + 1, course, rushHour) - s < .65;
         // The semi's van colour shares the per-instance brake float (see vehicleMaterial).
-        const lamp = (braking ? 1 : 0) + (slot.kind === 'semi' ? 2 * vanPaintIndex(slot.threshold) : 0);
+        // The index above the lamp bit: the semi's van paint, or 1 for a work-trim pickup.
+        const lamp = (braking ? 1 : 0) + (slot.kind === 'semi' ? 2 * vanPaintIndex(slot.threshold) : slot.work ? 2 : 0);
         if (brake.getX(index) !== lamp) { brake.setX(index, lamp); brake.needsUpdate = true; }
         // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);

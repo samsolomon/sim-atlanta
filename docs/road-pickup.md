@@ -34,7 +34,7 @@ It uses the shared `vehicleMaterial` kinds: 0 paint, 1 headlamps and C-clamp run
 
 ## City traffic
 
-City High traffic draws the traffic form for every pickup slot. That's 13% of passenger cars, the same band as the generic pickup it replaces. About 1 in 4 is the XL-like work trim (`work`), and the rest are XLT-like (`pickup`). Each trim is its own instanced mesh on the shared vehicle material: +1 draw, 0 programs. The trim and the paint both come from the slot's existing passenger draw, so no other slot's phase, threshold or paint moves.
+City High traffic draws the traffic form for every pickup slot. That's 13% of passenger cars, the same band as the generic pickup it replaces. About 1 in 4 is the XL-like work trim; the rest are XLT-like. Both trims come from one instanced mesh, so it adds 0 draws and 0 programs. That keeps the High night-call budget flat, which matters because it is inside Sam's 40-call reserve. The trims differ only in colour, so the geometry carries the work trim's colours and kinds as `aAlt` (rgb, kind + 10; `packFaces`). A work slot sets index 1 on the per-instance `braking` float (lamp + 2 × index, as the semi's van paint does), and the traffic shader swaps in `aAlt`. The trim and the paint both come from the slot's existing passenger draw, so no other slot's phase, threshold or paint moves.
 
 - **Paint.** XLT-like trucks spread evenly over `PICKUP_PAINTS`. Work trucks are fleet white three times in five, otherwise silver or grey.
 - **Length.** The footprint is 5.893 m (it was 5.6 m), which also sets traffic spacing and the headlight pool's start.

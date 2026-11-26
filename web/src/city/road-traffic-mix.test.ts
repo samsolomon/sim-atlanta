@@ -19,13 +19,18 @@ describe('road vehicle mix', () => {
     const plan = (slots: typeof low, pickups = new Set<number>()) => slots.map(({ kind, color, ...slot }, i) => ({
       ...slot, color: pickups.has(i) ? null : color, truck: kind === 'semi' || kind === 'box',
     }));
-    const pickups = new Set(high.flatMap((s, i) => (s.kind === 'pickup' || s.kind === 'work' ? [i] : [])));
+    const pickups = new Set(high.flatMap((s, i) => (s.kind === 'pickup' ? [i] : [])));
     expect(pickups.size).toBeGreaterThan(0);
     expect(plan(high, pickups)).toEqual(plan(low, pickups));
   });
   it('adds hatch, pickup, van and semi on high, with semis mostly on the Connector', () => {
     const slots = slotsFor([arterial, connector], 4000, 1, 11, 'high');
-    for (const k of ['sedan', 'suv', 'hatch', 'pickup', 'work', 'van', 'box', 'semi']) expect(kinds(slots)).toContain(k);
+    for (const k of ['sedan', 'suv', 'hatch', 'pickup', 'van', 'box', 'semi']) expect(kinds(slots)).toContain(k);
+    // Work trucks are pickups with the flag, about 1 in 4, and only pickups carry it.
+    const pickups = slots.filter(s => s.kind === 'pickup');
+    expect(pickups.filter(s => s.work).length / pickups.length).toBeGreaterThan(.15);
+    expect(pickups.filter(s => s.work).length / pickups.length).toBeLessThan(.35);
+    expect(slots.filter(s => s.work).every(s => s.kind === 'pickup')).toBe(true);
     const semiFrac = (lane: TrafficCourse) => {
       const trucks = slots.filter(s => s.lane === lane && (s.kind === 'semi' || s.kind === 'box'));
       return trucks.filter(s => s.kind === 'semi').length / trucks.length;
@@ -35,16 +40,16 @@ describe('road vehicle mix', () => {
   });
   it('draws about 1 in 4 pickups as the work trim, in pickup paints, at the F-150 length', () => {
     const picks = Array.from({ length: 20000 }, (_, i) => passengerKind((i + .5) / 20000));
-    const pickups = picks.filter(p => p.kind === 'pickup' || p.kind === 'work');
-    const work = pickups.filter(p => p.kind === 'work');
+    const pickups = picks.filter(p => p.kind === 'pickup');
+    const work = pickups.filter(p => p.work);
     expect(work.length / pickups.length).toBeCloseTo(WORK_PICKUP_SHARE, 2);
     const palette = Object.values(PICKUP_PAINTS).map(p => p.hex);
     // Every XLT paint appears; work trucks stay white, silver or grey, mostly white.
-    expect(new Set(pickups.filter(p => p.kind === 'pickup').map(p => p.paint))).toEqual(new Set(palette));
+    expect(new Set(pickups.filter(p => !p.work).map(p => p.paint))).toEqual(new Set(palette));
     expect(new Set(work.map(p => p.paint))).toEqual(new Set([PICKUP_PAINTS.white.hex, PICKUP_PAINTS.silver.hex, PICKUP_PAINTS.grey.hex]));
     expect(work.filter(p => p.paint === PICKUP_PAINTS.white.hex).length / work.length).toBeGreaterThan(.5);
     // Other kinds keep the shared traffic palette (no paint override).
-    expect(picks.filter(p => p.kind !== 'pickup' && p.kind !== 'work').every(p => p.paint === undefined)).toBe(true);
+    expect(picks.filter(p => p.kind !== 'pickup').every(p => p.paint === undefined && !p.work)).toBe(true);
     // The pickup band itself is unchanged (0.79 to 0.92 of passengers).
     expect(pickups.length / picks.length).toBeCloseTo(.13, 2);
     expect(PICKUP_LENGTH).toBeCloseTo(5.893, 3);

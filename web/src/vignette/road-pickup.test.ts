@@ -5,6 +5,29 @@ import { PICKUP_LENGTH, roadPickupGeometry } from './road-pickup';
 const triangles = (g: ReturnType<typeof roadPickupGeometry>) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
 
 describe('road pickup', () => {
+  it('carries the work trim as alternate colours on the same faces, for one traffic mesh', () => {
+    const both = roadPickupGeometry({ trim: 'xlt', alt: 'xl' }), xlt = roadPickupGeometry({ trim: 'xlt' }), xl = roadPickupGeometry({ trim: 'xl' });
+    const tris = (g: typeof both) => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+    // Same shape: one mesh's triangles serve both trims.
+    expect(tris(both)).toBe(tris(xlt));
+    expect(tris(both)).toBe(tris(xl));
+    expect(xlt.getAttribute('aAlt')).toBeUndefined();
+    const alt = both.getAttribute('aAlt'), kind = both.getAttribute('aKind'), color = both.getAttribute('color');
+    let differs = 0;
+    for (let i = 0; i < alt.count; i++) {
+      // Encoded as kind + 10 so a geometry without aAlt (default w 0 or 1) never switches.
+      expect(alt.getW(i)).toBeGreaterThan(9.5);
+      // A part that isn't paint on the XLT never becomes paint on the work trim: paint multiplies the vertex
+      // colour by the instance colour, and only paint vertices are white.
+      if (kind.getX(i) !== 0) expect(alt.getW(i) - 10).not.toBe(0);
+      if (kind.getX(i) !== alt.getW(i) - 10 || Math.abs(color.getX(i) - alt.getX(i)) > 1e-4) differs++;
+    }
+    // Only the trim parts change: grille bars, bumpers, wheels and lips, a minority of vertices.
+    expect(differs).toBeGreaterThan(0);
+    expect(differs / alt.count).toBeLessThan(0.5);
+    for (const g of [both, xlt, xl]) g.dispose();
+  });
+
   it('has F-150 SuperCrew 5.5 ft proportions, centred on its footprint', () => {
     const g = roadPickupGeometry();
     g.computeBoundingBox();

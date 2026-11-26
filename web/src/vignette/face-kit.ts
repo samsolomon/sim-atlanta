@@ -79,25 +79,40 @@ export type FaceKit = ReturnType<typeof faceKit>;
  * Pack faces into the vehicle kit's attributes (position, color, aKind), shifted by `dz` along the
  * length. `kindOf` maps a face colour to its kind; paint (kind 0) takes `paint`.
  */
-export function packFaces(faces: Face[], kindOf: (color: string) => number, paint: string, dz = 0) {
+/**
+ * `alt`, when given, is the same faces in another colourway (same calls, same order, only colours
+ * differ). It becomes `aAlt` (rgb, kind + 10), which vehicleMaterial's traffic shader swaps in for a
+ * flagged instance, so two trims share one mesh and one draw.
+ */
+export function packFaces(faces: Face[], kindOf: (color: string) => number, paint: string, dz = 0, alt?: Face[]) {
   const positions: number[] = [],
     colors: number[] = [],
-    kinds: number[] = [];
+    kinds: number[] = [],
+    alts: number[] = [];
+  if (alt && alt.length !== faces.length) throw new Error(`packFaces: ${alt.length} alternate faces for ${faces.length}`);
+  const altTint = new THREE.Color();
   const tint = new THREE.Color();
-  for (const { points, color } of faces) {
+  for (const [f, { points, color }] of faces.entries()) {
     const kind = kindOf(color);
     tint.set(kind === 0 ? paint : color);
+    const altKind = alt ? kindOf(alt[f].color) : 0;
+    if (alt) {
+      if (alt[f].points.length !== points.length) throw new Error(`packFaces: alternate face ${f} differs in shape`);
+      altTint.set(altKind === 0 ? paint : alt[f].color);
+    }
     for (let i = 1; i + 1 < points.length; i++)
       for (const p of [points[0], points[i], points[i + 1]]) {
         positions.push(p[0], p[1], p[2] + dz);
         colors.push(tint.r, tint.g, tint.b);
         kinds.push(kind);
+        if (alt) alts.push(altTint.r, altTint.g, altTint.b, altKind + 10);
       }
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.setAttribute('aKind', new THREE.Float32BufferAttribute(kinds, 1));
+  if (alt) geometry.setAttribute('aAlt', new THREE.Float32BufferAttribute(alts, 4));
   geometry.computeVertexNormals();
   return mergeVertices(geometry);
 }
