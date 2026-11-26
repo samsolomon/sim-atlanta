@@ -75,6 +75,31 @@ export function yieldPlanes(y: GroundYield) {
 }
 
 
+type Footprint = ReturnType<typeof yieldPlanes>;
+
+/** Whether a point is within `eps` of a footprint: its planes, behind a box test that only skips
+ * footprints the planes would reject (footprint-pretest.test.ts). */
+export function footprintContains(y: Footprint, x: number, z: number, eps: number) {
+  const margin = y.reach === Infinity ? Infinity : y.reach * eps + 1e-6;
+  if (x < y.minX - margin || x > y.maxX + margin || z < y.minZ - margin || z > y.maxZ + margin) return false;
+  return y.planes.every(plane => plane(x, 0, z) >= -eps);
+}
+
+/** Whether a face lies wholly outside a footprint's box, so the footprint cannot split it. Asking
+ * splitConvex anyway returns the face unchanged, but first allocates cut vertices nothing draws. */
+export function apartFromFootprint(y: Footprint, pos: readonly number[], face: readonly number[]) {
+  if (y.reach === Infinity) return false;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const i of face) {
+    const x = pos[3 * i], z = pos[3 * i + 2];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
+  }
+  return maxX < y.minX - 1e-6 || minX > y.maxX + 1e-6 || maxZ < y.minZ - 1e-6 || minZ > y.maxZ + 1e-6;
+}
+
 /** Scene heights per grid node (NaN in voids), with the inferred underpass pavement applied. */
 export function nodeHeights(spec: SurfaceSpec, node: (row: number, col: number) => number | null) {
   const { rows, cols, sceneZeroNavd88M } = spec;
@@ -187,32 +212,12 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       }
       return list;
     };
-    const contains = (y: ReturnType<typeof yieldPlanes>, x: number, z: number, eps: number) => {
-      // The box test only skips yields the planes would reject.
-      const margin = y.reach === Infinity ? Infinity : y.reach * eps + 1e-6;
-      if (x < y.minX - margin || x > y.maxX + margin || z < y.minZ - margin || z > y.maxZ + margin) return false;
-      return y.planes.every(plane => plane(x, 0, z) >= -eps);
-    };
-    // A face wholly outside a footprint's box cannot be split by it. Asking splitConvex anyway
-    // returns the face unchanged, but first allocates cut vertices that nothing draws.
-    const apart = (y: ReturnType<typeof yieldPlanes>, face: number[]) => {
-      if (y.reach === Infinity) return false;
-      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-      for (const i of face) {
-        const x = pos[3 * i], z = pos[3 * i + 2];
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (z < minZ) minZ = z;
-        if (z > maxZ) maxZ = z;
-      }
-      return maxX < y.minX - 1e-6 || minX > y.maxX + 1e-6 || maxZ < y.minZ - 1e-6 || minZ > y.maxZ + 1e-6;
-    };
     const lowered = new Map<number, number>();
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
       let f = Infinity;
       let designed = y;
-      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) {
+      for (const yd of nearYields(x, z)) if (footprintContains(yd, x, z, 1e-6)) {
         const height = yd.floor(x, z, y);
         if (yd.grade) designed = height;
         else f = Math.min(f, height);
@@ -245,7 +250,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
           [ia,ib,ic].every(i => pos[3*i+2] < y.minZ) || [ia,ib,ic].every(i => pos[3*i+2] > y.maxZ)
         )) continue;
         faces = faces.flatMap(f => {
-          if (apart(y, f)) return [f];
+          if (apartFromFootprint(y, pos, f)) return [f];
           const { inside, outside } = splitConvex(f, y.planes, pos, add);
           if (!inside) return outside;
           const low = inside.map(lower);
@@ -262,7 +267,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
             const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
             const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
-            if (nearYields(bx, bz).some(other => other !== y && contains(other, bx, bz, 0))) continue;
+            if (nearYields(bx, bz).some(other => other !== y && footprintContains(other, bx, bz, 0))) continue;
             emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
             emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
           }
@@ -314,7 +319,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       yield 'ground rows';
       yield* conformCutEdgesSteps(result, blocks, (x,z)=>{
         let floor=Infinity;
-        for (const y of nearYields(x,z)) if (y.conformEdges && contains(y,x,z,1e-6)) {
+        for (const y of nearYields(x,z)) if (y.conformEdges && footprintContains(y,x,z,1e-6)) {
           floor=Math.min(floor,y.floor(x,z));
         }
         return floor;

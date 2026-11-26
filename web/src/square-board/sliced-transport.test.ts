@@ -47,7 +47,7 @@ function fingerprint(root: THREE.Object3D) {
 }
 
 async function mountNorth(sliced: boolean) {
-  vi.stubGlobal('location', { search: sliced ? '?slice=1' : '' });
+  vi.stubGlobal('location', { search: sliced ? '' : '?slice=0' });
   const downtown = createDowntownTerrain(new GroundGrid(JSON.parse(file('downtown', 'ground.json').toString()), Uint8Array.from(file('downtown', 'ground.i16')).buffer),
     { bounds: bounds.downtown, roads: [], rail: [], buildings: [] }, [], { quality: 'low', bottomY: -48, join: joins('downtown') });
   keeps.length = 0;

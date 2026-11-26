@@ -44,19 +44,17 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
  */
 /**
- * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
- * high, half that while the camera is dragged (the sliced-build gate: no long task while an
- * area mounts). Off by default.
+ * Each section's build is spread over frames: 4 ms of work per frame on low, 8 ms on high, half
+ * that while the camera is dragged (the sliced-build gate: no long task while an area mounts).
+ * ?slice=0 builds each section in one task, for comparisons and profiles; so does Node.
  */
-function sliceBudget(quality: TerrainQuality, section: Section): (() => number) | null {
-  if (typeof location === 'undefined') return null;
-  const query = new URLSearchParams(location.search);
-  if (query.get('slice') !== '1' && !(section === 'r16' && query.has('northSlice'))) return null;
+function sliceBudget(quality: TerrainQuality): (() => number) | null {
+  if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') === '0') return null;
   const ms = quality === 'low' ? 4 : 8;
   // Half the share while the user drags, so a moving camera stays smooth.
   return () => sliceInput.dragging ? ms / 2 : ms;
 }
-/** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
+/** Sliced-build stats across every section this page loaded, for the perf harness. */
 export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
@@ -205,9 +203,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
   // low, all typed-array stores, in a heap snapshot diff).
   const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
-  const budget = sliceBudget(quality, direction);
+  const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
-  // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
+  // One build, two drivers: a few ms per frame, or straight through under ?slice=0 and in Node.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
   try {
     for (const [patchIndex, { id, grid, context, ramp, trail, slots }] of patches.entries()) {

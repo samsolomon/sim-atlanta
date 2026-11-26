@@ -58,7 +58,10 @@ try {
     }
     if (!s) { failed = true; continue; }
     // A partial board comes in under every ceiling, so it must fail rather than pass quietly.
-    if (s.areas < 12) { console.error(`${tier}: only ${s.areas} of 12 areas mounted; check the staged data`); failed = true; continue; }
+    // An entry whose route mounts R16 needs all 13, with R16 built inside the sample.
+    const areas = b.areas ?? 12;
+    if (s.areas < areas) { console.error(`${tier}: only ${s.areas} of ${areas} areas mounted; check the staged data`); failed = true; continue; }
+    if (b.r16InSample && s.r16BuiltInSample !== true) { console.error(`${tier}: R16 did not finish mounting inside the sample, so its long tasks were not measured`); failed = true; continue; }
     console.log(`\n${tier.toUpperCase()}            measured     ceiling      target`);
     const keys = [...new Set([...Object.keys(b.ceiling), ...Object.keys(b.target).filter(k => k in s)])];
     for (const k of keys) {

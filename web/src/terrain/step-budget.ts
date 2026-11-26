@@ -9,7 +9,7 @@ import type { TerrainQuality } from './surface-build';
 
 /**
  * Test helper (Node only): how long each step of a staged row's sliced build takes at 1x, for the
- * step-budget tests. In a sliced mount (?slice=1) a step runs inside one frame's budget, so a
+ * step-budget tests. In a sliced mount a step runs inside one frame's budget, so a
  * step over STEP_MS is a frame over budget on a phone.
  *
  * Machine load is kept out of it two ways. Each step keeps its fastest time across builds, and a
@@ -30,6 +30,13 @@ function reference() {
   b.geometry().dispose();
 }
 const timed = (f: () => void) => { const t = performance.now(); f(); return performance.now() - t; };
+
+/** How much slower than the reference core this machine is running now (never below 1). */
+export function slowness() {
+  let ref = Infinity;
+  for (let i = 0; i < 3; i++) ref = Math.min(ref, timed(reference));
+  return Math.max(1, ref / REF_MS);
+}
 
 /**
  * Steps over budget, as `<row> <label> #<n>: <ms> ms (limit <ms>)`. A step is named by the label

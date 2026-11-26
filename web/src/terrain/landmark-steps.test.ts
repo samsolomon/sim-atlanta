@@ -8,7 +8,7 @@ import { GroundGrid } from './grid';
 import { buildDowntownTerrain } from './model';
 
 /**
- * The landmark tail must not regrow: in a sliced mount (?slice=1) each landmark step runs inside
+ * The landmark tail must not regrow: in a sliced mount each landmark step runs inside
  * one frame's budget, so no single step may take more than STEP_MS here (1x CPU, the fastest of
  * several builds, scaled for a slow machine by a reference workload). A new skin that trips this
  * should yield at its part boundaries (see buildArtsCampusLandmark, buildMidtownLandmark,

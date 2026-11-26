@@ -17,7 +17,7 @@ afterEach(() => vi.unstubAllGlobals());
 it('20 abandoned sliced mounts each dispose everything a completed mount makes', async () => {
   const ctx = new Proxy({}, { get: () => () => { } });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
-  vi.stubGlobal('location', { search: '?slice=1' });
+  vi.stubGlobal('location', { search: '' });
   let frames = 0, abortAt = Infinity, onFrame = () => { };
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => { if (++frames === abortAt) onFrame(); cb(performance.now()); }, 0));
   vi.stubGlobal('fetch', async (url: string) => {

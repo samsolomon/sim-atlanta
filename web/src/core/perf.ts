@@ -13,6 +13,7 @@
  * mipmaps; attribute array lengths), not driver readings.
  */
 import type * as THREE from 'three';
+import { sliceInput } from './slice';
 
 /** `scenery` is a terrain area's mixed scenery group until its builders tag buildings, trees and yards. */
 export type PerfCategory = 'terrain' | 'transport' | 'buildings' | 'trees' | 'vehicles' | 'landscape' | 'scenery' | 'other';
@@ -516,9 +517,12 @@ if (perfEnabled && typeof PerformanceObserver !== 'undefined') {
 /** Camera routes for ?perf=run&motion=route:<name>, flown out and back over a 20 s sample. `north`
  * runs Five Points to Brookwood at 700 m (areas and rings change under it); `zoomout` eases from a
  * 3 km to a 25 km orbit over Midtown, crossing the 10 km build distance early (far-level builds and swaps). */
-const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: [number, number] }> = {
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: [number, number]; sampleMs?: number }> = {
   north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
   zoomout: { dist: 3000, bearing: 0, tilt: 35, path: [[400, -2300], [400, -2300]], dists: [3000, 25000] },
+  // Looks north into R16, which the default view leaves unloaded, so its whole mount lands in the
+  // sample; long enough for a sliced mount on a throttled phone profile.
+  r16: { dist: 900, bearing: 0, tilt: 50, path: [[400, -5200], [400, -6100]], sampleMs: 40000 },
 };
 function routeAt(path: [number, number][], u: number): [number, number] {
   const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
@@ -535,7 +539,8 @@ function routeAt(path: [number, number][], u: number): [number, number] {
 /** City registers its shader prewarm's queue here, so a run settles only once it is empty. */
 let prewarmPending: (() => number) | null = null;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
+// maxWaitMs covers every area of the default view building in slices on a throttled CPU.
+async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
   // Areas mount as the camera approaches, the shader prewarm runs after colour, and house and ground
@@ -547,14 +552,15 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     const last = phases[phases.length - 1]?.ms ?? 0;
     // The first prewarm has finished and nothing is queued now: a later area mount starts another.
     const prewarmed = perfOverrides.prewarmOff || (phases.some(p => p.name === 'city:prewarmed') && (prewarmPending?.() ?? 0) === 0);
-    if (prewarmed && performance.now() - last > quietMs) { settled = true; break; }
+    // A sliced area build logs its phase only when it mounts, so count builds still under way.
+    if (prewarmed && sliceInput.building === 0 && performance.now() - last > quietMs) { settled = true; break; }
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
   const sampleStart = performance.now();
   const motion = params.get('motion');
   const route = motion?.startsWith('route:') ? ROUTES[motion.slice(6)] : undefined;
-  if (route) sampleMs = 20000;
+  if (route) sampleMs = route.sampleMs ?? 20000;
   let turning = motion === 'orbit' || motion === 'pan' || !!route;
   if (turning) {
     const t0 = performance.now();
@@ -584,6 +590,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   await sleep(sampleMs);
   sampling = false;
   turning = false;
+  const r16Built = performance.getEntriesByName('r16:built')[0]?.startTime;
   const full = report(true);
   const f = frames(sampleMs);
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
@@ -601,6 +608,8 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
     settled,
+    // R16 joined the board while the sample ran, so its mount is in the long tasks below.
+    r16BuiltInSample: r16Built !== undefined && r16Built >= sampleStart,
     // Longest main-thread task during the sample, and how many passed 100 ms.
     longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
     longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,

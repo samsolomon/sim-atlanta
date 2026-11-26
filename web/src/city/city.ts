@@ -1557,7 +1557,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
-  // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
+  // Sliced area builds take a smaller share of each frame while the camera is dragged.
   controls.addEventListener('start', () => { sliceInput.dragging = true; });
   controls.addEventListener('end', () => { sliceInput.dragging = false; });
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
