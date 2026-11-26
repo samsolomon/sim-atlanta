@@ -66,7 +66,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false, farShadowM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, wheelPlaneOff: false, sampleWeightOff: false, shadowGapOld: false, farShadowM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -84,6 +84,10 @@ export const perfOverrides = (() => {
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
     trafficLegacy: params.get('traffic') === 'legacy',
     trafficNoCull: params.get('traffic') === 'nocull',
+    /** &wheelplane=0: no fitted wheel plane on any traffic layer (A/B for its per-car height samples). */
+    wheelPlaneOff: params.get('wheelplane') === '0',
+    /** &sampleweight=1: northern US 19 courses keep the fleet share of their flow (no 2x weight). */
+    sampleWeightOff: params.get('sampleweight') === '1',
   };
 })();
 
@@ -93,6 +97,9 @@ const updateMs = new Float32Array(N);
 /** CPU ms the road-traffic layers spent in update() during each frame (all instances summed). */
 const trafficMs = new Float32Array(N);
 let trafficNow = 0;
+/** Per frame, summed over traffic layers: cars posed, road-surface samples, lanes stepped. */
+const trafficCars = new Float32Array(N), trafficSamples = new Float32Array(N), trafficLanes = new Float32Array(N);
+let carsNow = 0, samplesNow = 0, lanesNow = 0;
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -158,8 +165,11 @@ function phase(name: string) {
  * triangles it drew (all passes, shadow redraws included). */
 function frame(ts: number, update: number, render: number, triangles = 0) {
   stamps[head] = ts;
+  if (sampling) sampledFrames++;
   trafficMs[head] = trafficNow;
   trafficNow = 0;
+  trafficCars[head] = carsNow; trafficSamples[head] = samplesNow; trafficLanes[head] = lanesNow;
+  carsNow = samplesNow = lanesNow = 0;
   updateMs[head] = update;
   renderMs[head] = render;
   tris[head] = triangles;
@@ -185,10 +195,11 @@ const pct = (xs: number[], p: number) => {
   return s[Math.min(s.length - 1, Math.floor(p * s.length))];
 };
 const r1 = (x: number) => Math.round(x * 10) / 10;
+const mean = (idx: number[], xs: Float32Array) => r1(idx.reduce((a, i) => a + xs[i], 0) / Math.max(1, idx.length));
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0, trafficCars: 0, trafficSamples: 0, trafficLanes: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
@@ -203,6 +214,7 @@ function frames(windowMs: number) {
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
     trafficMean: Math.round(tf.reduce((a, b) => a + b, 0) / tf.length * 1000) / 1000,
     trafficP50: Math.round(pct(tf, 0.5) * 1000) / 1000, trafficP95: Math.round(pct(tf, 0.95) * 1000) / 1000,
+    trafficCars: mean(idx, trafficCars), trafficSamples: mean(idx, trafficSamples), trafficLanes: mean(idx, trafficLanes),
   };
 }
 
@@ -464,6 +476,10 @@ let inv: ReturnType<typeof inventory> = null;
 let invAt = 0;
 /** True while ?perf=run samples frames. */
 let sampling = false;
+/** Per traffic layer (by group name), summed over the sampled frames: phase ms and counts. */
+type LayerSums = { updates: number; ms: number; queueMs: number; heightMs: number; planeMs: number; cars: number; samples: number; lanes: number; planes: number };
+const trafficLayers = new Map<string, LayerSums>();
+let sampledFrames = 0;
 function startOverlay() {
   if (silent) return;
   if (overlay || typeof document === 'undefined') return;
@@ -586,6 +602,8 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
     };
     requestAnimationFrame(turn);
   }
+  trafficLayers.clear();
+  sampledFrames = 0;
   sampling = true;
   await sleep(sampleMs);
   sampling = false;
@@ -595,9 +613,18 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
   const f = frames(sampleMs);
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
+  const connector = trafficLayers.get('Illustrative Connector traffic');
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
     trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
+    trafficCars: f.trafficCars, trafficSamples: f.trafficSamples, trafficLanes: f.trafficLanes,
+    // Per layer, per sampled frame: update ms split into queue/signal stepping, axle heights and
+    // wheel planes (the rest is posing), plus counts.
+    // The Connector layer flat, for test:perf ceilings: ms per frame and road samples per car.
+    connectorMs: connector ? Math.round(connector.ms / Math.max(1, sampledFrames) * 1000) / 1000 : null,
+    connectorSamplesPerCar: connector?.cars ? Math.round(connector.samples / connector.cars * 100) / 100 : null,
+    trafficLayers: Object.fromEntries([...trafficLayers].map(([name, t]) => [name, Object.fromEntries(
+      Object.entries(t).map(([k, v]) => [k, k === 'updates' ? v : Math.round(v / Math.max(1, sampledFrames) * 1000) / 1000])) ])),
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
@@ -695,8 +722,18 @@ export const perf = {
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
-  /** Add CPU ms spent in road-traffic update() to the current frame. */
-  traffic(ms: number) { trafficNow += ms; },
+  /** Add one road-traffic layer's update() to the current frame: CPU ms, cars posed, road-surface
+   * samples and lanes stepped. */
+  /** True while ?perf=run samples: traffic layers then time their phases (a few performance.now()
+   * calls per car, so only while sampling). */
+  get trafficTiming() { return sampling; },
+  trafficLayer(name: string, t: Omit<LayerSums, 'updates'>) {
+    const sum = trafficLayers.get(name) ?? { updates: 0, ms: 0, queueMs: 0, heightMs: 0, planeMs: 0, cars: 0, samples: 0, lanes: 0, planes: 0 };
+    sum.updates++;
+    for (const k of Object.keys(t) as (keyof typeof t)[]) sum[k] += t[k];
+    trafficLayers.set(name, sum);
+  },
+  traffic(ms: number, cars = 0, samples = 0, lanes = 0) { trafficNow += ms; carsNow += cars; samplesNow += samples; lanesNow += lanes; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
    * count (drawRange, material group and instance count, as three.js computes it), its pass (main,

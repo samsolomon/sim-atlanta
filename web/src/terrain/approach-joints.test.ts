@@ -22,6 +22,8 @@ import { createSurfaceTransport, landingPortals } from './transport';
 import { cityRoadHeight } from '../city/road-height';
 import { Line, segDist } from '../vignette/geom';
 import { roadWidth } from './transport-data';
+import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
+import { applyRampDecks } from './ramp-decks';
 
 const root = new URL('../../../pipeline/prototypes/', import.meta.url);
 const staged = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
@@ -213,3 +215,48 @@ it('keeps the Ellis road top and its outgoing grade continuous across the east l
     surface.geometry.dispose();
   }
 });
+
+// deckAt's tread index must find the same triangle as the full scan it replaced, everywhere a
+// car can sample: along every deck run at 1 m with lateral offsets, and along every Connector
+// lane every 0.5 m (four points per 2 m height step) through cityRoadHeight. Tolerance 0.
+it('finds the same deck heights with the tread index as with the full scan, on every board', () => {
+  const boards = BOARDS.map(id => {
+    // City applies the surveyed Connector ramp decks to downtown before building its transport.
+    const { grid, city: source } = board(id), zero = grid.manifest.vertical.sceneZeroNavd88M;
+    const city = id === 'downtown' ? applyRampDecks(source) : source;
+    const surface = new GroundSurface(grid, 'low'), bare = surface.sampleScene.bind(surface);
+    const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
+    return { id, city, groundAt: approach.groundAt, transport: createSurfaceTransport(city, grid, approach.groundAt) };
+  });
+  let samples = 0, hits = 0;
+  const same = (a: number | null, b: number | null, where: string) => {
+    samples++;
+    if (a !== null) hits++;
+    if (!Object.is(a, b)) throw Error(`${where}: index ${a} vs scan ${b}`);
+  };
+  for (const { id, city, transport } of boards) for (const run of city.terrainTransport?.roads ?? []) {
+    if (run.pts.length < 2) continue;
+    const line = new Line(run.pts);
+    for (let s = 0; s <= line.length; s += 1) {
+      const p = line.at(s);
+      for (const o of [-6, -3, -1, 0, 1, 3, 6]) {
+        const x = p.x - p.dz * o, z = p.z + p.dx * o;
+        same(transport.deckAt(x, z, run), transport.deckAtScan(x, z, run), `${id} ${run.cls} s=${s} o=${o}`);
+      }
+    }
+  }
+  // Connector lanes, through the same height function traffic uses.
+  const home = boards[0], neighbors = boards.slice(1);
+  for (const lane of connectorTrafficRoutes(home.city, neighbors.map(b => b.city))) {
+    for (let s = 0; s <= lane.line.length; s += 0.5) {
+      const p = lane.line.at(s), road = lane.roads[Math.min(lane.roads.length - 1, Math.floor(lane.line.vertexAt(s)))];
+      const b = boards.find(({ city: { bounds: r } }) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
+      if (!b) continue;
+      const indexed = cityRoadHeight(b.city, b.groundAt, b.transport.deckAt);
+      const scanned = cityRoadHeight(b.city, b.groundAt, b.transport.deckAtScan);
+      same(indexed(p.x, p.z, road), scanned(p.x, p.z, road), `${b.id} lane ${lane.direction} s=${s}`);
+    }
+  }
+  expect(samples).toBeGreaterThan(50_000);
+  expect(hits).toBeGreaterThan(10_000);
+}, 600_000);
