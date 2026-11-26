@@ -1,3 +1,4 @@
+import { capitolTunnel, capitolTunnelSlots } from '../terrain/capitol-tunnel';
 import { eastLandingYields } from '../../../pipeline/prototypes/highway-four-ground/landing';
 import { eastHighwayApproaches, eastLandingTriangles } from '../../../pipeline/prototypes/highway-four/east';
 import { golfFlags, teeMarkers } from '../terrain/golf';
@@ -187,7 +188,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // ?worker=1: every patch's ground surface is built in a Worker, in parallel, before the
   // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
   const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid, slots }) => prebuildSurface(grid, quality,
-    terrainOpenings(grid, { extraSlots: slots, underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
+    terrainOpenings(grid, { extraSlots: slots, underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : id === 'south-band' ? capitolTunnelSlots() : undefined }),
     joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
   signal.throwIfAborted();
   // Hand each prebuilt surface over once and drop it here: the area's closures keep this scope
@@ -218,7 +219,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
         lights: id in rowBounds ? midtownLights : undefined,
         underpass: id === 'midtown-south' ? northAvenue : undefined,
-        openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
+        openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : id === 'south-band' ? capitolTunnelSlots() : undefined,
         extraSlots: slots,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
@@ -268,6 +269,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           }
           return null;
         };
+        // The covered Connector's mouths under Capitol Gateway (the tubes' slots are cut above).
+        const tunnel = id === 'south-band' ? capitolTunnel(area.terrainAt) : undefined;
+        if (tunnel) area.group.add(tunnel.group);
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         if (ramp) area.group.add(ramp.surface, ramp.lining);
@@ -281,7 +285,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         yield 'piers and road heights';
         added.set(id, {
           ...area, northTread, orbitGround: ramp?.originalHeight,
-          setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
+          setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); tunnel?.setNight(factor); },
           connectorBoard: { city, roadHeight: id !== 'midtown-south' ? roadHeight : (x, z, road) => {
             if (road.name === northAvenue.roadName) {
               const [s, t] = northAvenue.local(x, z);
@@ -297,6 +301,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
             }
             hospitalLink?.dispose();
             for (const t of transports) t.dispose();
+            tunnel?.dispose();
             piers?.mesh.geometry.dispose();
             (piers?.mesh.material as { dispose(): void } | undefined)?.dispose();
             trail?.dispose();
