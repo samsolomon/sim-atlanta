@@ -2,6 +2,8 @@
 
 Phase 1 of applying the Brookwood bridge, overpass, sidewalk and lane-transition primitives (PR #682) to the Downtown Connector. This document is measurement and registration only. No geometry changed. Repairs wait for #682 to merge and the coordinator's go.
 
+**Status, November 25.** C is repaired on `samsolomon/connector-c-floors`; see [C repair](#c-repair-branch-samsolomonconnector-c-floors). The phase-1 sections below keep their measurements as registered.
+
 Measured on `samsolomon/connector-repairs` at **c8e3e34e** (PR #682 head), dev server, both tiers, clock pinned to 2026-11-20 14:00 EST, clear weather, 1200 × 720 viewport. Ground grids are byte-identical to `pipeline/prototypes/square-board/*/ground.i16`. Contexts were restaged with this head's `stage-*` scripts. Stills: [`log/ui/connector-repairs/`](log/ui/connector-repairs/). Camera matrices: `cameras/`. Signed probe output: `evidence/`. Probe scripts (scratch tools, not app code): `probes/`.
 
 ## Gate: the three-site calibration on this head
@@ -35,7 +37,7 @@ The result JSON is **byte-identical** to the same checker run on the 1d04eadc fi
 
 So the patch is applied after, and over, a grid correction it never saw. The key is the DEM sha (`b0d6…`), so nothing detects the conflict. `connector-ground.test.ts` stays green because its lane loop samples `grid.sample`, not the drawn surface.
 
-**Where it fires.** Confirmed: **30 override nodes plus 4 isolated rendered peaks** (one shared). Candidates: 31 taper nodes outside Civic Center, not yet verified.
+**Where it fires (phase 1).** Confirmed: **30 override nodes plus 4 isolated rendered peaks** (one shared). 31 taper candidates outside Civic Center were then verified under the C repair below: 22 are real lane departures (Baker 2, MLK 20) and 9 are rejected.
 
 | Mechanism | Count | Where | Worst |
 |---|---|---|---|
@@ -45,7 +47,7 @@ So the patch is applied after, and over, a grid correction it never saw. The key
 
 Before counting mechanism 2 outside Civic Center, check each site with a close still, the along-lane drawn profile and an overhead-deck raycast. Node lists: `evidence/c-override-nodes.txt`, `evidence/c-taper-nodes.json`. A ±12 m lane-residual census over all ground ribbons (`probes/census.*`) flagged about 1,500 samples. Most are grade breaks, carves, R16's graded southbound board, or ribbons tagged `ground` that are actually elevated (Sweet Auburn). It is a triage list, not a count.
 
-**Repair (primitive: ground yield / graded floor, ordered once).**
+**Phase-1 repair plan** (done except the downtown taper; see C repair).
 - Apply `underpass-floors` **before** grid corrections. Equivalently, rebake it against the corrected grid so its taper blends into the floored values, not the raw DEM.
 - Never let a patch raise a node above an earlier correction: `min(patch, corrected)` inside correction footprints.
 - If mechanism 2 is confirmed at MLK, Baker or Decatur, the taper's outer weight must read a contamination-masked grid: exclude raw nodes under mapped deck and roof outlines, or interpolate across them from exposed class-2.
@@ -58,25 +60,31 @@ Before counting mechanism 2 outside Civic Center, check each site with a close s
 
 **Generator check.** The unmodified generator, rerun from the USGS EPT cache, reproduced the committed `underpass-floors.json` byte for byte. After the change, the downtown (3,128 entries) and south-band (282) patches are byte-identical. North-band changes 39 entries: 33 rebaked and 6 dropped because they now equal the floored grid. Node (375, −1425) goes from 307.0 to **294.5 m**.
 
-**The 30 override nodes.** 28 now sit within 0.5 m of the floor. The other 2 sit 0.51–0.73 m above it, where the class-2 covered-pavement plane meets the inferred floor grade. Those are two surveys meeting, not roof returns.
+**The 30 override nodes.** 28 now sit within 0.5 m of the floor. Two remain above it: (355, −1425) at +0.73 m and (355, −1420) at +0.64 m. They are at the west edge of the NB floor, where the class-2 covered-pavement plane under West Peachtree meets the inferred floor grade. Those are two surveys meeting, not roof returns, and they are left as they are.
 
 **Floor joint hole.** The two Spring/Techwood feeder floors share an endpoint at (244, −1451). Node (245, −1455), on the outside of the bend, lay beyond both segments and kept its raw 291.6 m. That left a +1.9 m peak beside the feeder lane. Nodes that only the shared joint reaches now take its floor (289.7 m) in both TS and Python. The floored count moves from 223 to 224.
 
-**The 31 taper candidates: none is a spike.** Drawn along-lane profiles on both tiers (the line through each node's neighbours 6–20 m away on the same lane), plus close stills:
-- **Decatur (8):** residuals ≤ 0.26 m.
-- **MLK 755543582 (8):** ≤ 0.31 m on an 11–13% ramp.
-- **MLK 436808889 (5):** 0.19–1.74 m of curvature on an 8–15% ramp; smooth in close view.
-- **Baker 38974051 (2):** −0.59 and +1.20 m on a 28% descent; smooth in close view.
-- **8 MLK gore nodes:** one-sided profiles, smooth in close view.
+**The 31 taper candidates: 22 real departures, 9 rejected, all on the downtown patch, which this branch leaves unchanged.** A line fit cannot reject a steady ramp toward deck height, so each node got three checks on both tiers:
+- USGS class-2 and class-17 medians in a 2 m disk: `c-floors/taper-candidates-lidar.json`.
+- The full drawn surface stack from a downward ray in the running app: `c-floors/taper-candidates-surface-stack-{high,low}.json`.
+- The along-lane profile.
 
-Those boards are unchanged by this repair.
+The results:
+- **Rejected (9).** Decatur 316454382 (8): no structure overhead, and the drawn lane matches class-2 within 0.3 m (302.0–302.6 against 302.3–302.7 m). Baker 9235707 (1): drawn 291.7 m against class-2 290.7 m, no structure, under 1 m.
+- **Baker 38974051 (2), confirmed.** The Baker/Piedmont approach is drawn above at 300.7 m (class-2 and class-17 both about 300.6). Below it the lane is drawn at 297.72 m and 294.14 m. The portal-fitted lower pavement is 290.6 m. The lane climbs toward the street on a 28% grade, leaving 3.0 m to the street surface at (880, −855) where 10.1 m is expected.
+- **MLK (20), confirmed departure, structure unresolved.** Ways 436808889 (10), 755543582 (8), 44698161 and 755543580: the drawn lane sits 1.4–6.5 m above the portal-fitted lower pavement (about 305 m). It rises toward a surface at 311.5–312.5 m, where class-17 bridge returns (up to 55 per disk) coincide with class-2, yet City draws no structure over these nodes. Either the real MLK deck extends past the drawn outline 1278959968, or the ramps climb there. Register the MLK deck extent (crossing row 18) before choosing a fix.
+
+**Follow-up (not in this branch).** Mask the downtown taper's outer weight at nodes whose raw height comes from deck or cover returns (Baker), and settle the MLK structure extent. That rebakes downtown entries, so it deserves its own review.
 
 **Test.** `connector-ground.test.ts` now samples the **drawn** `GroundSurface` on Low and High. Inside the floor footprints, every ground-ribbon lane centre must sit within 0.75 m of the floored grid; the worst after the fix is 0.508 m. The three Civic Center mains must stay between 292 and 297 m. Nodes (375, −1425) and (245, −1455) are pinned. With the old patch the test fails on both tiers (first sample +1.36 m, worst +10.75 m).
 
 **Verification.**
 - Full web suite: 1,428 passed. tsc is clean. Cargo and pipeline checks pass.
 - The 439abf84 calibration with `--expect combined` passes on Low and High, byte-identical to 1d04eadc: [result](log/ui/connector-repairs/c-floors/calibration-combined.json).
-- Rendered isolated peaks near motorway axes go from 4 to 2. Both remaining peaks are on the Capitol Gateway cover top, in D's scope.
+- Rendered isolated peaks near motorway axes go from 4 to 2 on both tiers (rerun on the final tree). The two left are raw DEM points on the Capitol Gateway cover top, in D's scope.
+- The TS and Python floored grids are identical node for node (224 nodes).
+- `pnpm build` passes.
+- `pnpm test:perf` has **not** run yet: it needs the performance window. The only drawn change is the north-band board, Low −48 triangles.
 - North-band board triangles: Low 63,612 → 63,564; High unchanged at 89,600.
 - Deploy: rebuild `web/dist` only. No `pnpm data`, because the floors and patch are bundled from `pipeline/prototypes`.
 
