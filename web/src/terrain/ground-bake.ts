@@ -120,8 +120,11 @@ export class BakeReplay {
   constructor(readonly baked: BakedGround) {}
   /** The stage a re-cut starts (call with builds already counted), or null past the last. */
   stage() { return this.baked.stages[this.builds - 2] ?? null; }
+  /** Yields carved as of the last stage entered: what the surface stands for while stale. */
+  enteredYields = 0;
   /** Enter a stage: its tape replaces the last one, which must have been read through. */
   enter(stage: BakedStage) {
+    this.enteredYields = stage.yields;
     this.tape = stage.tape ?? null;
     this.at = 0;
     this.stale = !!stage.tape;
@@ -138,9 +141,9 @@ export class BakeReplay {
     return t.subarray(from, from + n);
   }
   fail(reason: string) {
+    this.stale = false;
     if (this.failed) return;
     this.failed = true;
-    this.stale = false;
     bakeStats.fallbacks++;
     bakeStats.reasons.push(`${this.baked.id} ${this.baked.quality}: ${reason}`);
     if (import.meta.env?.DEV) console.warn('Baked ground fell back to the in-browser build:', this.baked.id, reason);

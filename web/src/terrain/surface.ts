@@ -75,7 +75,12 @@ export class GroundSurface {
     const replay = this.bake.replay!;
     const skipped = replay.stale;
     replay.fail(reason);
-    if (skipped) runSync(this.tessellate());
+    if (!skipped) return;
+    // Build the surface the skipped re-cut stood for: the yields carved as of that stage. A carve
+    // in progress (this.yields already holds its own) then builds on it as usual.
+    const all = this.yields;
+    this.yields = all.slice(0, replay.enteredYields);
+    try { runSync(this.tessellate()); } finally { this.yields = all; }
   }
 
   /** Take a mesh built off the main thread; a later carve rebuilds here as usual. */
@@ -158,13 +163,15 @@ export class GroundSurface {
       if (stage) {
         const why = !replay.consumed ? 'tape not read through'
           : this.yields.length !== stage.yields || yieldPrint(this.yields) !== stage.yieldPrint ? 'different yields' : null;
-        if (!why) {
+        // The yield probe can itself fail the replay (a floor that samples the stale surface); then
+        // this re-cut builds here like any other.
+        if (!why && !replay.failed) {
           replay.enter(stage);
           if (stage.surface) this.adoptBaked(stage.surface);
           if (stage === replay.baked.stages[replay.baked.stages.length - 1]) bakeStats.adopted++;
           return;
         }
-        replay.fail(why);
+        if (why) replay.fail(why);
       }
     }
     if (record) record.inBuild = true;
