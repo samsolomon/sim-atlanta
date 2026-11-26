@@ -42,7 +42,7 @@ pnpm test            # Rust + pipeline + web + worker tests (pipeline skips with
 pnpm test:release    # same, but fails if the pipeline checks cannot run
 pnpm build           # web/dist, which the worker serves
 pnpm test:perf       # City budgets per tier, headless Chrome (needs Chrome + data; docs/perf.md)
-pnpm review          # cross-model review of this branch (see "Review")
+pnpm review          # second opinion from Codex or Claude (see "Review")
 ```
 
 ## Seeing your work
@@ -130,8 +130,10 @@ uses the timetable.
   there when you change City's camera, follow or board edges). It doesn't render the share
   previews or run `test:perf`, and it checks nothing visual. Its map data is cached until the
   pipeline changes, so it doesn't catch a new upstream feed; releases stage fresh data.
-- Before a PR: run `pnpm test`, check visual changes in a browser, then run `pnpm review`.
-  If the PR changes what City draws or loads, also run `pnpm test:perf`, and lower a ceiling when a cut reaches its target.
+- Before a PR: run the checks for your change's risk and review it with Grok, both in
+  [`docs/review-charter.md`](docs/review-charter.md). Nothing merges without the coordinator's
+  go. When a `pnpm test:perf` cut reaches its target, lower that ceiling.
+- When a task is done, leave a short handoff in `docs/handoffs/`.
 
 ### Coordinating Studio work
 
@@ -150,12 +152,12 @@ uses the timetable.
 
 ## Review
 
-`pnpm review` has the *other* model review this branch's diff against `origin/main`. Claude's
-work goes to Codex and Codex's work goes to Claude, because a model misses the bugs it tends
-to write. The reviewer reads only. The authoring agent triages the result under
-[`docs/review-charter.md`](docs/review-charter.md): fix the confirmed findings and list the
-plausible ones in the PR body. Stop after two rounds. The repo skill `cross-review` walks
-through it.
+Agents review their own branch with Grok, read-only, before a pull request: a different model
+misses different bugs. The authoring agent triages the result under
+[`docs/review-charter.md`](docs/review-charter.md), which has the command: fix the confirmed
+findings in at most two rounds, list the plausible ones in the PR body, and send the coordinator
+the head for the final check and merge go. The repo skill `cross-review` walks through it.
+`pnpm review` still gets a second opinion from Codex or Claude when asked.
 
 These global review skills are also installed for both agents. Use them by name:
 `architect-plan-review` before a multi-file plan, `product-design-plan-review` for plans
