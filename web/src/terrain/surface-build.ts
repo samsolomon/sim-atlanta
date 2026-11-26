@@ -37,6 +37,26 @@ export interface SurfaceSpec {
   sha256: string; sceneZeroNavd88M: number;
 }
 
+/**
+ * How many multiples of a plane tolerance a point can lie past a footprint's bounding box and
+ * still pass every edge plane: a corner of the widened polygon reaches 1 / sin(angle / 2).
+ * Infinite, so nothing is rejected early, where that bound does not hold: a reflex or folded
+ * corner, or a repeated vertex.
+ */
+export function cornerReach(ring: readonly (readonly [number, number])[], sign: number) {
+  let reach = 1;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[(i + ring.length - 1) % ring.length], b = ring[i], c = ring[(i + 1) % ring.length];
+    const ux = a[0] - b[0], uz = a[1] - b[1], vx = c[0] - b[0], vz = c[1] - b[1];
+    const lengths = Math.hypot(ux, uz) * Math.hypot(vx, vz);
+    if (!lengths || sign * (vx * uz - vz * ux) < 0) return Infinity;
+    const halfSine = Math.sqrt(Math.max(0, (1 - (ux * vx + uz * vz) / lengths) / 2));
+    if (halfSine < 1e-6) return Infinity;
+    reach = Math.max(reach, 1 / halfSine);
+  }
+  return reach;
+}
+
 export function yieldPlanes(y: GroundYield) {
   const ring = y.ring;
   let area = 0;
@@ -51,7 +71,7 @@ export function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, grade: y.grade, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, reach: cornerReach(ring, sign), grade: y.grade, conformEdges:y.conformEdges, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
 
@@ -149,15 +169,26 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
     // Yields may abut or overlap (a run of graded-cutting triangles). A vertex takes the
     // lowest floor of every yield that contains it, so faces of neighbouring yields meet
     // at the same height, and a skirt is drawn only where no yield lies beyond the edge.
+    // Cached per block: a dense run of yields is asked for once per clipped vertex.
+    const nearby = new Map<number, ReturnType<typeof yieldPlanes>[]>();
     const nearYields = (x: number, z: number) => {
       const c = Math.floor((x - bounds.minX) / (2 * stepM)), r = Math.floor((z - bounds.minZ) / (2 * stepM));
-      const out = new Set<ReturnType<typeof yieldPlanes>>();
-      for (let rr = r - 1; rr <= r + 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++)
-        if (rr >= 0 && cc >= 0 && rr < blockRows && cc < blockCols) for (const y of yieldBlocks.get(rr * blockCols + cc) ?? []) out.add(y);
-      return out;
+      const key = r * 65536 + c;
+      let list = nearby.get(key);
+      if (!list) {
+        const out = new Set<ReturnType<typeof yieldPlanes>>();
+        for (let rr = r - 1; rr <= r + 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++)
+          if (rr >= 0 && cc >= 0 && rr < blockRows && cc < blockCols) for (const y of yieldBlocks.get(rr * blockCols + cc) ?? []) out.add(y);
+        nearby.set(key, list = [...out]);
+      }
+      return list;
     };
-    const contains = (y: ReturnType<typeof yieldPlanes>, x: number, z: number, eps: number) =>
-      y.planes.every(plane => plane(x, 0, z) >= -eps);
+    const contains = (y: ReturnType<typeof yieldPlanes>, x: number, z: number, eps: number) => {
+      // The box test only skips yields the planes would reject.
+      const margin = y.reach === Infinity ? Infinity : y.reach * eps + 1e-6;
+      if (x < y.minX - margin || x > y.maxX + margin || z < y.minZ - margin || z > y.maxZ + margin) return false;
+      return y.planes.every(plane => plane(x, 0, z) >= -eps);
+    };
     const lowered = new Map<number, number>();
     const lower = (i: number) => {
       const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
@@ -209,7 +240,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
             const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
             const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
             const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
-            if ([...nearYields(bx, bz)].some(other => other !== y && contains(other, bx, bz, 0))) continue;
+            if (nearYields(bx, bz).some(other => other !== y && contains(other, bx, bz, 0))) continue;
             emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
             emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
           }
