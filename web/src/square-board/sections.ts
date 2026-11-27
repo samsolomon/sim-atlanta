@@ -38,7 +38,7 @@ import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GR
 import { runBudgeted, runSync, sliceBudget, sliceInput, sectionWorkMs, sliceStats, type Build } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import groundBakeCode from '../terrain/bake-code';
-import { BAKED_AREAS, bakeBytes, bakeFile, bakeOff, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
+import { BAKED_AREAS, bakeBytes, bakeFile, bakeOn, BakeReplay, bakeStats, decodeBake, type BakedGround, type BakeRecorder } from '../terrain/ground-bake';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
 /**
@@ -180,7 +180,7 @@ async function readPatch(id: Patch | MidtownRow, quality: TerrainQuality, signal
  * null: missing, unreadable or stale bakes count as fallbacks and the area builds as before.
  */
 async function readBake(path: string, id: string, quality: TerrainQuality, grid: GroundGrid, signal: AbortSignal): Promise<BakedGround | null> {
-  if (!BAKED_AREAS.has(id) || bakeOff || surfaceWorker()) return null;
+  if (!BAKED_AREAS.has(id) || !bakeOn() || surfaceWorker()) return null;
   const miss = (why: string) => { bakeStats.fallbacks++; bakeStats.reasons.push(`${id} ${quality}: ${why}`); return null; };
   let r: Response;
   try { r = await fetch(`${path}/${bakeFile(quality)}`, { signal }); } catch (e) { if (signal.aborted) throw e; return miss('bake not fetched'); }

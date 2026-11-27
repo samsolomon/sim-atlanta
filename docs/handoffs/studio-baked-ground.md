@@ -1,12 +1,23 @@
 # Handoff: baked ground, slice 1 (2026-11-26)
 
+> **Parked in release 20 (2026-11-27).** Sam decided the per-visitor download (1,857,008 B Low,
+> 3,953,367 B High for Brookwood South) wasn't worth about 0.5 s after ready.
+> - Baked ground is now off unless the page asks for `?bake=1` (`bakeOn()` in
+>   `terrain/ground-bake.ts`).
+> - `vite build` leaves `ground-bake-*.bin.gz` out of `web/dist`.
+> - The code, `pnpm data:bake` (still part of `pnpm data`), CI's bake step and the stale-bake
+>   test all stay, for a future heavy area.
+> - To use it again: drop the `closeBundle` filter in `web/vite.config.ts` and make `bakeOn()`
+>   default to true.
+> - `?perf&bake=0` below now reads `?perf&bake=1` (on) versus the default (off).
+
 Owner: the Opus perf agent, worktree `studio-far-landmarks`. Coordinator: the Air city-view Claude.
 Design: `docs/perf-architecture-plan.md` §4.1a on `samsolomon/perf-architecture` (1aa2cd03).
 
 ## Done
 
 Branch `samsolomon/baked-ground`: brookwood-south's ground surface work is baked by `pnpm data:bake`
-and replayed in the browser. `?perf&bake=0` turns it off.
+and replayed in the browser. (Until release 20, `?perf&bake=0` turned it off; it is now off unless `?bake=1`.)
 
 - **Code:**
   - `terrain/ground-bake.ts`: the format, recorder, replay, yield and height prints, gzip loading.

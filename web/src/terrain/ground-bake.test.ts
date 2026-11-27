@@ -122,3 +122,15 @@ it('reads only bakes whose every stage is a tape or a surface', () => {
   expect(decodeBake(file({ ...ok, stages: [{ yields: 1, yieldPrint: 2 } as never, ok.stages[1]] }))).toBeNull();
   expect(decodeBake(file({ ...ok, stages: [ok.stages[0]] }))).toBeNull();
 });
+
+it('is parked: an area reads its bake only when the page asks for ?bake=1', async () => {
+  const { bakeOn } = await import('./ground-bake');
+  const g = globalThis as unknown as { location?: { search: string } };
+  const saved = g.location;
+  try {
+    for (const [search, on] of [['', false], ['?perf', false], ['?perf&bake=0', false], ['?bake=1', true], ['?perf&bake=1', true]] as const) {
+      g.location = { search };
+      expect(bakeOn(), search).toBe(on);
+    }
+  } finally { g.location = saved; }
+});

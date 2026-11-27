@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { groundBakeCodePlugin } from './ground-bake-code';
@@ -24,6 +24,14 @@ export default defineConfig(({ command }) => {
       closeBundle() {
         for (const file of ['buildings.bin', 'roads.bin', 'track.bin']) {
           rmSync(resolve('dist/data/scene/downtown', file), { force: true });
+        }
+        // Baked ground is parked (terrain/ground-bake.ts bakeOn): pnpm data:bake still stages
+        // the files for tests and ?bake=1 in dev, but visitors no longer download them.
+        const rows = resolve('dist/data/scene/square-board');
+        if (existsSync(rows)) for (const row of readdirSync(rows)) {
+          for (const file of existsSync(resolve(rows, row)) ? readdirSync(resolve(rows, row)) : []) {
+            if (/^ground-bake-.*\.bin(\.gz)?$/.test(file)) rmSync(resolve(rows, row, file), { force: true });
+          }
         }
       },
     }],

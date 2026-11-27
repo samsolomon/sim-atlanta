@@ -53,9 +53,9 @@ coordinator's go. Sam asked for a stopping point after release 19: nothing below
 
 ## Releases
 
-- Besides `AGENTS.md`: `pnpm data` runs `data:bake` (#704); the release perf run should show
-  `summary.groundBake.fallbacks` 0. The local preview server sends the `.gz` bake files with
-  `Content-Encoding: gzip`, so a byte check must inflate them.
+- Besides `AGENTS.md`: `pnpm data` runs `data:bake` (#704). Since release 20 baked ground is parked:
+  off unless `?bake=1`, and `web/dist` ships no `ground-bake-*` files. The release perf run should
+  show `summary.groundBake` adopted 0 and fallbacks 0, and `find web/dist -name 'ground-bake*'` should print nothing.
 - Budget reserves adopted by Sam (#708 encodes them): Low geometry 25 MB, High programs 10,
   High night calls 40. At `92e71e45` High programs (94 of 100) and night calls (629 of 630) are
   inside their reserves, so any change adding to them must offset it.
