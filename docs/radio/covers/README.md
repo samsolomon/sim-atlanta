@@ -150,8 +150,8 @@ Afterglow 88.5 · A streetlamp blooms into a star as summer daylight fades.
 
 ## Axle & Pine
 
-**Sunday Shoes.** The two electric shuffles share a flash-lit oxblood boot on a mustard dance floor. ImageGen revised the walking heel with a flat rubber lift, a recessed rear edge and a vertical breast under the arch.
+**Sunday Shoes.** The two electric shuffles share a flash-lit oxblood boot on a mustard dance floor. ImageGen revised the walking heel with a flat rubber lift, a nearly vertical rear edge following the marked reference and a broad, flat base.
 
 ## Nell Tiller
 
-**Porch Light.** ImageGen painted a honey-brown acoustic guitar against a ladder-back chair in gouache on oatmeal paper. Sage and dusty blue window shadows frame the dark blue artist credit and italic title.
+**Porch Light.** ImageGen reinterpreted the guitar and rush-seat chair as an evening photograph. Amber side light picks up the guitar varnish and woven seat against a blue-gray plaster wall, with the artist credit and italic title in cream.
