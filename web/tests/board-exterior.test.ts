@@ -10,14 +10,16 @@ import { expect, it } from 'vitest';
 const chrome = process.env.SKIP_BROWSER_TESTS === '1' ? undefined : [process.env.CHROME_BIN, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome', '/usr/bin/chromium'].find(path => path && existsSync(path));
 const staged = existsSync('public/data/scene/square-board/brookwood-station/ground.i16');
+const placeholderStaged = existsSync('public/data/scene/placeholder/board.bin.gz');
 
 // Use an isolated localhost origin so Web Crypto can verify the real row assets.
 // The second case withholds the northmost row: canopy must stop at the mounted edge, not the finished one.
 it.skipIf(!chrome || !staged).each([
-  { name: 'all thirteen areas', withhold: undefined, north: -6500, ready: "label === 'Frame the full board'" },
+  { name: 'all thirteen areas', withhold: undefined, north: -6500, ready: "label === 'Frame the full board'", white: [] as string[] },
+  // The placeholder keeps the rows that could not mount white (a failed row and the one beyond it).
   { name: 'brookwood-station withheld', withhold: '/square-board/brookwood-station/', north: -4900,
-    ready: "label?.includes('(11/13 areas loaded)')" },
-])('keeps City scenery and shadows inside the plinth in the morning render with $name', async ({ withhold, north, ready }) => {
+    ready: "label?.includes('(11/13 areas loaded)')", white: ['brookwood-station', 'r16'] },
+])('keeps City scenery and shadows inside the plinth in the morning render with $name', async ({ withhold, north, ready, white }) => {
   const dir = mkdtempSync(join(tmpdir(), 'city-exterior-'));
   let report: (value: string) => void;
   const result = new Promise<string>(resolve => { report = resolve; });
@@ -73,6 +75,11 @@ it.skipIf(!chrome || !staged).each([
     timer = setTimeout(() => report('Timed out waiting for the mounted City render'), 80000);
     const message = await result;
     expect(message, message).toMatch(/"outside":0\b/);
+    // With the placeholder staged (pnpm data:bake), the rows that could not mount must be white;
+    // without it (older data) City has none, and the probe reports null.
+    const shown = (JSON.parse(message) as { white: string[] | null }).white;
+    if (placeholderStaged) expect(shown?.sort()).toEqual(white);
+    else expect(shown).toBeNull();
   } finally {
     clearTimeout(timer);
     if (browser?.pid && browser.exitCode === null && browser.signalCode === null) {

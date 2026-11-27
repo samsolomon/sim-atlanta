@@ -178,7 +178,7 @@ export function boxFromVertices(pos: ArrayLike<number>, col: ArrayLike<number>, 
  * landscaping), in `container`'s frame. Meshes under 3 m tall (ground cover, paving, landscape)
  * and see-through ones are left out: from afar they read as ground, not as buildings.
  */
-export function boxesFromObject(root: Object3D, container: Object3D, minHeight = 3): FarBox[] {
+export function boxesFromObject(root: Object3D, container: Object3D, minHeight = 3, seeThrough = false): FarBox[] {
   const out: FarBox[] = [];
   const v = new Vector3();
   container.updateMatrixWorld(true);
@@ -188,7 +188,7 @@ export function boxesFromObject(root: Object3D, container: Object3D, minHeight =
     const m = o as Mesh;
     if (!m.isMesh || !m.visible) return;
     const mat = Array.isArray(m.material) ? m.material[0] : m.material;
-    if (mat.transparent) return;
+    if (mat.transparent && !seeThrough) return;
     const p = m.geometry.getAttribute('position'), c = m.geometry.getAttribute('color');
     if (!p || p.count < 3) return;
     const color = (mat as { color?: { r: number; g: number; b: number } }).color;
@@ -264,6 +264,15 @@ export function boxesFromObject(root: Object3D, container: Object3D, minHeight =
   });
   return out;
 }
+
+/**
+ * The placeholder bake (web/scripts/placeholder.bake.ts) sees every landmark group of an area
+ * before landmark batching empties it, so a white mass can stand in for each landmark, glass
+ * included. Null on the site, where the call is a no-op.
+ */
+let landmarkTap: ((group: Object3D, container: Object3D) => void) | null = null;
+export const tapLandmarks = (fn: typeof landmarkTap) => { landmarkTap = fn; };
+export const landmarkTapped = (group: Object3D, container: Object3D) => landmarkTap?.(group, container);
 
 /** Module-level on purpose: a closure made inside farBoxMesh would keep its build arrays alive. */
 const noRaycast = () => {};

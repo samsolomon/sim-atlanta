@@ -17,7 +17,7 @@ import { sectionWorkMs, sliceInput } from './slice';
 import { bakeStats } from '../terrain/ground-bake';
 
 /** `scenery` is a terrain area's mixed scenery group until its builders tag buildings, trees and yards. */
-export type PerfCategory = 'terrain' | 'transport' | 'buildings' | 'trees' | 'vehicles' | 'landscape' | 'scenery' | 'other';
+export type PerfCategory = 'terrain' | 'transport' | 'buildings' | 'trees' | 'vehicles' | 'landscape' | 'scenery' | 'placeholder' | 'other';
 
 interface Phase { name: string; ms: number; heapMB: number | null }
 interface Bucket { meshes: number; instances: number; triangles: number; geometries: number; geometryBytes: number; textures: number; textureBytes: number; cpuBytes: number }

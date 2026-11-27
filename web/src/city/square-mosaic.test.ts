@@ -62,3 +62,16 @@ it('frames the default board as the tilted diorama to its loaded edge, too far o
   expect(fullBoardFrame(1100, bounds.r16.minZ, true, 1.6)).toMatchObject({ targetZ: -2700, distance: 7600 * 2.95 });
   expect(looksNorth(northLookM, () => true)).toBe(true);
 });
+
+it('SquareMosaic.loads names only the areas the board will load (white placeholder)', async () => {
+  {
+    const { SquareMosaic } = await import('./square-mosaic');
+    const square = new SquareMosaic('/data', false), midtown = new SquareMosaic('/data', true);
+    expect(square.loads('king')).toBe(true);
+    expect(square.loads('midtown-south')).toBe(false);
+    expect(midtown.loads('midtown-south')).toBe(true);
+    expect(midtown.loads('r16')).toBe(true);
+    expect(midtown.loads('downtown')).toBe(false);
+    expect(midtown.loads('nowhere')).toBe(false);
+  }
+});

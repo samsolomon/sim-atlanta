@@ -56,6 +56,13 @@ function compareExterior(renderer, scene, north) {
 
   const target = new WebGLRenderTarget(width, height);
   const previous = renderer.getRenderTarget();
+  // The white placeholder (city/placeholder.ts) stands in for the areas not mounted, past the
+  // plinth on purpose: report which areas it shows whole (not dissolving into a mounted area),
+  // and leave it out of both renders.
+  const placeholder = scene.getObjectByName('white placeholder');
+  const white = placeholder ? placeholder.children.filter(m => m.visible && !m.userData.fading).map(m => m.name.replace('placeholder ', '')) : null;
+  const placeholderShown = placeholder?.visible;
+  if (placeholder) placeholder.visible = false;
   const objects = scene.children.filter(o => o !== table && !o.isLight && o.visible);
   const shadows = table.receiveShadow;
   function pixels() {
@@ -82,9 +89,10 @@ function compareExterior(renderer, scene, north) {
     }
     if (inside < 0.94 * 2800 * (1100 - north) / step ** 2) throw Error('Missing board in the control render');
     if (outside) throw Error(outside + ' scenery or shadow pixels outside the plinth');
-    return { outside, inside };
+    return { outside, inside, white };
   } finally {
     for (const o of objects) o.visible = true;
+    if (placeholder) placeholder.visible = placeholderShown;
     table.receiveShadow = shadows;
     renderer.setRenderTarget(previous);
     target.dispose();

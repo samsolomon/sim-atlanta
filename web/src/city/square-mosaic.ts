@@ -93,6 +93,8 @@ export class SquareMosaic {
   constructor(private readonly dataRoot: string, readonly midtown = false, private readonly brookwood?: BrookwoodGrid,
     private readonly prepare?: PrepareRow) {}
   get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
+  /** Whether this mosaic ever loads an area (the square alone never loads the Midtown rows). */
+  loads(id: string) { return id in bounds && id !== 'downtown' && (this.midtown || !(midtownRows as string[]).includes(id)); }
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
   get bounds(): Rect { return { ...bounds['south-band'], minZ: this.northEdge }; }
   /** The north edge a full-board view frames: R16 counts only when asked for or already mounted. */

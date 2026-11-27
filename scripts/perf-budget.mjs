@@ -43,7 +43,9 @@ try {
     const json = join(tmp, `${tier}.json`);
     // An entry may name its tier and clock (high-night is the high tier at 22:00).
     // An entry may also name a camera motion and a CPU throttle (the moving long-task checks).
-    const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run${b.motion ? `&motion=${b.motion}` : ''}`;
+    // PERF_QUERY appends A/B switches to every run (e.g. PERF_QUERY='&placeholder=off'), for a
+    // same-build A/B; such a run is a measurement, not the budget check.
+    const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run${b.motion ? `&motion=${b.motion}` : ''}${process.env.PERF_QUERY ?? ''}`;
     // One retry on a run that failed or was invalid (another agent's load can stall a headless GPU),
     // with the reason printed either way; a second failure fails the check.
     let s = null;
