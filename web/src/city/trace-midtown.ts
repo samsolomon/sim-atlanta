@@ -112,9 +112,9 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
   };
   // Corner pavilions at the block's four main outer corners (local metres, inset into the block).
   pavilion([45.5, -20.5], [0, 1], [-1, 0], 10);
-  pavilion([42, 33], [0, -1], [-1, 0], 10);
-  pavilion([-56, -31.5], [0, 1], [1, 0], 10);
-  pavilion([-58.5, 5.5], [0, -1], [1, 0], 10);
+  pavilion([42, 32.8], [0, -1], [-1, 0], 10);
+  pavilion([-54.8, -30], [0, 1], [1, 0], 10);
+  pavilion([-58, 0], [0, -1], [1, 0], 10);
   // Peachtree (east) centre bay.
   pavilion([45.5, -1], [0, 1], [-1, 0], 10);
 
