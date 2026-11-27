@@ -25,8 +25,13 @@ each white mass stands where its coloured building lands:
   `seeThrough`).
 
 Rings are simplified to 0.75 m and at most 40 vertices. Masses are seated on the drawn ground as the far form
-seats its boxes, and parts standing clear of it (skybridges, canopies) are dropped. The 12 areas hold
-7,075 masses.
+seats its boxes. A part standing clear of the ground (a skybridge, a canopy) is dropped, unless it rests on a
+kept part of the same landmark: a tower's upper bands start where the band below ends. The bake fails if any
+landmark's masses stop short of its top. The 12 areas hold 7,371 masses.
+
+A landmark's masses are its far-board box stacks, so an L-shaped podium fills its rectangle. That is visible
+in `06-midtown-towers-white-colour.jpg`, a matched white and colour pair. Generic buildings keep their
+footprints.
 
 Coverage check (in the bake): 4,588 of 4,601 footprints of 150 m² or more have a mass. The 13 without one are
 buildings that City builds outside the area builders:
@@ -50,7 +55,7 @@ filled from Overture footprints and heights alone with the same reader.
 
 | | Measured (17.3 km², 12 areas) |
 | --- | --- |
-| Download | 222 KiB gz, 13 KiB/km² (scaling plan §3.1: L1 ≤ 80, L2 ≤ 10 KB/km²) |
+| Download | 227 KiB gz, 13 KiB/km² (scaling plan §3.1: L1 ≤ 80, L2 ≤ 10 KB/km²) |
 | Low geometry, resident | 2.81 MB (0.16 MB/km²) |
 | Triangles, every area shown | 140k (all areas loaded: 0 drawn) |
 | Fetch and decode | 2 ms at 1×, 52 ms at 6× |

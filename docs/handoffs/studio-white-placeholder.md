@@ -11,7 +11,7 @@ until the coordinator's go.
   stipple, 1 s, the opening's easing). Night is a lifted blue with cream ink. Design note:
   `docs/white-placeholder.md`.
 - Bake: `web/scripts/placeholder.bake.ts` runs in `pnpm data:bake` (5 s) and writes
-  `web/public/data/scene/placeholder/board.bin.gz` (222 KiB).
+  `web/public/data/scene/placeholder/board.bin.gz` (227 KiB).
 - Stills: `docs/log/white-placeholder/`.
 - Budget A/B: in the PR body.
 
