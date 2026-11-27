@@ -13,16 +13,12 @@ merge until the coordinator's go.
 - Bake: `web/scripts/placeholder.bake.ts` runs in `pnpm data:bake` (5 s) and writes
   `web/public/data/scene/placeholder/board.bin.gz` (227 KiB).
 - Stills: `docs/log/white-placeholder/`.
-- Budget A/B: in the PR body and the design note (`test:perf` on 03a660b2, lock held).
+- Budget A/B: in the PR body and the design note (`test:perf` on 16110fa6, after #721, lock held; both sides pass).
 
 ## Next
 
-0. Coordinator: High night calls are 630 of 630 (+1, R16's white at the default view), which
-   needs an offset under scaling plan §4. Also, both sides of `test:perf` fail on a late shadow
-   `depth` compile at 17:30 that happens without the placeholder: probably already on main, with no owner.
 1. Sam: look. The night blue and the cream ink are a first pass from his note.
-2. Sam: placeholder as the far form of loaded areas too? That saves about 9 MB of Low geometry,
-   but the >15 km view turns white (see the design note). Not built.
+2. Placeholder as the far form of loaded areas: the coordinator says not now (2026-11-27).
 3. Increment 3 (unload): call `placeholder.show(id)` when an area unloads. Add downtown to the
    bake if downtown can unload.
 4. Masses for the 13 buildings City builds outside the area builders (Ebenezer, Heritage

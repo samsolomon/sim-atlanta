@@ -55,7 +55,7 @@ filled from Overture footprints and heights alone with the same reader.
 
 | | Measured (17.3 km², 12 areas) |
 | --- | --- |
-| Download | 227 KiB gz, 13 KiB/km² (scaling plan §3.1: L1 ≤ 80, L2 ≤ 10 KB/km²) |
+| Download | 226 KiB gz, 13 KiB/km² (scaling plan §3.1: L1 ≤ 80, L2 ≤ 10 KB/km²) |
 | Low geometry, resident | 2.89 MB (0.17 MB/km²) |
 | Triangles, every area shown | 144k (all areas loaded: 0 drawn) |
 | Fetch and decode | 2 ms at 1×, 13 ms at 6× |
@@ -68,44 +68,23 @@ the L2 form (scaling plan §3.3). The format carries that form unchanged.
 
 ## Budget: same-build A/B (`test:perf`, 2026-11-27)
 
-The build is the same for both columns: 03a660b2, held under the perf lock. `PERF_QUERY='&placeholder=off'`
-is the B side. The views are `test:perf`'s: the default open view, with 12 areas mounted. R16 loads only when
-looked at, so it is white at the default view.
+The build is the same for both columns: 16110fa6, on main with #721 (night windows), #708 and batch 1, held
+under the perf lock. `PERF_QUERY='&placeholder=off'` is the B side. The views are `test:perf`'s: the default
+open view, with 12 areas mounted. R16 loads only when looked at, so it is white at the default view.
 
 | | Low on | Low off | Δ | High on | High off | Δ |
 | --- | --- | --- | --- | --- | --- | --- |
-| Geometry MB | 163.1 | 160.2 | +2.9 | 274.4 | 271.5 | +2.9 |
-| Triangles | 1,692,594 | 1,679,265 | +13.3k (R16's white) | 6,494,260 | 6,480,971 | +13.3k |
-| Calls | 347 | 345 | +2 | 440 | 439 | +1 |
-| Calls, High at 22:00 | | | | 630 | 629 | +1 (ceiling 630) |
+| Geometry MB | 163.1 | 160.3 | +2.8 | 274.5 | 271.6 | +2.9 |
+| Triangles | 1,693,057 | 1,679,728 | +13.3k (R16's white) | 6,495,223 | 6,481,894 | +13.3k |
+| Calls | 338 | 337 | +1 | 432 | 431 | +1 |
+| Calls, High at 22:00 | | | | 480 | 479 | +1 (ceiling 535) |
 | Programs | 80 | 80 | 0 | 94 | 94 | 0 |
-| Programs, High at 22:00 | | | | 95 → 94 after the fix below | 94 | 0 |
+| Programs, High at 22:00 | | | | 94 | 94 | 0 |
 | Texture MB | 108.7 | 108.7 | 0 | 772 | 772 | 0 |
-| Heap after GC MB | 433 | 430 | +3 | 551 | 547 | +4 |
+| Heap after GC MB | 432 | 429 | +3 | 544 | 540 | +4 |
 
-The calls are R16's white mass and its shadow. High at 22:00 is at its 630 ceiling, and under its reserve, so
-the +1 needs an offset (scaling plan §4) or Sam's word. Night windows in the wall draw (2a) is expected to free
-100 or more of those calls.
-
-At 22:00 this run first measured 95 programs on High. A front-sided material casts its shadow with back
-faces, which compiled a depth program City didn't have. Since `shadowSide = DoubleSide` (after this run), the
-placeholder shares the existing one. A program diff with and without the layer at 22:00 is now 94 and 94 on
-High, and 80 and 80 on Low.
-
-Low geometry stays inside the 25 MB reserve: 27 MB is left under 190.
-
-Both sides of `test:perf` FAILED on the same thing: one late compile at 17:30 on both tiers ("no owner
-found"). The sweep's key names a shadow depth program (`depth`, …`3201,1,142336`). It compiles with the
-placeholder off too, so it isn't this layer. It's probably already on main, and it needs an owner.
-
-The timing figures overlap another agent's captures (16:37–16:50, the "on" side), so read them as noise:
-
-| Check | On | Off | Ceiling |
-| --- | --- | --- | --- |
-| `low-north` longest task | 198 ms | 205 ms | 650 |
-| `low-north` load longest task | 176 ms | 196 ms | 300 |
-| `low-north` route task | 357 ms | 330 ms | 500 |
-| Studio ready, Low and High | 1,377 and 1,496 ms | 1,447 and 1,554 ms | |
+Both sides pass `test:perf`, with no late compiles. The extra call is R16's white mass. Low geometry stays
+inside the 25 MB reserve: 27 MB is left under 190.
 
 Partial boards, where the layer actually draws, cost less than the full board in every currency except
 geometry: each white area replaces the area that would stand there. Every area shown draws 144k triangles in
