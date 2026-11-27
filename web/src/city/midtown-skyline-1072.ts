@@ -99,8 +99,8 @@ export function westPeachtree1072(shell: Shell) {
   const floors = 41, pitch = (ROOF - 2 - OFFICE) / floors;
   edges(tower, (a, b, len) => {
     const at = along(a, b);
-    if (len < 4) {
-      // The balcony slot's back wall (3 m) and side walls (1.5 m): a dark recess full height,
+    if (len < 5) {
+      // The balcony slot's back wall (4.5 m) and side walls (1.5 m): a dark recess full height,
       // crossed by a light rail line at each floor. The April 2026 Urbanize photograph shows the
       // slot as the strongest mark on the shaft from a distance: a dark vertical down each face.
       body.quad(at(0, OFFICE, .02), at(0, ROOF, .02), at(len, ROOF, .02), at(len, OFFICE, .02), SLOT);
