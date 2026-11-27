@@ -100,6 +100,8 @@ export function piedmontPark(city: TerrainCity, ground: Ground, quality: 'high' 
   };
 }
 
+const onEdge = ([x, z]: P2, ring: P2[]) => ring.some((a, i) => segDist(x, z, a, ring[(i + 1) % ring.length]) < .05);
+
 /** The stretches of a path that lie inside a ring, split exactly where it crosses the edge. */
 function stretchesInside(pts: P2[], ring: P2[]): P2[][] {
   const out: P2[][] = [];
@@ -120,7 +122,8 @@ function stretchesInside(pts: P2[], ring: P2[]): P2[][] {
     for (let k = 1; k < cuts.length; k++) {
       if (cuts[k] - cuts[k - 1] < 1e-9) continue;
       const mid = at((cuts[k] + cuts[k - 1]) / 2);
-      if (!pointInRing(mid[0], mid[1], ring)) { end(); continue; }
+      // A path along the edge counts as inside on every side (point-in-ring alone keeps only some).
+      if (!pointInRing(mid[0], mid[1], ring) && !onEdge(mid, ring)) { end(); continue; }
       if (!run.length) run.push(at(cuts[k - 1]));
       run.push(at(cuts[k]));
     }

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
-import { pointInRing, type P2 } from '../vignette/geom';
+import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import type { TerrainCity } from '../terrain/transport-data';
 import { createGreystone, greystoneId } from './greystone';
 import { piedmontLampPaths } from './piedmont-park';
@@ -46,6 +46,11 @@ describe('Piedmont Park lamp paths', () => {
       expect(key(lit({ cls: 'footway', pts: crossing }))).toEqual(key([[[0, 80], [150, 80]]]));
   });
 
+  it('keeps a path that runs along any side of the park', () => {
+    for (const pts of [[[20, 0], [180, 0]], [[20, 200], [180, 200]], [[0, 20], [0, 180]], [[200, 20], [200, 180]]] as P2[][])
+      expect(key(lit({ cls: 'footway', pts }))).toEqual(key([pts]));
+  });
+
   it('counts a footway\'s length inside the park against the 100 m floor', () => {
     expect(lit({ cls: 'footway', pts: [[-300, 80], [90, 80]] })).toEqual([]);
     expect(lit({ cls: 'pedestrian', pts: [[-300, 80], [90, 80]] })).toHaveLength(1);
@@ -57,10 +62,14 @@ describe('Piedmont Park lamp paths', () => {
     const c = JSON.parse(readFileSync(row, 'utf8'));
     const paths = piedmontLampPaths(c);
     expect(paths.length).toBeGreaterThan(10);
-    // Every stretch stays inside the park, measured at its midpoints.
+    // Every stretch stays inside the park or runs along its edge, measured at its midpoints.
     const park = c.ground.find((g: { name?: string; kind: string }) => g.name === 'Piedmont Park' && g.kind === 'park').rings[0];
     for (const p of paths) for (let i = 1; i < p.length; i++)
-      expect(pointInRing((p[i - 1][0] + p[i][0]) / 2, (p[i - 1][1] + p[i][1]) / 2, park)).toBe(true);
+    {
+      const x = (p[i - 1][0] + p[i][0]) / 2, z = (p[i - 1][1] + p[i][1]) / 2;
+      const along = park.some((a: P2, j: number) => segDist(x, z, a, park[(j + 1) % park.length]) < .05);
+      expect(pointInRing(x, z, park) || along).toBe(true);
+    }
     // No park, no lamps.
     expect(piedmontLampPaths({ ...c, ground: [] })).toEqual([]);
   });
