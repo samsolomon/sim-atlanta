@@ -47,9 +47,9 @@ function southSliver(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) 
   const s = landmarkShell(buildings, grid, site.id, 'Piedmont House (south sliver)', [1031, -3297], [1, 0], [[-5, 0], [5, 0]]);
   if (!s) return null;
   const inset = .3, north = seamZ + inset, south = southZ - inset;
-  // Only the faces that can show: neither block needs a north side (midtown-upper's half is
-  // there), nor the podium an east side against the tower. Corners run NW, NE, SE, SW.
-  for (const [id, top, wall, sides] of [[towerPart, roofTop - .5, glass, [1, 2, 3]], [podiumPart, baseTop - .5, cream, [2, 3]]] as const) {
+  // Corners run NW, NE, SE, SW. The north sides close the blocks while that half is not there
+  // yet; the podium needs no east side against the tower.
+  for (const [id, top, wall, sides] of [[towerPart, roofTop - .5, glass, [0, 1, 2, 3]], [podiumPart, baseTop - .5, cream, [0, 2, 3]]] as const) {
     const ring = site.parts?.find(q => q.id === id)?.rings[0];
     if (!ring) continue;
     const west = Math.min(...ring.map(([x]) => x)) + inset - 1031, east = Math.max(...ring.map(([x]) => x)) - inset - 1031;
@@ -105,7 +105,11 @@ export function createPiedmontHouse(buildings: VBuilding[], site: VBuilding, gri
   }
 
   // Tower: cream precast base with tall windows, then the glass shaft.
-  s.prism(towerPlan, s.base, baseTop, cream, roof);
+  // The base has walls only: the shaft stands on it and would hide its roof.
+  towerPlan.forEach(([x, z], i) => {
+    const [a, b] = towerPlan[(i + 1) % towerPlan.length];
+    s.body.quad([x, s.base, z], [x, baseTop, z], [a, baseTop, b], [a, s.base, b], cream);
+  });
   s.prism(towerPlan, baseTop, roofTop, glass, roof);
   faces(towerPlan).forEach((f, face) => {
     const behind = at(f, 0.5, 0, 1);

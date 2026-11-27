@@ -62,6 +62,11 @@ it('stands in for the midtown-central sliver, hidden inside the walls midtown-up
   const down = (x: number) => new Raycaster(new Vector3(x, 400, -3297), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y + 300;
   expect(down(1041)).toBeCloseTo(357.7, 1);
   expect(down(1020)).toBeCloseTo(302, 1);
+  // Closed to the north too, the side seen while midtown-upper is still on its way.
+  const fromNorth = (x: number, y: number) => new Raycaster(new Vector3(x, y - 300, -3310), new Vector3(0, 0, 1))
+    .intersectObject(model.group)[0].point.z;
+  expect(fromNorth(1041, 330)).toBeCloseTo(-3299.7, 1);
+  expect(fromNorth(1020, 290)).toBeCloseTo(-3299.7, 1);
   // Every vertex lies inside the walls midtown-upper draws, which move the seam out to z = -3295.
   const upper = context('midtown-upper').find(b => b.id === piedmontHouseId)!.rings[0]
     .map(([x, z]): P2 => [x, Math.abs(z + 3300) < 0.05 ? -3295 : z]);
