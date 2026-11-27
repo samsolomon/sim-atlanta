@@ -1630,15 +1630,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // a vehicle, focusing the page) is not a camera move; dropping the target on pointerdown left a
   // Brookwood link parked at the downtown edge it was clamped to while its row loaded.
   const pressEvents = new AbortController();
-  let pressAt: { x: number; y: number } | null = null;
-  renderer.domElement.addEventListener('pointerdown', e => { pressAt = { x: e.clientX, y: e.clientY }; }, { capture: true, signal: pressEvents.signal });
+  // Per pointer, so a second finger lifting does not forget the first one's press.
+  const pressedAt = new Map<number, { x: number; y: number }>();
+  renderer.domElement.addEventListener('pointerdown', e => { pressedAt.set(e.pointerId, { x: e.clientX, y: e.clientY }); }, { capture: true, signal: pressEvents.signal });
   renderer.domElement.addEventListener('pointermove', e => {
-    if (!pressAt || Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y) <= 6) return;
-    pressAt = null;
+    const at = pressedAt.get(e.pointerId);
+    if (!at || Math.hypot(e.clientX - at.x, e.clientY - at.y) <= 6) return;
+    pressedAt.clear();
     cancelPendingTarget();
   }, { capture: true, signal: pressEvents.signal });
   for (const type of ['pointerup', 'pointercancel'] as const)
-    renderer.domElement.addEventListener(type, () => { pressAt = null; }, { capture: true, signal: pressEvents.signal });
+    renderer.domElement.addEventListener(type, e => { pressedAt.delete(e.pointerId); }, { capture: true, signal: pressEvents.signal });
   // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
   // (here) and whenever the view moves (watched once a frame, below).
   releaseCamera();
