@@ -19,6 +19,9 @@
 import * as THREE from 'three';
 import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 
+/** The most areas the ink pass tests for the placeholder's cream night lines. */
+export const MARK_RECTS = 16;
+
 export function inkShader() {
   return {
     name: 'Ink',
@@ -36,6 +39,14 @@ export function inkShader() {
       uInteriorM: { value: 40 },
       // 1 when the scene has inkFoliage materials; 0 skips the foliage samples entirely (City today).
       uFoliage: { value: 0 },
+      // City's white placeholder (city/placeholder.ts): at night (uMarkNight 1), lines whose nearest
+      // surface lies inside an area still drawn white (uMarkRects: minX, minZ, maxX, maxZ) take
+      // uMarkInk, cream on the night-blue masses. The surface comes from depth through uInvViewProj.
+      uMarkInk: { value: new THREE.Color('#efe6cf') },
+      uMarkNight: { value: 0 },
+      uMarkCount: { value: 0 },
+      uMarkRects: { value: Array.from({ length: MARK_RECTS }, () => new THREE.Vector4()) },
+      uInvViewProj: { value: new THREE.Matrix4() },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -46,7 +57,22 @@ export function inkShader() {
       uniform vec2 uTexel;
       uniform float uNear, uFar, uStrength, uWidth;
       uniform vec3 uInk, uFoliageInk;
-      uniform float uInteriorM, uFoliage;
+      uniform float uInteriorM, uFoliage, uMarkNight;
+      uniform vec3 uMarkInk;
+      uniform int uMarkCount;
+      uniform vec4 uMarkRects[${MARK_RECTS}];
+      uniform mat4 uInvViewProj;
+      // Whether the surface at uv lies inside one of the placeholder's white areas.
+      float marked(vec2 uv) {
+        vec4 w = uInvViewProj * vec4(uv * 2.0 - 1.0, texture2D(tDepth, uv).x * 2.0 - 1.0, 1.0);
+        vec2 p = w.xz / w.w;
+        for (int i = 0; i < ${MARK_RECTS}; i++) {
+          if (i >= uMarkCount) break;
+          vec4 r = uMarkRects[i];
+          if (p.x >= r.x && p.x <= r.z && p.y >= r.y && p.y <= r.w) return 1.0;
+        }
+        return 0.0;
+      }
       // Foliage mode from the mask: 0 none, 1–3 (see inkFoliageMesh).
       float mode(vec2 uv) { return floor(texture2D(tMask, uv).r * 5.0 + 0.5); }
       varying vec2 vUv;
@@ -74,6 +100,15 @@ export function inkShader() {
         // Mostly silhouettes (depth); colour creases only faintly, so shapes stay clean inside.
         float line = clamp(max(edgeD, edgeC * 0.22), 0.0, 1.0) * fade * uStrength;
         vec3 ink = uInk;
+        if (uMarkNight > 0.0 && uMarkCount > 0 && line > 0.0) {
+          // The nearest of the five samples: a silhouette's line is cream on both of its sides.
+          vec2 at = vUv; float near = d;
+          if (dl < near) { near = dl; at = vUv - vec2(o.x, 0.0); }
+          if (dr < near) { near = dr; at = vUv + vec2(o.x, 0.0); }
+          if (dd < near) { near = dd; at = vUv - vec2(0.0, o.y); }
+          if (du < near) { near = du; at = vUv + vec2(0.0, o.y); }
+          ink = mix(uInk, uMarkInk, marked(at) * uMarkNight);
+        }
         if (uFoliage < 0.5) { gl_FragColor = vec4(mix(col.rgb, ink, line), 1.0); return; }
         float m = mode(vUv);
         float ml = mode(vUv - vec2(o.x, 0.0)), mr = mode(vUv + vec2(o.x, 0.0));

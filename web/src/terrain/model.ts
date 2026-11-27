@@ -93,7 +93,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { buildSkylineLandmark, createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, buildArtsCampusLandmark, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxedFromAfar, boxesFromObject, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, styledBoxSteps, type FarBox } from '../city/far-board';
+import { boxedFromAfar, boxesFromObject, landmarkTapped, FAR_BUILDINGS_M, FAR_LANDMARKS, FAR_NIGHT_OFF, FAR_NIGHT_ON, farBoxMesh, styledBoxSteps, type FarBox } from '../city/far-board';
 import { buildLandmarkBatches, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { piedmontGarden, piedmontGardenTrees } from '../city/piedmont-garden';
 import { createPiedmontHospital, piedmontHospitalId } from '../city/piedmont-hospital';
@@ -622,6 +622,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     }
     if (import.meta.env.DEV) console.info('City far-board landmark boxes', JSON.stringify({ landmarks: landmarks.length, slowestStepMs: Math.round(Math.max(slowest, performance.now() - t1)) }));
   }
+  // The placeholder bake reads each landmark here, before batching (no-op on the site).
+  for (const landmark of landmarks) landmarkTapped(landmark.group, scenery.group);
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
   const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? yield* buildLandmarkBatches(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
   if (batches) {

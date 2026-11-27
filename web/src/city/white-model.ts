@@ -11,7 +11,19 @@
 import * as THREE from 'three';
 
 export const WHITE_MODEL = 0xf4efe4;
-const WHITE_ALBEDO = 0.9;
+export const WHITE_ALBEDO = 0.9;
+/** The white-to-colour fade (paper arrival), shared with the placeholder's dissolve (placeholder.ts). */
+export const WHITE_FADE_MS = 1000;
+/** The fade's ease-in-out, as CSS and as a function of t in [0, 1]. */
+export const WHITE_EASE = [0.45, 0, 0.55, 1] as const;
+export function easeInOut(t: number) {
+  // cubic-bezier(x1, y1, x2, y2): solve x(u) = t by bisection, then return y(u).
+  const [x1, y1, x2, y2] = WHITE_EASE;
+  const bez = (u: number, a: number, b: number) => 3 * (1 - u) * (1 - u) * u * a + 3 * (1 - u) * u * u * b + u * u * u;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (bez(m, x1, x2) < t) lo = m; else hi = m; }
+  return bez((lo + hi) / 2, y1, y2);
+}
 
 export type WhitePhase = 'waiting' | 'white' | 'compiling' | 'colour' | 'done';
 
@@ -28,6 +40,8 @@ export function createWhiteModel(o: {
   /** Passes to skip while white: ambient occlusion runs at CSS resolution and, against the
    * swapped materials, came out cropped on the High tier. The white model doesn't need it. */
   skipPasses?: ({ enabled: boolean } | null | undefined)[];
+  /** The placeholder's masses alone (true) or whole (false), for the buildings-only still. */
+  massesOnly?: (on: boolean) => void;
   /**
    * 'paper': the white model fades in over the paper, then colour (first open from a link).
    * 'map': white buildings only, over a transparent background, standing on the tilted 2D map
@@ -37,7 +51,7 @@ export function createWhiteModel(o: {
   mode?: 'paper' | 'map' | 'fade';
 }) {
   let mode = o.mode ?? 'paper';
-  const ease = 'cubic-bezier(.45,0,.55,1)'; // ease-in-out, as the brief asks
+  const ease = `cubic-bezier(${WHITE_EASE.join(',')})`; // ease-in-out, as the brief asks
   // A slightly lowered albedo keeps sunlit faces from clipping to one flat white. No board clipping
   // planes: on this material they culled every mesh. (Dev: ?whitealbedo= to tune.)
   const albedo = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whitealbedo'))) || WHITE_ALBEDO;
@@ -110,6 +124,8 @@ export function createWhiteModel(o: {
       const mesh = m as THREE.Mesh;
       if (!mesh.isMesh) return;
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      // The placeholder is white already, and draws its masses alone over the map (placeholder.ts).
+      if (mesh.userData.placeholder) return;
       const skip = (mesh as THREE.InstancedMesh).instanceColor || mats.some((x) => x.transparent || x.alphaTest > 0);
       if (skip || !isBuilding(mesh, box)) off.push(mesh);
       else {
@@ -118,6 +134,7 @@ export function createWhiteModel(o: {
       }
     });
     for (const m of off) m.visible = false;
+    o.massesOnly?.(true);
     o.scene.background = null;
     o.scene.fog = null;
     // Off the board's own ground the buildings would read grey; lift them to paper, as on the
@@ -132,6 +149,7 @@ export function createWhiteModel(o: {
     o.renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
     o.renderer.setRenderTarget(null);
     o.scene.remove(lift);
+    o.massesOnly?.(false);
     o.renderer.setClearColor(clear, alpha);
     o.scene.background = bg;
     o.scene.fog = fog;
@@ -168,6 +186,7 @@ export function createWhiteModel(o: {
       const mesh = m as THREE.Mesh;
       if (!mesh.isMesh) return;
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      if (mesh.userData.placeholder) return; // white already (placeholder.ts)
       if ((mesh as THREE.InstancedMesh).instanceColor || mats.some((x) => x.transparent || x.alphaTest > 0)) hiddenNow.push(mesh);
       else {
         swapped.set(mesh, mesh.material);
@@ -233,7 +252,7 @@ export function createWhiteModel(o: {
       } else if (phase === 'colour') {
         // The first colour frame is drawn; now let colour show through.
         phase = 'done';
-        const ms = mode === 'paper' ? 1000 : 1400;
+        const ms = mode === 'paper' ? WHITE_FADE_MS : 1400;
         if (mode === 'paper') {
           fade(ms);
           requestAnimationFrame(() => (overlay.style.opacity = '0'));

@@ -145,6 +145,7 @@ import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
+import type { Placeholder } from './placeholder';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
 /** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
 const INK_FADE_END_M = 4300;
@@ -350,6 +351,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     })();
   }
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined, prepareRow);
+  // Every area not loaded yet draws as the white study model (city/placeholder.ts). Its file loads
+  // beside the board's build; it joins the scene before the first frame.
+  const placeholderLoad = mosaic ? import('./placeholder').then(async m => {
+    const data = await m.loadPlaceholder(DATA, options.signal);
+    return data && m.createPlaceholder(data, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+  }).catch(error => { console.warn('City placeholder unavailable', error); return null; }) : Promise.resolve(null);
+  let placeholder: Placeholder | null = null;
+  const markRects = new Float32Array(16 * 4);
   // With the south band, which draws the Capitol tunnel, downtown's edge of its north-east
   // portals is cut into the bank too. Downtown alone (board=downtown, or no square board) keeps
   // its ground and no tunnel cut.
@@ -1094,7 +1103,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let nightApplied = NaN;
   let nightGeometries = -1;
   let nightFrames = 0;
-  function addArea(area: NonNullable<typeof east>) {
+  function addArea(area: NonNullable<typeof east>, id: string) {
+    // Its placeholder dissolves into it from the next frame, then hides.
+    placeholder?.reveal(id);
     requestPrewarm();
     nightDirty = true;
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
@@ -1167,7 +1178,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[b], worldCorners[c])) ||
       northBoundsBox.intersectsTriangle(faceTriangle.set(worldCorners[a], worldCorners[c], worldCorners[d])));
   };
+  // Dev: `?placeholderhold` loads no area past downtown, so the placeholder can be reviewed.
+  const holdAreas = import.meta.env.DEV && query.has('placeholderhold');
   function approachMosaic(x: number, z: number, needed = false) {
+    if (holdAreas) return;
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       const northernRow = added.get('r16');
@@ -1195,7 +1209,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           disposeArea();
         };
       }
-      for (const area of added.values()) addArea(area);
+      for (const [id, area] of added) addArea(area, id);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
       if (atl) {
@@ -1224,6 +1238,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       () => ({ orbitM: camera.position.distanceTo(controls.target), inView: northVisible }));
   }
   function approachNorth(x: number, z: number) {
+    if (holdAreas) return;
     if (!previewNorth || north || !east || !terrain || !grid) return;
     if (!nearNorth(x, z)) {
       // The full board still needs a failed Sweet Auburn wherever the camera is: keep its Retry.
@@ -1259,7 +1274,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       try { mosaic?.mount('auburn', area); }
       catch (error) { discard(); throw error; }
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
-      addArea(area);
+      addArea(area, 'auburn');
       north = area;
       {
         const entry = { bounds: area.bounds, height: surface };
@@ -1305,6 +1320,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }).finally(() => { northLoading = false; if (!northFailed) pendingNorthTarget = undefined; }); // a failure keeps it for Retry
   }
   function approachEast(x: number, z: number) {
+    if (holdAreas) return;
     if (!previewEast || east || !terrain || !grid) return;
     if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
       // The full board still needs a failed King Memorial wherever the camera is: keep its Retry.
@@ -1324,7 +1340,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (eastController.signal.aborted) { area.dispose(); return; }
       mosaic?.mount('king', area);
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY));
-      addArea(area);
+      addArea(area, 'king');
       if (!mosaic) { area.openJoin(); downtown.openJoin(); }
       east = area;
       extendConnectorTraffic();
@@ -2264,6 +2280,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
     ink.uniforms.uStrength.value = 0.9;
+    if (placeholder) {
+      placeholder.update(ts);
+      // Night blue with cream ink after dark; white while the opening's white model holds.
+      const dark = whiteModel?.phase === 'white' ? 0 : atm.dark;
+      placeholder.setNight(dark);
+      ink.uniforms.uMarkNight.value = dark;
+      if (dark > 0) {
+        ink.uniforms.uMarkCount.value = placeholder.rects(markRects);
+        (ink.uniforms.uMarkRects.value as THREE.Vector4[]).forEach((r, i) => r.fromArray(markRects, i * 4));
+        camera.updateMatrixWorld();
+        (ink.uniforms.uInvViewProj.value as THREE.Matrix4).multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).invert();
+      }
+    }
     grade.uniforms.uAmount.value = 1;
     grade.uniforms.uTime.value = ts / 1000;
     renderer.info.reset();
@@ -2317,6 +2346,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
     skipPasses: [gtao, aoBlend],
+    massesOnly: on => placeholder?.massesOnly(on),
     mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
@@ -2396,6 +2426,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer.shadowMap.needsUpdate = true;
     if (perfOverrides.hide.size) perf.applyHide();
   }
+  // The placeholder joins before the first frame when its file is in (it loads beside the board's
+  // build), so the opening's white still holds it; a slow file joins when it arrives.
+  const attachPlaceholder = (p: Placeholder | null) => {
+    if (!p || options.signal?.aborted) { p?.dispose(); return; }
+    placeholder = p;
+    for (const id of p.ids) if (mosaic!.areas.has(id as never)) p.hide(id); else p.show(id);
+    scene.add(p.group);
+    if (freezeOn) freezeStatic(p.group);
+    renderer.shadowMap.needsUpdate = true;
+  };
+  const early = await Promise.race([placeholderLoad.then(p => ({ p })), new Promise<null>(r => setTimeout(() => r(null), 3000))]);
+  if (early) attachPlaceholder(early.p);
+  else void placeholderLoad.then(attachPlaceholder);
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
@@ -2551,6 +2594,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
+      placeholder?.dispose();
+      void placeholderLoad.then(p => p !== placeholder && p?.dispose());
       stopGestures?.();
       directDrag?.dispose();
       squareButton?.remove();
