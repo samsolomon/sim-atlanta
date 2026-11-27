@@ -78,3 +78,49 @@ Built dists, before (main) → after, `perf=run`, Nov 20. Calls / triangles / pr
 No new programs at any clock. There are 244 park path lamps out of 3,595 lamps board-wide, on both tiers. They share the existing post and head instanced meshes, so they add no draws, and their pools go into the existing light map. The added draws are Greystone's three merged meshes.
 
 Sheets: [Greystone](log/ui/piedmont-details/gs.jpg) and [the park from 900 m](log/ui/piedmont-details/ov.jpg), by day and at night; [lake edge in January and July](log/ui/piedmont-details/lake-edge-seasons.jpg), no z-fighting at the shoreline.
+
+## Built (second PR): Dockside, picnic shelters, overlook benches, Peace Monument
+
+1. **Dockside, the 1910 rest house (Visitor Center)** (`city/dockside.ts`).
+   - Reported: the footprint (OSM way 182302101).
+   - Estimated, from Street View (cited, not copied) and photographs: one storey of red brick with
+     cream classical trim, seven round arches on the west loggia, a cream cornice and white
+     balustraded parapet, a low dark-slate hipped roof behind it, and a white-columned porch on the
+     lake (east) side over a brick terrace.
+     - [Street View, from the south-west, April 2017](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78395,-84.37772&heading=45&pitch=8&fov=90)
+     - [Street View, from the north-east, May 2015](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78425,-84.37730&heading=230&pitch=5&fov=90)
+     - [West front, Marc Merlin, December 2015](https://www.flickr.com/photos/marcmerlin/22918112184)
+   - The cornice height, about 4 m, is scaled from a golf cart in Merlin's photograph.
+   - Night: a distant 2012 photograph ([Bill Cobb](https://www.flickr.com/photos/skylinescenes/6936590879))
+     shows warm-lit porch windows. The glowing arches are illustrative.
+2. **Active Oval picnic shelters**.
+   - Reported: the two footprints (OSM ways 182398397 and 182398398, at the loop's east edge, not
+     the west as first planned).
+   - Estimated: the low hipped grey roofs on dark timber posts, from the
+     [Active Oval photograph](https://commons.wikimedia.org/wiki/File:Piedmont_Park%27s_Active_Oval_under_a_threatening_summer_sky.jpg).
+     The 2.8 m eave and 1.8 m rise are estimates.
+3. **Overlook benches on the low tier**. The eleven mapped benches within 25 m of Lake Clara Meer
+   now draw on both tiers. The high tier already drew every mapped bench. OSM undercounts the
+   Dock lawn; unmapped benches are not invented.
+4. **The Peace Monument** (1911, Allen George Newman).
+   - Reported: its position (OSM node 13700001532).
+   - Estimated, from photographs: a dark bronze group of an angel staying a kneeling soldier, on a
+     battered light-grey stone pedestal over two broad steps, front to the west.
+     [Commons, September 2020](https://commons.wikimedia.org/wiki/File:Peace_Monument,_Atlanta_1.jpg).
+   - No dimensions are published. About 6.5 m overall, on a 4.8 m bottom step, is estimated.
+   - Its current (2026) condition is unverified: the latest photographs found are from 2020.
+
+Sheets: [Dockside](log/ui/piedmont-details/pass2-ds.jpg),
+[Peace Monument](log/ui/piedmont-details/pass2-peace.jpg),
+[picnic shelters](log/ui/piedmont-details/pass2-shelter.jpg) and
+[900 m](log/ui/piedmont-details/pass2-ov.jpg), by day and at night.
+
+Second-pass cost, measured on built dists (before is #521's head, then after) at `perf=run`, Nov 20. Each cell gives calls / triangles / programs:
+
+| View | Low 14:00 | Low 22:00 | High 14:00 | High 22:00 |
+|---|---|---|---|---|
+| Default | 393 / 2,454,340 / 84 → 396 / 2,457,090 / 84 | 541 / 2,486,363 / 85 → 544 / 2,487,701 / 85 | 430 / 6,824,943 / 98 → 432 / 6,826,901 / 98 | 587 / 6,858,044 / 98 → 589 / 6,858,450 / 98 |
+| Park 900 m | 57 / 1,093,459 / 85 → 58 / 1,094,531 / 85 | 58 / 1,100,291 / 87 → 59 / 1,101,363 / 87 | 98 / 3,687,353 / 101 → 98 / 3,687,633 / 101 | 113 / 3,695,174 / 103 → 113 / 3,695,454 / 103 |
+| Dockside `cam=1305,-3355,80,55,150` | 57 / 1,172,651 / 86 → 60 / 1,174,013 / 86 | 57 / 1,172,651 / 87 → 60 / 1,173,989 / 87 | 74 / 2,611,255 / 100 → 76 / 2,611,825 / 100 | 87 / 2,611,268 / 103 → 89 / 2,611,814 / 103 |
+
+The pass adds no shader programs on either tier.

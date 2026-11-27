@@ -4,6 +4,7 @@ import { boardLines, daylightSlots, underpassMesh, type Underpass } from './unde
 import { buildResidential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createGreystone, greystoneId } from '../city/greystone';
+import { createDockside, docksideId } from '../city/dockside';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
@@ -402,7 +403,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
       : site.id === gazeboId ? createClaraMeer
-      : site.id === greystoneId ? createGreystone : null;
+      : site.id === greystoneId ? createGreystone
+      : site.id === docksideId ? createDockside : null;
     const landmark = site.id === piedmontHospitalId
       ? createPiedmontHospital(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : shepherdCenterIds.has(site.id) ? createShepherdCenter(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt, hasShepherdMain)

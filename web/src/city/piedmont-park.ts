@@ -52,8 +52,20 @@ export function piedmontPark(city: TerrainCity, ground: Ground, quality: 'high' 
   const gate = gates.length ? piedmontGates(ground, gates) : null;
   if (gate) group.add(gate.group);
   let furniture: ReturnType<typeof landscapeMesh> | null = null, pieces = 0;
+  const f = new Builder();
+  // Both tiers: the Active Oval's picnic shelters and the Peace Monument.
+  for (const ring of SHELTERS) if (ring.every(p => inside(b, p))) { picnicShelter(f, ring, ground); pieces++; }
+  if (inside(b, PEACE)) { peaceMonument(f, PEACE, ground); pieces++; }
+  // Low tier keeps the benches at the lake, where the overlooks are; high draws every mapped piece.
+  const lake = city.ground?.find(g => g.name === 'Lake Clara Meer' && g.kind === 'water')?.rings[0] as P2[] | undefined;
+  const nearLake = (at: P2) => !!lake && lake.some((q, i) => segDist(at[0], at[1], q, lake[(i + 1) % lake.length]) < 25);
+  if (quality === 'low') for (const p of details.furniture) {
+    if (p.kind !== 'bench' || !inside(b, p.at as P2) || !nearLake(p.at as P2)) continue;
+    const spot = placeBeside(city, p.at as P2);
+    FURNITURE.bench(f, spot.at, ground, spot.facing);
+    pieces++;
+  }
   if (quality === 'high') {
-    const f = new Builder();
     for (const p of details.furniture) {
       if (!inside(b, p.at as P2)) continue;
       const spot = placeBeside(city, p.at as P2);
@@ -69,11 +81,11 @@ export function piedmontPark(city: TerrainCity, ground: Ground, quality: 'high' 
       FURNITURE.kiosk(f, spot.at, ground, Math.atan2(-g.inward[1], -g.inward[0]));
       pieces++;
     }
-    if (f.pos.length) {
-      furniture = landscapeMesh(f);
-      furniture.mesh.name = 'piedmont-furniture';
-      group.add(furniture.mesh);
-    }
+  }
+  if (f.pos.length) {
+    furniture = landscapeMesh(f);
+    furniture.mesh.name = 'piedmont-furniture';
+    group.add(furniture.mesh);
   }
   if (!group.children.length) return null;
   let triangles = 0;
@@ -106,4 +118,67 @@ export function piedmontLampPaths(city: TerrainCity): P2[][] {
   const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
   return city.roads.filter(r => !r.bridge && !r.tunnel && (r.cls === 'pedestrian' || (r.cls === 'footway' && length(r.pts as P2[]) >= 100))
     && inPark(r.pts[Math.floor(r.pts.length / 2)] as P2)).map(r => r.pts as P2[]);
+}
+
+/**
+ * The Active Oval's two open picnic shelters (OSM ways 182398397 and 182398398, traced from
+ * Bing: reported footprints) at the loop's east edge. The form is estimated from photographs:
+ * a low, wide hipped roof in mid-to-dark grey with deep eaves on dark timber posts
+ * (https://commons.wikimedia.org/wiki/File:Piedmont_Park%27s_Active_Oval_under_a_threatening_summer_sky.jpg).
+ * Eave 2.8 m and rise 1.8 m are estimates.
+ */
+const SHELTERS: P2[][] = [
+  [[1547.3, -3612.2], [1560.8, -3609.3], [1565, -3629.1], [1551.5, -3631.9]],
+  [[1576.8, -3658.5], [1583.1, -3659.7], [1581.5, -3668.4], [1575.1, -3667.2]],
+];
+function picnicShelter(b: Builder, ring: P2[], ground: Ground) {
+  const y = Math.min(...ring.map(([x, z]) => ground(x, z) ?? Infinity));
+  if (!Number.isFinite(y)) return;
+  const eave = y + 2.8, cx = ring.reduce((a, p) => a + p[0], 0) / 4, cz = ring.reduce((a, p) => a + p[1], 0) / 4;
+  const ins = (p: P2, k: number): P2 => [cx + (p[0] - cx) * k, cz + (p[1] - cz) * k];
+  // Posts at the corners and mid-sides, set in from the eaves.
+  for (let i = 0; i < 4; i++) for (const t of [0, .5]) {
+    const p = ring[i], q = ring[(i + 1) % 4], at = ins([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], .82);
+    b.box(.25, eave - y, .25, at[0], (y + eave) / 2, at[1], '#4a3d33');
+  }
+  // Hipped roof: a ridge along the longer axis.
+  const l01 = Math.hypot(ring[1][0] - ring[0][0], ring[1][1] - ring[0][1]), l12 = Math.hypot(ring[2][0] - ring[1][0], ring[2][1] - ring[1][1]);
+  const [p0, p1, p2, p3] = l01 > l12 ? [ring[0], ring[1], ring[2], ring[3]] : [ring[1], ring[2], ring[3], ring[0]];
+  const mid = (u: P2, v: P2): P2 => [(u[0] + v[0]) / 2, (u[1] + v[1]) / 2];
+  const e0 = mid(p0, p3), e1 = mid(p1, p2), k = Math.min(l01, l12) / 2 / Math.max(l01, l12);
+  const r0: P2 = [e0[0] + (e1[0] - e0[0]) * k, e0[1] + (e1[1] - e0[1]) * k], r1: P2 = [e1[0] + (e0[0] - e1[0]) * k, e1[1] + (e0[1] - e1[1]) * k];
+  const top = eave + 1.8, ROOF = '#5d6166', HIP = '#53575c';
+  b.quad([p0[0], eave, p0[1]], [p1[0], eave, p1[1]], [r1[0], top, r1[1]], [r0[0], top, r0[1]], ROOF);
+  b.quad([p2[0], eave, p2[1]], [p3[0], eave, p3[1]], [r0[0], top, r0[1]], [r1[0], top, r1[1]], ROOF);
+  b.tri([p3[0], eave, p3[1]], [p0[0], eave, p0[1]], [r0[0], top, r0[1]], HIP);
+  b.tri([p1[0], eave, p1[1]], [p2[0], eave, p2[1]], [r1[0], top, r1[1]], HIP);
+}
+
+/**
+ * The Peace Monument (1911, Allen George Newman) just inside the 14th Street gate: OSM node
+ * 13700001532 (reported position). A dark bronze angel of Peace, right arm raised, staying a
+ * kneeling Confederate soldier, on a battered light-grey stone pedestal over two broad steps,
+ * front to the west (the gate); visible and uncovered in September 2020 photographs
+ * (https://commons.wikimedia.org/wiki/File:Peace_Monument,_Atlanta_1.jpg). No dimensions are
+ * published: about 6.5 m overall, with a 4.8 m bottom step, are estimates scaled from photographs.
+ */
+const PEACE: P2 = [1307.3, -3619.4];
+function peaceMonument(b: Builder, [x, z]: P2, ground: Ground) {
+  const y = ground(x, z);
+  if (y === null) return;
+  const STONE = '#c3c0b8', STEP = '#b2afa7', BRONZE = '#3e3b31';
+  b.box(4.8, .35, 4.8, x, y + .175, z, STEP);
+  b.box(4.0, .35, 4.0, x, y + .525, z, STEP);
+  // Battered pedestal as two stacked frusta (wide base, cap), drawn as boxes stepping in.
+  b.box(2.8, 1.2, 2.8, x, y + 1.3, z, STONE);
+  b.box(2.4, 1.6, 2.4, x, y + 2.7, z, STONE);
+  b.box(2.7, .3, 2.7, x, y + 3.65, z, STONE);
+  const base = y + 3.8;
+  // The bronze group: the soldier kneeling at the front (west), the angel behind him standing
+  // with her raised right arm and a wing sweeping back.
+  b.box(.9, 1.2, .8, x - .45, base + .6, z + .1, BRONZE);
+  b.box(.6, 2.4, .7, x + .35, base + 1.2, z, BRONZE);
+  b.box(.18, 1.0, .18, x + .2, base + 2.9, z + .3, BRONZE);
+  b.tri([x + .55, base + 2.2, z - .2], [x + 1.4, base + 1.4, z - .9], [x + .55, base + 1.0, z - .2], BRONZE);
+  b.tri([x + .55, base + 2.2, z - .2], [x + .55, base + 1.0, z - .2], [x + 1.4, base + 1.4, z - .9], BRONZE);
 }
