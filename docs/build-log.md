@@ -3990,6 +3990,6 @@ Stacking the frequency under the station name leaves room for all five on the sa
 
 ### 2026-11-27 · Two records on Long Haul
 
-The two-minute “Somebody Owes Me a Dance” takes the third slot in the station rotation. The electric shuffles share the *Sunday Shoes* sleeve, while the fingerpicked “Porch Light” gets a moth against a lit screen door. We kept the original performances of both returning tracks and changed their MP3 tags. The radio now passes each record’s album title through to the system player. [Listening room](log/ui/long-haul/records.jpg).
+The two-minute “Somebody Owes Me a Dance” joins the station’s three-track shuffle. The electric shuffles share the *Sunday Shoes* sleeve, while the fingerpicked “Porch Light” gets a moth against a lit screen door. We kept the original performances of both returning tracks and changed their MP3 tags. The radio now passes each record’s album title through to the system player. [Listening room](log/ui/long-haul/records.jpg).
 
 The acoustic single now has its own artist, Nell Tiller. Her painted guitar-and-chair sleeve carries the same credit as the radio and the MP3 tags. The 135-second performance is identical frame for frame. The revised *Sunday Shoes* photograph shows the boot resting on a level stacked heel.

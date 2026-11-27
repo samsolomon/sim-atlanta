@@ -805,6 +805,18 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
 .a2-radio-presets small { color: var(--a2-ink2); font-variant-numeric: tabular-nums; }
 .a2-radio-presets button[aria-pressed=true] span { font-weight: 650; }
 .a2-radio-presets button:focus-visible { outline-offset: -2px; }
+@media (min-width: 601px) and (max-width: 920px) {
+  body:has(.a2-player:not([hidden])):has(.a2-model-card .a2-browser:not([hidden])) {
+    --a2-catalog-width: min(400px, calc(100vw - var(--a2-left) - var(--a2-right) - 348px));
+  }
+  body:has(.a2-player:not([hidden])) .a2-model-card:has(.a2-browser:not([hidden])) {
+    width: var(--a2-catalog-width);
+  }
+  body:has(.a2-model-card .a2-browser:not([hidden])) .a2-player:not([hidden]) {
+    left: auto; right: var(--a2-right); transform: none;
+    width: min(416px, calc(100% - var(--a2-left) - var(--a2-catalog-width) - 8px - var(--a2-right)));
+  }
+}
 @media (max-width: 440px) {
   .a2-appbar { gap: 0; padding-inline: 2px; }
   .a2-appbar .a2-vsep { display: none; }
