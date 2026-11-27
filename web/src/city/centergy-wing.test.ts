@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { type Mesh, Raycaster, Vector3 } from 'three';
+import { Color, type Mesh, Raycaster, Vector3 } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -93,6 +93,23 @@ it('keeps the south bands above the neighbour on sloping ground', () => {
   const roof = Math.max(...block.map(([x, z]) => slope.sample(x, z)!)) + south.h! - 323.8;
   const inside = vertices(model.group).filter(v => v.y < roof && pointInRing(v.x, v.z, block) && edgeDistance(block, v.x, v.z) > 0.01);
   expect(inside).toEqual([]);
-  // The first band above it still stands on the shared edge.
-  expect(vertices(model.group).some(v => v.y > roof && v.x > 212 && v.x < 247 && Math.abs(v.z - -2612.85) < 0.1)).toBe(true);
+  // The first spandrel band above it still stands on the shared edge, within one floor (4.1 m)
+  // of that roof.
+  const body = model.group.children[0] as Mesh, color = body.geometry.attributes.color;
+  const band = new Color('#c8ccc8'), v = new Vector3(), position = body.geometry.attributes.position;
+  let first = Infinity;
+  // Band triangles whose centre lies on the shared edge (x 210.93 to 248.66, z ≈ −2612.8).
+  for (let i = 0; i + 2 < color.count; i += 3) {
+    if (Math.abs(color.getX(i) - band.r) + Math.abs(color.getY(i) - band.g) + Math.abs(color.getZ(i) - band.b) > 1e-3) continue;
+    const c = new Vector3();
+    let low = Infinity;
+    for (let k = 0; k < 3; k++) {
+      c.add(v.fromBufferAttribute(position, i + k).applyMatrix4(body.matrixWorld));
+      low = Math.min(low, v.y);
+    }
+    c.divideScalar(3);
+    if (c.x > 212 && c.x < 247 && Math.abs(c.z - -2612.8) < 0.15) first = Math.min(first, low);
+  }
+  expect(first).toBeGreaterThanOrEqual(roof);
+  expect(first).toBeLessThan(roof + 4.1);
 });
