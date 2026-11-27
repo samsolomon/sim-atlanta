@@ -90,14 +90,18 @@ describe('batchLandmarks', () => {
       expect(plain).toBe(true);
       // Body, then the two lamp runs (two sites share a colour and factor), in buffer order.
       expect(glow.count.value).toBe(3);
-      const rgb = Array.from(glow.rgb.value as Float32Array).slice(0, 9);
-      const lamp = (hex: string, k: number) => new Color(hex).toArray().map(c => c * k * n);
-      const expected = [[0, 0, 0], lamp('#f2d5a5', 0.64), lamp('#e4d3a2', 0.5)];
-      // Run order follows the probe looks; match each run to its expected light.
-      const runs = [0, 1, 2].map(i => rgb.slice(i * 3, i * 3 + 3));
-      for (const e of expected) expect(runs.some(r => r.every((v, c) => Math.abs(v - e[c]) < 1e-6))).toBe(true);
-      // The ranges tile the draw.
+      const rgb = Array.from(glow.rgb.value as Float32Array);
       const range = Array.from(glow.range.value as Int32Array).slice(0, 6);
+      const lamp = (hex: string, k: number) => new Color(hex).toArray().map(c => c * k * n);
+      // Each light goes to its own geometry. Runs have distinct sizes: the three bodies (3 x 36
+      // vertices), the two lamp sets that share a colour (2 x 36) and the third lamp set (36).
+      const expected: Record<number, number[]> = { 108: [0, 0, 0], 72: lamp('#f2d5a5', 0.64), 36: lamp('#e4d3a2', 0.5) };
+      for (let i = 0; i < 3; i++) {
+        const want = expected[range[i * 2 + 1] - range[i * 2]];
+        expect(want).toBeDefined();
+        for (let c = 0; c < 3; c++) expect(rgb[i * 3 + c]).toBeCloseTo(want[c], 6);
+      }
+      // The ranges tile the draw.
       expect(range[0]).toBe(mesh.geometry.drawRange.start);
       expect(range[2]).toBe(range[1]);
       expect(range[4]).toBe(range[3]);
@@ -109,6 +113,24 @@ describe('batchLandmarks', () => {
     const mat = shown(b.group)[0].material as MeshLambertMaterial;
     expect(mat.customProgramCacheKey()).toBe(generic.customProgramCacheKey());
     expect([mat.type, mat.side, mat.vertexColors, mat.flatShading, mat.fog]).toEqual([generic.type, generic.side, generic.vertexColors, generic.flatShading, generic.fog]);
+  });
+
+  it('keeps the night runs when any member has a setting the facade program lacks (alpha hashing)', () => {
+    const container = new Group();
+    const sites = [landmark(10), landmark(30, '#e4d3a2', 0.5)];
+    for (const s of sites) {
+      s.lamps.castShadow = s.lamps.receiveShadow = true;
+      s.lamps.material.side = DoubleSide;
+      container.add(s.group);
+    }
+    // Not the first run in the class (runs sort dimmest light first), so only a per-member check sees it.
+    (sites[0].lamps.material as MeshLambertMaterial & { alphaHash: boolean }).alphaHash = true;
+    const b = batchLandmarks(sites, container);
+    container.add(b.group);
+    expect(b.stats.litWalls).toBe(0);
+    for (const s of sites) s.setNight(1);
+    b.sync();
+    expect(shown(b.group).some(m => (m.material as MeshLambertMaterial & { alphaHash: boolean }).alphaHash)).toBe(true);
   });
 
   it('falls back to night runs when a group has more runs than one draw can carry', () => {

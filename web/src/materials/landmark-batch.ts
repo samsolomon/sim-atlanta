@@ -681,7 +681,11 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
         while (i < range.to && members[i].run === first.run) start += counts[i++];
         spans.push({ first, start: s0, end: start });
       }
-      if (litWalls && spans.length > 1 && spans.length <= FACADE_GLOW_RUNS && spans.every(sp => emissiveOnly(sp.first.run, dayGroup.look))) {
+      // Every member must match the facade settings, not just the class's first: the class key
+      // leaves out settings (alpha hashing) the old per-run draws kept from each run's material.
+      const groupMembers = members.slice(range.from, range.to);
+      if (litWalls && spans.length > 1 && spans.length <= FACADE_GLOW_RUNS && spans.every(sp => emissiveOnly(sp.first.run, dayGroup.look))
+        && groupMembers.every(mb => facadeClass(mb.mesh, geo))) {
         // Lit walls: the runs differ only in the light they emit, so they stay one draw at night,
         // each run a glow range of the shared facade program (materials/facade.ts).
         const first = spans[0].first, source = first.mesh.material as Mat;
