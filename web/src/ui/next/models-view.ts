@@ -14,7 +14,7 @@ const X = SVG('<path d="M6 6l12 12M18 6L6 18"/>');
 /** A small swatch per model, coloured by the kind of service (never the agency). */
 export function swatchFor(group: string, id: string): string {
   if (/freight|cm44|ac44|es44|sd70|gp382/i.test(id)) return 'var(--freight)';
-  if (/xn40|xe60|bus/i.test(id)) return 'var(--bus)';
+  if (/xn40|xe60|xpress|bus/i.test(id)) return 'var(--bus)';
   if (/cq400|s70|streetcar|marta/i.test(id)) return 'var(--city-rail)';
   if (/^vehicles$/i.test(group)) return 'var(--intercity)';
   return '#958f84';

@@ -11,6 +11,7 @@
  * photos of MARTA's scheme. No logos.
  *
  * Per-vertex `aKind` (read by `busMaterial`): 0 fixed, 1 headlight, 2 tail light, 3 glass, 4 Rapid passenger glass,
+ * 5 tinted highway-coach glass (a dim interior glow),
  * 7 destination sign.
  */
 import * as THREE from 'three';
@@ -70,7 +71,7 @@ const C = {
   grille: '#2f3238',
 };
 
-class Kit {
+export class Kit {
   pos: number[] = [];
   col: number[] = [];
   kind: number[] = [];
@@ -450,6 +451,7 @@ export function busMaterial(night: { value: number }) {
         if (vKind > 0.5 && vKind < 2.5) totalEmissiveRadiance += diffuseColor.rgb * glow;
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uNight * 0.6;
         if (vKind > 3.5 && vKind < 4.5) totalEmissiveRadiance += vec3(0.84, 0.92, 1.0) * uNight * 0.4;
+        if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += vec3(1.0, 0.86, 0.66) * uNight * 0.09;
         if (vKind > 6.5) totalEmissiveRadiance += diffuseColor.rgb * (0.5 + uNight);`,
       );
   };
