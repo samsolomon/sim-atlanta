@@ -29,11 +29,12 @@ Where the project stands and what comes next, in priority order. Written at the 
 
 ### 1. Small and ready (release 20)
 1. **Remove "Frame the full board" from the menu.** Add a **Retry** link to the top-left area-failure notice, the "Could not load the north section…" messages, so a failed area can still be retried. Update the messages that point at the menu. Sam approved this.
-2. **Merge the ready PRs:**
+2. **Radio: Next starts playback.** Pressing Next on the radio while it's off should start playing the next track, not just change the track silently. Sam reported this.
+3. **Merge the ready PRs:**
    - #708, budget reserves: needs its `test:perf` run.
    - #707, the weekly feed watcher.
    - #711, the integrator handoff.
-3. **Park baked ground:** turn it off by default and stop shipping the bake files (1.9 MB Low and 4.0 MB High per visitor for a 0.5 s post-ready gain). Keep the code and the CI bake step for future heavy areas.
+4. **Park baked ground:** turn it off by default and stop shipping the bake files (1.9 MB Low and 4.0 MB High per visitor for a 0.5 s post-ready gain). Keep the code and the CI bake step for future heavy areas.
 
 ### 2. MARTA timetable expiry (deadline: ship by about Dec 8)
 MARTA's published feed ends **2026-12-11**, and no newer feed existed as of 2026-11-26. Sam decided that past a feed's end, City repeats the last published week labelled **inferred**, never scheduled:
@@ -73,7 +74,7 @@ Draft #710 is part 1 (overlaps, merge and diverge with one surface owner). Its n
 2. **Next models,** each in the Model Lab first for Sam's approval: Model Y, Rivian R2, and a Waymo-style robotaxi (an I-Pace-like crossover with a roof dome, no branding). No logos or lettering.
 
 ## Open PRs at the stopping point
-- **Ready:** #707, #708, #711.
+- **Ready:** #708. (#707 and #711 merged after this list was written.)
 - **Drafts:** #706 (F-150 traffic), #709 (`hidelm` switch), #710 (road kit part 1).
 - **Older PRs waiting on decisions:** #404, #427, #663, #665, #681, #435 (streaming prototype, approved; to be rebased), #541 (road vehicle variety, partly superseded by the semi and the F-150).
 
