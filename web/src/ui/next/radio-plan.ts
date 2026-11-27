@@ -6,6 +6,7 @@
 export interface StationTrack {
   id: string;
   artist: string;
+  album?: string;
   title: string;
   /** Relative to the site root, e.g. "music/tracks/x.mp3". */
   src: string;
@@ -18,8 +19,8 @@ export interface Station {
   id: string;
   name: string;
   description: string;
-  /** [start, end) local hours of the scene clock; end < start wraps past midnight. */
-  defaultHours: [number, number];
+  /** [start, end) local hours of the scene clock. Omit for a manual preset. */
+  defaultHours?: [number, number];
   tracks: StationTrack[];
 }
 
@@ -43,7 +44,7 @@ export function inHours([start, end]: [number, number], hour: number): boolean {
 
 /** The station for a scene-clock hour (fractional hours allowed). */
 export function stationForHour(stations: Station[], hour: number): Station {
-  return stations.find((s) => inHours(s.defaultHours, hour)) ?? stations[0];
+  return stations.find((s) => s.defaultHours && inHours(s.defaultHours, hour)) ?? stations[0];
 }
 
 /** A station the visitor chose on this device beats the clock. */

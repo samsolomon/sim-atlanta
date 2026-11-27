@@ -147,3 +147,11 @@ Afterglow 88.5 · A streetlamp blooms into a star as summer daylight fades.
 > Dreamy glossy 1980s color-negative photograph of a SINGLE globular outdoor lamp at blue hour. Big warm peach-white orb offset toward upper right on a dark slender curved support, surrounded by dramatic pink halation and a four-point optical star flare. Deep peacock-blue sky with a soft violet dusk band. Crop below the bulb leaves just sky and lamp, no buildings or people. Luxuriant optical softness.
 
 [polaroid-coast.png](polaroid-coast.png) · [polaroid-coast-512.webp](polaroid-coast-512.webp) · [polaroid-coast-128.webp](polaroid-coast-128.webp)
+
+## Axle & Pine
+
+**Sunday Shoes.** The two electric shuffles share a flash-lit oxblood boot on a mustard dance floor. ImageGen revised the walking heel with a flat rubber lift, a nearly vertical rear edge following the marked reference and a broad, flat base.
+
+## Nell Tiller
+
+**Porch Light.** ImageGen reinterpreted the guitar and rush-seat chair as an evening photograph. Amber side light picks up the guitar varnish and woven seat against a blue-gray plaster wall, with the artist credit and italic title in cream.

@@ -185,13 +185,14 @@ body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) 
   left: var(--a2-left); bottom: var(--a2-app-bottom); height: var(--a2-app-h);
   display: flex; align-items: center; gap: 2px; padding: 0 4px 0 2px;
 }
-.a2-seg { display: flex; gap: 2px; padding: 2px; border-radius: 11px; background: var(--a2-track); }
+.a2-seg, .a2-radio-presets { gap: 2px; padding: 2px; border-radius: 11px; background: var(--a2-track); }
+.a2-seg { display: flex; }
 .a2-vs {
   height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; padding: 0 12px;
   font-size: 14px !important; font-weight: 600 !important; background: transparent; cursor: pointer; text-decoration: none;
 }
-.a2-vs:hover { background: var(--a2-sep); }
-.a2-vs[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
+.a2-vs:hover, .a2-radio-presets button:hover { background: var(--a2-sep); }
+.a2-vs[aria-pressed='true'], .a2-radio-presets button[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
 
 /* ---- menu: opens upward from the app bar ---- */
 .a2-menu {
@@ -661,8 +662,8 @@ body.city-over-map #city-loading { background: transparent !important; }
   .a2-appbar :is(.a2-dock-next, .a2-share) { margin-inline-start: -6px; }
 }
 .a2-player {
-  width: 340px; padding: 10px 12px; overflow: hidden;
-  left: min(calc(50% + 164px), calc(100% - 178px));
+  width: 416px; padding: 10px 12px; overflow: hidden;
+  left: min(calc(50% + 164px), calc(100% - 216px));
 }
 .a2-player:not([hidden]) { display: flex; align-items: center; }
 .a2-track-info {
@@ -799,11 +800,23 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
 .a2-player:not([hidden]) { display: grid; gap: 8px; }
 .a2-player-transport { display: flex; align-items: center; }
 .a2-player-cover { flex: none; width: 64px; height: 64px; margin-right: 10px; border-radius: 8px; object-fit: cover; }
-.a2-radio-presets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; border-top: 1px solid var(--a2-sep); padding-top: 7px; }
-.a2-radio-presets button { display: flex; align-items: center; justify-content: space-between; gap: 3px; min-height: 40px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.a2-radio-presets { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content,1fr); overflow-x: auto; }
+.a2-radio-presets button { display: flex; flex-direction: column; align-items: center; justify-content: center; white-space: nowrap; gap: 2px; min-height: 48px; min-width: 44px; padding: 3px 2px; border: 0; border-radius: 9px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
 .a2-radio-presets small { color: var(--a2-ink2); font-variant-numeric: tabular-nums; }
-.a2-radio-presets button:hover { background: var(--a2-sep); }
-.a2-radio-presets button[aria-pressed=true] { background: var(--a2-chip); border-color: var(--a2-sep); font-weight: 700; box-shadow: var(--a2-chip-sh); }
+.a2-radio-presets button[aria-pressed=true] span { font-weight: 650; }
+.a2-radio-presets button:focus-visible { outline-offset: -2px; }
+@media (min-width: 601px) and (max-width: 920px) {
+  body:has(.a2-player:not([hidden])):has(.a2-model-card .a2-browser:not([hidden])) {
+    --a2-catalog-width: min(400px, calc(100vw - var(--a2-left) - var(--a2-right) - 348px));
+  }
+  body:has(.a2-player:not([hidden])) .a2-model-card:has(.a2-browser:not([hidden])) {
+    width: var(--a2-catalog-width);
+  }
+  body:has(.a2-model-card .a2-browser:not([hidden])) .a2-player:not([hidden]) {
+    left: auto; right: var(--a2-right); transform: none;
+    width: min(416px, calc(100% - var(--a2-left) - var(--a2-catalog-width) - 8px - var(--a2-right)));
+  }
+}
 @media (max-width: 440px) {
   .a2-appbar { gap: 0; padding-inline: 2px; }
   .a2-appbar .a2-vsep { display: none; }
@@ -816,7 +829,10 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
 @media (max-width: 600px) {
   .a2-player-meta { grid-template-columns: minmax(0, 1fr); }
   .a2-player-meta strong,.a2-player-artist { white-space: normal; overflow-wrap: anywhere; }
-  .a2-radio-presets button { min-height: 44px; flex-wrap: wrap; }
+}
+@media (max-width: 375px) {
+  .a2-player { padding-inline: 6px; }
+  .a2-radio-presets button { font-size: 12px; padding-inline: 1px; }
 }
 
 /* ---- camera group beside the detail panel (brief: "stays visible while a detail panel is open",

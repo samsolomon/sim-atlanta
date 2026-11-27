@@ -213,6 +213,52 @@
           "source": "elevenlabs"
         }
       ]
+    },
+    {
+      "id": "long-haul",
+      "name": "Long Haul 103.9",
+      "description": "Electric country shuffles and fingerpicked acoustic guitar",
+      "tracks": [
+        {
+          "id": "axle-and-pine--sunday-shoes",
+          "artist": "Axle & Pine",
+          "title": "Sunday Shoes",
+          "src": "music/tracks/axle-and-pine--sunday-shoes.mp3",
+          "cover": {
+            "small": "music/covers/sunday-shoes-128.webp",
+            "large": "music/covers/sunday-shoes-512.webp"
+          },
+          "durationS": 120.02,
+          "source": "elevenlabs",
+          "album": "Sunday Shoes"
+        },
+        {
+          "id": "axle-and-pine--somebody-owes-me-a-dance",
+          "artist": "Axle & Pine",
+          "title": "Somebody Owes Me a Dance",
+          "src": "music/tracks/axle-and-pine--somebody-owes-me-a-dance.mp3",
+          "cover": {
+            "small": "music/covers/sunday-shoes-128.webp",
+            "large": "music/covers/sunday-shoes-512.webp"
+          },
+          "durationS": 120.02,
+          "source": "elevenlabs",
+          "album": "Sunday Shoes"
+        },
+        {
+          "id": "nell-tiller--porch-light",
+          "artist": "Nell Tiller",
+          "title": "Porch Light",
+          "src": "music/tracks/nell-tiller--porch-light.mp3",
+          "cover": {
+            "small": "music/covers/porch-light-128.webp",
+            "large": "music/covers/porch-light-512.webp"
+          },
+          "durationS": 135.02,
+          "source": "elevenlabs",
+          "album": "Porch Light"
+        }
+      ]
     }
   ]
 }

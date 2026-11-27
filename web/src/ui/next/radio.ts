@@ -1,5 +1,5 @@
 /**
- * The radio (docs/ui-controls-brief.md, Radio): four stations from web/public/music/stations.json,
+ * The radio (docs/ui-controls-brief.md, Radio): stations from web/public/music/stations.json,
  * off until tapped, because browsers block autoplay.
  *
  * Tracks roll into each other. Each plays through its own GainNode (iOS ignores
@@ -533,7 +533,7 @@ export function createRadio(o: RadioOptions): Radio {
       ms.metadata = new MediaMetadata({
         title: shown.title,
         artist: shown.artist,
-        album: station?.name ?? '',
+        album: shown.album ?? station?.name ?? '',
         artwork: [{ src: o.resolve(shown.cover.large), sizes: '512x512', type: 'image/webp' }],
       });
     const state = playing ? 'playing' : 'paused';
