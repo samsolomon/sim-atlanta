@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Color, type Mesh, type MeshBasicMaterial } from 'three';
+import { Color, type Mesh, type MeshBasicMaterial, Vector3 } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { createOlympia, olympiaId } from './olympia-building';
@@ -41,11 +41,16 @@ it('lights the billboard and offices through one night-only overlay, with no lam
     if (hsl.s > 0.4) hues.add(Math.round(hsl.h * 12));
   }
   expect(hues.size).toBeGreaterThanOrEqual(4);
-  // The offices glow too: lit panes add the warm white a lamp mesh would (#f7ecd8 at 0.75),
-  // below the sign, where the building's three storeys are.
-  const warm = new Color('#f7ecd8').multiplyScalar(0.75), p = glow.geometry.attributes.position;
-  let panes = 0;
-  for (let i = 0; i < c.count; i++)
-    if (Math.abs(c.getX(i) - warm.r) + Math.abs(c.getY(i) - warm.g) + Math.abs(c.getZ(i) - warm.b) < 1e-3 && p.getY(i) < 318.5 + 12) panes++;
-  expect(panes).toBeGreaterThan(0);
+  // The offices glow too: lit panes add the warm white a lamp mesh would (#f7ecd8 at 0.75) on
+  // the stone storey and the glass top floor, above the 4.6 m storefront band (scene y = NAVD88 − 300).
+  model.group.updateMatrixWorld(true);
+  const warm = new Color('#f7ecd8').multiplyScalar(0.75), p = glow.geometry.attributes.position, v = new Vector3();
+  const datum = 318.5 - 300;
+  let offices = 0;
+  for (let i = 0; i < c.count; i++) {
+    if (Math.abs(c.getX(i) - warm.r) + Math.abs(c.getY(i) - warm.g) + Math.abs(c.getZ(i) - warm.b) > 1e-3) continue;
+    const y = v.fromBufferAttribute(p, i).applyMatrix4(glow.matrixWorld).y;
+    if (y > datum + 5.2 && y < datum + 12) offices++;
+  }
+  expect(offices).toBeGreaterThan(0);
 });
