@@ -1,5 +1,6 @@
 import type { LiveBus, CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
 import { MODE_COLOR, routeColor } from './layers';
+import { RESERVE_DELAY_MS } from '../live/motion';
 import { projectionText } from '../ui/status';
 
 const esc = (s: unknown) =>
@@ -149,7 +150,8 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
       ${drawnRows(city, drawn, row)}
       ${live
         ? row('Position', t.pathId
-          ? `Placed between reports · ${esc(report)} ${chip('inferred', 'Inferred')}`
+          // Playback runs RESERVE_DELAY_MS behind the newest fix (live/motion.ts): the report age is the newest one's.
+          ? `Placed between reports, about ${Math.round(RESERVE_DELAY_MS / 1000)} s behind the latest · ${esc(report)} ${chip('inferred', 'Inferred')}`
           : `Last reported location · ${esc(report)} ${t.observedAt == null ? chip('reported', 'Reported') : chip('live', 'Live')}`)
         : t.projectedFrom
           ? row('Position', `${esc(projectionText(t.projectedFrom))} ${chip('inferred', 'Inferred')}`)

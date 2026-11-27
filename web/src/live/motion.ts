@@ -1,0 +1,55 @@
+/** Preview selected for Orca: present each received fix one nominal poll later. */
+export const PLAYBACK_DELAY_MS = 30_000;
+
+export interface Knot {
+  time: number;
+  s: number;
+  velocity: number; // path metres per millisecond
+}
+
+export function appendFix(history: Knot[], s: number, received: number, delay = PLAYBACK_DELAY_MS) {
+  const playhead = received - delay;
+  while (history.length > 1 && history[1].time <= playhead) history.shift();
+  const last = history.at(-1);
+  if (last && last.time >= received) return;
+  // Once playback has entered a segment its endpoint derivative is fixed.
+  // If data arrives late we finish braking, hold the fix, and restart there.
+  if (last && last.time < playhead) history.push({ time: playhead, s: last.s, velocity: 0 });
+  const b = history.at(-1), a = history.at(-2);
+  if (a && b && a.time >= playhead) {
+    const before = (b.s - a.s) / (b.time - a.time);
+    const after = (s - b.s) / (received - b.time);
+    if (before * after > 0) b.velocity = 2 * before * after / (before + after);
+  }
+  history.push({ time: received, s, velocity: 0 });
+}
+
+export function playback(history: readonly Knot[], now: number, delay = PLAYBACK_DELAY_MS) {
+  const time = now - delay;
+  const i = history.findIndex(p => p.time >= time);
+  if (i < 0) return history[history.length - 1].s;
+  if (i === 0) return history[0].s;
+  const a = history[i - 1], b = history[i];
+  const duration = b.time - a.time;
+  const f = (time - a.time) / duration;
+  const back = 1 - f;
+  // Monotone cubic Hermite. Both tangents have the direction of this
+  // interval and magnitude at most twice its secant. A dwell has zero tangents.
+  return a.s + (b.s - a.s) * f * f * (3 - 2 * f)
+    + duration * f * back * (back * a.velocity - f * b.velocity);
+}
+
+/** Reserve eight seconds at the end of an ordinary 30 s interval. Until the
+ * next report arrives, this tail brakes to rest at the known endpoint.
+ * A timely following report can still set the tangent before the tail starts. */
+export const RESERVE_DELAY_MS = 40_000;
+export function appendReservedFix(history: Knot[], s: number, received: number) {
+  if (history.length && history[history.length - 1].time >= received) return;
+  appendFix(history, s, received, RESERVE_DELAY_MS);
+  const end = history.at(-1), start = history.at(-2);
+  if (!end || !start || end.time !== received) return;
+  const span = end.time - start.time;
+  if (span <= 8_000) return;
+  const velocity = (end.s - start.s) / span;
+  history.splice(-1, 0, { time: received - 8_000, s: s - velocity * 8_000, velocity });
+}

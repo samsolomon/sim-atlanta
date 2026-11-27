@@ -198,8 +198,13 @@ lon/lat, lengthM, vehicleType, headsign, nextStop`):
 2. **MARTA rail REST**: each prediction row repeats the train's GPS fix (verified
    2026-11-20: half the trains were 400–900 m from any station, and 17 of 24 moved
    between 25 s snapshots). The Worker groups rows by train. The browser snaps each fix
-   to the nearest path of that line and direction (all fixes within 55 m), then glides
-   between fixes over 8 s. Next stop and ETA come from the soonest realtime row.
+   to the nearest path of that line and direction (all fixes within 55 m). The drawn
+   position plays the snapped fixes back 40 s late (`live/motion.ts`), on a monotone cubic
+   through them. Cruise speed carries through fixes that keep moving, a dwell holds still, and the
+   last 8 s of each 30 s interval brakes to rest at the newest fix in case the next one is late.
+   It never runs ahead of the newest fix. A late fix holds the train, then playback restarts
+   there. The card labels that position `Inferred` ("Placed between reports"), and next stop and
+   ETA come from the soonest realtime row of the newest response.
 3. **Timetables**: interpolate `s` between stops, dwelling at each stop.
 4. **Aggregate counts** (FRA): no trains, only `TrackArc.tpd`.
 
