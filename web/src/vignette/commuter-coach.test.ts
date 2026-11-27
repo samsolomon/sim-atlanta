@@ -42,9 +42,14 @@ describe('Xpress-like highway commuter coach', () => {
   it('lights headlights at the front and tail lamps at the rear', () => {
     const g = commuterCoachGeometry();
     const p = g.getAttribute('position'), k = g.getAttribute('aKind');
+    let front = 0, tail = 0;
     for (let i = 0; i < p.count; i++) {
-      if (k.getX(i) === 2) expect(p.getZ(i)).toBeLessThan(-COACH_LENGTH / 2 + 0.1);
+      if (k.getX(i) === 2) { tail++; expect(p.getZ(i)).toBeLessThan(-COACH_LENGTH / 2 + 0.1); }
+      // Kind 1 is also the amber rear marker, so require lamps on the front face rather than only there.
+      if (k.getX(i) === 1 && p.getZ(i) > COACH_LENGTH / 2 - 0.1) front++;
     }
+    expect(front).toBeGreaterThan(0);
+    expect(tail).toBeGreaterThan(0);
     g.dispose();
   });
 });
