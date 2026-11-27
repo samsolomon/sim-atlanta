@@ -30,8 +30,11 @@ const NIGHT_EMISSIVE = new THREE.Color('#2b3554');
 const MASS_SHARE = 0.65;
 
 const params = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search);
-/** `?perf&placeholder=off`: no placeholder, for A/B runs. */
-export const placeholderOff = (() => { const p = params.get('perf'); return p !== null && p !== '0' && p !== 'off' && params.get('placeholder') === 'off'; })();
+/** `?perf&placeholder=off`: no placeholder; `?perf&placeholder=flat`: shared vertices and a
+ * flat-shaded material (half the memory, its own program). For A/B runs. */
+const perfMode = (() => { const p = params.get('perf'); return p !== null && p !== '0' && p !== 'off' ? params.get('placeholder') : null; })();
+export const placeholderOff = perfMode === 'off';
+export const placeholderFlat = perfMode === 'flat';
 /** Dev: `?placeholderfade=0.5` holds every dissolve at that progress, for stills;
  * `?placeholderfade=brookwood-south:0.5` holds only that area's. */
 const pinnedFade = (() => {
@@ -82,18 +85,20 @@ export function buildArea(d: PlaceholderAreaData, normals = true): Built {
   const pos = new Int16Array(vertices * 3);
   const nrm = normals ? new Int8Array(vertices * 3) : null;
   let v = 0;
-  const put = (x: number, yy: number, z: number, nx = 0, ny = 127, nz = 0) => {
+  // The normal the next put() takes (Int8, normalised), set by unit().
+  let nx = 0, ny = 127, nz = 0;
+  const unit = (x: number, yy: number, z: number) => { const l = 127 / (Math.sqrt(x * x + yy * yy + z * z) || 1); nx = Math.round(x * l); ny = Math.round(yy * l); nz = Math.round(z * l); };
+  const put = (x: number, yy: number, z: number) => {
     pos[v * 3] = x; pos[v * 3 + 1] = yy; pos[v * 3 + 2] = z;
     if (nrm) { nrm[v * 3] = nx; nrm[v * 3 + 1] = ny; nrm[v * 3 + 2] = nz; }
     return v++;
   };
-  const unit = (x: number, yy: number, z: number) => { const l = Math.hypot(x, yy, z) || 1; return [Math.round(x / l * 127), Math.round(yy / l * 127), Math.round(z / l * 127)] as const; };
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     // Smooth ground normals from the grid's slopes (decimetres both ways).
     const h = (cc: number, rr: number) => ground[Math.min(rows - 1, Math.max(0, rr)) * cols + Math.min(cols - 1, Math.max(0, cc))];
     const dx = gx(Math.min(cols - 1, c + 1)) - gx(Math.max(0, c - 1)), dz = gz(Math.min(rows - 1, r + 1)) - gz(Math.max(0, r - 1));
-    const n = unit(-(h(c + 1, r) - h(c - 1, r)) / (dx || 1), 1, -(h(c, r + 1) - h(c, r - 1)) / (dz || 1));
-    put(gx(c), ground[r * cols + c], gz(r), ...n);
+    unit(-(h(c + 1, r) - h(c - 1, r)) / (dx || 1), 1, -(h(c, r + 1) - h(c, r - 1)) / (dz || 1));
+    put(gx(c), ground[r * cols + c], gz(r));
   }
   const bottom = dm(area.bottomY);
   // The perimeter, clockwise from above.
@@ -113,8 +118,8 @@ export function buildArea(d: PlaceholderAreaData, normals = true): Built {
     let q: [number, number, number, number];
     if (shared) q = shared;
     else {
-      const n = unit(-(bz - az), 0, bx - ax);
-      q = [put(ax, a0, az, ...n), put(bx, b0, bz, ...n), put(bx, b1, bz, ...n), put(ax, a1, az, ...n)];
+      unit(-(bz - az), 0, bx - ax);
+      q = [put(ax, a0, az), put(bx, b0, bz), put(bx, b1, bz), put(ax, a1, az)];
     }
     tri(q[0], q[1], q[2]); tri(q[0], q[2], q[3]);
   };
@@ -147,6 +152,7 @@ export function buildArea(d: PlaceholderAreaData, normals = true): Built {
     if (normals) {
       for (let j = 0; j < n; j++) wall(X(j), Z(j), X(j + 1), Z(j + 1), y0, y1, y0, y1);
       top = v;
+      unit(0, 1, 0);
       for (let j = 0; j < n; j++) put(X(j), y1, Z(j));
     } else {
       const base = v;
@@ -184,6 +190,7 @@ export function placeholderMaterial(flat = false) {
 type Fade = { start: number | null };
 
 export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMotion: boolean; flat?: boolean }) {
+  o = { flat: placeholderFlat, ...o };
   const group = new THREE.Group();
   group.name = 'white placeholder';
   group.userData.perf = 'placeholder';
@@ -221,6 +228,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       fades.delete(id);
       full(e);
       e.mesh.visible = true;
+      e.mesh.userData.fading = false;
     },
     /** Hide at once (the area is on screen already). */
     hide(id: string) {
@@ -228,6 +236,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       if (!e) return;
       fades.delete(id);
       e.mesh.visible = false;
+      e.mesh.userData.fading = false;
     },
     /** The area has mounted under it: dissolve, starting on the next frame drawn. */
     reveal(id: string) {
@@ -235,6 +244,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       if (!e || !e.mesh.visible) return;
       if (o.reducedMotion) { this.hide(id); return; }
       fades.set(id, { start: null });
+      e.mesh.userData.fading = true;
     },
     /** Per frame: advance the dissolves. */
     update(now: number) {

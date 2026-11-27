@@ -124,3 +124,29 @@ describe('placeholder look', () => {
     expect(easeInOut(0.1)).toBeLessThan(0.1);
   });
 });
+
+// The staged file (pnpm data:bake) against the board it stands in for: every mosaic area but
+// downtown (built at boot), at the bounds City mounts it with. Skipped without staged data.
+describe('staged placeholder', async () => {
+  const { existsSync, readFileSync } = await import('node:fs');
+  const { gunzipSync } = await import('node:zlib');
+  const { bounds } = await import('../square-board/sections');
+  const file = new URL('../../public/data/scene/placeholder/board.bin.gz', import.meta.url);
+  it.skipIf(!existsSync(file))('covers every area City loads after boot, at its bounds', () => {
+    const areas = decodePlaceholder(Uint8Array.from(gunzipSync(readFileSync(file))).buffer);
+    const ids = areas.map(a => a.area.id).sort();
+    expect(ids).toEqual(Object.keys(bounds).filter(id => id !== 'downtown').sort());
+    for (const a of areas) {
+      expect(a.area.bounds).toEqual(bounds[a.area.id as keyof typeof bounds]);
+      // Masses stand on the board: every ring vertex inside its area's bounds, give or take a metre.
+      for (let i = 0; i < a.xz.length; i += 2) {
+        const x = a.area.ox + a.xz[i] / 10, z = a.area.oz + a.xz[i + 1] / 10;
+        expect(x).toBeGreaterThan(a.area.bounds.minX - 60);
+        expect(x).toBeLessThan(a.area.bounds.maxX + 60);
+        expect(z).toBeGreaterThan(a.area.bounds.minZ - 60);
+        expect(z).toBeLessThan(a.area.bounds.maxZ + 60);
+      }
+      expect(a.area.buildings).toBeGreaterThan(0);
+    }
+  });
+});
