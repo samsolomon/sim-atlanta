@@ -117,6 +117,26 @@ describe('placeholder look', () => {
     expect(mesh.geometry.drawRange.count).toBe(b.massEnd);
   });
 
+  it('leaves dissolving areas out of the cream-ink rects and reports shadow changes', () => {
+    let changes = 0;
+    const p = createPlaceholder([sample()], { reducedMotion: false, changed: () => changes++ });
+    const out = new Float32Array(16 * 4);
+    // Created shown; hiding and showing again each report a change.
+    p.hide('test');
+    expect(changes).toBe(1);
+    expect(p.rects(out)).toBe(0);
+    p.show('test');
+    expect(changes).toBe(2);
+    expect(p.rects(out)).toBe(1);
+    expect(Array.from(out.slice(0, 4))).toEqual([0, -60, 100, 0]);
+    p.reveal('test');
+    expect(p.rects(out)).toBe(0);
+    p.update(0); p.update(1000);
+    expect(changes).toBe(3);
+    p.show('test');
+    expect(changes).toBe(4);
+  });
+
   it('eases in and out', () => {
     expect(easeInOut(0)).toBeCloseTo(0, 5);
     expect(easeInOut(0.5)).toBeCloseTo(0.5, 3);

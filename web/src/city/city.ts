@@ -355,7 +355,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // beside the board's build; it joins the scene before the first frame.
   const placeholderLoad = mosaic ? import('./placeholder').then(async m => {
     const data = await m.loadPlaceholder(DATA, options.signal);
-    return data && m.createPlaceholder(data, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches });
+    // A dissolve that ends (or an area shown again) changes what casts shadows: redraw Low's
+    // manual shadow map then, not every frame of the dissolve.
+    return data && m.createPlaceholder(data, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      changed: () => { renderer.shadowMap.needsUpdate = true; } });
   }).catch(error => { console.warn('City placeholder unavailable', error); return null; }) : Promise.resolve(null);
   let placeholder: Placeholder | null = null;
   const markRects = new Float32Array(16 * 4);
@@ -2431,7 +2434,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const attachPlaceholder = (p: Placeholder | null) => {
     if (!p || options.signal?.aborted) { p?.dispose(); return; }
     placeholder = p;
-    for (const id of p.ids) if (mosaic!.areas.has(id as never)) p.hide(id); else p.show(id);
+    // White stands in only for an area this board will load; the square alone never loads Midtown.
+    for (const id of p.ids) if (mosaic!.areas.has(id as never) || !mosaic!.loads(id)) p.hide(id); else p.show(id);
     scene.add(p.group);
     if (freezeOn) freezeStatic(p.group);
     renderer.shadowMap.needsUpdate = true;

@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { ShapeUtils, Vector2, type Object3D } from 'three';
 import { brookwoodGrid } from './brookwood';
-import { boxesFromObject, tapLandmarks, type FarBox } from './far-board';
+import { boxesFromObject, orientedRect, tapLandmarks, type FarBox } from './far-board';
 import { addSection, bounds, joins, midtownRows, type Area, type Board } from '../square-board/sections';
 import { midtownBaseNavd88M } from './square-mosaic';
 import { GroundGrid } from '../terrain/grid';
@@ -58,6 +58,23 @@ function simplify(ring: Ring, tol: number): Ring {
   return out.length >= 3 ? out : ring;
 }
 
+/**
+ * At most MAX_RING vertices: simplify harder, and where that can't get there (the simplifier keeps
+ * its input when a pass would leave fewer than three points), fall back to the convex hull, then
+ * to the oriented rectangle. Always terminates.
+ */
+export function capRing(ring: Ring): Ring {
+  for (let tol = SIMPLIFY_M * 2; ring.length > MAX_RING && tol < 64; tol *= 1.5) ring = simplify(ring, tol);
+  if (ring.length <= MAX_RING) return ring;
+  const r = orientedRect(ring.map(p => p[0]), ring.map(p => p[1]));
+  if (r.hull.length / 2 <= MAX_RING && r.hull.length >= 6) {
+    const hull: Ring = [];
+    for (let i = 0; i < r.hull.length; i += 2) hull.push([r.hull[i], r.hull[i + 1]]);
+    return hull;
+  }
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([su, sv]) => [r.cx + su * r.hx * r.ux - sv * r.hz * r.uz, r.cz + su * r.hx * r.uz + sv * r.hz * r.ux]);
+}
+
 const area2 = (r: Ring) => { let a = 0; for (let i = 0; i < r.length; i++) { const [x0, z0] = r[i], [x1, z1] = r[(i + 1) % r.length]; a += x0 * z1 - x1 * z0; } return a; };
 
 function inRing(r: Ring, x: number, z: number) {
@@ -78,7 +95,7 @@ function massesOf(area: Area, landmarkBoxes: FarBox[]) {
   for (const b of [...area.farBoxes, ...landmarkBoxes]) {
     let ring = boxRing(b);
     if (ring.length > 4) ring = simplify(ring, SIMPLIFY_M);
-    for (let tol = SIMPLIFY_M * 2; ring.length > MAX_RING; tol *= 1.5) ring = simplify(ring, tol);
+    ring = capRing(ring);
     if (Math.abs(area2(ring)) < 2) continue;
     // Seat on the drawn ground, as the far form does (terrain/model.ts grounded): down to the lowest
     // ground under it, and drop parts standing clear of it (skybridges, canopies).

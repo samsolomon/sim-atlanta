@@ -10,6 +10,7 @@ import { expect, it } from 'vitest';
 const chrome = process.env.SKIP_BROWSER_TESTS === '1' ? undefined : [process.env.CHROME_BIN, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome', '/usr/bin/chromium'].find(path => path && existsSync(path));
 const staged = existsSync('public/data/scene/square-board/brookwood-station/ground.i16');
+const placeholderStaged = existsSync('public/data/scene/placeholder/board.bin.gz');
 
 // Use an isolated localhost origin so Web Crypto can verify the real row assets.
 // The second case withholds the northmost row: canopy must stop at the mounted edge, not the finished one.
@@ -74,9 +75,11 @@ it.skipIf(!chrome || !staged).each([
     timer = setTimeout(() => report('Timed out waiting for the mounted City render'), 80000);
     const message = await result;
     expect(message, message).toMatch(/"outside":0\b/);
-    // Without the staged placeholder file (older data) City has none, and the probe reports null.
+    // With the placeholder staged (pnpm data:bake), the rows that could not mount must be white;
+    // without it (older data) City has none, and the probe reports null.
     const shown = (JSON.parse(message) as { white: string[] | null }).white;
-    if (shown) expect(shown.sort()).toEqual(white);
+    if (placeholderStaged) expect(shown?.sort()).toEqual(white);
+    else expect(shown).toBeNull();
   } finally {
     clearTimeout(timer);
     if (browser?.pid && browser.exitCode === null && browser.signalCode === null) {

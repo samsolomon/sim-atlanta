@@ -189,7 +189,9 @@ export function placeholderMaterial(flat = false) {
 
 type Fade = { start: number | null };
 
-export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMotion: boolean; flat?: boolean }) {
+export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMotion: boolean; flat?: boolean;
+  /** Called when an area's placeholder appears or disappears (shadow maps that cache it). */
+  changed?: () => void }) {
   o = { flat: placeholderFlat, ...o };
   const group = new THREE.Group();
   group.name = 'white placeholder';
@@ -227,6 +229,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       if (!e) return;
       fades.delete(id);
       full(e);
+      if (!e.mesh.visible) o.changed?.();
       e.mesh.visible = true;
       e.mesh.userData.fading = false;
     },
@@ -235,6 +238,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       const e = meshes.get(id);
       if (!e) return;
       fades.delete(id);
+      if (e.mesh.visible) o.changed?.();
       e.mesh.visible = false;
       e.mesh.userData.fading = false;
     },
@@ -274,13 +278,14 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       material.emissive.copy(NIGHT_EMISSIVE).multiplyScalar(night);
     },
     /**
-     * The areas drawn white now (shown or dissolving), as minX, minZ, maxX, maxZ per area, for the
-     * ink pass's cream night lines. Writes into `out` and returns the count.
+     * The areas drawn whole in white now, as minX, minZ, maxX, maxZ per area, for the ink pass's
+     * cream night lines. A dissolving area is left out: the coloured buildings arriving there take
+     * the city's own ink at once. Writes into `out` and returns the count.
      */
     rects(out: Float32Array) {
       let n = 0;
       for (const [id, e] of meshes) {
-        if (!e.mesh.visible || n * 4 >= out.length) continue;
+        if (!e.mesh.visible || fades.has(id) || n * 4 >= out.length) continue;
         const b = bounds.get(id)!;
         out.set([b.minX, b.minZ, b.maxX, b.maxZ], n++ * 4);
       }
