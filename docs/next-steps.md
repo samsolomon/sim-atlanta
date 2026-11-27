@@ -36,6 +36,24 @@ Where the project stands and what comes next, in priority order. Written at the 
    - #711, the integrator handoff.
 4. **Park baked ground:** turn it off by default and stop shipping the bake files (1.9 MB Low and 4.0 MB High per visitor for a 0.5 s post-ready gain). Keep the code and the CI bake step for future heavy areas.
 
+### 1b. Live MARTA motion smoothing (high: live trains are the core of the site)
+The branch `samsolomon/live-marta-motion` (8 commits, 2026-11-24) was never opened as a PR. It smooths live trains between position fixes: cruise speed carries through known moving fixes, braking has a bounded tail, and a late fix holds the train. Its Codex agent was closed in the 2026-11-26 Studio cleanup, and the branch is on origin.
+- Rebase it onto main. Main has changed a lot since: follow, sliced builds, light pools, Connector traffic.
+- Check it against the live feed and the replay fixtures.
+- Grok, then a device check.
+
+### 1c. PR backlog triage
+About 75 older PRs are still open, mostly building skins from 2026-11-24.
+- **Approved by Sam but never merged:** #594, #604, #627, #632, #481, #521 and #542, plus #404 for the Model Lab only.
+- **Merge path:**
+  1. Rebase each.
+  2. Run one batch `test:perf`.
+  3. Each must offset its own cost under the budget reserves.
+  4. The coordinator does the final check.
+- **The rest:** sort into merge, rework or close. Many are stale against main.
+- **Superseded branches with no PR:** the `study/*` branches from the north expansion, `traffic-wheel-plane`, `aligned-vertices` and `far-landmark-merge`. They can be deleted from origin once confirmed, since copies are in the Studio archive bundle.
+- **Branches with real unmerged work and no PR:** `footpath-rail`, `phone-single-pass`, `langdale-hall`, `emory-faculty-office`, `ellis-six-bay-wip`, `wd-grant-building`, `skyline-medium-handoff` and `ansley-tee-legibility`. Check each and open a PR or close it.
+
 ### 2. MARTA timetable expiry (deadline: ship by about Dec 8)
 MARTA's published feed ends **2026-12-11**, and no newer feed existed as of 2026-11-26. Sam decided that past a feed's end, City repeats the last published week labelled **inferred**, never scheduled:
 - The card reads "Inferred from MARTA's last published timetable (ended Dec 11)".
