@@ -36,3 +36,12 @@ The bearing is the view heading. The close view adds `&dev&mindist=20`.
 ## Rework (2026-11-27)
 
 The facade layers (floor bands, mullions, lit panes, lobby glass) were drawn on the wing's bounding box. The south face therefore stood 0.32 m inside `osm:way:792229255` (h 23 m) from grade+6 m to that block's roof, and missed the true north and east walls by 0.30 and 0.56 m. They now follow the mapped ring edges. The west party wall shared with Centergy One stays bare, and any edge a neighbour covers starts at the first floor band above that neighbour's roof. The wing's lit panes now use Nine15 Midtown's and University House's lamp look (`#f2d6a8` at 0.66, was `#f5d8a8` at 0.5), so they share those buildings' night draw in the same 500 m batch cell. Without that the wing cost one High night call, and night calls are at the 630 cap.
+
+The day, night and close captures above are retaken on the rework head, without #578. Matched BEFORE (`6d348bc3`) and AFTER, high tier:
+
+![South face, close](rework-close.jpg)
+`226,-2632,0,40,140` with `&dev&mindist=20`: the bands now meet the south block's roof and run the full mapped edge. The roof stands 3.4 m higher, at the lidar grade.
+
+![The pair, looking north](rework-south.jpg)
+![From the east](rework-east.jpg)
+`215,-2632,0,50,500` and `226,-2632,270,55,420`, at 11:30 and 23:30.
