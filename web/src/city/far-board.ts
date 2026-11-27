@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, type Material, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
+import { BufferAttribute, BufferGeometry, Material, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
 import { type Build, runSync } from '../core/slice';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 
@@ -72,6 +72,40 @@ export const FAR_LANDMARKS = (() => {
 })();
 /** Whether a landmark group is drawn as boxes from afar. */
 export const boxedFromAfar = (name: string) => FAR_LANDMARKS && !KEEP_NEAR.has(name);
+
+/** What a landmark mesh costs to shade: see-through, its own shader (hooked or ShaderMaterial), or plain. */
+export type LandmarkKind = 'glass' | 'hooked' | 'plain';
+/**
+ * A device A/B only (docs/scaling-plan.md, increment 0): `?perf&hidelm=glass|hooked|plain|all`
+ * hides the landmark meshes of that kind while their area shows its far form (low, past
+ * FAR_BUILDINGS_M), with nothing in their place. Set against `farlandmarks=1`, it splits the
+ * boxed landmarks' phone win into triangles, transparency and shader cost. Ignored with
+ * `farlandmarks=1`, which hides every landmark already.
+ */
+export const HIDE_LANDMARKS = (() => {
+  const q = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = q.get('perf'), kind = q.get('hidelm');
+  const on = perf !== null && perf !== '0' && perf !== 'off' && !FAR_LANDMARKS;
+  return on && (kind === 'glass' || kind === 'hooked' || kind === 'plain' || kind === 'all') ? kind : null;
+})();
+export function landmarkKind(material: Material): LandmarkKind {
+  if (material.transparent) return 'glass';
+  if ((material as Material & { isShaderMaterial?: boolean }).isShaderMaterial) return 'hooked';
+  // As materials/landmark-batch.ts tells hooked materials: either default replaced means its own program.
+  if (material.onBeforeCompile !== Material.prototype.onBeforeCompile) return 'hooked';
+  if (material.customProgramCacheKey !== Material.prototype.customProgramCacheKey) return 'hooked';
+  return 'plain';
+}
+/** The meshes under `roots` whose material (any of them) is of `kind` ('all': every mesh). */
+export function landmarkParts(roots: readonly Object3D[], kind: LandmarkKind | 'all'): Object3D[] {
+  const out: Object3D[] = [];
+  for (const root of roots) root.traverse(o => {
+    const material = (o as Mesh).isMesh ? (o as Mesh).material : null;
+    if (!material) return;
+    if (kind === 'all' || (Array.isArray(material) ? material : [material]).some(m => landmarkKind(m) === kind)) out.push(o);
+  });
+  return out;
+}
 
 /** Landmark meshes taller than this keep a three-band silhouette instead of one box. */
 export const TOWER_M = 60;
