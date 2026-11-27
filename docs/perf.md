@@ -116,6 +116,8 @@ The draw ceiling leaves room for about ten building skins at +1 to +4 draws each
 `high-night` repeats the high check at 22:00, where lit windows and lamps add draws and programs:
 640 calls, 6.82M triangles and 99 programs measured, against a 720-call ceiling; 569 calls after landmark batching
 and house blocks, against a 630-call ceiling.
+On 2026-11-27 landmark lit panes moved into the wall draw ([facade-night.md](facade-night.md)): 629 → 486 calls with
+programs and triangles unchanged, and the ceiling moved down to 535 (target 480).
 
 ### Road traffic (`low`, 2026-11-26)
 
