@@ -1370,9 +1370,11 @@ export class World {
       }
     }
     // Dim park paths, after the lit ones so their seeded draws stay put.
+    // Park lamps draw their own random offsets, so changing the park paths never moves a street lamp.
+    const parkOffset = rng(312);
     for (const pts of mapped?.dimPaths ?? []) {
       const line = new Line(pts);
-      for (let s = 6 + r() * 12; s < line.length; s += 30) {
+      for (let s = 6 + parkOffset() * 12; s < line.length; s += 30) {
         const p = line.at(s);
         for (const side of [1, -1]) {
           const x = p.x + p.nx * 1.4 * side, z = p.z + p.nz * 1.4 * side;

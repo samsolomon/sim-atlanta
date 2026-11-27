@@ -1,8 +1,8 @@
 # Studio Midtown MARTA handoff
 
-**Hold #427 until the Air coordinator relays Sam’s decision.** It is the only open PR from this queue, on `samsolomon/landuse-paving`. Coordinator: `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam’s MacBook Air. Reply to its latest message with `orca orchestration reply --id <msg> --from <your session id>`.
+**Closed on 2026-11-27: #427 merged with step 1 only** (batch 1; see `integrator-merge-batches.md`). The notes below are the earlier held state. Coordinator: `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam’s MacBook Air. Reply to its latest message with `orca orchestration reply --id <msg> --from <your session id>`.
 
-## Open: #427, landuse paving (held for Sam)
+## #427, landuse paving (merged; step 2 stays off)
 
 The green ground at the Robinson College doors is a board-wide gap. The ground map’s base sage `#b5bd97` shows wherever a building line sits more than 2.5 m past the kerb, because landuse polygons had no colour.
 

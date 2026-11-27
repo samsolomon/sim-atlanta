@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
+import { pointInRing, type P2 } from '../vignette/geom';
+import type { TerrainCity } from '../terrain/transport-data';
 import { createGreystone, greystoneId } from './greystone';
 import { piedmontLampPaths } from './piedmont-park';
 
@@ -27,14 +29,38 @@ describe('Greystone', () => {
 });
 
 describe('Piedmont Park lamp paths', () => {
+  // A square park, x and z from 0 to 200.
+  const square: P2[] = [[0, 0], [200, 0], [200, 200], [0, 200]];
+  const lit = (...roads: { cls: string; pts: P2[] }[]) => piedmontLampPaths({ roads: roads.map(r => ({ ...r, bridge: false, tunnel: false })),
+    ground: [{ name: 'Piedmont Park', kind: 'park', rings: [square] }] } as unknown as TerrainCity);
+  const key = (paths: P2[][]) => paths.map(p => p.map(q => q.map(Math.round).join(',')).sort().join(' ')).sort();
+
+  it('lights only the stretches inside the park, whichever way the path runs', () => {
+    // Leaves through the east edge and comes back; the middle vertex is outside.
+    const pts: P2[] = [[20, 50], [150, 50], [260, 50], [260, 120], [150, 120], [60, 120]];
+    const paths = lit({ cls: 'pedestrian', pts });
+    expect(key(paths)).toEqual(key([[[20, 50], [150, 50], [200, 50]], [[200, 120], [150, 120], [60, 120]]]));
+    expect(key(lit({ cls: 'pedestrian', pts: [...pts].reverse() }))).toEqual(key(paths));
+    // A two-point path entering the park is lit from the edge only.
+    for (const crossing of [[[-300, 80], [150, 80]], [[150, 80], [-300, 80]]] as P2[][])
+      expect(key(lit({ cls: 'footway', pts: crossing }))).toEqual(key([[[0, 80], [150, 80]]]));
+  });
+
+  it('counts a footway\'s length inside the park against the 100 m floor', () => {
+    expect(lit({ cls: 'footway', pts: [[-300, 80], [90, 80]] })).toEqual([]);
+    expect(lit({ cls: 'pedestrian', pts: [[-300, 80], [90, 80]] })).toHaveLength(1);
+    // Two inside stretches of 70 m each count together.
+    expect(lit({ cls: 'footway', pts: [[130, 40], [250, 40], [250, 60], [130, 60]] })).toHaveLength(2);
+  });
+
   it.skipIf(!staged)('picks the promenades and long footways inside the park', () => {
     const c = JSON.parse(readFileSync(row, 'utf8'));
     const paths = piedmontLampPaths(c);
     expect(paths.length).toBeGreaterThan(10);
-    const len = (p: number[][]) => p.reduce((n, q, i) => i ? n + Math.hypot(q[0] - p[i - 1][0], q[1] - p[i - 1][1]) : 0, 0);
-    // Short footways (under 100 m) are left dark unless they are promenades.
-    const pedestrian = new Set(c.roads.filter((r: { cls: string }) => r.cls === 'pedestrian').map((r: { pts: unknown }) => r.pts));
-    for (const p of paths) if (!pedestrian.has(p)) expect(len(p)).toBeGreaterThanOrEqual(100);
+    // Every stretch stays inside the park, measured at its midpoints.
+    const park = c.ground.find((g: { name?: string; kind: string }) => g.name === 'Piedmont Park' && g.kind === 'park').rings[0];
+    for (const p of paths) for (let i = 1; i < p.length; i++)
+      expect(pointInRing((p[i - 1][0] + p[i][0]) / 2, (p[i - 1][1] + p[i][1]) / 2, park)).toBe(true);
     // No park, no lamps.
     expect(piedmontLampPaths({ ...c, ground: [] })).toEqual([]);
   });
