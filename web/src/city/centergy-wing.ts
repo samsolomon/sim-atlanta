@@ -22,13 +22,17 @@ const glass = '#6f8580',
 // Centergy One's east wall, which the wing's west (party) wall shares.
 const centergyOneEastX = 203;
 const origin: P2 = [225.8, -2631.8];
+// The 2019 lidar's grade under the wing, NAVD88 metres.
+const lidarGround = 293.4;
 
 export function createCentergyWing(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, site.id, 'Centergy glass wing', origin, [1, 0],
     [[0, 0], [-15, -10], [15, 10]]);
   if (!s) return null;
   const seed = seedOf(centergyWingId);
-  const g0 = s.base + 0.35;
+  // Heights are measured from the lidar grade (293.4 m NAVD88), not the footprint's lowest
+  // corner, which sits about 3.4 m lower on the sloping site.
+  const g0 = Math.max(s.base + 0.35, lidarGround);
   const lobby = g0 + 6, floors = 11, pitch = 4.1, roof = lobby + floors * pitch, // ≈ 51 m
     parapet = g0 + 52.2, plant = g0 + 57;
 
@@ -53,8 +57,13 @@ export function createCentergyWing(buildings: VBuilding[], site: VBuilding, grid
     for (const t of [0.25, 0.5, 0.75]) {
       const x = a[0] + t * dx + 1.2 * dz / len + ox, z = a[1] + t * dz - 1.2 * dx / len + oz;
       let here = -Infinity;
-      for (const other of buildings)
-        if (other.id !== site.id && other.rings.some(r => pointInRing(x, z, r as P2[]))) here = Math.max(here, s.base + other.h);
+      for (const other of buildings) {
+        if (other.id === site.id || other.h == null || !other.rings.some(r => pointInRing(x, z, r as P2[]))) continue;
+        // The neighbour's roof stands on its own ground: take its highest corner, so a block
+        // downhill or uphill of the wing still hides the bands it covers.
+        const ground = Math.max(...other.rings[0].map(([px, pz]) => grid.sample(px, pz) ?? s.base));
+        here = Math.max(here, ground + other.h);
+      }
       top = t === 0.25 ? here : Math.min(top, here);
     }
     return top;
@@ -82,8 +91,9 @@ export function createCentergyWing(buildings: VBuilding[], site: VBuilding, grid
     // Offices at 23:30: a few lit panes, drawn only where lit.
     const litOnly = { body: { quad: () => {} } as unknown as typeof s.body, lights: s.lights };
     litFacade(litOnly, seed, face, a, b, lo, roof, floors - first, len / Math.max(1, Math.round(len / 3)), 0.9, 0.7, [glass], 0.07);
-    // Lobby glazing, where the street can see it.
-    if (first === 0) quad(0.03, 0.97, g0 + 0.3, lobby - 0.6, 0.05, base, true);
+    // Lobby glazing, where the street can see it, from the edge's own grade.
+    const street = Math.max(s.base + 0.35, Math.min(...[a, b].map(([x, z]) => grid.sample(x + ox, z + oz) ?? g0)));
+    if (first === 0) quad(0.03, 0.97, street + 0.3, lobby - 0.6, 0.05, base, true);
   });
   // Nine15 Midtown's and University House's lamp look: in the same 500 m batch cell, so the
   // wing's lit panes share their night draw instead of adding one (High night is at its cap).

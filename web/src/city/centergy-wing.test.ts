@@ -72,9 +72,27 @@ it('draws its facade on the mapped edges, clear of both neighbours', () => {
     expect(off).toBeLessThan(0.1);
   }
   // Below the south block's roof, no facade layer stands inside it.
-  const inside = all.filter(v => v.y < ground + south.h && pointInRing(v.x, v.z, block) && edgeDistance(block, v.x, v.z) > 0.01);
+  const inside = all.filter(v => v.y < ground + south.h! && pointInRing(v.x, v.z, block) && edgeDistance(block, v.x, v.z) > 0.01);
   expect(inside).toEqual([]);
   // Above its roof the shared south edge does get the facade: bands within 0.1 m of the wall.
-  const shared = all.filter(v => v.y > ground + south.h && v.x > 212 && v.x < 247 && Math.abs(v.z - -2612.85) < 0.1);
+  const shared = all.filter(v => v.y > ground + south.h! && v.x > 212 && v.x < 247 && Math.abs(v.z - -2612.85) < 0.1);
   expect(shared.length).toBeGreaterThan(0);
+});
+
+it('keeps the south bands above the neighbour on sloping ground', () => {
+  // Ground rising about 7 m from the wing's north wall to the south block's far end, so that
+  // block's roof stands two floors above the wing's lowest corner + 23 m.
+  const slope = new GroundGrid(
+    { ...grid.manifest, rows: 3, cols: 3, stepM: 60, bounds: { minX: 190, maxX: 310, minZ: -2660, maxZ: -2540 } },
+    new Int16Array([2900, 2900, 2900, 2960, 2960, 2960, 2990, 2990, 2990]).buffer,
+  );
+  expect(slope.sample(220, -2650)! < slope.sample(220, -2570)! - 5).toBe(true);
+  const model = createCentergyWing([site, south], site, slope)!;
+  const block = south.rings[0] as P2[];
+  // grid.sample is NAVD88; scene y = NAVD88 − 323.8.
+  const roof = Math.max(...block.map(([x, z]) => slope.sample(x, z)!)) + south.h! - 323.8;
+  const inside = vertices(model.group).filter(v => v.y < roof && pointInRing(v.x, v.z, block) && edgeDistance(block, v.x, v.z) > 0.01);
+  expect(inside).toEqual([]);
+  // The first band above it still stands on the shared edge.
+  expect(vertices(model.group).some(v => v.y > roof && v.x > 212 && v.x < 247 && Math.abs(v.z - -2612.85) < 0.1)).toBe(true);
 });
