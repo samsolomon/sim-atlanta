@@ -115,9 +115,9 @@ describe('the words a projection shows', () => {
   });
   it('says what is shown when the live feed is down', () => {
     expect(confidence({ realTime: true, rail: 'down', projected: p }, true).tier).toBe('inferred');
-    expect(feedNotice({ realTime: true, rail: 'down', projected: p })).toBe('Live feed unavailable · showing trains inferred from MARTA’s last timetable');
+    expect(feedNotice({ realTime: true, rail: 'down', projected: p })).toBe('Live feed unavailable · showing MARTA trains inferred from its last timetable');
     expect(feedNotice({ realTime: true, rail: 'down', projected: null })).toBe('Live feed unavailable · showing the timetable');
-    expect(frozenTrains(p)).toBe('Trains inferred from MARTA’s last published timetable.');
+    expect(frozenTrains(p)).toBe('Trains from the timetable; MARTA’s inferred from its last published one.');
     expect(frozenTrains(null)).toBe('Trains from the timetable.');
   });
 });

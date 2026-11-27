@@ -58,12 +58,13 @@ export const projectionText = (p: Projection) => `Inferred from ${p.agency}’s 
 /** The notice when live rail is down at the present: it names what is actually shown. */
 export function feedNotice(s: Pick<LiveState, 'realTime' | 'rail' | 'projected'>): string | null {
   if (!s.realTime || s.rail !== 'down') return null;
-  return s.projected ? `Live feed unavailable · showing trains inferred from ${s.projected.agency}’s last timetable` : 'Live feed unavailable · showing the timetable';
+  return s.projected ? `Live feed unavailable · showing ${s.projected.agency} trains inferred from its last timetable` : 'Live feed unavailable · showing the timetable';
 }
 
-/** What a paused share link shows of the trains. */
+/** What a paused share link shows of the trains. The projection names only its own agency's
+ * trains: another feed (Amtrak) can still be on a published timetable. */
 export const frozenTrains = (projected: Projection | null) =>
-  projected ? `Trains inferred from ${projected.agency}’s last published timetable.` : 'Trains from the timetable.';
+  projected ? `Trains from the timetable; ${projected.agency}’s inferred from its last published one.` : 'Trains from the timetable.';
 
 /** The first-visit hint, matched to the view and the input. */
 export function hintText(view: View, touch: boolean): string {

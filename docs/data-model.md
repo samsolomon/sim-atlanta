@@ -184,7 +184,7 @@ Its trip id keeps the real service day.
 - **Card.** "Inferred from MARTA's last published timetable (ended Dec 11)", with an
   `Inferred` chip. All stops says its times repeat the last published timetable.
 - **Corner.** `Inferred` with a hollow amber dot, instead of `Timetable`.
-- **Live down at the present.** "Live feed unavailable · showing trains inferred from MARTA's
+- **Live down at the present.** "Live feed unavailable · showing MARTA trains inferred from its
   last timetable". Live MARTA rail still replaces timetable rail at the real present.
 - **When a new feed ships**, `pnpm data` moves the end date and the projection disappears on
   its own. The feed watcher (`.github/workflows/feeds.yml`) opens the issue.

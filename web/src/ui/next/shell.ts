@@ -493,7 +493,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       : target.view === 'models' ? 'The link opens this model in Models.' : 'The link opens on this exact view of the Map.';
     share.querySelector<HTMLElement>('.a2-share-modes')!.hidden = target?.view === 'models';
     share.querySelector('.a2-freeze-text')!.textContent =
-      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. ${frozenTrains(o.projectionAt ? o.projectionAt(frozenAt.getTime()) : o.live().projected)}`;
+      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. ${frozenTrains(o.projectionAt ? o.projectionAt(Math.floor(frozenAt.getTime() / 1000) * 1000) /* the link keeps whole seconds */ : o.live().projected)}`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
     const link = currentShare()?.url;
     if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
