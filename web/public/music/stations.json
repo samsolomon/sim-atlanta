@@ -213,6 +213,49 @@
           "source": "elevenlabs"
         }
       ]
+    },
+    {
+      "id": "long-haul",
+      "name": "Long Haul 103.9",
+      "description": "Truck-driving country, country soul and Western swing",
+      "tracks": [
+        {
+          "id": "axle-and-pine--seventeenth-street-shuffle",
+          "artist": "Axle & Pine",
+          "title": "Seventeenth Street Shuffle",
+          "src": "music/tracks/axle-and-pine--seventeenth-street-shuffle.mp3",
+          "cover": {
+            "small": "music/covers/axle-and-pine-128.webp",
+            "large": "music/covers/axle-and-pine-512.webp"
+          },
+          "durationS": 120.02,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "axle-and-pine--porch-light-in-rearview",
+          "artist": "Axle & Pine",
+          "title": "Porch Light in the Rearview",
+          "src": "music/tracks/axle-and-pine--porch-light-in-rearview.mp3",
+          "cover": {
+            "small": "music/covers/axle-and-pine-128.webp",
+            "large": "music/covers/axle-and-pine-512.webp"
+          },
+          "durationS": 135.02,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "axle-and-pine--weigh-station-waltz",
+          "artist": "Axle & Pine",
+          "title": "Weigh Station Waltz",
+          "src": "music/tracks/axle-and-pine--weigh-station-waltz.mp3",
+          "cover": {
+            "small": "music/covers/axle-and-pine-128.webp",
+            "large": "music/covers/axle-and-pine-512.webp"
+          },
+          "durationS": 120.02,
+          "source": "elevenlabs"
+        }
+      ]
     }
   ]
 }

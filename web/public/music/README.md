@@ -1,6 +1,6 @@
 # Radio music
 
-The in-app radio: four fictional stations, 14 instrumental tracks and one cover per
+The in-app radio: five fictional stations, 17 instrumental tracks and one cover per
 fictional artist. `stations.json` lists them; the player reads it.
 
 | Station | Default hours (scene clock) | Sound |
@@ -9,6 +9,7 @@ fictional artist. `stations.json` lists them; the player reads it.
 | Sol Café 101.7 | 11:00–17:00 | Sunny, plucky and jazzy |
 | Velvet 97.9 | 17:00–22:00 | Instrumental R&B |
 | Afterglow 88.5 | 22:00–05:00 | Synth-pop and synthwave |
+| Long Haul 103.9 | Listener selection | Country, country soul and Western swing |
 
 All artists, titles and stations are fictional.
 

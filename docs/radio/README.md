@@ -13,3 +13,11 @@
   See `covers/README.md` for prompts and the alternates that weren't picked.
 - **Player spec** (compact one-row player, crossfade, stations): `docs/ui-controls-brief.md`,
   section Radio, on the UI branch.
+
+## Long Haul 103.9
+
+Axle & Pine plays three instrumental originals, generated with ElevenLabs Music v2.5.
+
+- **Seventeenth Street Shuffle**. Instrumental truck-driving country shuffle, 120 BPM in E, warm and nimble. A clean electric guitar picks a distinctive two-bar low-string hook from beat one. Upright bass and a brushed snare carry the shuffle. Pedal steel answers the guitar at the ends of phrases. Play a complete ten-bar opening that can stand alone for a twenty-second highway film, then open up into a second chorus, a steel solo and a tidy turnaround. Small live band, lots of space, no vocals.
+- **Porch Light in the Rearview**. Instrumental country-soul ballad, slow 6/8, warm Wurlitzer chords and fingerpicked acoustic guitar. A singing pedal steel melody hangs behind the beat, with soft bass and a restrained rim click. An intimate dusk drive home from a loading dock in Georgia. A new answering melody midway, ending on a held major-sixth chord. Earthy small-room sound, no vocals.
+- **Weigh Station Waltz**. Instrumental western swing waltz in a lilting three, 154 quarter notes per minute. Small dancehall quartet: fiddle plays a playful, syncopated melody, hollow-body electric guitar comps short jazzy chords, upright bass walks in three, brushes play softly. Trade eight bars of fiddle and bright single-note guitar, a stop-time break and a clean full-band ending. Natural acoustic sound, buoyant and light, no vocals.

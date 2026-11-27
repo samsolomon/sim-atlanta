@@ -1,5 +1,5 @@
 /**
- * The radio (docs/ui-controls-brief.md, Radio): four stations from web/public/music/stations.json,
+ * The radio (docs/ui-controls-brief.md, Radio): stations from web/public/music/stations.json,
  * off until tapped, because browsers block autoplay.
  *
  * Tracks roll into each other. Each plays through its own GainNode (iOS ignores

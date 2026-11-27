@@ -20,6 +20,7 @@ describe('stations.json', () => {
   it('covers every hour of the day exactly once', () => {
     for (let h = 0; h < 24; h += 0.25) {
       const owners = stations.filter((s) => {
+        if (!s.defaultHours) return false;
         const [a, b] = s.defaultHours;
         return a <= b ? h >= a && h < b : h >= a || h < b;
       });
@@ -42,6 +43,7 @@ describe('station from the scene clock', () => {
   });
   it('lets a station the visitor picked beat the clock, and ignores a stale id', () => {
     expect(startStation(stations, 14, 'afterglow').id).toBe('afterglow');
+    expect(startStation(stations, 14, 'long-haul').id).toBe('long-haul');
     expect(startStation(stations, 14, 'gone').id).toBe('sol-cafe');
     expect(startStation(stations, 14, null).id).toBe('sol-cafe');
   });
