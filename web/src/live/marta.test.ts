@@ -192,3 +192,64 @@ it('takes a newer response’s prediction when the fix itself has not advanced',
   await pollWith(live, { ...again, trains: [{ ...again.trains[0], at: first.trains[0].at, lon: -84.4, nextStation: 'FIVE POINTS STATION', nextInSec: 60 }] }, Date.now());
   expect(live.trains()[0]).toMatchObject({ nextInSec: 60, observedAt: first.trains[0].at, lon: first.trains[0].lon });
 });
+
+it('applies a slow response even after the next poll has started, but never one older than an applied response', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const resolvers: ((r: Response) => void)[] = [];
+  vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => resolvers.push(r))));
+  const respond = (i: number, fetched: number) => resolvers[i](new Response(JSON.stringify(feed(fetched)), { headers: { Date: new Date(fetched).toUTCString() } }));
+  const a = live.poll();
+  vi.advanceTimersByTime(31_000);
+  const b = live.poll(); // the next poll starts while the first is still out
+  respond(0, NOW + 30_000);
+  await a;
+  expect(live.available).toBe(true);
+  respond(1, NOW + 31_000);
+  await b;
+  // A third poll answered late, after the newer second one, is dropped.
+  vi.advanceTimersByTime(31_000);
+  const c = live.poll();
+  vi.advanceTimersByTime(31_000);
+  const d = live.poll();
+  respond(3, Date.now());
+  await d;
+  const held = live.trains()[0].observedAt;
+  respond(2, Date.now() - 31_000);
+  await c;
+  expect(live.trains()[0].observedAt).toBe(held);
+});
+
+it('keeps a train when its row in a newer snapshot is stale', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  await pollWith(live, feed(NOW), NOW);
+  vi.advanceTimersByTime(30_000);
+  const next = feed(Date.now());
+  next.trains[0].at = Date.now() - STALE_MS - 1000;
+  await pollWith(live, next, Date.now());
+  expect(live.trains()).toHaveLength(1);
+  expect(live.available).toBe(true);
+});
+
+it('is not held back by one snapshot dated ahead of the server', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const ahead = feed(NOW + 4 * MIN); // within freshness()'s five-minute tolerance
+  ahead.trains[0].at = NOW - 10_000;
+  await pollWith(live, ahead, NOW);
+  vi.advanceTimersByTime(30_000);
+  const right = feed(Date.now());
+  await pollWith(live, right, Date.now());
+  expect(live.trains()[0].observedAt).toBe(right.trains[0].at);
+});
+
+it('ages fixes on the client clock when the response has no Date header', async () => {
+  // The snapshot says 10:00:00, the client says 10:02:50; a 09:59:40 fix is already 190 s old.
+  vi.useFakeTimers({ now: NOW + 170_000, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const body = feed(NOW);
+  body.trains[0].at = NOW - 20_000;
+  await pollWith(live, body, null);
+  expect(live.trains()).toEqual([]);
+});

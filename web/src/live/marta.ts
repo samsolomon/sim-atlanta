@@ -45,6 +45,8 @@ export class LiveMarta {
   private tracked = new Map<string, Tracked>();
   private lastFetch = -Infinity;
   private lastSnapshot = -Infinity;
+  /** When the request whose response was last applied started (performance.now()). */
+  private appliedRequest = -Infinity;
   private lastOk = 0;
   firstPollComplete = false;
   error: string | null = null;
@@ -81,7 +83,9 @@ export class LiveMarta {
       // Never from the browser cache: a cached 200 would replay an old snapshot as live.
       const r = await fetch(this.url, { cache: 'no-store' });
       const body = await r.json();
-      if (request !== this.lastFetch) return;
+      // A slow response still counts (polls can overlap); only one older than a response
+      // already applied is dropped.
+      if (request < this.appliedRequest) return;
       if (!r.ok) throw new Error(body?.error ?? `HTTP ${r.status}`);
       const feed = body as Feed;
       // The feed itself must be current. A stale or future snapshot drops every tracked train,
@@ -92,15 +96,18 @@ export class LiveMarta {
         this.tracked.clear();
         this.error = fresh;
       } else {
-        this.lastSnapshot = feed.fetched;
         // Ages are measured on the server's clock, as freshness() does: a client clock running a
-        // minute or two fast must not expire fresh fixes.
-        this.ingest(feed, Math.max(feed.fetched, serverDate(r) ?? feed.fetched));
+        // minute or two fast must not expire fresh fixes. Without a Date header, the client's.
+        const reference = serverDate(r) ?? Date.now();
+        // Clamped to that clock, so one future-dated snapshot cannot hold back the correct ones.
+        this.lastSnapshot = Math.min(feed.fetched, reference);
+        this.appliedRequest = request;
+        this.ingest(feed, reference);
         this.lastOk = Date.now();
         this.error = null;
       }
     } catch (e) {
-      if (request !== this.lastFetch) return;
+      if (request < this.appliedRequest) return;
       this.error = e instanceof Error ? e.message : String(e);
     }
     this.firstPollComplete = true;
@@ -112,10 +119,15 @@ export class LiveMarta {
     const seen = new Set<string>();
     for (const t of feed.trains) {
       // Expire by when MARTA observed the train, not when we fetched it.
-      if (t.at != null && (t.at - reference > FUTURE_TOLERANCE_MS || reference - t.at >= STALE_MS)) continue;
+      const prev = this.tracked.get(t.id);
+      if (t.at != null && (t.at - reference > FUTURE_TOLERANCE_MS || reference - t.at >= STALE_MS)) {
+        // A stale or untrusted row never erases a fresher position already held; that one
+        // expires on its own.
+        if (prev) seen.add(t.id);
+        continue;
+      }
       seen.add(t.id);
       const routeId = `marta:route:${t.line}`;
-      const prev = this.tracked.get(t.id);
       if (prev?.raw.at != null && t.at != null && t.at <= prev.raw.at) {
         // The same (or an older) fix: keep its position and playback, but take this newer
         // response's prediction (next station, arrival).
