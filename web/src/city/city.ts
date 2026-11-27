@@ -177,6 +177,9 @@ export interface CityView {
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
   target(): { x: number; z: number };
+  /** Where a link or lookAt is still headed while its area loads (the camera waits at the nearest
+   * loaded edge), or null. A rebuild keeps this, not the clamped target. */
+  pendingTarget(): { x: number; z: number } | null;
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
@@ -2427,6 +2430,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
+    pendingTarget: () => {
+      const p = mosaic?.pendingTarget ?? pendingNorthTarget ?? pendingEastTarget;
+      return p ? { x: p.x, z: p.z } : null;
+    },
     distance: () => camera.position.distanceTo(controls.target),
     seek(x, z) {
       mosaic?.seek({ x, z });
