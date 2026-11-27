@@ -102,13 +102,17 @@ it.skipIf(!chrome || !staged)('keeps a Brookwood camera link through a tap made 
     .toEqual({ parkedFar: true, arrivedWithin50m: true });
 }, 180_000);
 
-it.skipIf(!chrome || !staged)('keeps a Brookwood camera link through Auto stepping down to Low while its row loads', async () => {
+it.skipIf(!chrome || !staged)('keeps a Brookwood camera link through Auto stepping down to Low while its row loads', async ctx => {
   // No ?q, so Auto watches the frame rate; dev's ?slowfps=1000 makes any rate count as slow.
+  let startedLow = false;
   const { parked, arrived } = await linkThrough(`slowfps=1000&${link}`, async ({ read, until, held }) => {
+    // Auto only steps down from High; a Chrome detected as low-end (software WebGL) starts on Low.
+    if ((startedLow = await read<string>('window.__city.quality') !== 'high')) return;
     // The rebuild at Low asks for the station row again; keep it held until that new City is up.
     await until('the step down to Low', () => read<boolean>(`window.__city?.quality === 'low' && document.getElementById('city-loading')?.hidden === true`), 90_000);
     await until('the rebuilt City to ask for the row', () => held() > 1, 60_000);
   });
+  if (startedLow) ctx.skip('City started on Low, so Auto has nothing to step down from');
   expect({ parkedFar: parked > 1000, arrivedWithin50m: arrived < 50 }, `still ${Math.round(arrived)} m from the link target`)
     .toEqual({ parkedFar: true, arrivedWithin50m: true });
 }, 240_000);

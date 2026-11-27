@@ -1635,7 +1635,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const pressEvents = new AbortController();
   // Per pointer, so a second finger lifting does not forget the first one's press.
   const pressedAt = new Map<number, { x: number; y: number }>();
-  renderer.domElement.addEventListener('pointerdown', e => { pressedAt.set(e.pointerId, { x: e.clientX, y: e.clientY }); }, { capture: true, signal: pressEvents.signal });
+  renderer.domElement.addEventListener('pointerdown', e => {
+    // A second finger is a pinch or twist: that takes the camera however small it stays.
+    if (pressedAt.size) cancelPendingTarget();
+    pressedAt.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  }, { capture: true, signal: pressEvents.signal });
   renderer.domElement.addEventListener('pointermove', e => {
     const at = pressedAt.get(e.pointerId);
     if (!at || Math.hypot(e.clientX - at.x, e.clientY - at.y) <= 6) return;
