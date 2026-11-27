@@ -17,6 +17,15 @@ it('drops park path lamps by day at a long orbit, keeps them at night and up clo
   w.setNight(0);
   w.setDetail({ farLamps: true });
   for (const m of posts) expect(m.count).toBe(total - dim);
+  // The first cull, by day, must not leave bounds that miss the park lamps once they return.
+  for (const m of posts) {
+    if (!m.boundingSphere) m.computeBoundingSphere();
+    const at = new THREE.Matrix4(), p = new THREE.Vector3();
+    for (let i = 0; i < total; i++) {
+      m.getMatrixAt(i, at);
+      expect(m.boundingSphere!.containsPoint(p.setFromMatrixPosition(at))).toBe(true);
+    }
+  }
   w.setNight(1);
   for (const m of posts) expect(m.count).toBe(total);
   w.setNight(0);

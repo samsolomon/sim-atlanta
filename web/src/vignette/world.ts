@@ -1439,6 +1439,10 @@ export class World {
     this.lampPost = post;
     // For the perf report: lamps by kind (the park's dim path lamps are illustrative).
     post.userData.lamps = { total: spots.length, dimPaths: spots.filter(s => s.dim).length };
+    // three.js caches an instanced mesh's bounds from the instances it draws at the first cull;
+    // bound every lamp now, so park lamps hidden by day are not culled when they return.
+    post.computeBoundingSphere();
+    this.lampHeads.computeBoundingSphere();
     this.group.add(post, this.lampHeads);
     this.applyLamps();
     yield 'lamps';
