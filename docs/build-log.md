@@ -4089,3 +4089,7 @@ Trace is an E-shaped, 11-storey residential block wrapped around two courtyard d
 ### 2026-11-24 · Circa 730, stripes against the grid
 
 Circa 730 is a 1960s office slab that the generic builder drew as one more pale grid among taller pale grids. Its identity is contrast. City draws dark continuous ribbon windows between bright white precast bands, solid white ends with a single glazed slot, and a recessed glass lobby. The lidar put it at 44 m with a 49 m core. Taller neighbours hide both long faces from due north and south, so its review views look from the west-south-west. [Before/after, views and four-side sheet](log/ui/circa-730/README.md)
+
+### 2026-11-24 · Rambler, from a topping-out photo
+
+Rambler Atlanta opened in August 2025 on a lot that was empty in the 2019 lidar, so its height comes from the 19 reported floors, about 61 m. The identifying features come from a September 2024 topping-out photo and the architect's rendering: a dark warm-grey shaft over a white base, with white balcony ladders up the narrow Peachtree end and the long south face. The first build drew a quad per window and came to 3,080 triangles. Redrawn as a dark window box crossed by piers and floor bands (rows plus columns, not rows times columns), with lit rooms grouped two windows wide, it costs 840 triangles and looks the same at 400 m. [Before and after](log/ui/rambler-atlanta/compare.jpg)
