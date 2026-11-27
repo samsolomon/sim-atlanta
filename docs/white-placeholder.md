@@ -114,7 +114,7 @@ The opening leaves placeholder meshes alone: they are white already. In map mode
 
 ## The dissolve
 
-If the file arrives more than 3 s after City's first frame, each area dissolves in the same way in reverse,
+If the file arrives more than 400 ms after City reaches its first frame, each area dissolves in the same way in reverse,
 rather than popping in.
 
 When an area mounts, `addArea` calls `reveal(id)`. Its placeholder dissolves from the next frame drawn, so a

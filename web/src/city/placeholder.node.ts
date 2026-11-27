@@ -88,28 +88,50 @@ function inRing(r: Ring, x: number, z: number) {
 
 interface Mass { ring: Ring; y0: number; y1: number }
 
-/** The masses of one area: its far boxes and its landmark parts, simplified and seated. */
-function massesOf(area: Area, landmarkBoxes: FarBox[]) {
+interface Landmark { name: string; boxes: FarBox[] }
+
+/**
+ * The masses of one area: its far boxes and its landmark parts, simplified and seated. A part
+ * standing clear of the ground (a skybridge, a canopy) is dropped, unless it rests on a part of
+ * the same landmark already kept: a tower's upper bands start where the band below ends.
+ * `truncated` names landmarks whose kept masses stop short of their own top.
+ */
+function massesOf(area: Area, landmarks: Landmark[]) {
   const out: Mass[] = [];
   let floating = 0;
-  for (const b of [...area.farBoxes, ...landmarkBoxes]) {
+  const truncated: string[] = [];
+  const place = (b: FarBox, restsOn: Mass[] | null) => {
     let ring = boxRing(b);
     if (ring.length > 4) ring = simplify(ring, SIMPLIFY_M);
     ring = capRing(ring);
-    if (Math.abs(area2(ring)) < 2) continue;
+    if (Math.abs(area2(ring)) < 2) return null;
     // Seat on the drawn ground, as the far form does (terrain/model.ts grounded): down to the lowest
-    // ground under it, and drop parts standing clear of it (skybridges, canopies).
+    // ground under it.
     let lo = Infinity, hi = -Infinity;
-    for (const [x, z] of [...ring, [ring.reduce((s, p) => s + p[0], 0) / ring.length, ring.reduce((s, p) => s + p[1], 0) / ring.length]]) {
+    const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length, cz = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+    for (const [x, z] of [...ring, [cx, cz]]) {
       const y = area.terrainAt(x, z);
       if (y !== null) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
     }
-    if (hi > -Infinity && b.y0 - hi > 3) { floating++; continue; }
+    if (hi > -Infinity && b.y0 - hi > 3) {
+      // Rests on a kept part: starts inside its height (or within 1.5 m of its top), over its footprint.
+      if (restsOn?.some(k => k.y0 < b.y0 && k.y1 >= b.y0 - 1.5 && inRing(k.ring, cx, cz))) return { ring, y0: b.y0, y1: b.y1 };
+      floating++;
+      return null;
+    }
     const y0 = Math.min(b.y0, lo);
-    if (b.y1 - y0 < 1) continue;
-    out.push({ ring, y0, y1: b.y1 });
+    return b.y1 - y0 < 1 ? null : { ring, y0, y1: b.y1 };
+  };
+  for (const b of area.farBoxes) { const m = place(b, null); if (m) out.push(m); }
+  for (const l of landmarks) {
+    const kept: Mass[] = [];
+    // Bottom up, so each band finds the one it rests on.
+    for (const b of [...l.boxes].sort((a, c) => a.y0 - c.y0)) { const m = place(b, kept); if (m) kept.push(m); }
+    const top = Math.max(...l.boxes.map(b => b.y1)), keptTop = Math.max(...kept.map(m => m.y1));
+    if (kept.length && keptTop < top - 1) truncated.push(`${l.name} (${(top - keptTop).toFixed(0)} m short)`);
+    out.push(...kept);
   }
-  return { masses: out, floating };
+  return { masses: out, floating, truncated };
 }
 
 /** Footprints of context.json without a mass over their centroid (names, for the report). */
@@ -182,10 +204,11 @@ function encodeArea(id: Board, area: Area, masses: Mass[], bottomY: number): Pla
 
 /** Mount the board (Low), read each area's masses and encode the file. */
 export async function bakePlaceholder() {
-  const tapped = new Map<Object3D, FarBox[]>();
+  const tapped = new Map<Object3D, Landmark[]>();
   tapLandmarks((group, container) => {
     const list = tapped.get(container) ?? [];
-    list.push(...boxesFromObject(group, container, 3, true));
+    const boxes = boxesFromObject(group, container, 3, true);
+    if (boxes.length) list.push({ name: group.name || 'landmark', boxes });
     tapped.set(container, list);
   });
   const quality = 'low' as const;
@@ -211,7 +234,10 @@ export async function bakePlaceholder() {
     let total = 0;
     for (const [id, area] of mounted) {
       if (id === 'downtown') continue;
-      const { masses, floating } = massesOf(area, tapped.get(area.scenery) ?? []);
+      const landmarks = tapped.get(area.scenery) ?? [];
+      const { masses, floating, truncated } = massesOf(area, landmarks);
+      // A landmark cut short would read as a low block where a tower stands, and pop on mount.
+      if (truncated.length) throw Error(`${id}: landmark masses stop short of their tops: ${truncated.join('; ')}`);
       const cover = uncovered(id, masses);
       const data = encodeArea(id, area, masses, bottomY);
       areas.push(data);
@@ -219,7 +245,7 @@ export async function bakePlaceholder() {
       const raw = [data.ground, data.ringN, data.y, data.xz, data.roof].reduce((s, a) => s + a.byteLength, 0);
       const gz = gzipSync(encodePlaceholder([data]), { level: 9 }).length;
       total += km2;
-      lines.push(`${id.padEnd(18)} ${km2.toFixed(2)} km²  ${String(masses.length).padStart(5)} masses (${tapped.get(area.scenery)?.length ?? 0} landmark parts, ${floating} floating dropped)  ` +
+      lines.push(`${id.padEnd(18)} ${km2.toFixed(2)} km²  ${String(masses.length).padStart(5)} masses (${landmarks.length} landmarks, ${landmarks.reduce((n, l) => n + l.boxes.length, 0)} parts, ${floating} floating dropped)  ` +
         `${data.area.ringVerts} ring verts  ${(raw / 1024).toFixed(0)} KiB raw  ${(gz / 1024).toFixed(0)} KiB gz (${(gz / 1024 / km2).toFixed(0)} KiB/km²)  ` +
         `cover ${cover.checked - cover.missing.length}/${cover.checked}${cover.missing.length ? ' missing: ' + cover.missing.slice(0, 8).join('; ') : ''}`);
     }

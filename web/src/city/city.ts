@@ -2428,7 +2428,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perfOverrides.hide.size) perf.applyHide();
   }
   // The placeholder joins before the first frame when its file is in (it loads beside the board's
-  // build), so the opening's white still holds it; a slow file joins when it arrives.
+  // build), so the opening's white still holds it.
   const attachPlaceholder = (loaded: Awaited<typeof placeholderLoad>, late: boolean) => {
     if (!loaded || options.signal?.aborted || cityDisposed) return;
     const p = placeholder = loaded.m.createPlaceholder(loaded.data, {
@@ -2446,7 +2446,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (freezeOn) freezeStatic(p.group);
     renderer.shadowMap.needsUpdate = true;
   };
-  const early = await Promise.race([placeholderLoad.then(p => ({ p })), new Promise<null>(r => setTimeout(() => r(null), 3000))]);
+  // Wait briefly: a file that misses this dissolves in when it arrives (appear), so ready never waits on it.
+  const early = await Promise.race([placeholderLoad.then(p => ({ p })), new Promise<null>(r => setTimeout(() => r(null), 400))]);
   if (early) attachPlaceholder(early.p, false);
   else void placeholderLoad.then(p => attachPlaceholder(p, true));
   raf = requestAnimationFrame(frame);
