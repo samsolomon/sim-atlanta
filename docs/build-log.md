@@ -3612,6 +3612,10 @@ Park Central's buff slab on 12th Street is now one of the park-edge buildings pe
 [Before and after](log/ui/park-central/compare.jpg) · [day, night and low tier](log/ui/park-central/daynight.jpg) · [close](log/ui/park-central/close.jpg)
 
 
+### 2026-11-24 · Ten Peachtree Place
+
+The overnight queue ended at a 1991 red granite tower. Its lidar profile is the most legible of the night. The flat roof sits at 374.4 m, the castellated parapet at 376.1 m and the penthouse at 378.0 m, which matches the mapped 96 m from the low south corner. Granite, green corner slots, window rows, a setback ledge and a crown of merlons are all vertex colour. Night uses `litHash` over 3 m window bays. The first try lit whole floors and read as stripes. [Day](log/ui/ten-peachtree-place/day.jpg) · [Crown](log/ui/ten-peachtree-place/close.jpg)
+
 
 ### 2026-11-24 — Transport far form
 
