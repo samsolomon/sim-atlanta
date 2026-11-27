@@ -1,8 +1,8 @@
 # Studio white placeholder handoff (2026-11-27)
 
 Owner: the streaming-look agent on the Mac Studio (worktree `white-placeholder`, branch
-`samsolomon/white-placeholder`). Coordinator: the Air City-view Claude. Draft PR, not for merge
-until the coordinator's go.
+`samsolomon/white-placeholder`). Coordinator: the Air City-view Claude. Draft PR #726, not for
+merge until the coordinator's go.
 
 ## Done
 
@@ -13,10 +13,13 @@ until the coordinator's go.
 - Bake: `web/scripts/placeholder.bake.ts` runs in `pnpm data:bake` (5 s) and writes
   `web/public/data/scene/placeholder/board.bin.gz` (227 KiB).
 - Stills: `docs/log/white-placeholder/`.
-- Budget A/B: in the PR body.
+- Budget A/B: in the PR body and the design note (`test:perf` on 03a660b2, lock held).
 
 ## Next
 
+0. Coordinator: High night calls are 630 of 630 (+1, R16's white at the default view), which
+   needs an offset under scaling plan §4. Also, both sides of `test:perf` fail on a late shadow
+   `depth` compile at 17:30 that happens without the placeholder: probably already on main, with no owner.
 1. Sam: look. The night blue and the cream ink are a first pass from his note.
 2. Sam: placeholder as the far form of loaded areas too? That saves about 9 MB of Low geometry,
    but the >15 km view turns white (see the design note). Not built.
@@ -27,5 +30,6 @@ until the coordinator's go.
 
 ## State
 
-There are no shared services. My dev server (:5391) and headless Chromes are stopped. Data in
-this worktree came from `brookwood-prod-gate`'s staged data, plus `pnpm data:bake` on this branch.
+Head: the latest commit on #726. There are no shared services. My dev server (:5391) and
+headless Chromes are stopped, and the perf lock is released. Data in this worktree came from
+`brookwood-prod-gate`'s staged data (dc95e432), plus `pnpm data:bake` on this branch.
