@@ -1,7 +1,8 @@
 import {
   Box3, BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
-  LOD, Material, Matrix4, Mesh, MeshLambertMaterial, type Object3D, type Camera, Sphere, Vector3,
+  LOD, Material, Matrix4, Mesh, MeshLambertMaterial, NormalBlending, type Object3D, type Camera, Sphere, Vector3,
 } from 'three';
+import { FACADE_GLOW_RUNS, facadeGlow, patchFacades, type FacadeGlow } from './facade';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { farTriangles } from './landmark-lod';
 import LodWorker from './landmark-lod.worker?worker';
@@ -164,8 +165,22 @@ function syncer(days: DayGroup[]) {
   return () => {
     for (const d of days) {
       let alike = true;
+      if (d.glow) {
+        // One draw: each run's light goes to its vertex range, over the day emission it shares.
+        const { table, base } = d.glow, rgb = table.rgb.value;
+        d.runs.forEach((r, i) => {
+          const s = r.source, k = s.emissive ? s.emissiveIntensity ?? 1 : 0;
+          rgb[i * 3] = (s.emissive?.r ?? 0) * k - base[0];
+          rgb[i * 3 + 1] = (s.emissive?.g ?? 0) * k - base[1];
+          rgb[i * 3 + 2] = (s.emissive?.b ?? 0) * k - base[2];
+          if (alike && lookOf(s, r.baked) !== d.look) alike = false;
+        });
+        d.alike = alike;
+        show(d);
+        continue;
+      }
       for (const r of d.runs) {
-        const { source: s, material: t } = r;
+        const { source: s } = r, t = r.material!;
         if (!r.baked && s.color) t.color!.copy(s.color);
         if (t.emissive && s.emissive) t.emissive.copy(s.emissive);
         if (s.emissiveIntensity !== undefined) t.emissiveIntensity = s.emissiveIntensity;
@@ -176,6 +191,25 @@ function syncer(days: DayGroup[]) {
       show(d);
     }
   };
+}
+
+/**
+ * Whether a class can draw with the shared facade program (materials/facade.ts) without a new
+ * program: the generic buildings' material settings exactly (Lambert, double-sided, three-channel
+ * vertex colours, no map), which only shader-free settings (shadow flags, polygon offset) may vary.
+ */
+function facadeClass(rep: Mesh, g: BufferGeometry) {
+  const m = rep.material as Mat & { alphaHash?: boolean; alphaToCoverage?: boolean; clippingPlanes?: unknown[] | null };
+  const color = g.getAttribute('color') as BufferAttribute | undefined;
+  return m.type === 'MeshLambertMaterial' && m.side === DoubleSide && !m.map && !m.flatShading && m.fog !== false
+    && !m.wireframe && !m.dithering && m.toneMapped !== false && !m.premultipliedAlpha && m.blending === NormalBlending
+    && !m.clippingPlanes?.length && !Object.keys(m.defines ?? {}).length && !m.alphaHash && !m.alphaToCoverage
+    && color?.itemSize === 3 && !!g.getAttribute('normal') && !g.getAttribute('uv');
+}
+/** Whether a run's probes differ from the day look only in emitted light. */
+function emissiveOnly(run: string, day: string) {
+  const [color, , opacity] = day.split('/');
+  return run.split(';').every(look => { const [c, , o] = look.split('/'); return c === color && o === opacity; });
 }
 
 /** Distance LOD per cell: far beyond `farM` from the cell's box, full again inside `nearM`. */
@@ -241,11 +275,12 @@ function show(d: DayGroup) {
   const far = !!d.far && d.alike && d.cell.isFar;
   if (d.far) d.far.visible = far;
   if (d.mesh) {
-    d.mesh.visible = d.alike;
-    for (const r of d.runs) r.mesh.visible = !d.alike;
+    // A lit-wall group has one draw for day and night; the others swap a day draw for their runs.
+    d.mesh.visible = !!d.glow || d.alike;
+    for (const r of d.runs) if (r.mesh) r.mesh.visible = !d.alike;
   }
   if (!d.far) return;
-  const full = d.mesh ?? d.runs[0].mesh;
+  const full = d.mesh ?? d.runs[0].mesh!;
   full.onBeforeRender = far ? hideFromView : Mesh.prototype.onBeforeRender;
   full.onAfterRender = far ? restoreRange : Mesh.prototype.onAfterRender;
 }
@@ -402,7 +437,7 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       for (const [name, a] of Object.entries(grown)) fg.setAttribute(name, a);
       fg.setIndex(new BufferAttribute(index, 1));
       // The full version's bounds: the far one draws the same walls (no per-vertex pass).
-      const full = (job.group.mesh ?? job.group.runs[0].mesh).geometry;
+      const full = (job.group.mesh ?? job.group.runs[0].mesh!).geometry;
       fg.boundingBox = full.boundingBox!.clone();
       fg.boundingSphere = full.boundingSphere!.clone();
       const far = new Mesh(fg, job.material);
@@ -437,6 +472,8 @@ export function landmarkBatchReport() { return unbatched.slice(); }
 
 export interface BatchStats {
   candidates: number; merged: number; draws: number; dayDraws: number; nightDraws: number; skipped: Record<string, number>; ms: number;
+  /** Groups drawn as lit walls (one draw day and night), and groups with too many runs for one. */
+  litWalls: number; litWallOverflow: number;
   /** Triangles the far version drops, and wall triangles it stores twice. */
   lodDropped: number; lodDoubled: number; lodMs: number;
   /** Longest single main-thread step of the far build (ms), for the idle-time rule. */
@@ -445,9 +482,15 @@ export interface BatchStats {
 
 interface Member { mesh: Mesh; root: Object3D; bake: Color | null; day: string; run: string }
 /** Meshes that look alike at every probe: drawn as one range with one material. */
-/** `source` is the landmark's own material, which its setNight drives; `material` draws, synced from it. */
-interface Run { source: Mat; material: Mat; baked: boolean; mesh: Mesh }
-interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean }
+/**
+ * `source` is the landmark's own material, which its setNight drives; `material` draws, synced from
+ * it. A lit-wall group's runs have neither a material nor a mesh of their own: they are vertex ranges
+ * of the group's one facade draw.
+ */
+interface Run { source: Mat; material: Mat | null; baked: boolean; mesh: Mesh | null }
+/** A group drawn with the shared facade program: its runs' emission as glow ranges over `base`. */
+interface LitWall { table: FacadeGlow; base: [number, number, number] }
+interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean; glow: LitWall | null }
 
 /**
  * Merges static landmark meshes into one buffer per 500 m cell and material class, baked relative
@@ -494,7 +537,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   const lod = landmarkLodOff ? null : o.lod ?? null;
   const t0 = performance.now();
   const cellM = o.cellM ?? CELL_M;
-  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0, lodMaxStepMs: 0 };
+  const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, litWalls: 0, litWallOverflow: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0, lodMaxStepMs: 0 };
   const skip = (why: string, mesh?: Mesh, root?: Object3D) => {
     stats.skipped[why] = (stats.skipped[why] ?? 0) + 1;
     if (import.meta.env.DEV && mesh) unbatched.push({ landmark: landmarkName(root ?? mesh), mesh: mesh.name || mesh.type, why, batch: o.name ?? 'Landmark batches' });
@@ -629,12 +672,50 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       stats.draws++;
       return mesh;
     };
+    const litWalls = !nightWallOff && facadeClass(rep, geo);
     for (const range of ranges) {
-      const dayGroup: DayGroup = { look: members[range.from].day, runs: [], mesh: null, far: null, cell: cellGroup, alike: true };
-      let i = range.from, start = range.start;
-      while (i < range.to) {
-        const first = members[i], runStart = start;
+      const dayGroup: DayGroup = { look: members[range.from].day, runs: [], mesh: null, far: null, cell: cellGroup, alike: true, glow: null };
+      const spans: { first: Member; start: number; end: number }[] = [];
+      for (let i = range.from, start = range.start; i < range.to;) {
+        const first = members[i], s0 = start;
         while (i < range.to && members[i].run === first.run) start += counts[i++];
+        spans.push({ first, start: s0, end: start });
+      }
+      // Every member must match the facade settings, not just the class's first: the class key
+      // leaves out settings (alpha hashing) the old per-run draws kept from each run's material.
+      const groupMembers = members.slice(range.from, range.to);
+      if (litWalls && spans.length > 1 && spans.length <= FACADE_GLOW_RUNS && spans.every(sp => emissiveOnly(sp.first.run, dayGroup.look))
+        && groupMembers.every(mb => facadeClass(mb.mesh, geo))) {
+        // Lit walls: the runs differ only in the light they emit, so they stay one draw at night,
+        // each run a glow range of the shared facade program (materials/facade.ts).
+        const first = spans[0].first, source = first.mesh.material as Mat;
+        const material = source.clone() as Mat;
+        if (first.bake) {
+          material.color!.set(0xffffff);
+          material.vertexColors = true;
+        }
+        // The day emission (all runs share it) stays on the material, for the far version's walls.
+        const k = source.emissive ? source.emissiveIntensity ?? 1 : 0;
+        const base: [number, number, number] = [(source.emissive?.r ?? 0) * k, (source.emissive?.g ?? 0) * k, (source.emissive?.b ?? 0) * k];
+        material.emissive!.setRGB(...base);
+        material.emissiveIntensity = 1;
+        const table = facadeGlow();
+        spans.forEach((sp, j) => { table.range.value[j * 2] = sp.start; table.range.value[j * 2 + 1] = sp.end; });
+        table.count.value = spans.length;
+        patchFacades(material, undefined, { plain: true, glow: table });
+        dayGroup.glow = { table, base };
+        for (const sp of spans) dayGroup.runs.push({ source: sp.first.mesh.material as Mat, material: null, baked: !!sp.first.bake, mesh: null });
+        dayGroup.mesh = draw(range.start, range.count, material, 'landmark batch (lit walls)');
+        if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material, rep, packing });
+        stats.dayDraws++;
+        stats.nightDraws++;
+        stats.litWalls++;
+        cellGroup.groups.push(dayGroup);
+        days.push(dayGroup);
+        continue;
+      }
+      if (litWalls && spans.length > FACADE_GLOW_RUNS) stats.litWallOverflow++;
+      for (const { first, start: runStart, end: start } of spans) {
         const source = first.mesh.material as Mat;
         const material = source.clone() as Mat;
         if (first.bake) {
@@ -644,9 +725,9 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
         dayGroup.runs.push({ source, material, baked: !!first.bake, mesh: draw(runStart, start - runStart, material, 'landmark batch') });
       }
       // By day the runs look alike: one draw with a still copy of that look.
-      let dayMaterial = dayGroup.runs[0].material;
+      let dayMaterial = dayGroup.runs[0].material!;
       if (dayGroup.runs.length > 1) {
-        const material = dayGroup.runs[0].material.clone() as Mat;
+        const material = dayGroup.runs[0].material!.clone() as Mat;
         const [color, emissive, opacity] = dayGroup.look.split('/');
         material.color?.set(`#${color}`);
         if (material.emissive) {
@@ -754,6 +835,13 @@ export const landmarkBatchOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('batch') === 'off';
+})();
+
+/** `?perf&nightwall=off` draws lit landmark panes as their own runs at night again (before 2026-11-27), for A/B runs. */
+const nightWallOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('nightwall') === 'off';
 })();
 
 /** `?perf&colours=float` keeps landmark batch colours as floats, for A/B runs from one build. */

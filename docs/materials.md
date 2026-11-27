@@ -100,8 +100,9 @@ The scene holds 64 textures, about 464 MB of estimated GPU memory, and 81 progra
   1180 Peachtree's curtain wall (1.0), Westin (0.7), Peachtree Center (0.7), and signs and
   lettering (about 2).
 - **Procedural, 0 bytes:**
-  - Generic facades and residential sidings (`patchFacades` in `vignette/world.ts`): one
-    program and one draw for every generic building.
+  - Generic facades and residential sidings (`patchFacades` in `materials/facade.ts`): one
+    program and one draw for every generic building. Landmark batches draw with the same program,
+    and their lit panes glow in the wall draw at night ([facade-night.md](facade-night.md)).
   - Ground covers (`landscape/ground-cover.ts`): one draw.
   - `ashlarCoursing` (One Atlantic, 191 Peachtree).
 - **Geometry, not texture:** classical ornament (cornices, modillions, rustication, quoins) and

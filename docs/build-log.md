@@ -3999,3 +3999,25 @@ The acoustic single now has its own artist, Nell Tiller. Her painted guitar-and-
 MARTA's published GTFS ends on Friday 11 December, and nothing newer existed when we checked on 26 November. Until now, a clock set past that date would have shown an empty city with the corner still reading "Timetable". Each day past the end now repeats the same weekday of the last full published week, 5 to 11 December. It uses `calendar.txt` alone, so the three holiday-only services and the Thanksgiving removals don't repeat. Every repeated trip is `inferred`, never `scheduled`. Its card reads "Inferred from MARTA's last published timetable (ended Dec 11)", and the corner reads Inferred with a hollow amber dot.
 
 The boundary took the most care. GTFS service days run past midnight, and Friday's last Red Line trip ends at 26:11, which is 02:11 on Saturday the 12th. Until then the corner still says Timetable and those trips are still scheduled. A sweep over every minute from 20:00 on the 11th to 08:00 on the 12th never finds an inferred trip while the corner could read Timetable. Inside the feed, the new engine matched the old one exactly at 921 instants, 15,978 trains in all. One surprise: three City consumers asked for `'scheduled'` by name, the platform berthing, the streetcar's place in road traffic and the Crescent at Brookwood. With nothing else changed, on 12 December they would have quietly stopped working. [Card and corner, past and inside the feed](log/ui/marta-expiry/card-corner.jpg) · [Streetcar in City, Dec 15](log/ui/marta-expiry/city-streetcar-dec15.jpg)
+
+### 2026-11-27 — Night windows ride the wall draw
+
+At 22:00 City's High tier drew 629 times, one under its ceiling. Most of the jump from day (439)
+came from one place, the landmark batcher. By day it merges a cell's skins into one draw, because
+lit panes look like the wall then. At night every landmark's light colour becomes its own draw. On
+High at 22:00 that took landmark batches from about 54 draws to 193.
+
+The fix puts those lights inside the wall draw. Generic buildings already shared one facade shader
+that hashes its own window cells. Landmark batches now draw with that same program, with the
+procedural windows switched off and a small table added: which vertex ranges glow and with what
+light, found by `gl_VertexID`. That costs nothing per vertex and adds no program.
+- High night: 629 → 486 calls.
+- Low night: 523 → 380.
+- Day, triangles, geometry and programs: unchanged.
+
+What surprised me was how much a pixel diff needs a noise floor. Diffed raw, every High frame
+changed 2–5% of its pixels. The animated film grain did all of that. With grain off, night frames
+differ from main by at most 0.21% of pixels. Main against itself differs by the same amount on
+the six frames I checked. Skins keep choosing their lit panes when they build them. Re-picking them in the
+shader would have lit different windows on every approved landmark.
+[docs/perf.md views](log/facade-night/sheet-views.jpg) · [12 landmarks](log/facade-night/sheet-landmarks.jpg) · [design note](facade-night.md)

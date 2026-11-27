@@ -3,7 +3,7 @@
  * ordinary stock, so unskinned blocks stop reading as one pale blue-grey glass box.
  *
  * Each archetype is a wall palette, a cap and base treatment, and a facade pattern in the
- * existing generic window shader (world.ts patchFacades), selected by an integer `aStyle` id:
+ * existing generic window shader (materials/facade.ts patchFacades), selected by an integer `aStyle` id:
  *
  *   style = V2_STYLE0 + archetype * 4 + variant      (20..51)
  *   base styles 52..55: lobby glass, dark arcade, blank plinth, shopfront with sign band

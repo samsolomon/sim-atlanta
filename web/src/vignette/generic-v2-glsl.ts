@@ -1,6 +1,6 @@
 /**
  * Facade patterns for the v2 generic archetypes (generic-v2.ts), spliced into the generic
- * building shader (world.ts patchFacades) as one branch for styles 20 and up. Inputs: `u`
+ * building shader (materials/facade.ts patchFacades) as one branch for styles 20 and up. Inputs: `u`
  * (metres along the face), `y` (metres above the wall's storey origin), `st` (style id),
  * `diffuseColor` (the wall's vertex colour); outputs `diffuseColor`, `litWin`, `litLevel`.
  *

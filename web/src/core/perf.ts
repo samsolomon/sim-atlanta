@@ -745,7 +745,7 @@ export const perf = {
    * shadow depth, or post: a full-screen quad outside the scene) and its owner. Answers "what draws
    * these triangles" where the category sums (all registered geometry) can't.
    */
-  captureDraws(o: { shadow?: boolean } = {}): Promise<unknown> {
+  captureDraws(o: { shadow?: boolean; limit?: number } = {}): Promise<unknown> {
     if (!ctx) return Promise.resolve(null);
     // { shadow: true } forces a shadow-map redraw in the captured frame, to measure the shadow pass.
     const forceShadow = !!o.shadow;
@@ -801,7 +801,7 @@ export const perf = {
         // Meshes City hid because they have no vertices (city/empty-draws.ts): their owners should check why.
         const hiddenEmpty: string[] = [];
         scene.traverse(o => { if (o.userData.emptyHidden) hiddenEmpty.push(owner(o).path); });
-        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty });
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, o.limit ?? 80), hiddenEmpty });
       }); });
     });
   },

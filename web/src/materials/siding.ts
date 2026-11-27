@@ -1,5 +1,5 @@
 /**
- * Residential siding courses for the generic facade shader (patchFacades in vignette/world.ts):
+ * Residential siding courses for the generic facade shader (patchFacades in materials/facade.ts):
  * clapboard laps, running-bond brick, stucco grain, staggered cedar shingle and limestone ashlar,
  * selected by the facade style \`st\`: 3 to 6 and 11 draw shader windows; 7–10 and 12 are the
  * same sidings with windows drawn as geometry, and fold onto 3–6 and 11. Moved here verbatim from
