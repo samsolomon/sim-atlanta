@@ -81,6 +81,13 @@ it('cuts the reveal on the outside of both joints between the masses, Peachtree 
     strips.push(c.divideScalar(6));
     bottoms.push(low + 300);
   }
+  // Each strip stands 0.25 m proud of the wall, in front of the floor lines (0.15) and mullions (0.21).
+  const edge = (ring: [number, number][], x: number, z: number) => Math.min(...ring.map((a, i) => {
+    const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dz = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
+  }));
+  for (const c of strips) expect(Math.min(...rings.map(r => edge(r, c.x, c.z)))).toBeGreaterThan(0.22);
   // One strip on each side of each joint, all of them outside both masses.
   expect(strips).toHaveLength(4);
   for (const c of strips) for (const ring of rings) expect(pointInRing(c.x, c.z, ring)).toBe(false);

@@ -281,7 +281,8 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     const near = (p: P2) => shared.some(([x, z]) => Math.hypot(x - p[0], z - p[1]) < 0.6);
     for (const solid of [crown, north]) {
       exposed(solid.plan, solids, solid, (a, b, length, from) => {
-        const lo = Math.max(floor + 8.6, from), hi = north!.top;
+        // Above the double-height street glazing on this edge's own grade, and any neighbour.
+        const lo = Math.max(grade(a, b) + 8.6, from), hi = north!.top;
         if (length < 2 || near(a) === near(b) || hi - lo < 1) return;
         const w = Math.min(0.3, 1.6 / length);
         if (near(a)) panel(s, a, b, 0, w, lo, hi, 0.25, reveal);
