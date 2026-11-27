@@ -2,7 +2,8 @@
 /**
  * `pnpm test:perf`: build web/, serve it, open City at each tier in headless Chrome
  * (scripts/perf-run.mjs) and check the result against web/src/core/perf-budget.json.
- * Fails on any ceiling; prints how far each figure is from its target. Needs Chrome and the
+ * Fails on any ceiling; prints how far each figure is from its target, and flags figures inside
+ * an entry's `reserve` (above ceiling − reserve), which fail review, not this check. Needs Chrome and the
  * staged data (`pnpm data`). Pass --no-build to reuse web/dist.
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -36,6 +37,7 @@ if (!up || exited) { server.kill(); rmSync(tmp, { recursive: true, force: true }
 
 let failed = false;
 let retries = 0;
+const inReserve = [];
 try {
   for (const [tier, b] of Object.entries(budget).filter(([k]) => !k.startsWith('_'))) {
     const json = join(tmp, `${tier}.json`);
@@ -70,7 +72,10 @@ try {
       const over = ceil !== null && (typeof v !== 'number' || v > ceil);
       if (over) failed = true;
       const tgt = b.target[k];
-      console.log(`  ${k.padEnd(14)} ${String(v).padStart(10)} ${String(ceil ?? '-').padStart(11)} ${String(tgt ?? '').padStart(11)}  ${over ? 'OVER CEILING' : typeof tgt === 'number' && v > tgt ? `${Math.round((v / tgt - 1) * 100)}% over target` : 'at target'}`);
+      const reserve = b.reserve?.[k];
+      const reserved = !over && ceil !== null && typeof reserve === 'number' && v > ceil - reserve;
+      if (reserved) inReserve.push(`${tier} ${k} ${v} (ceiling ${ceil}, reserve ${reserve}: room ends at ${ceil - reserve})`);
+      console.log(`  ${k.padEnd(14)} ${String(v).padStart(10)} ${String(ceil ?? '-').padStart(11)} ${String(tgt ?? '').padStart(11)}  ${over ? 'OVER CEILING' : reserved ? 'IN RESERVE' : typeof tgt === 'number' && v > tgt ? `${Math.round((v / tgt - 1) * 100)}% over target` : 'at target'}`);
     }
   }
   // Late compiles: a quick clock and weather sweep per tier after ready (scripts/program-sweep.mjs).
@@ -89,6 +94,10 @@ try {
 } finally {
   server.kill();
   rmSync(tmp, { recursive: true, force: true });
+}
+if (inReserve.length) {
+  console.log(`\nInside the reserve (docs/review-charter.md, Budget reserves): a PR that adds to these must offset it in the same PR.`);
+  for (const line of inReserve) console.log(`  ${line}`);
 }
 console.log(`\ntest:perf ${failed ? 'FAILED' : 'passed'}; ${retries} retr${retries === 1 ? 'y' : 'ies'}.`);
 if (failed) console.error('test:perf FAILED: see the reasons above (OVER CEILING, LATE COMPILE, or a run that failed twice).');
