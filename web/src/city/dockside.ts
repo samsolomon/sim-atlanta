@@ -89,6 +89,7 @@ export function createDockside(buildings: VBuilding[], site: VBuilding, _base: n
   const eave = (p: P2, dx: number, dz: number): P2 => [p[0] + dx, p[1] + dz];
   const [r0, r1, r2, r3] = [eave(e0, 0, .5), eave(o0, .5, .5), eave(o1, .5, -.5), eave(e1, 0, -.5)];
   stone.quad([r1[0], py, r1[1]], [r2[0], py, r2[1]], [ridge1[0], py + 1.2, ridge1[1]], [ridge0[0], py + 1.2, ridge0[1]], PORCH_ROOF);
+  stone.quad([r3[0], py, r3[1]], [r0[0], py, r0[1]], [ridge0[0], py + 1.2, ridge0[1]], [ridge1[0], py + 1.2, ridge1[1]], PORCH_ROOF);
   stone.tri([r0[0], py, r0[1]], [r1[0], py, r1[1]], [ridge0[0], py + 1.2, ridge0[1]], PORCH_ROOF);
   stone.tri([r2[0], py, r2[1]], [r3[0], py, r3[1]], [ridge1[0], py + 1.2, ridge1[1]], PORCH_ROOF);
   // The porch ceiling glows faintly at night.
