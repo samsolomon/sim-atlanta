@@ -69,12 +69,17 @@ it('cuts the reveal on the outside of both joints between the masses, Peachtree 
   const dark = new Color('#1f2b33'), v = new Vector3();
   const rings = ['osm:way:1434982572', 'podium'].map(id => upper.parts!.find(p => p.id === id)!.rings[0] as [number, number][]);
   // Reveal quads are two triangles of six vertices; take each quad's centre.
-  const strips: Vector3[] = [];
+  const strips: Vector3[] = [], bottoms: number[] = [];
   for (let i = 0; i + 5 < position.count; i += 6) {
     if (Math.abs(color.getX(i) - dark.r) + Math.abs(color.getY(i) - dark.g) + Math.abs(color.getZ(i) - dark.b) > 1e-3) continue;
     const c = new Vector3();
-    for (let k = 0; k < 6; k++) c.add(v.fromBufferAttribute(position, i + k).applyMatrix4(body.matrixWorld));
+    let low = Infinity;
+    for (let k = 0; k < 6; k++) {
+      c.add(v.fromBufferAttribute(position, i + k).applyMatrix4(body.matrixWorld));
+      low = Math.min(low, v.y);
+    }
     strips.push(c.divideScalar(6));
+    bottoms.push(low + 300);
   }
   // One strip on each side of each joint, all of them outside both masses.
   expect(strips).toHaveLength(4);
@@ -82,6 +87,10 @@ it('cuts the reveal on the outside of both joints between the masses, Peachtree 
   for (const joint of [[798.24, -3344.04], [845.55, -3315.64]]) {
     expect(strips.filter(c => Math.hypot(c.x - joint[0], c.z - joint[1]) < 2)).toHaveLength(2);
   }
-  // Above the parking podium (323.6 m roof beside the Juniper joint) and in front of the floor lines.
-  for (const c of strips) expect(c.y + 300).toBeGreaterThan(323.6);
+  // Each strip starts above whatever covers its edge: the Juniper pair above the 323.6 m parking
+  // podium, the Peachtree pair above the 8.6 m street storey (300.6 m on this flat ground).
+  strips.forEach((c, i) => {
+    const juniper = Math.hypot(c.x - 845.55, c.z + 3315.64) < 2;
+    expect(bottoms[i]).toBeGreaterThanOrEqual(juniper ? 323.6 - 1e-3 : 300.6 - 1e-3);
+  });
 });
