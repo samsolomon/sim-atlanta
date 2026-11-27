@@ -122,3 +122,30 @@ it('reads only bakes whose every stage is a tape or a surface', () => {
   expect(decodeBake(file({ ...ok, stages: [{ yields: 1, yieldPrint: 2 } as never, ok.stages[1]] }))).toBeNull();
   expect(decodeBake(file({ ...ok, stages: [ok.stages[0]] }))).toBeNull();
 });
+
+// The real path: a page without ?bake=1 never fetches the bake City would otherwise adopt.
+it.skipIf(!staged)('is parked: a page without ?bake=1 never fetches a bake, even one that is served', async () => {
+  const { file } = await (async () => { restore = stubPage(); try { return await bakeRow('low', ROW); } finally { restore(); } })();
+  restore = stubPage(new Map([[`scene/square-board/${ROW}/${bakeFile('low')}`, file]]));
+  const g = globalThis as unknown as { location: { search: string }; fetch: (u: string) => Promise<Response> };
+  g.location = { search: '?slice=0' }; // stubPage opts in when handed files; this page does not
+  const served = g.fetch, asked: string[] = [];
+  g.fetch = (u: string) => { if (u.includes('ground-bake-')) asked.push(u); return served(u); };
+  const before = { adopted: bakeStats.adopted, fallbacks: bakeStats.fallbacks };
+  const mounted = await mountRows('low', ROW);
+  for (const a of mounted.values()) a.dispose();
+  expect(asked).toEqual([]);
+  expect({ adopted: bakeStats.adopted, fallbacks: bakeStats.fallbacks }).toEqual(before);
+}, 600_000);
+
+it('is parked: an area reads its bake only when the page asks for ?bake=1', async () => {
+  const { bakeOn } = await import('./ground-bake');
+  const g = globalThis as unknown as { location?: { search: string } };
+  const saved = g.location;
+  try {
+    for (const [search, on] of [['', false], ['?perf', false], ['?perf&bake=0', false], ['?bake=1', true], ['?perf&bake=1', true]] as const) {
+      g.location = { search };
+      expect(bakeOn(), search).toBe(on);
+    }
+  } finally { g.location = saved; }
+});

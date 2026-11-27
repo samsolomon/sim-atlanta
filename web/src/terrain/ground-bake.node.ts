@@ -26,7 +26,8 @@ export function stubPage(files: Map<string, Uint8Array> = new Map()) {
   const saved = { document: g.document, fetch: g.fetch, location: g.location };
   const ctx: object = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
   g.document = { createElement: () => ({ getContext: () => ctx }) };
-  g.location = { search: '?slice=0' };
+  // Handing in bake files opts the page in (?bake=1): baked ground is off by default.
+  g.location = { search: files.size ? '?slice=0&bake=1' : '?slice=0' };
   g.fetch = async (url: string) => {
     const path = url.includes('/data/') ? url.split('/data/')[1] : url.replace(/^\//, '');
     const own = files.get(path);

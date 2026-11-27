@@ -218,12 +218,13 @@ export function decodeBake(buffer: ArrayBuffer): BakedGround | null {
   return { id: header.id, quality: header.quality, gridSha256: header.gridSha256, code: header.code, heights: header.heights, stages };
 }
 
-/** `?perf&bake=0` builds every area's ground in the browser, for A/B runs. */
-export const bakeOff = (() => {
-  const p = new URLSearchParams(globalThis.location?.search ?? '');
-  const perf = p.get('perf');
-  return perf !== null && perf !== '0' && perf !== 'off' && p.get('bake') === '0';
-})();
+/**
+ * Baked ground is parked (Sam, release 20): 1.9 MB (Low) and 4.0 MB (High) per visitor bought about
+ * 0.5 s after ready. Areas build their ground in the browser unless the page asks for `?bake=1`,
+ * and `vite build` leaves the bake files out of web/dist, so a production `?bake=1` only counts
+ * fallbacks. The code, `pnpm data:bake` and CI's bake step stay for future heavy areas.
+ */
+export const bakeOn = () => new URLSearchParams(globalThis.location?.search ?? '').get('bake') === '1';
 
 /** Areas with a bake (slice 1: the Midtown row with the most carving, Ansley Park's). */
 export const BAKED_AREAS: ReadonlySet<string> = new Set(['brookwood-south']);

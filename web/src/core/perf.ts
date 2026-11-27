@@ -645,7 +645,8 @@ async function run({ quietMs = 5000, maxWaitMs = 150000, sampleMs = 10000 } = {}
     longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
     longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),
     // Baked ground (terrain/ground-bake.ts): bakes adopted and fallbacks (with why), and each
-    // sliced section's main-thread build work in ms (its slices summed), for ?perf&bake=0 A/B runs.
+    // sliced section's main-thread build work in ms (its slices summed), for ?perf&bake=1 A/B runs
+    // (baked ground is off by default since release 20).
     groundBake: { adopted: bakeStats.adopted, fallbacks: bakeStats.fallbacks, reasons: bakeStats.reasons.slice(0, 8) },
     sectionWorkMs: { ...sectionWorkMs },
   };
