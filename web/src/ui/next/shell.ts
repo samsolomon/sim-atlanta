@@ -381,7 +381,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     <button type="button" class="a2-x a2-menu-close" aria-label="Close menu">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
     <div class="a2-menu-rows">
       <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
-      <button type="button" class="a2-mi" data-act="board" hidden>${SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 5v14"/>')}<span>Show full board<small>Every City area, or retry one that failed</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
       <a class="a2-mi" href="https://github.com/samsolomon/sim-atlanta" target="_blank" rel="noopener">${SVG('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>')}<span>Source code<small>Open source on GitHub</small></span><span class="a2-chev">${SVG('<path d="M7 17L17 7M9 7h8v8"/>')}</span></a>
     </div>
@@ -768,19 +767,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     closePops();
     panelHost.show('key');
   });
-  // City's own retry control (it lives in #city-info): offered in the menu while City has one.
-  const boardRow = menu.querySelector<HTMLButtonElement>('[data-act=board]')!;
-  const cityBoardButton = () => document.querySelector<HTMLButtonElement>('#city-info button');
-  menuBtn.addEventListener('click', () => {
-    const b = cityBoardButton();
-    boardRow.hidden = view !== 'city' || !b;
-    // City names it by state ("Show full board", "Frame the full board").
-    if (b) boardRow.querySelector('span:not(.a2-chev)')!.firstChild!.textContent = b.textContent;
-  });
-  boardRow.addEventListener('click', () => {
-    closePops();
-    cityBoardButton()?.click();
-  });
   menu.querySelector('[data-act=about]')!.addEventListener('click', () => {
     closePops();
     panelHost.show('about');
@@ -810,6 +796,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   let lastTick = 0;
   let areaNote: string | null = null;
+  let areaRetry: (() => void) | undefined;
   function tick(t0: Date) {
     now = t0;
     const t = performance.now();
@@ -866,7 +853,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (open.getAttribute('aria-label') !== label) open.setAttribute('aria-label', label);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = feedNotice(s);
-    showNotice(loadingNote ?? areaNote ?? feedNote);
+    showNotice(loadingNote ?? areaNote ?? feedNote, !loadingNote && areaNote ? areaRetry : undefined);
     if (!panel.hidden) renderPanel(s);
     // The camera can move under an open share panel: keep the shown link the one Copy sends.
     if (!share.hidden) renderShare();
@@ -906,8 +893,17 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }
   const fmtSpan = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
 
-  function showNotice(text: string | null) {
-    if (notice.textContent !== (text ?? '')) notice.textContent = text ?? '';
+  // A failed City area's notice ends in a Retry link. The text sits in its own span so the twice-a-
+  // second tick rewrites nothing while the notice is unchanged (and focus stays on Retry).
+  const noticeText = el('span', {});
+  const retryBtn = el('button', { type: 'button', class: 'a2-link a2-notice-retry', hidden: '' }, 'Retry');
+  notice.append(noticeText, retryBtn);
+  let noticeRetry: (() => void) | undefined;
+  retryBtn.addEventListener('click', () => noticeRetry?.());
+  function showNotice(text: string | null, retry?: () => void) {
+    if (noticeText.textContent !== (text ?? '')) noticeText.textContent = text ?? '';
+    noticeRetry = text ? retry : undefined;
+    if (retryBtn.hidden !== !noticeRetry) retryBtn.hidden = !noticeRetry;
     if (notice.hidden !== !text) notice.hidden = !text;
   }
 
@@ -960,9 +956,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
       if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme;
     },
     setView: (v) => setView(v),
-    setNote(text) {
+    setNote(text, retry) {
       areaNote = text;
-      showNotice(text);
+      areaRetry = text ? retry : undefined;
+      showNotice(text, areaRetry);
       if (!text) {
         lastTick = -Infinity;
         tick(now);

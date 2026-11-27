@@ -77,7 +77,8 @@ export interface ShellApi {
   setTheme(theme: 'light' | 'dark'): void;
   setView(v: View): void;
   /** One short status note (the area note); truth-tier words are never clipped. */
-  setNote(text: string | null): void;
+  /** The area notice; `retry` adds a Retry link that loads the failed areas again. */
+  setNote(text: string | null, retry?: () => void): void;
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });

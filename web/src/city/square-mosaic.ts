@@ -108,7 +108,12 @@ export class SquareMosaic {
   /** Section loads still running, including follow-ups they start. */
   private inflight = new Set<Promise<void>>();
   private failed = new Set<Section>();
+  /** Called when a failed section is no longer requested (the camera moved off it): its failure
+   * notice no longer applies, and coming back loads it again. */
+  onForget?: (d: Section) => void;
   private wanted?: Point;
+  /** The sections the latest request asked for. */
+  private requested: Section[] = [];
   private seeking?: Point;
   /** The newest request, which follow-up loads continue from. */
   private latest?: () => void;
@@ -135,6 +140,12 @@ export class SquareMosaic {
     }
   }
   requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
+  /** Load the failed sections again from the latest request, if any failed. */
+  retryFailed() {
+    if (!this.failed.size) return;
+    this.failed.clear();
+    this.latest?.();
+  }
   cancelTarget() { this.wanted = undefined; }
   /** The remembered destination a load under way will move the camera to, if any. */
   get pendingTarget(): Point | undefined { return this.wanted; }
@@ -168,7 +179,8 @@ export class SquareMosaic {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
       if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100) || sought('r16'))) requested.push(next);
     }
-    for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
+    this.requested = requested;
+    for (const id of this.failed) if (!requested.includes(id)) { this.failed.delete(id); this.onForget?.(id); }
     for (const direction of requested) {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
       if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
@@ -182,7 +194,8 @@ export class SquareMosaic {
         mounted(added, reached ? p : undefined);
         if (this.fullBoard || this.wanted || this.seeking) this.latest?.();
       }).catch(error => {
-        if (!signal.aborted) {
+        // A section the camera has since given up fails quietly: no notice, and coming back loads it.
+        if (!signal.aborted && this.requested.includes(direction)) {
           this.failed.add(direction);
           failure(direction);
           console.warn(direction + ' City terrain unavailable', error);
