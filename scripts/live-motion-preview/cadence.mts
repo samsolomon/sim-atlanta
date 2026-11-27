@@ -12,13 +12,15 @@ let mainStill = 0, newStill = 0, mainMovingTime = 0, newMovingTime = 0;
 for (const [, seq] of byTrain) {
   // Distinct fixes in arrival order (what ingest keeps), with along-route distance as cumulative straight-line metres.
   const fixes: { t: number; at: number; s: number }[] = [];
+  // Every poll that carried this train, as main's glide sees it (a repeated fix retargets in place).
+  const polls_: { t: number; s: number }[] = [];
   let s = 0, last: any = null;
   for (const o of seq) {
     samples++;
     if (o.at == null) continue;
-    if (last && o.at <= last.at) { repeats++; continue; }
+    if (last && o.at <= last.at) { repeats++; polls_.push({ t: o.t, s }); continue; }
     if (last) { gaps.push((o.at - last.at) / 1000); s += hav(last, o); }
-    fixes.push({ t: o.t, at: o.at, s }); last = o;
+    fixes.push({ t: o.t, at: o.at, s }); polls_.push({ t: o.t, s }); last = o;
   }
   if (fixes.length < 4) continue;
   // Simulate both on a 0.25 s clock from the 2nd fix to the last fix's arrival; count time a train is still while its fixes say it moved.
@@ -31,8 +33,9 @@ for (const [, seq] of byTrain) {
     // "Moving" = this interval's fixes (by arrival) differ by > 40 m.
     // Each model is judged on what it is showing. Main glides from fix k-1 to fix k (k = newest
     // received). Playback at now-40 s shows the segment between the fixes received around then.
-    const k = fi - 1;
-    const mainMoving = k >= 1 && fixes[k].s - fixes[k - 1].s > 40;
+    // Main is moving while its newest poll moved its target more than 40 m (a repeat does not).
+    let p = -1; for (let x = 0; x < polls_.length; x++) if (polls_[x].t <= now) p = x;
+    const mainMoving = p >= 1 && polls_[p].s - polls_[p - 1].s > 40;
     const T = now - RESERVE_DELAY_MS;
     let j = -1; for (let x = 0; x < fixes.length; x++) if (fixes[x].t <= T) j = x;
     const newMoving = j >= 0 && j + 1 < fixes.length && fixes[j + 1].s - fixes[j].s > 40;

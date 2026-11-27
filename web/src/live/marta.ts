@@ -5,7 +5,7 @@
 import type { TrainState } from '../model/types';
 import { nearestOnPath, pointAt, type Schedule } from '../sched/engine';
 import { appendReservedFix, RESERVE_DELAY_MS, playback, type Knot } from './motion';
-import { freshness, FUTURE_TOLERANCE_MS, serverDate } from './freshness';
+import { freshness, serverDate } from './freshness';
 
 interface LiveTrain {
   id: string;
@@ -40,6 +40,9 @@ const POLL_MS = 30_000;
 const MAX_SNAP_M = 250;
 /** Live data older than this is treated as unavailable (fall back to the timetable). */
 export const STALE_MS = 3 * 60_000;
+/** A fix stamped further ahead of the response's clock is untrusted. Kept tight because a later
+ * correct fix cannot replace a held one dated after it: this bounds that hold to a minute. */
+export const FIX_FUTURE_MS = 60_000;
 
 export class LiveMarta {
   private tracked = new Map<string, Tracked>();
@@ -83,15 +86,16 @@ export class LiveMarta {
       // Never from the browser cache: a cached 200 would replay an old snapshot as live.
       const r = await fetch(this.url, { cache: 'no-store' });
       const body = await r.json();
-      // A slow response still counts (polls can overlap); only one older than a response
-      // already applied is dropped.
-      if (request < this.appliedRequest) return;
+      if (!r.ok && request < this.appliedRequest) return; // an old failure after a newer success
       if (!r.ok) throw new Error(body?.error ?? `HTTP ${r.status}`);
       const feed = body as Feed;
       // The feed itself must be current. A stale or future snapshot drops every tracked train,
       // so the scene falls back to the timetable rather than freezing old positions as live.
       const fresh = freshness(feed.fetched, serverDate(r), Date.now(), STALE_MS);
+      // Polls can overlap and finish in any order: a fresh response applies unless its snapshot is
+      // older than one already applied; a stale one clears trains only if it is the newest request.
       if (feed.fetched < this.lastSnapshot && fresh === 'fresh') return;
+      if (fresh !== 'fresh' && request < this.appliedRequest) return;
       if (fresh !== 'fresh') {
         this.tracked.clear();
         this.error = fresh;
@@ -120,7 +124,7 @@ export class LiveMarta {
     for (const t of feed.trains) {
       // Expire by when MARTA observed the train, not when we fetched it.
       const prev = this.tracked.get(t.id);
-      if (t.at != null && (t.at - reference > FUTURE_TOLERANCE_MS || reference - t.at >= STALE_MS)) {
+      if (t.at != null && (t.at - reference > FIX_FUTURE_MS || reference - t.at >= STALE_MS)) {
         // A stale or untrusted row never erases a fresher position already held; that one
         // expires on its own.
         if (prev) seen.add(t.id);

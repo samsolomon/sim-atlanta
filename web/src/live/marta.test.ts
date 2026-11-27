@@ -9,7 +9,7 @@ import { clock } from '../core/clock';
 import type { Schedule } from '../sched/engine';
 import { confidence, confidenceWords, railStatus } from '../ui/status';
 import { freshness } from './freshness';
-import { LiveMarta, STALE_MS } from './marta';
+import { FIX_FUTURE_MS, LiveMarta, STALE_MS } from './marta';
 
 const NOW = Date.UTC(2026, 10, 24, 6, 0, 0);
 const MIN = 60_000;
@@ -252,4 +252,35 @@ it('ages fixes on the client clock when the response has no Date header', async 
   body.trains[0].at = NOW - 20_000;
   await pollWith(live, body, null);
   expect(live.trains()).toEqual([]);
+});
+
+it('distrusts a fix dated more than a minute ahead, so it cannot freeze the train', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const first = feed(NOW);
+  await pollWith(live, first, NOW);
+  vi.advanceTimersByTime(30_000);
+  const ahead = feed(Date.now());
+  ahead.trains[0].at = Date.now() + FIX_FUTURE_MS + 3 * MIN; // four minutes ahead
+  await pollWith(live, ahead, Date.now());
+  vi.advanceTimersByTime(30_000);
+  const right = feed(Date.now());
+  await pollWith(live, right, Date.now());
+  expect(live.trains()[0].observedAt).toBe(right.trains[0].at);
+});
+
+it('applies the newest snapshot when overlapping polls finish out of order', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const resolvers: ((r: Response) => void)[] = [];
+  vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => resolvers.push(r))));
+  const respond = (i: number, fetched: number) => resolvers[i](new Response(JSON.stringify(feed(fetched)), { headers: { Date: new Date(NOW + 70_000).toUTCString() } }));
+  const a = live.poll(); // stalls on an upstream cache miss
+  vi.advanceTimersByTime(35_000);
+  const b = live.poll(); // a cache hit, answered first with an older snapshot
+  respond(1, NOW + 20_000);
+  await b;
+  respond(0, NOW + 60_000);
+  await a;
+  expect(live.trains()[0].observedAt).toBe(NOW + 40_000);
 });

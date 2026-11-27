@@ -23,6 +23,7 @@ describe('A2c train card', () => {
     const live = trainCard(train('live'), route, undefined, vt, true);
     expect(live).toMatch(/Next arrival.*Peachtree Center · 2 min.*chip live">Live/s);
     expect(live).toMatch(/Position.*chip inferred">Inferred/s);
+    expect(live).toContain('Placed between reports, about 40 s behind the latest');
     expect(live).toMatch(/Cars<\/dt><dd>6 <span class="chip illustrative"/);
     const sched = trainCard(train('scheduled'), route, undefined, vt, true);
     expect(sched).not.toMatch(/chip live/);
