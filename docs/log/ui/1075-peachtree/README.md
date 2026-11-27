@@ -101,3 +101,15 @@ The final before and after ([rework-compare.jpg](rework-compare.jpg), `815,-3330
 ## Reveal geometry (2026-11-27)
 
 Review found the dark reveal strips misplaced: the loop matched 11 shared vertices along the curve between the two masses and the Juniper wall and drew 42 strips, 40 of them with their centre 0.2 m inside the other mass. The Juniper-side returns (2.46 and 2.89 m) fell under a 3 m cut-off, so that joint got none. Now a strip goes only on an exposed edge with exactly one shared end, the two joints, at Peachtree and on the Juniper side, which gives four strips, all outside both masses. Each starts above any neighbouring roof (the 323.6 m parking podium at Juniper) and stands 0.25 m out, in front of the floor lines (0.15) and mullions (0.21). `1075-peachtree.test.ts` pins the four strips, two at each joint.
+
+Matched stills, BEFORE `82dd86c4` and AFTER at 11:30 and 23:30, high tier:
+
+![Juniper joint, 3x crop](reveal-juniper-joint.jpg)
+The new Juniper-side slot. `cam=846,-3316,345,62,700`, then `__setView(345,62,700,846,-3316,2.4)` in dev, cropped around the joint.
+
+![Peachtree joint, 3x crop](reveal-peachtree-joint.jpg)
+`cam=798,-3344,35,62,700`, then `__setView(35,62,700,798,-3344,2.4)`. The Peachtree strips exist (the test pins them) but don't read at City range: from the west the towers across Peachtree hide the joint, and from the south-west its faces turn away.
+
+![Crown three-quarter, the money shot](reveal-crown.jpg)
+![Juniper side](reveal-juniper.jpg)
+`815,-3330,215,70,950` and `815,-3330,270,55,500`: at these ranges the 0.7 m strips are below a pixel, so before and after match, as they should.
