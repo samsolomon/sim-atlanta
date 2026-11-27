@@ -68,39 +68,44 @@ the L2 form (scaling plan §3.3). The format carries that form unchanged.
 
 ## Budget: same-build A/B (`test:perf`, 2026-11-27)
 
-The build is the same for both columns. `PERF_QUERY='&placeholder=off'` is the B side. The views are
-`test:perf`'s: the default open view, with 12 areas mounted. R16 loads only when looked at, so it is white
-at the default view.
+The build is the same for both columns: 03a660b2, held under the perf lock. `PERF_QUERY='&placeholder=off'`
+is the B side. The views are `test:perf`'s: the default open view, with 12 areas mounted. R16 loads only when
+looked at, so it is white at the default view.
 
 | | Low on | Low off | Δ | High on | High off | Δ |
 | --- | --- | --- | --- | --- | --- | --- |
-| Geometry MB | 163.0 | 160.2 | +2.8 | 274.3 | 271.5 | +2.8 |
-| Triangles | 1,692,511 | 1,679,265 | +13,246 (R16's white) | 6,494,177 | 6,480,931 | +13,246 |
-| Calls | 346 | 346 | 0 | 440 | 439 | +1 |
+| Geometry MB | 163.1 | 160.2 | +2.9 | 274.4 | 271.5 | +2.9 |
+| Triangles | 1,692,594 | 1,679,265 | +13.3k (R16's white) | 6,494,260 | 6,480,971 | +13.3k |
+| Calls | 347 | 345 | +2 | 440 | 439 | +1 |
 | Calls, High at 22:00 | | | | 630 | 629 | +1 (ceiling 630) |
 | Programs | 80 | 80 | 0 | 94 | 94 | 0 |
+| Programs, High at 22:00 | | | | 95 → 94 after the fix below | 94 | 0 |
 | Texture MB | 108.7 | 108.7 | 0 | 772 | 772 | 0 |
-| Heap after GC MB | 433 | 430 | +3 | 551 | 548 | +3 |
+| Heap after GC MB | 433 | 430 | +3 | 551 | 547 | +4 |
+
+The calls are R16's white mass and its shadow. High at 22:00 is at its 630 ceiling, and under its reserve, so
+the +1 needs an offset (scaling plan §4) or Sam's word. Night windows in the wall draw (2a) is expected to free
+100 or more of those calls.
+
+At 22:00 this run first measured 95 programs on High. A front-sided material casts its shadow with back
+faces, which compiled a depth program City didn't have. Since `shadowSide = DoubleSide` (after this run), the
+placeholder shares the existing one. A program diff with and without the layer at 22:00 is now 94 and 94 on
+High, and 80 and 80 on Low.
 
 Low geometry stays inside the 25 MB reserve: 27 MB is left under 190.
 
-The +1 call on High is R16's white mass at the default view. High at 22:00 is at its 630 ceiling, and under
-its reserve, so it needs an offset (scaling plan §4) or Sam's word. Night windows in the wall draw (2a) is
-expected to free 100 or more of those calls.
+Both sides of `test:perf` FAILED on the same thing: one late compile at 17:30 on both tiers ("no owner
+found"). The sweep's key names a shadow depth program (`depth`, …`3201,1,142336`). It compiles with the
+placeholder off too, so it isn't this layer. It's probably already on main, and it needs an owner.
 
-The moving checks were single runs, so they are noisy:
+The timing figures overlap another agent's captures (16:37–16:50, the "on" side), so read them as noise:
 
 | Check | On | Off | Ceiling |
 | --- | --- | --- | --- |
-| `low-north` longest task | 207 ms | 191 ms | 650 |
-| `low-north` load longest task | 188 ms | 164 ms | 300 |
-| `low-north` route task | 373 ms | 336 ms | 500 |
-| `low-zoomout` longest task | 59 ms | 59 ms | 500 |
-| Studio ready, Low | 1,486 ms | 1,377 ms | |
-| Studio ready, High | 1,617 ms | 1,487 ms | |
-
-Both runs report one late compile at 17:30 on both tiers ("no owner found"). It happens with the placeholder off too, so it
-isn't this layer, and nothing in this change compiles at dusk. It's probably already on main.
+| `low-north` longest task | 198 ms | 205 ms | 650 |
+| `low-north` load longest task | 176 ms | 196 ms | 300 |
+| `low-north` route task | 357 ms | 330 ms | 500 |
+| Studio ready, Low and High | 1,377 and 1,496 ms | 1,447 and 1,554 ms | |
 
 Partial boards, where the layer actually draws, cost less than the full board in every currency except
 geometry: each white area replaces the area that would stand there. Every area shown draws 140k triangles in

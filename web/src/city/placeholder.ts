@@ -184,6 +184,9 @@ export function placeholderMaterial(flat = false) {
   material.polygonOffset = true;
   material.polygonOffsetFactor = -2;
   material.polygonOffsetUnits = -8;
+  // Shadows from both faces, as City's casters draw them: a front-sided material casts with back
+  // faces (three's default), which compiled one more depth program on High at night.
+  material.shadowSide = THREE.DoubleSide;
   return material;
 }
 

@@ -92,6 +92,7 @@ describe('placeholder look', () => {
     expect(m.color.getHex()).toBe(new THREE.Color(WHITE_MODEL).multiplyScalar(WHITE_ALBEDO).getHex());
     expect(m.transparent).toBe(false);
     expect(m.flatShading).toBe(false);
+    expect(m.shadowSide).toBe(THREE.DoubleSide);
     // No shader changes: a program City already compiles (the mosaic plinth's).
     expect(m.customProgramCacheKey()).toBe(new THREE.MeshLambertMaterial().customProgramCacheKey());
   });
