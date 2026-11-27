@@ -1636,6 +1636,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Per pointer, so a second finger lifting does not forget the first one's press.
   const pressedAt = new Map<number, { x: number; y: number }>();
   renderer.domElement.addEventListener('pointerdown', e => {
+    // Only the buttons OrbitControls moves the camera with (a pen eraser or a side button does not).
+    if (e.button < 0 || e.button > 2) return;
     // A second finger is a pinch or twist: that takes the camera however small it stays.
     if (pressedAt.size) cancelPendingTarget();
     pressedAt.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1648,6 +1650,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }, { capture: true, signal: pressEvents.signal });
   for (const type of ['pointerup', 'pointercancel'] as const)
     renderer.domElement.addEventListener(type, e => { pressedAt.delete(e.pointerId); }, { capture: true, signal: pressEvents.signal });
+  // A press released in another window never reports here; it must not make the next tap a pinch.
+  window.addEventListener('blur', () => pressedAt.clear(), { signal: pressEvents.signal });
   // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
   // (here) and whenever the view moves (watched once a frame, below).
   releaseCamera();
