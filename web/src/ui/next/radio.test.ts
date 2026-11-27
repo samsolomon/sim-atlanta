@@ -228,6 +228,43 @@ describe('radio engine', () => {
     expect(outCurve[1]).toBeLessThan(1);
   });
 
+  it('starts the next track playing when Next is pressed before the first Play', async () => {
+    const r = make(14);
+    await r.ready;
+    const first = r.track!.id;
+    expect(r.playing).toBe(false);
+    r.next();
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(r.track!.id).not.toBe(first);
+    // Only the new track sounds; the skipped prefetch is let go.
+    expect(mp3().map((e) => e.src)).toEqual([`/music/tracks/${r.track!.id}.mp3`]);
+    expect(released).toContain(`/music/tracks/${first}.mp3`);
+    mp3()[0].emit('playing');
+    expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
+  });
+
+  it('starts the next track playing when Next is pressed while paused', async () => {
+    const r = make(14);
+    await r.ready;
+    r.toggle();
+    await flush();
+    const a = mp3()[0];
+    a.emit('playing');
+    const first = r.track!.id;
+    r.toggle(); // pause
+    vi.advanceTimersByTime(400);
+    expect(r.playing).toBe(false);
+    r.next();
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(r.track!.id).not.toBe(first);
+    const b = els.find((e) => e.src.endsWith(`/${r.track!.id}.mp3`))!;
+    expect(b.paused).toBe(false); // the new track was told to play, with no fade from the old one
+    b.emit('playing');
+    expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
+  });
+
   it('ramps pause over 300 ms, then stops the elements and the audio clock together', async () => {
     const r = make();
     await r.ready;

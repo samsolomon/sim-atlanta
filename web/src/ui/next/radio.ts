@@ -573,13 +573,21 @@ export function createRadio(o: RadioOptions): Radio {
     },
     next() {
       if (!loaded || !station) return;
-      if (!ctx) {
-        shown = upcoming = pick(station);
-        prefetchUpcoming();
-        changed();
+      // Next while the radio is off starts the next track playing (Sam, 2026-11-27): the press asks
+      // to hear something, so it never just relabels a silent radio.
+      if (!playing) {
+        if (unavailable) return;
+        if (ctx) crossfade(0); // cut to the next track while silent; Play below sounds it
+        else {
+          // First press of the visit: the shown track is skipped; Play creates the context
+          // inside this gesture and starts the new one.
+          shown = upcoming = pick(station);
+          prefetchUpcoming();
+        }
+        radio.toggle();
         return;
       }
-      crossfade(playing ? SKIP_FADE_S : 0);
+      crossfade(SKIP_FADE_S);
     },
     switchStation(dir) {
       if (!loaded || !station) return;
