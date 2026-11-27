@@ -177,6 +177,9 @@ export interface CityView {
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
   target(): { x: number; z: number };
+  /** Where a link or lookAt is still headed while its area loads (the camera waits at the nearest
+   * loaded edge), or null. A rebuild keeps this, not the clamped target. */
+  pendingTarget(): { x: number; z: number } | null;
   /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
@@ -1624,9 +1627,31 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     panX = panY = 0;
     // In three r180 wheel zoom starts in NONE (-1), mouse dolly in DOLLY (1).
     if (orbitInput.state === -1 || orbitInput.state === 1) manualCamera();
-    else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
+  // A press keeps a link's pending target until it travels past the picking slop. A tap (inspecting
+  // a vehicle, focusing the page) is not a camera move; dropping the target on pointerdown left a
+  // Brookwood link parked at the downtown edge it was clamped to while its row loaded.
+  const pressEvents = new AbortController();
+  // Per pointer, so a second finger lifting does not forget the first one's press.
+  const pressedAt = new Map<number, { x: number; y: number }>();
+  renderer.domElement.addEventListener('pointerdown', e => {
+    // Only the buttons OrbitControls moves the camera with (a pen eraser or a side button does not).
+    if (e.button < 0 || e.button > 2) return;
+    // A second finger is a pinch or twist: that takes the camera however small it stays.
+    if (pressedAt.size) cancelPendingTarget();
+    pressedAt.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  }, { capture: true, signal: pressEvents.signal });
+  renderer.domElement.addEventListener('pointermove', e => {
+    const at = pressedAt.get(e.pointerId);
+    if (!at || Math.hypot(e.clientX - at.x, e.clientY - at.y) <= 6) return;
+    pressedAt.clear();
+    cancelPendingTarget();
+  }, { capture: true, signal: pressEvents.signal });
+  for (const type of ['pointerup', 'pointercancel'] as const)
+    renderer.domElement.addEventListener(type, e => { pressedAt.delete(e.pointerId); }, { capture: true, signal: pressEvents.signal });
+  // A press released in another window never reports here; it must not make the next tap a pinch.
+  window.addEventListener('blur', () => pressedAt.clear(), { signal: pressEvents.signal });
   // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
   // (here) and whenever the view moves (watched once a frame, below).
   releaseCamera();
@@ -2413,6 +2438,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
+    pendingTarget: () => {
+      const p = mosaic?.pendingTarget ?? pendingNorthTarget ?? pendingEastTarget;
+      return p ? { x: p.x, z: p.z } : null;
+    },
     distance: () => camera.position.distanceTo(controls.target),
     seek(x, z) {
       mosaic?.seek({ x, z });
@@ -2488,6 +2517,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glass?.dispose();
       ro.disconnect();
       stopPicking();
+      pressEvents.abort();
       controls.removeEventListener('start', startGesture);
       window.removeEventListener('blur', dropGesture);
       renderer.domElement.removeEventListener('pointercancel', dropGesture);

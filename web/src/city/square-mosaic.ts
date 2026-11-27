@@ -136,6 +136,8 @@ export class SquareMosaic {
   }
   requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
   cancelTarget() { this.wanted = undefined; }
+  /** The remembered destination a load under way will move the camera to, if any. */
+  get pendingTarget(): Point | undefined { return this.wanted; }
   /** A vehicle's position: its rows load although the camera is not asking, and the camera stays. */
   seek(point: Point) { this.seeking = point; }
   /** True while a sought vehicle stands in a row that a load under way can still deliver. */

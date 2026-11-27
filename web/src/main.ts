@@ -859,8 +859,9 @@ async function applyGraphics() {
   const city = diorama;
   const { pickQuality } = await import('./city/city');
   if (diorama !== city || mapExitActive || city.quality === (chosenQuality() ?? pickQuality())) return;
-  // Rebuild City at the same camera with the new tier.
-  const t = diorama.target(), c = diorama.camera();
+  // Rebuild City at the same camera with the new tier. A link still loading its area keeps its
+  // destination: the clamped target would reopen at the loaded edge (downtown) for good.
+  const t = diorama.pendingTarget() ?? diorama.target(), c = diorama.camera();
   keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
   // A follow carries through the rebuild (Auto can step down to Low seconds after a follow starts);
   // openCity resumes it. Other selections close.
