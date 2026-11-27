@@ -1624,9 +1624,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     panX = panY = 0;
     // In three r180 wheel zoom starts in NONE (-1), mouse dolly in DOLLY (1).
     if (orbitInput.state === -1 || orbitInput.state === 1) manualCamera();
-    else cancelPendingTarget();
   };
   controls.addEventListener('start', startGesture);
+  // A press keeps a link's pending target until it travels past the picking slop. A tap (inspecting
+  // a vehicle, focusing the page) is not a camera move; dropping the target on pointerdown left a
+  // Brookwood link parked at the downtown edge it was clamped to while its row loaded.
+  const pressEvents = new AbortController();
+  let pressAt: { x: number; y: number } | null = null;
+  renderer.domElement.addEventListener('pointerdown', e => { pressAt = { x: e.clientX, y: e.clientY }; }, { capture: true, signal: pressEvents.signal });
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (!pressAt || Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y) <= 6) return;
+    pressAt = null;
+    cancelPendingTarget();
+  }, { capture: true, signal: pressEvents.signal });
+  for (const type of ['pointerup', 'pointercancel'] as const)
+    renderer.domElement.addEventListener(type, () => { pressAt = null; }, { capture: true, signal: pressEvents.signal });
   // Sliced area builds stay out of the way while the camera is in use: while a gesture is held
   // (here) and whenever the view moves (watched once a frame, below).
   releaseCamera();
@@ -2488,6 +2500,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glass?.dispose();
       ro.disconnect();
       stopPicking();
+      pressEvents.abort();
       controls.removeEventListener('start', startGesture);
       window.removeEventListener('blur', dropGesture);
       renderer.domElement.removeEventListener('pointercancel', dropGesture);
