@@ -18,7 +18,7 @@ import { g0, landscapeMesh, retainingEdge, type Ground } from '../landscape/prim
 type Bounds = { minX: number; maxX: number; minZ: number; maxZ: number };
 const oval = details.oval;
 const HUB = oval.hub.at as P2;
-const PARK = '#adbe90', CLAY = '#c69c80', SAND = '#dcd0b0', CHALK = '#eeece2';
+const PARK = '#adbe90', MOWN = '#b5c599', CLAY = '#c69c80', SAND = '#dcd0b0', CHALK = '#eeece2';
 const STEEL = '#8a8f94', WHITE = '#f1f0ea', LINK = '#5b6168', NET = '#f4f3ee', NET_RED = '#c8463a', TAPE = '#3d5aa8';
 
 const sub = (a: P2, b: P2): P2 => [a[0] - b[0], a[1] - b[1]];
@@ -93,6 +93,14 @@ export function paintActiveOval(ctx: CanvasRenderingContext2D, bounds: Bounds) {
   for (const f of oval.soccer) {
     const { c, u, v, hl, hw } = rectangle(f.ring as P2[]);
     const at = (s: number, t: number): P2 => add(add(c, u, s), v, t);
+    // Mow stripes across the pitch: a manicured lawn, so the ground rule allows them. Calm and
+    // low-contrast (one step lighter than the park lawn), about 9 m wide. Illustrative.
+    const bands = Math.max(2, Math.round(hl * 2 / 9));
+    for (let i = 0; i < bands; i += 2) {
+      const s0 = -hl + i * 2 * hl / bands, s1 = s0 + 2 * hl / bands;
+      poly([at(s0, -hw), at(s1, -hw), at(s1, hw), at(s0, hw)]);
+      ctx.fillStyle = MOWN; ctx.fill();
+    }
     poly([at(-hl, -hw), at(hl, -hw), at(hl, hw), at(-hl, hw)]);
     ctx.lineWidth = .12; ctx.strokeStyle = CHALK; ctx.stroke();
     line(at(0, -hw), at(0, hw));

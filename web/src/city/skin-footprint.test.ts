@@ -113,6 +113,7 @@ const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:269843688': 1, // Electric Saturation, midtown-central, worst 0.31 m off: legitimate, the artwork stands 0.31 m clear of the vent
   'osm:way:245699027': 1, // Bobby Dodd Stadium, midtown-south, worst 3.91 m off: legitimate, the playing field sits on the ground inside the bowl
   'osm:way:269843407': 1, // The Campanile, midtown-upper, worst 0.92 m off
+  'osm:way:182313892': 1, // Greystone, midtown-upper, worst 1.33 m off: legitimate, the pool deck and lake wall stand on the lakeshore apart from the house (aerial)
 };
 
 it('keeps every Midtown and square-board landmark inside its footprint plus its declared projection, with nothing hanging loose', () => {

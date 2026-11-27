@@ -3,6 +3,7 @@ import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { buildResidential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
+import { createGreystone, greystoneId } from '../city/greystone';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
@@ -89,7 +90,7 @@ import { buildMidtownLandmark, createMidtownLandmark, midtownLandmarkIds } from 
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
-import { piedmontPark } from '../city/piedmont-park';
+import { piedmontLampPaths, piedmontPark } from '../city/piedmont-park';
 import { createShepherdCenter, shepherdCenterIds, shepherdMainId } from '../city/shepherd-center';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
@@ -400,7 +401,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : artsCampusIds.has(site.id) ? createArtsCampusLandmark
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
-      : site.id === gazeboId ? createClaraMeer : null;
+      : site.id === gazeboId ? createClaraMeer
+      : site.id === greystoneId ? createGreystone : null;
     const landmark = site.id === piedmontHospitalId
       ? createPiedmontHospital(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : shepherdCenterIds.has(site.id) ? createShepherdCenter(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt, hasShepherdMain)
@@ -744,7 +746,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         span => span.finish==='disused-ballast' && s>=span.start && s<=span.end);
     };
     yield* scenery.lightSteps(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
-      { ...options.lights, lowDetail: options.quality === 'low' });
+      { ...options.lights, lowDetail: options.quality === 'low', dimPaths: piedmontLampPaths(city),
+        pools: landmarks.flatMap(l => (l as { pools?: { at: [number, number]; r: number }[] }).pools ?? []) });
     yield 'lights';
   }
   let fragment: World | undefined;
