@@ -69,7 +69,7 @@ interface Built { geometry: THREE.BufferGeometry; massEnd: number; groundEnd: nu
  * has (the mosaic plinth's). Without, vertices are shared and the material must be flat-shaded
  * (about half the memory, one more program).
  */
-export function buildArea(d: PlaceholderAreaData, normals = true): Built {
+export function buildArea(d: PlaceholderAreaData, normals = true, bottomY = d.area.bottomY): Built {
   const { area, ground, ringN, y, xz, roof } = d;
   const { cols, rows, step } = area.ground;
   const b = area.bounds;
@@ -100,7 +100,7 @@ export function buildArea(d: PlaceholderAreaData, normals = true): Built {
     unit(-(h(c + 1, r) - h(c - 1, r)) / (dx || 1), 1, -(h(c, r + 1) - h(c, r - 1)) / (dz || 1));
     put(gx(c), ground[r * cols + c], gz(r));
   }
-  const bottom = dm(area.bottomY);
+  const bottom = dm(bottomY);
   // The perimeter, clockwise from above.
   const ring: number[] = [];
   for (let c = 0; c < cols - 1; c++) ring.push(c);
@@ -187,11 +187,14 @@ export function placeholderMaterial(flat = false) {
   return material;
 }
 
-type Fade = { start: number | null };
+/** A dissolve out (into the mounted area) or in (a placeholder arriving after the first frame). */
+type Fade = { start: number | null; in: boolean };
 
 export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMotion: boolean; flat?: boolean;
   /** Called when an area's placeholder appears or disappears (shadow maps that cache it). */
-  changed?: () => void }) {
+  changed?: () => void;
+  /** The skirt's bottom (scene y), City's plinth bottom; the file's when not given. */
+  bottomY?: number }) {
   o = { flat: placeholderFlat, ...o };
   const group = new THREE.Group();
   group.name = 'white placeholder';
@@ -202,7 +205,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
   const bounds = new Map(areas.map(d => [d.area.id, d.area.bounds]));
   const fades = new Map<string, Fade>();
   for (const d of areas) {
-    const built = buildArea(d, !o.flat);
+    const built = buildArea(d, !o.flat, o.bottomY);
     const mesh = new THREE.Mesh(built.geometry, material);
     mesh.name = 'placeholder ' + d.area.id;
     mesh.position.set(d.area.ox, 0, d.area.oz);
@@ -247,7 +250,18 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
       const e = meshes.get(id);
       if (!e || !e.mesh.visible) return;
       if (o.reducedMotion) { this.hide(id); return; }
-      fades.set(id, { start: null });
+      fades.set(id, { start: null, in: false });
+      e.mesh.userData.fading = true;
+    },
+    /** Show an area's placeholder by dissolving it in (the file arrived after the first frame). */
+    appear(id: string) {
+      const e = meshes.get(id);
+      if (!e) return;
+      if (o.reducedMotion) { this.show(id); return; }
+      e.mesh.geometry.setDrawRange(0, 0);
+      if (!e.mesh.visible) o.changed?.();
+      e.mesh.visible = true;
+      fades.set(id, { start: null, in: true });
       e.mesh.userData.fading = true;
     },
     /** Per frame: advance the dissolves. */
@@ -256,7 +270,13 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
         const e = meshes.get(id)!;
         f.start ??= now;
         const pinned = pinnedFade && (pinnedFade.id === null || pinnedFade.id === id) ? pinnedFade.p : null;
-        const t = pinned ?? Math.min(1, (now - f.start) / WHITE_FADE_MS);
+        const t = (f.in ? null : pinned) ?? Math.min(1, (now - f.start) / WHITE_FADE_MS);
+        if (f.in) {
+          // In index order: the skirt, then the ground, then the masses.
+          if (t >= 1) { this.show(id); continue; }
+          e.mesh.geometry.setDrawRange(0, Math.floor(e.built.massEnd * easeInOut(t) / 3) * 3);
+          continue;
+        }
         if (t >= 1) { this.hide(id); continue; }
         const p = easeInOut(t), { skirtEnd, groundEnd, massEnd } = e.built;
         // Masses go first, in their shuffled order, then the ground cells, then the skirt.
@@ -285,7 +305,7 @@ export function createPlaceholder(areas: PlaceholderAreaData[], o: { reducedMoti
     rects(out: Float32Array) {
       let n = 0;
       for (const [id, e] of meshes) {
-        if (!e.mesh.visible || fades.has(id) || n * 4 >= out.length) continue;
+        if (!e.mesh.visible || (fades.has(id) && !fades.get(id)!.in) || n * 4 >= out.length) continue;
         const b = bounds.get(id)!;
         out.set([b.minX, b.minZ, b.maxX, b.maxZ], n++ * 4);
       }

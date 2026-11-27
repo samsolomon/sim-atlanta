@@ -137,6 +137,32 @@ describe('placeholder look', () => {
     expect(changes).toBe(4);
   });
 
+  it('dissolves in when the file arrives late, and counts as white for the ink', () => {
+    const p = createPlaceholder([sample()], { reducedMotion: false });
+    const mesh = p.group.children[0] as THREE.Mesh;
+    const b = buildArea(sample());
+    p.hide('test');
+    p.appear('test');
+    expect(mesh.visible).toBe(true);
+    expect(mesh.geometry.drawRange.count).toBe(0);
+    expect(p.rects(new Float32Array(64))).toBe(1);
+    p.update(0); p.update(500);
+    const mid = mesh.geometry.drawRange.count;
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(b.massEnd);
+    p.update(1000);
+    expect(mesh.geometry.drawRange.count).toBe(b.massEnd);
+    expect(p.fading).toBe(false);
+    expect(mesh.userData.fading).toBe(false);
+  });
+
+  it('ends the skirt at the plinth bottom City gives', () => {
+    const g = buildArea(sample(), true, -12.5).geometry, pos = g.getAttribute('position');
+    let low = Infinity;
+    for (let i = 0; i < pos.count; i++) low = Math.min(low, pos.getY(i));
+    expect(low).toBe(-125);
+  });
+
   it('eases in and out', () => {
     expect(easeInOut(0)).toBeCloseTo(0, 5);
     expect(easeInOut(0.5)).toBeCloseTo(0.5, 3);
@@ -167,6 +193,20 @@ describe('staged placeholder', async () => {
         expect(z).toBeLessThan(a.area.bounds.maxZ + 60);
       }
       expect(a.area.buildings).toBeGreaterThan(0);
+      // Every roof triangle faces up in the stored decimetres the reader draws (review: winding
+      // chosen before rounding left some facing down).
+      let at = 0, rt = 0, down = 0;
+      for (let i = 0; i < a.area.buildings; i++) {
+        const n = a.ringN[i];
+        for (let t = 0; t < n - 2; t++) {
+          const [p, q, r] = [0, 1, 2].map(k => a.roof[(rt + t) * 3 + k] + at);
+          const ex = a.xz[q * 2] - a.xz[p * 2], ez = a.xz[q * 2 + 1] - a.xz[p * 2 + 1];
+          const fx = a.xz[r * 2] - a.xz[p * 2], fz = a.xz[r * 2 + 1] - a.xz[p * 2 + 1];
+          if (ez * fx - ex * fz < 0) down++;
+        }
+        at += n; rt += n - 2;
+      }
+      expect(down, a.area.id).toBe(0);
     }
   });
 });

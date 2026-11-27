@@ -156,11 +156,13 @@ function encodeArea(id: Board, area: Area, masses: Mass[], bottomY: number): Pla
   const xz: number[] = [], roof: number[] = [];
   const dm = (v: number) => { const q = Math.round(v * 10); if (q < -32768 || q > 32767) throw Error(`${id}: ${v} m is out of Int16 decimetres`); return q; };
   masses.forEach((m, i) => {
+    // In stored decimetres first, so winding and triangles are judged on what the reader draws.
+    let ring: Ring = m.ring.map(([x, z]) => [dm(x - ox), dm(z - oz)]);
     // Counter-clockwise seen from above (+y): area2 over (x, z) negative.
-    const ring = area2(m.ring) > 0 ? [...m.ring].reverse() : m.ring;
+    if (area2(ring) > 0) ring = ring.reverse();
     ringN[i] = ring.length;
     y[i * 2] = dm(m.y0); y[i * 2 + 1] = dm(m.y1);
-    for (const [x, z] of ring) xz.push(dm(x - ox), dm(z - oz));
+    for (const [x, z] of ring) xz.push(x, z);
     const tris = ShapeUtils.triangulateShape(ring.map(([x, z]) => new Vector2(x, z)), []);
     // Pad or trim to ringN − 2 triangles, so the reader can index without a count.
     // Each triangle faces up (+y): three's front face is counter-clockwise seen from its normal,

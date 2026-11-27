@@ -355,12 +355,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // beside the board's build; it joins the scene before the first frame.
   const placeholderLoad = mosaic ? import('./placeholder').then(async m => {
     const data = await m.loadPlaceholder(DATA, options.signal);
-    // A dissolve that ends (or an area shown again) changes what casts shadows: redraw Low's
-    // manual shadow map then, not every frame of the dissolve.
-    return data && m.createPlaceholder(data, { reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-      changed: () => { renderer.shadowMap.needsUpdate = true; } });
+    return data && { m, data };
   }).catch(error => { console.warn('City placeholder unavailable', error); return null; }) : Promise.resolve(null);
   let placeholder: Placeholder | null = null;
+  let cityDisposed = false;
   const markRects = new Float32Array(16 * 4);
   // With the south band, which draws the Capitol tunnel, downtown's edge of its north-east
   // portals is cut into the bank too. Downtown alone (board=downtown, or no square board) keeps
@@ -2431,18 +2429,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   // The placeholder joins before the first frame when its file is in (it loads beside the board's
   // build), so the opening's white still holds it; a slow file joins when it arrives.
-  const attachPlaceholder = (p: Placeholder | null) => {
-    if (!p || options.signal?.aborted) { p?.dispose(); return; }
-    placeholder = p;
+  const attachPlaceholder = (loaded: Awaited<typeof placeholderLoad>, late: boolean) => {
+    if (!loaded || options.signal?.aborted || cityDisposed) return;
+    const p = placeholder = loaded.m.createPlaceholder(loaded.data, {
+      reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      // A dissolve that ends (or an area shown again) changes what casts shadows: redraw Low's
+      // manual shadow map then, not every frame of the dissolve.
+      changed: () => { renderer.shadowMap.needsUpdate = true; },
+      // The skirts end at this board's plinth bottom (the square alone sits higher than Midtown's).
+      bottomY: terrain?.bottomY,
+    });
     // White stands in only for an area this board will load; the square alone never loads Midtown.
-    for (const id of p.ids) if (mosaic!.areas.has(id as never) || !mosaic!.loads(id)) p.hide(id); else p.show(id);
+    // A file that arrives after the first frame dissolves in rather than popping.
+    for (const id of p.ids) if (mosaic!.areas.has(id as never) || !mosaic!.loads(id)) p.hide(id); else if (late) p.appear(id); else p.show(id);
     scene.add(p.group);
     if (freezeOn) freezeStatic(p.group);
     renderer.shadowMap.needsUpdate = true;
   };
   const early = await Promise.race([placeholderLoad.then(p => ({ p })), new Promise<null>(r => setTimeout(() => r(null), 3000))]);
-  if (early) attachPlaceholder(early.p);
-  else void placeholderLoad.then(attachPlaceholder);
+  if (early) attachPlaceholder(early.p, false);
+  else void placeholderLoad.then(p => attachPlaceholder(p, true));
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
@@ -2598,8 +2604,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
+      cityDisposed = true;
       placeholder?.dispose();
-      void placeholderLoad.then(p => p !== placeholder && p?.dispose());
       stopGestures?.();
       directDrag?.dispose();
       squareButton?.remove();

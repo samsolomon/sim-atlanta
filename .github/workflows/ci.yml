@@ -88,6 +88,7 @@ jobs:
 
       # Baked ground depends on web code (src/terrain and the grading it imports), which the data
       # cache key does not cover: re-bake on every run so a restored bake is never stale (~30 s).
+      # The same step bakes the white placeholder (city/placeholder.node.ts) from the areas' far form.
       - name: Bake ground
         run: pnpm data:bake
 
@@ -97,6 +98,7 @@ jobs:
           test -s web/public/data/ga/routes.json
           test -s web/public/data/ga/timetable.json
           test -s web/public/data/scene/square-board/r16/context.json
+          test -s web/public/data/scene/placeholder/board.bin.gz
 
       # The runner has no GPU, and City in software rendering misses the browser tests' time limits
       # even on a fast desktop. They run in every local `pnpm test` on a machine with a GPU.
