@@ -4061,3 +4061,7 @@ Dockside, the 1910 rest house by the 12th Street gate, had been a plain generic 
 ### 2026-11-27 — Lamps stop at the park fence
 
 Review found this after the first batch of building skins landed. Piedmont Park's lamp paths were chosen by their middle vertex, so one path was in or out depending on which way it had been drawn, about 95 m of lit path lay outside the park and about 102 m inside it stayed dark. Paths are now split exactly where they cross the edge. Splitting them exposed a quieter coupling: park and street lamps drew random offsets from one generator, so any change to the park paths nudged street lamps across the board. The park lamps now have their own. The same review asked for the 1180 Peachtree crown glass to go back to two drawing passes. Measuring that showed it needs one more shader program than one pass, in a budget already inside its reserve, so it waits for a decision.
+
+### 2026-11-24 · Lilli Midtown on a skin budget
+
+Lilli Midtown is a slender glass tower on a third of an acre. The lidar puts its roof at 78 m with an amenity level rising to 86–89 m, so the map's 86.4 m guess was close but flat. This was the first skin built to the new per-skin triangle budget from the start: the low tier draws the curtain wall in double-width panes, which reads the same at the board camera, and the high tier keeps the photographed 3 m module. [Day, night and close views](log/ui/lilli-midtown/README.md)
