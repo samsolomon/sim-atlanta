@@ -131,8 +131,8 @@ export function createOlympia(buildings: VBuilding[], grid: GroundGrid) {
     q(sx + 0.8, discMid - 2.4, sx + 3.4, discMid + 0.2, 0.45, orange);
     q(sx - 2.4, discMid - 3.6, sx + 2.4, discMid - 2.9, 0.45, teal);
   }
-  // The shell has no lamp mesh: every lit pane went to `glow`. The overlay matches City Hall's
-  // and Park Place's night material (one shared program), pulled forward of the faces it lights.
+  // The shell has no lamp mesh: every lit pane went to `glow`. The overlay matches the Capitol's
+  // and City Hall's night material (one shared program), pulled forward of the faces it lights.
   const model = shell.finish();
   const material = new MeshBasicMaterial({
     vertexColors: true,
@@ -140,6 +140,8 @@ export function createOlympia(buildings: VBuilding[], grid: GroundGrid) {
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
+    // One pass: a transparent double-sided material otherwise draws twice (back, then front).
+    forceSinglePass: true,
     opacity: 0,
     polygonOffset: true,
     polygonOffsetFactor: -2,

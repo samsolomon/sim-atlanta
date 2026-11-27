@@ -32,6 +32,8 @@ it('lights the billboard and offices through one night-only overlay, with no lam
   model.setNight(1);
   expect(glow.visible).toBe(true);
   expect((glow.material as MeshBasicMaterial).opacity).toBe(1);
+  // A transparent double-sided material draws twice unless it is forced to one pass.
+  expect((glow.material as MeshBasicMaterial).forceSinglePass).toBe(true);
   // The sign glows in its own colours, not one neutral white: at least four distinct hues.
   const c = glow.geometry.attributes.color, hues = new Set<number>(), hsl = { h: 0, s: 0, l: 0 };
   for (let i = 0; i < c.count; i++) {
