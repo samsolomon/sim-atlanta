@@ -131,6 +131,10 @@ function stretchesInside(pts: P2[], ring: P2[]): P2[][] {
 
 const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
 
+/** Piedmont Park's mapped outline, or undefined on a board without it. */
+export const piedmontRing = (city: TerrainCity) =>
+  city.ground?.find(g => g.name === 'Piedmont Park' && g.kind === 'park')?.rings[0] as P2[] | undefined;
+
 /**
  * Piedmont Park's main paths, for dim path lamps (World.buildLights dimPaths): the stretches
  * inside the park of every pedestrian promenade, and of every footway with at least 100 m inside
@@ -138,7 +142,7 @@ const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - 
  * about 4 m tall along the main loops. Which paths are lit, and the 30 m spacing, are illustrative.
  */
 export function piedmontLampPaths(city: TerrainCity): P2[][] {
-  const park = city.ground?.find(g => g.name === 'Piedmont Park' && g.kind === 'park')?.rings[0] as P2[] | undefined;
+  const park = piedmontRing(city);
   if (!park) return [];
   return city.roads.flatMap(r => {
     if (r.bridge || r.tunnel || (r.cls !== 'pedestrian' && r.cls !== 'footway')) return [];

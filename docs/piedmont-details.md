@@ -59,7 +59,7 @@ above are OSM footprints or scaled from photos, as marked.
    with a small, faint warm pool (radius 7 m, about half a street lamp's strength). The park's
    paths are not tagged lit in OSM. Beyond an 800 m orbit (back at 680 m), the park lamps drop out by day, as transport's far form does, because their posts read as a fence line of dark dots on open lawn. They stay at night and up close. They are the last instances in the shared lamp buffers, so trimming the count costs nothing. Which paths are lit and the spacing are **illustrative**, not
    surveyed, and carry no label on screen: they are ambient scenery, listed in About.
-   Since 2026-11-27 paths are split exactly at the park edge (before, a path was kept or dropped
+   A lamp beside an edge path stands on the park side of it. Since 2026-11-27 paths are split exactly at the park edge (before, a path was kept or dropped
    whole by its middle vertex), and park lamps draw their own random offsets so a change to them
    never moves a street lamp. The lamp counts below predate that rule; a flat-ground count on the
    staged rows moves from 264 to 260.

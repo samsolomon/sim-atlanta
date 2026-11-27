@@ -91,7 +91,7 @@ import { buildMidtownLandmark, createMidtownLandmark, midtownLandmarkIds } from 
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
-import { piedmontLampPaths, piedmontPark } from '../city/piedmont-park';
+import { piedmontLampPaths, piedmontPark, piedmontRing } from '../city/piedmont-park';
 import { createShepherdCenter, shepherdCenterIds, shepherdMainId } from '../city/shepherd-center';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
@@ -748,7 +748,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         span => span.finish==='disused-ballast' && s>=span.start && s<=span.end);
     };
     yield* scenery.lightSteps(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
-      { ...options.lights, lowDetail: options.quality === 'low', dimPaths: piedmontLampPaths(city),
+      { ...options.lights, lowDetail: options.quality === 'low', dimPaths: piedmontLampPaths(city), dimWithin: piedmontRing(city),
         pools: landmarks.flatMap(l => (l as { pools?: { at: [number, number]; r: number }[] }).pools ?? []) });
     yield 'lights';
   }

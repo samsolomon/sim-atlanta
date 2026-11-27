@@ -1322,6 +1322,8 @@ export class World {
     mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean;
       /** Park paths: lamps every 30 m with small, faint pools, so a park reads as dim paths in the dark. */
       dimPaths?: [number, number][][];
+      /** The park those paths belong to: a lamp offset beside a path must still stand inside it. */
+      dimWithin?: [number, number][];
       /** Light pools only, for lamps a landmark draws itself (Greystone's deck globes). */
       pools?: { at: [number, number]; r: number }[] }) {
     runSync(this.lightSteps(board, groundAt, inTravelLane, mapped));
@@ -1333,6 +1335,8 @@ export class World {
     mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean;
       /** Park paths: lamps every 30 m with small, faint pools, so a park reads as dim paths in the dark. */
       dimPaths?: [number, number][][];
+      /** The park those paths belong to: a lamp offset beside a path must still stand inside it. */
+      dimWithin?: [number, number][];
       /** Light pools only, for lamps a landmark draws itself (Greystone's deck globes). */
       pools?: { at: [number, number]; r: number }[] }) {
     const r = rng(311);
@@ -1379,6 +1383,7 @@ export class World {
         for (const side of [1, -1]) {
           const x = p.x + p.nx * 1.4 * side, z = p.z + p.nz * 1.4 * side;
           if (!clear(x, z) || !seamClear(z, 7) || onCarriageway(x, z)) continue;
+          if (mapped?.dimWithin && !pointInRing(x, z, mapped.dimWithin)) continue;
           if (spots.some(o => Math.hypot(o.x - x, o.z - z) < 12)) break;
           const y = groundY(x, z);
           if (y !== null) spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side), h: 4, pool: 7, dim: true });
