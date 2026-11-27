@@ -188,8 +188,9 @@ export class CityTrains {
       const pad = units * pitch / 2;
       if (x < b.minX - pad || x > b.maxX + pad || z < b.minZ - pad || z > b.maxZ + pad) continue;
       const track = this.tracks.locate(x, z, t.heading);
-      // Live positions are drawn as reported; only timetable positions berth at a platform.
-      const berth = t.s.tier === 'scheduled'
+      // Live positions are drawn as reported; only timetable positions (scheduled, or inferred
+      // from an expired timetable) berth at a platform.
+      const berth = t.s.tier !== 'live'
         ? berthShift(t.s.value, units * pitch - CAR_GAP, this.berths.get(t.pathId)) : 0;
       const mapped = this.cut?.paths.get(t.pathId);
       for (let i = 0; i < units; i++) {

@@ -18,7 +18,7 @@ import { createKeyboard } from '../keyboard';
 import { createRadio, type Radio } from './radio';
 import type { StationsFile } from './radio-plan';
 import { BYLINE, createDetailPanel } from './panel';
-import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, timeOfDayOn, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { atlantaDate, confidence, confidenceWords, feedNotice, frozenTrains, sameTimeOnDate, timeOfDayOn, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl, sharePlace } from '../share';
 import type { ShellApi, ShellOptions } from '../shell-api';
@@ -493,7 +493,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       : target.view === 'models' ? 'The link opens this model in Models.' : 'The link opens on this exact view of the Map.';
     share.querySelector<HTMLElement>('.a2-share-modes')!.hidden = target?.view === 'models';
     share.querySelector('.a2-freeze-text')!.textContent =
-      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
+      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. ${frozenTrains(o.projectionAt?.(frozenAt.getTime()) ?? o.live().projected)}`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
     const link = currentShare()?.url;
     if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
@@ -865,7 +865,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const label = `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`;
     if (open.getAttribute('aria-label') !== label) open.setAttribute('aria-label', label);
     // Feed status is a notice too, but the host's area note wins the single slot.
-    const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
+    const feedNote = feedNotice(s);
     showNotice(loadingNote ?? areaNote ?? feedNote);
     if (!panel.hidden) renderPanel(s);
     // The camera can move under an open share panel: keep the shown link the one Copy sends.

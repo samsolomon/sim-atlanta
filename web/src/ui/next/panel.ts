@@ -35,9 +35,9 @@ function keyNode(): HTMLElement {
     ${tier('Live', 'Real-time feed, moments ago')}
     ${tier('Scheduled', 'From a published timetable')}
     ${tier('Reported', 'An operator’s reported average')}
-    ${tier('Inferred', 'Filled in from nearby reports')}
+    ${tier('Inferred', 'Filled in from nearby reports, or an expired timetable repeated')}
     ${tier('Illustrative', 'Typical, not observed')}
-    <p class="a2-k-note">Labels appear on what you select and in the corner (Live or Timetable). Scenery carries none: the sky away from the present, trees, building heights, crowds and road traffic are drawn to look right, not measured.</p>`;
+    <p class="a2-k-note">Labels appear on what you select and in the corner (Live, Timetable, or Inferred once a timetable has expired). Scenery carries none: the sky away from the present, trees, building heights, crowds and road traffic are drawn to look right, not measured.</p>`;
   return n;
 }
 
@@ -57,7 +57,7 @@ function aboutNode(): HTMLElement {
       <p>The City view is a hand-built model of downtown, drawn like a tabletop diorama. The Map view zooms out to the region’s rail: subway, streetcar, Amtrak and the freight lines that cross the state. Both show the same moment, Atlanta time.</p>
       <p class="a2-quiet">Nothing here is for planning a trip. It’s a window, not a timetable.</p>
       <p class="a2-h">How true is it?</p>
-      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. The corner says Live only when the clock shows the real present and MARTA’s feed is up; otherwise it says Timetable.</p>
+      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. The corner says Live only when the clock shows the real present and MARTA’s feed is up. Otherwise it says Timetable while a published timetable covers the moment, and Inferred past a timetable’s last date, when we repeat its last published week.</p>
       <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
       <p class="a2-h">Credits</p>
       <dl class="a2-credits">

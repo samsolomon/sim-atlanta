@@ -1153,7 +1153,9 @@ const shellOptions: ShellOptions = {
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,
     buses: buses.unavailable ? null : buses.current().length,
+    projected: schedule.projectionsAt(clock.now())[0] ?? null,
   }),
+  projectionAt: (ms) => schedule.projectionsAt(new Date(ms))[0] ?? null,
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   searchModels: () => labView?.openBrowser(),
   async goToPlace(lon, lat) {
@@ -1276,7 +1278,9 @@ const shellOptions: ShellOptions = {
     const name = (x: string) => esc(stationName(x));
     const timed = stops.some((s) => s.inSec != null);
     // Times come from the timetable (scheduled); a live train's later stops have no prediction.
-    const note = timed
+    const note = timed && t.projectedFrom
+      ? '<p class="a2-stops-note"><span class="chip inferred">Inferred</span> Times repeat the last published timetable; service may have changed since.</p>'
+      : timed
       ? '<p class="a2-stops-note"><span class="chip scheduled">Scheduled</span> Times from the published timetable; a delayed train will be later.</p>'
       : '<p class="a2-stops-note">The live feed predicts only the next stop; the rest follow in timetable order, without times.</p>';
     const rows = stops.map((s) => `<li><span>${name(s.name)}</span>${s.inSec == null ? '' : `<span>${s.inSec < 60 ? 'arriving' : `${Math.round(s.inSec / 60)} min`}</span>`}</li>`).join('');

@@ -1,5 +1,8 @@
-import type { Pattern, Route, RoutesFile, Stop, TimetableFile, TrainState, VehicleType } from '../model/types';
-import { serviceDays, serviceRuns } from './time';
+import type { Pattern, Projection, Route, RoutesFile, Stop, TimetableFile, TrainState, VehicleType } from '../model/types';
+import { feedEnd, projectedSource, serviceDays, serviceRuns, serviceRunsRegular, weekdayOf, type ServiceDay } from './time';
+
+/** The publisher a feed's projected trips name on their card. */
+const AGENCY: Record<string, string> = { marta: 'MARTA', amtrak: 'Amtrak' };
 
 export interface PathGeom {
   coords: Float64Array;
@@ -18,6 +21,13 @@ interface CompiledTimetable {
   /** Duration (seconds) of each pattern. */
   duration: number[];
   maxDuration: number;
+  /** Last published service date (YYYYMMDD). Later days repeat the last published week. */
+  end: number;
+  /** When the last published day's last trip ends, in seconds after that day's midnight
+   * (02:11 on the next calendar day is 94 260). */
+  lastEndSecs: number;
+  /** Shared by every projected trip of this feed. */
+  projection: Projection;
 }
 
 /** Ease so trains accelerate out of and brake into stations (zero speed at both ends). */
@@ -86,6 +96,13 @@ export class Schedule {
     for (const t of tf.timetables) {
       const duration = t.patterns.map((p) => p.arr[p.arr.length - 1]);
       const source = `${t.feed}-gtfs`;
+      const trips = [...t.trips].sort((a, b) => a[2] - b[2]);
+      // A feed with no calendar at all has nothing to project.
+      const end = feedEnd(t.services) || 99_991_231;
+      const endDay = { ymd: end, weekday: weekdayOf(end) };
+      let lastEndSecs = 0;
+      for (const [pi, si, start] of trips)
+        if (serviceRuns(t.services[si], endDay)) lastEndSecs = Math.max(lastEndSecs, start + duration[pi]);
       this.tables.push({
         feed: t.feed,
         tz: t.timezone,
@@ -93,9 +110,12 @@ export class Schedule {
         asOf: tf.sourceAsOf[source] ?? '',
         patterns: t.patterns,
         services: t.services,
-        trips: [...t.trips].sort((a, b) => a[2] - b[2]),
+        trips,
         duration,
         maxDuration: Math.max(0, ...duration),
+        end,
+        lastEndSecs,
+        projection: { feed: t.feed, agency: AGENCY[t.feed] ?? t.feed.toUpperCase(), ended: end },
       });
     }
   }
@@ -158,12 +178,45 @@ export class Schedule {
     return [];
   }
 
-  /** Every train the timetables say should be on the line at `date`. */
+  /**
+   * The expired timetables standing in for `date`: a feed counts once no trip of its last
+   * published day can still be running (MARTA's last runs until 02:11 the next morning), or a
+   * projected trip has already started. Empty while every feed's real schedule covers `date`.
+   */
+  projectionsAt(date: Date): Projection[] {
+    const out: Projection[] = [];
+    for (const t of this.tables) {
+      const [today, yesterday] = serviceDays(date, t.tz);
+      if (today.ymd <= t.end) continue;
+      const realStillRunning = yesterday.ymd === t.end && yesterday.secs <= t.lastEndSecs;
+      if (!realStillRunning || this.firstProjectedStart(t, today) <= today.secs) out.push(t.projection);
+    }
+    return out;
+  }
+
+  private firstStarts = new Map<string, number>();
+  /** The earliest projected trip start on a service day past the feed's end. */
+  private firstProjectedStart(t: CompiledTimetable, day: ServiceDay): number {
+    const key = `${t.feed}:${day.weekday}`;
+    let first = this.firstStarts.get(key);
+    if (first === undefined) {
+      const src = projectedSource(day, t.end);
+      first = t.trips.find(([, si]) => serviceRunsRegular(t.services[si], src))?.[2] ?? Infinity;
+      this.firstStarts.set(key, first);
+    }
+    return first;
+  }
+
+  /** Every train the timetables say should be on the line at `date`. Past a feed's end its
+   * trips repeat the last published week and carry the `inferred` tier, never `scheduled`. */
   trainsAt(date: Date): TrainState[] {
     const out: TrainState[] = [];
     for (const t of this.tables) {
       for (const day of serviceDays(date, t.tz)) {
-        const runs = t.services.map((s) => serviceRuns(s, day));
+        // Past the feed's end, the same weekday of its last published week, without exceptions.
+        const projected = day.ymd > t.end;
+        const src = projectedSource(day, t.end);
+        const runs = t.services.map((s) => (projected ? serviceRunsRegular(s, src) : serviceRuns(s, day)));
         // Trips are sorted by start; only those that started within maxDuration can be running.
         const earliest = day.secs - t.maxDuration;
         let i = lowerBound(t.trips, earliest);
@@ -184,7 +237,7 @@ export class Schedule {
             id: `${t.feed}:trip:${pi}-${start}-${day.ymd}`,
             routeId: route.id,
             pathId: p.pathId,
-            s: { value: s, tier: 'scheduled', source: t.source, asOf: t.asOf },
+            s: { value: s, tier: projected ? 'inferred' : 'scheduled', source: t.source, asOf: t.asOf },
             heading: pt.heading,
             lon: pt.lon,
             lat: pt.lat,
@@ -199,6 +252,7 @@ export class Schedule {
             nextStop: p.stops[nextStop],
             scheduledStop: atStop === undefined ? undefined : p.stops[atStop],
             label: short || undefined,
+            ...(projected ? { projectedFrom: t.projection } : {}),
           });
         }
       }

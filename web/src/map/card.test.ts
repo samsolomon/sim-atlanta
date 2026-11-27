@@ -58,3 +58,14 @@ describe('Brookwood and North Line tiers on cards', () => {
     expect(cityFreightCard({ line: 'Norfolk Street spur', railroad: 'csx', lead: 'gp382' })).toContain('CSX-like scheme');
   });
 });
+
+describe('a trip inferred from an expired timetable', () => {
+  const projectedFrom = { feed: 'marta', agency: 'MARTA', ended: 20261211 };
+  for (const r of [route, { ...route, id: 'marta:route:STREETCAR', mode: 'streetcar', longName: 'Atlanta Streetcar' } as unknown as Route]) {
+    it(`names its source on the ${r.mode} card and never says Scheduled`, () => {
+      const html = trainCard({ ...train('scheduled'), s: { tier: 'inferred' }, nextInSec: undefined, projectedFrom } as unknown as TrainState, r, undefined, undefined, true);
+      expect(html).toContain('Inferred from MARTA’s last published timetable (ended Dec 11) <span class="chip inferred">Inferred</span>');
+      expect(html).not.toMatch(/Scheduled|chip scheduled|Timetable;/);
+    });
+  }
+});

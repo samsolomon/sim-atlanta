@@ -140,7 +140,7 @@ export const berthCentre = platformEnd - consistLength / 2;
  * continuation, or still easing in, the card makes no berth claim. */
 export const isBerthed = (centre: number) => Math.abs(centre - berthCentre) < 3;
 export function crescentPlacement(t: TrainState) {
-  if (t.routeId !== 'amtrak:route:Crescent' || t.s.tier !== 'scheduled') return;
+  if (t.routeId !== 'amtrak:route:Crescent' || t.s.tier === 'live') return;
   const [x, z] = project(t.lon, t.lat);
   if (x < -1300 || x > 1000 || z < -5950 || z > -3950) return;
   const { along, distance } = chainage(x, z);
