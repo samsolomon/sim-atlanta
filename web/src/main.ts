@@ -690,7 +690,7 @@ async function openCity() {
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
-      areaNote: text => { areaNote = text; autoNote = false; shell.setNote(text); },
+      areaNote: (text, retry) => { areaNote = text; autoNote = false; shell.setNote(text, retry); },
       mapGestures: true,
       whiteModel: overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),

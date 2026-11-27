@@ -135,6 +135,12 @@ export class SquareMosaic {
     }
   }
   requestFullBoard(includeNorth = true) { this.fullBoard = true; this.fullNorth ||= includeNorth; this.failed.clear(); }
+  /** Load the failed sections again from the latest request, if any failed. */
+  retryFailed() {
+    if (!this.failed.size) return;
+    this.failed.clear();
+    this.latest?.();
+  }
   cancelTarget() { this.wanted = undefined; }
   /** The remembered destination a load under way will move the camera to, if any. */
   get pendingTarget(): Point | undefined { return this.wanted; }

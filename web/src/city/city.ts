@@ -231,7 +231,8 @@ const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), options: {
   signal?: AbortSignal;
   progress?: (label: string) => void;
-  areaNote?: (text: string | null) => void;
+  /** The area notice, and a retry for the failed areas it names when they can be retried. */
+  areaNote?: (text: string | null, retry?: () => void) => void;
   /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
   mapGestures?: boolean;
   /** Arrive as a white study model, then fade colour in (A2c step 9; see white-model.ts). */
@@ -378,11 +379,34 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
+  // Brookwood's station model is prepared once at boot; the notice offers no retry for it.
+  const retryable = (key: string) => key !== 'brookwood-rail';
   function areaResult(key: string, note: string | null) {
-    if (!mosaic) { options.areaNote?.(note); return; }
-    if (note) areaFailures.set(key, note);
-    else areaFailures.delete(key);
+    if (mosaic) {
+      if (note) areaFailures.set(key, note);
+      else areaFailures.delete(key);
+    } else {
+      areaFailures.clear();
+      if (note) areaFailures.set(key, note);
+    }
+    const text = [...areaFailures.values()].join(' · ') || null;
+    options.areaNote?.(text, [...areaFailures.keys()].some(retryable) ? retryAreas : undefined);
+  }
+  /** The notice's Retry: loads each failed area again, where it stands, without moving the camera
+   * or asking for areas that never failed. A failure that recurs puts its note back. */
+  function retryAreas() {
+    const failed = [...areaFailures.keys()].filter(retryable);
+    for (const key of failed) areaFailures.delete(key);
     options.areaNote?.([...areaFailures.values()].join(' · ') || null);
+    const retryEast = eastFailed, retryNorth = northFailed;
+    eastFailed = northFailed = false;
+    mosaic?.retryFailed();
+    if (east && eastRailFailed) loadKingRail(east);
+    // The full board loads King Memorial and Sweet Auburn from the board's middle (as Show full
+    // board does); a single-area preview retries where the camera is, since that is near it.
+    const at = mosaic ? { x: 1400, z: 0 } : controls.target;
+    if (retryEast) approachEast(at.x, at.z);
+    if (retryNorth) approachNorth(at.x, at.z);
   }
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
@@ -1187,13 +1211,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`),
+    }, direction => areaResult(direction, `Could not load the ${direction} section.`),
       () => ({ orbitM: camera.position.distanceTo(controls.target), inView: northVisible }));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
     if (!nearNorth(x, z)) {
-      if (northFailed && !mosaic) options.areaNote?.(null);
+      if (northFailed && !mosaic) areaResult('auburn', null);
       northFailed = false;
       return;
     }
@@ -1272,7 +1296,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachEast(x: number, z: number) {
     if (!previewEast || east || !terrain || !grid) return;
     if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
-      if (eastFailed && !mosaic) options.areaNote?.(null);
+      if (eastFailed && !mosaic) areaResult('king', null);
       eastFailed = false;
       pendingEastTarget = undefined;
       return;
@@ -1321,7 +1345,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }).catch(err => {
       if (eastController.signal.aborted) return;
       eastRailFailed = true;
-      if (mosaic) areaResult('rail', 'King Memorial rail could not load. Show full board to retry.');
+      if (mosaic) areaResult('rail', 'King Memorial rail could not load.');
       console.warn('MARTA east of the board unavailable', err);
     });
   }

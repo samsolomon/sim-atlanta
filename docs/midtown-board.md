@@ -43,7 +43,7 @@ For the station camera open `/?view=map&board=midtown&q=high&t=2026-11-20T14:00:
 
 ## Stage and inspect
 
-On a populated checkout run `pnpm data:midtown`, then `pnpm dev`. Open `/?view=city&board=midtown`, pan north or use **About this City view → Show full board**. A fresh downtown opening requests zero Midtown assets. North Avenue follows the north band, and a failed fetch keeps its edge wall in place until a successful retry. The full-board button loads all twelve available areas. To publish, the coordinator stages the data, runs `pnpm build` and deploys the static assets together.
+On a populated checkout run `pnpm data:midtown`, then `pnpm dev`. Open `/?view=city&board=midtown`, and pan north. A fresh downtown opening requests zero Midtown assets. North Avenue follows the north band, and a failed fetch keeps its edge wall in place until a successful retry: the notice under the subject card ("Could not load the north section.") ends in a **Retry** link, which loads the failed areas again without moving the camera. City's hidden `#city-info` button still loads and frames the full board for tests and tools (`board-exterior.test.ts`, `ground-audit.mjs`). The menu no longer offers it (release 20). To publish, the coordinator stages the data, runs `pnpm build` and deploys the static assets together.
 
 For the street camera open `/?view=map&board=midtown&q=low&t=2026-11-20T14:00:00-05:00&speed=0#16/33.77065/-84.38630/0/46` and choose **City**. The captured City target was (489.99, −1862.52), bearing 0°, tilt 57°, 0.9917 m per pixel. The original North Avenue overview targeted (400, −700), bearing 15°, tilt 35°. [North Avenue in Orca](log/ui/midtown-board/north-avenue.jpg) · [Full board in Orca](log/ui/midtown-board/overview.jpg)
 

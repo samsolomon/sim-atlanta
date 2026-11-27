@@ -382,3 +382,46 @@ it.skipIf(!railInputs.every(path => existsSync(new URL(path, staged))))('joins t
     expect(Math.abs(west.elev(lo) - east.bed(east.sSeam))).toBeLessThan(0.02);
   } finally { east.dispose(); }
 });
+
+it('retries only a failed row from the notice, where the last request stood, and never when none failed', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  let available = false;
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/notice-retry/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      if (!available && id === 'midtown-central') return new Response(null, { status: 503 });
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/notice-retry', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const errors: string[] = [];
+  try {
+    mosaic.retryFailed(); // nothing requested, nothing failed: no load
+    expect(requested).toEqual([]);
+    mosaic.remember(-81, -4000);
+    mosaic.approach(0, 0, 'low', signal, () => {}, d => errors.push(d));
+    await mosaic.idle();
+    expect(errors).toEqual(['midtown-central']);
+    expect(mosaic.areas.has('midtown-central')).toBe(false);
+    available = true;
+    mosaic.retryFailed();
+    await mosaic.idle();
+    expect(mosaic.areas.has('midtown-central')).toBe(true);
+    expect(requested.filter(id => id === 'midtown-central')).toHaveLength(2);
+    const before = requested.length;
+    mosaic.retryFailed(); // no failures left
+    await mosaic.idle();
+    expect(requested.length).toBe(before);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+});
