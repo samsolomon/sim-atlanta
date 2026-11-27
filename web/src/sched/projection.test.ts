@@ -129,11 +129,14 @@ const realEnds = has && load<TimetableFile>('timetable.json').timetables.some((t
 
 // Only the feed that ends Dec 11; a newer MARTA feed moves these dates, and the synthetic tests still hold.
 describe.skipIf(!realEnds)('MARTA feed ending 2026-12-11', () => {
-  const real = new Schedule(load<RoutesFile>('routes.json'), load<TimetableFile>('timetable.json'), load<VehicleType[]>('vehicle-types.json'));
+  // Built on first use: a skipped suite's body still runs at collection, without the data.
+  let built: Schedule | undefined;
+  const sched = () => (built ??= new Schedule(load<RoutesFile>('routes.json'), load<TimetableFile>('timetable.json'), load<VehicleType[]>('vehicle-types.json')));
+  const real = { trainsAt: (d: Date) => sched().trainsAt(d), projectionsAt: (d: Date) => sched().projectionsAt(d) };
   const marta = (iso: string) => real.trainsAt(new Date(iso)).filter((t) => t.routeId.startsWith('marta:'));
 
   it('runs real trips until 02:11 on Dec 12, then reads Inferred', () => {
-    const lastEnd = (real as unknown as { tables: { feed: string; lastEndSecs: number }[] }).tables.find((t) => t.feed === 'marta')!.lastEndSecs;
+    const lastEnd = (sched() as unknown as { tables: { feed: string; lastEndSecs: number }[] }).tables.find((t) => t.feed === 'marta')!.lastEndSecs;
     expect(lastEnd).toBe(26 * H + 11 * 60);
     expect(marta('2026-12-12T02:10:00-05:00').every((t) => t.s.tier === 'scheduled')).toBe(true);
     expect(real.projectionsAt(new Date('2026-12-12T02:10:00-05:00'))).toEqual([]);
