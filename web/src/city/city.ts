@@ -1221,6 +1221,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
     if (!nearNorth(x, z)) {
+      // The full board still needs a failed Sweet Auburn wherever the camera is: keep its Retry.
+      if (northFailed && mosaic && wholeBoardRequested) return;
       if (northFailed) areaResult('auburn', null);
       northFailed = false;
       return;
@@ -1295,11 +1297,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         areaResult('auburn', 'Sweet Auburn could not load. Downtown and King Memorial are available.');
         console.warn('Sweet Auburn board unavailable', err);
       }
-    }).finally(() => { northLoading = false; pendingNorthTarget = undefined; });
+    }).finally(() => { northLoading = false; if (!northFailed) pendingNorthTarget = undefined; }); // a failure keeps it for Retry
   }
   function approachEast(x: number, z: number) {
     if (!previewEast || east || !terrain || !grid) return;
     if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
+      // The full board still needs a failed King Memorial wherever the camera is: keep its Retry.
+      if (eastFailed && mosaic && wholeBoardRequested) return;
       if (eastFailed) areaResult('king', null);
       eastFailed = false;
       pendingEastTarget = undefined;
@@ -1339,7 +1343,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         areaResult('king', 'King Memorial could not load. Downtown is available.');
         console.warn('King Memorial board unavailable', err);
       }
-    }).finally(() => { eastLoading = false; pendingEastTarget = undefined; });
+    }).finally(() => { eastLoading = false; if (!eastFailed) pendingEastTarget = undefined; }); // a failure keeps it for Retry
   }
   // MARTA through the east area (track, station, trains). Rail owns this; the area mount calls it.
   function loadKingRail(area: NonNullable<typeof east>) {

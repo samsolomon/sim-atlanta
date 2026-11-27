@@ -112,6 +112,8 @@ export class SquareMosaic {
    * notice no longer applies, and coming back loads it again. */
   onForget?: (d: Section) => void;
   private wanted?: Point;
+  /** The sections the latest request asked for. */
+  private requested: Section[] = [];
   private seeking?: Point;
   /** The newest request, which follow-up loads continue from. */
   private latest?: () => void;
@@ -177,6 +179,7 @@ export class SquareMosaic {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
       if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100) || sought('r16'))) requested.push(next);
     }
+    this.requested = requested;
     for (const id of this.failed) if (!requested.includes(id)) { this.failed.delete(id); this.onForget?.(id); }
     for (const direction of requested) {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
@@ -191,7 +194,8 @@ export class SquareMosaic {
         mounted(added, reached ? p : undefined);
         if (this.fullBoard || this.wanted || this.seeking) this.latest?.();
       }).catch(error => {
-        if (!signal.aborted) {
+        // A section the camera has since given up fails quietly: no notice, and coming back loads it.
+        if (!signal.aborted && this.requested.includes(direction)) {
           this.failed.add(direction);
           failure(direction);
           console.warn(direction + ' City terrain unavailable', error);
