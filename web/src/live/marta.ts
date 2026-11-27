@@ -1,11 +1,11 @@
 /**
  * Live MARTA rail: polls the Worker, snaps each GPS fix onto the line's path, and
- * glides trains between fixes so they don't teleport every 30–60 s.
+ * plays trains back 40 s behind the newest fix (live/motion.ts) so they move smoothly between fixes.
  */
 import type { TrainState } from '../model/types';
 import { nearestOnPath, pointAt, type Schedule } from '../sched/engine';
 import { appendReservedFix, RESERVE_DELAY_MS, playback, type Knot } from './motion';
-import { freshness, serverDate } from './freshness';
+import { freshness, FUTURE_TOLERANCE_MS, serverDate } from './freshness';
 
 interface LiveTrain {
   id: string;
@@ -93,7 +93,9 @@ export class LiveMarta {
         this.error = fresh;
       } else {
         this.lastSnapshot = feed.fetched;
-        this.ingest(feed, Math.max(Date.now(), serverDate(r) ?? feed.fetched));
+        // Ages are measured on the server's clock, as freshness() does: a client clock running a
+        // minute or two fast must not expire fresh fixes.
+        this.ingest(feed, Math.max(feed.fetched, serverDate(r) ?? feed.fetched));
         this.lastOk = Date.now();
         this.error = null;
       }
@@ -110,11 +112,16 @@ export class LiveMarta {
     const seen = new Set<string>();
     for (const t of feed.trains) {
       // Expire by when MARTA observed the train, not when we fetched it.
-      if (t.at != null && (t.at > reference || reference - t.at >= STALE_MS)) continue;
+      if (t.at != null && (t.at - reference > FUTURE_TOLERANCE_MS || reference - t.at >= STALE_MS)) continue;
       seen.add(t.id);
       const routeId = `marta:route:${t.line}`;
       const prev = this.tracked.get(t.id);
-      if (prev?.raw.at != null && t.at != null && t.at <= prev.raw.at) continue;
+      if (prev?.raw.at != null && t.at != null && t.at <= prev.raw.at) {
+        // The same (or an older) fix: keep its position and playback, but take this newer
+        // response's prediction (next station, arrival).
+        prev.raw = { ...t, at: prev.raw.at, lat: prev.raw.lat, lon: prev.raw.lon };
+        continue;
+      }
       const snap = this.snap(routeId, t, prev?.pathId ?? null);
       const prior = prev?.history.at(-1);
       const history = prev && prior && prev.expires > now && snap.pathId && snap.pathId === prev.pathId
@@ -156,7 +163,7 @@ export class LiveMarta {
         routeId: t.routeId,
         // Empty when the fix couldn't be snapped to track: 2D draws it as reported, 3D omits it.
         pathId: t.pathId ?? '',
-        s: { value: s, tier: g ? 'inferred' : t.raw.at == null ? 'reported' : 'live', source: 'marta-rail-rt', asOf: t.raw.at != null ? new Date(t.raw.at).toISOString() : '' },
+        s: { value: s, tier: 'live', source: 'marta-rail-rt', asOf: t.raw.at != null ? new Date(t.raw.at).toISOString() : '' },
         heading: pt.heading,
         lon: pt.lon,
         lat: pt.lat,

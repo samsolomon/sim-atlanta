@@ -167,3 +167,29 @@ it('keeps the original observation across duplicate and delayed fixes and expire
   expect(live.available).toBe(false);
   expect(live.trains()).toEqual([]);
 });
+
+it('keeps fresh fixes live on a client clock running two minutes fast', async () => {
+  // Server and feed say NOW; the device thinks it is NOW + 2 min (inside freshness()'s 3 min).
+  vi.useFakeTimers({ now: NOW + 2 * MIN, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const body = feed(NOW);
+  body.trains[0].at = NOW - 60_000; // a 60 s old fix: 3 min old by the device's clock
+  await pollWith(live, body, NOW);
+  expect(live.available).toBe(true);
+  expect(live.trains()).toHaveLength(1);
+  // It expires by its server-clock age (60 s), not the device's (3 min).
+  vi.advanceTimersByTime(STALE_MS - 60_000 - 1000);
+  expect(live.trains()).toHaveLength(1);
+});
+
+it('takes a newer response’s prediction when the fix itself has not advanced', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const first = feed(NOW);
+  await pollWith(live, { ...first, trains: [{ ...first.trains[0], nextStation: 'FIVE POINTS STATION', nextInSec: 120 }] }, NOW);
+  vi.advanceTimersByTime(30_000);
+  const again = feed(Date.now());
+  again.trains[0] = { ...again.trains[0], at: first.trains[0].at, lon: -84.4, nextStation: 'FIVE POINTS STATION', nextInSec: 60 };
+  await pollWith(live, again, Date.now());
+  expect(live.trains()[0]).toMatchObject({ nextInSec: 60, observedAt: first.trains[0].at, lon: first.trains[0].lon });
+});

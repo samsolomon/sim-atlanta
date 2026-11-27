@@ -87,7 +87,7 @@ export function trainFeatures(trains: TrainState[], routes: Map<string, Route>):
           routeId: t.routeId,
           heading: t.heading,
           color: r ? modeColor(r) : '#333',
-          live: (t.s.tier === 'live' || t.s.source === 'marta-rail-rt'),
+          live: t.s.tier === 'live',
           ls: t.lengthM.value / 140,
         },
         geometry: { type: 'Point', coordinates: [t.lon, t.lat] },
