@@ -20,6 +20,10 @@ it('replaces each of the three Coda footprints independently, keeping the west a
     expect(model.buildings).toEqual(buildings.filter((b) => b !== site));
     if (site.id !== 'osm:way:714119667') continue;
     const shell = model.group.children[0] as Mesh;
+    // The glazed gallery overlaps itself from above, so it must keep three's two passes.
+    const glass = model.group.children.map(c => (c as Mesh).material as { opacity?: number; forceSinglePass?: boolean })
+      .filter(m => m?.opacity === 0.42);
+    expect(glass.map(m => m.forceSinglePass)).toEqual([false]);
     model.group.updateMatrixWorld(true);
     // Cross the glazed gallery from west to east at eye height, including its separate glass mesh.
     const throughGallery = new Raycaster(new Vector3(278, 301.8, -2402), new Vector3(1, 0, 0), 0, 16);

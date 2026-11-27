@@ -4025,3 +4025,7 @@ shader would have lit different windows on every approved landmark.
 ### 2026-11-24 · Drawing through the aquarium signs
 
 Three.js draws a transparent, double-sided mesh twice to put its back faces behind its front faces. On the phone tier, the four Georgia Aquarium sign meshes each lost a draw with identical pixels in two opposite close views, by day and at night. The same comparison supported one pass for the 1180 Peachtree veil, Hilton flood, College Football Hall of Fame sign, Coda gallery and streetcar panes. The World of Coca-Cola bottle enclosure showed why the default exists. One pass changed the tint across the bottle in daylight. Both its frost and the etched sign keep two passes. [Day and night comparisons](log/perf/single-pass/day-night.jpg)
+
+### 2026-11-27 · The one pane that needed both passes
+
+Single-pass drawing saved 11 night draw calls at the default view, and the first checks, all from ordinary orbits, showed nothing but render noise. A second reviewer pointed at one camera we had not tried: the Coda gallery from above, where its glass roof and a side wall cover the same pixels. There one pass drew the glass about 16 levels lighter, against about 3 levels of noise between two identical runs. The gallery keeps its two passes. The 1180 Peachtree veil and the streetcar shelters stayed within noise from overhead. [Coda from above](log/perf/single-pass/coda-overhead.jpg)
