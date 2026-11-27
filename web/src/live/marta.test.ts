@@ -189,7 +189,6 @@ it('takes a newer response’s prediction when the fix itself has not advanced',
   await pollWith(live, { ...first, trains: [{ ...first.trains[0], nextStation: 'FIVE POINTS STATION', nextInSec: 120 }] }, NOW);
   vi.advanceTimersByTime(30_000);
   const again = feed(Date.now());
-  again.trains[0] = { ...again.trains[0], at: first.trains[0].at, lon: -84.4, nextStation: 'FIVE POINTS STATION', nextInSec: 60 };
-  await pollWith(live, again, Date.now());
+  await pollWith(live, { ...again, trains: [{ ...again.trains[0], at: first.trains[0].at, lon: -84.4, nextStation: 'FIVE POINTS STATION', nextInSec: 60 }] }, Date.now());
   expect(live.trains()[0]).toMatchObject({ nextInSec: 60, observedAt: first.trains[0].at, lon: first.trains[0].lon });
 });
