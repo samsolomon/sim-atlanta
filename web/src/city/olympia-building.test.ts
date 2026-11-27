@@ -41,4 +41,11 @@ it('lights the billboard and offices through one night-only overlay, with no lam
     if (hsl.s > 0.4) hues.add(Math.round(hsl.h * 12));
   }
   expect(hues.size).toBeGreaterThanOrEqual(4);
+  // The offices glow too: lit panes add the warm white a lamp mesh would (#f7ecd8 at 0.75),
+  // below the sign, where the building's three storeys are.
+  const warm = new Color('#f7ecd8').multiplyScalar(0.75), p = glow.geometry.attributes.position;
+  let panes = 0;
+  for (let i = 0; i < c.count; i++)
+    if (Math.abs(c.getX(i) - warm.r) + Math.abs(c.getY(i) - warm.g) + Math.abs(c.getZ(i) - warm.b) < 1e-3 && p.getY(i) < 318.5 + 12) panes++;
+  expect(panes).toBeGreaterThan(0);
 });

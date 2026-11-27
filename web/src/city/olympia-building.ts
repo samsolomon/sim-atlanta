@@ -88,7 +88,8 @@ export function createOlympia(buildings: VBuilding[], grid: GroundGrid) {
   // panels on a blue disc, and a blue copy bar on a yellow board. No words, logos or brand colours.
   const [sx, sz] = signAt;
   const mastTop = datum + 15, boardTop = datum + 17.6, discMid = datum + 22, discR = 5, faceR = discR - 0.35;
-  shell.prism(ccw([[sx - 0.6, sz - 0.6], [sx + 0.6, sz - 0.6], [sx + 0.6, sz + 0.6], [sx - 0.6, sz + 0.6]]), roof - 0.5, discMid, '#4a4e51', '#4a4e51');
+  // The mast stays inside the board's 0.4 m half-depth, behind both faces' artwork (0.42 m out).
+  shell.prism(ccw([[sx - 0.35, sz - 0.35], [sx + 0.35, sz - 0.35], [sx + 0.35, sz + 0.35], [sx - 0.35, sz + 0.35]]), roof - 0.5, discMid, '#4a4e51', '#4a4e51');
   shell.prism(ccw([[sx - 3.2, sz - 0.4], [sx + 3.2, sz - 0.4], [sx + 3.2, sz + 0.4], [sx - 3.2, sz + 0.4]]), mastTop, boardTop, '#3c4043', '#3c4043');
   const blue = '#1f4e8c', cream = '#f3efe4', yellow = '#f2b62e', orange = '#e2702f', teal = '#2a9d8f', frame = '#3c4043';
   // Floodlit at night: each face colour glows back at about its daylight value.
