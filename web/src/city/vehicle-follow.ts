@@ -152,6 +152,10 @@ export class VehicleFollow {
   }
 }
 
+/** Live versus timetable: a scheduled trip and one inferred from an expired timetable are both
+ * timetable trips, so one ending never hands off to the other. */
+export const liveSource = (tier: string | undefined) => tier === 'live';
+
 /** Hand off only when the followed train is gone or its source changed tier, never on a
  * same-tier path change, which is a different claim. */
 export function needsHandoff(v: Followed | undefined, fix: Fix | null) {
@@ -165,7 +169,7 @@ export function needsHandoff(v: Followed | undefined, fix: Fix | null) {
 export function pickHandoff(last: Fix, candidates: readonly Fix[]): Fix | null {
   let best: Fix | null = null, distance = 2500;
   for (const c of candidates) {
-    if (c.routeId !== last.routeId || c.tier === last.tier || !c.pathId) continue;
+    if (c.routeId !== last.routeId || liveSource(c.tier) === liveSource(last.tier) || !c.pathId) continue;
     if (last.heading !== undefined && c.heading !== undefined &&
         Math.abs(((c.heading - last.heading + 540) % 360) - 180) > 90) continue;
     const d = Math.hypot(c.x - last.x, c.z - last.z);

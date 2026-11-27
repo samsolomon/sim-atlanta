@@ -223,6 +223,11 @@ describe('tier handoff', () => {
     expect(pickHandoff(sched,[live({heading:80})])?.id).toBe('marta:train:401');
   });
 
+  it('never hands a scheduled trip to an inferred one (both are timetable trips), but inferred to live', () => {
+    expect(pickHandoff(sched,[live({tier:'inferred'})])).toBeNull();
+    expect(pickHandoff({...sched,tier:'inferred'},[live({})])?.id).toBe('marta:train:401');
+  });
+
   it('hands off only when the trip is gone or its tier changed, never on a same-tier path change', () => {
     const v: Followed = {kind:'train',id:sched.id,pathId:sched.pathId,tier:'scheduled'};
     expect(needsHandoff(v,null)).toBe(true);

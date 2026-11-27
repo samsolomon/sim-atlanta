@@ -1,5 +1,6 @@
 import type { LiveBus, CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
 import { MODE_COLOR, routeColor } from './layers';
+import { projectionText } from '../ui/status';
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -150,7 +151,9 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
         ? row('Position', t.pathId
           ? `Placed between reports · ${esc(report)} ${chip('inferred', 'Inferred')}`
           : `Last reported location · ${esc(report)} ${t.observedAt == null ? chip('reported', 'Reported') : chip('live', 'Live')}`)
-        : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
+        : t.projectedFrom
+          ? row('Position', `${esc(projectionText(t.projectedFrom))} ${chip('inferred', 'Inferred')}`)
+          : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
     </dl>
     ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}
     ${model ? seeModel(model) : ''}`;

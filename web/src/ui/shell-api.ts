@@ -15,6 +15,8 @@ export interface ShellOptions {
   zoom(dir: 1 | -1): void;
   rotate?(degrees: number): void;
   live(): LiveState;
+  /** The expired timetable repeated at an instant (see `Schedule.projectionsAt`), or null. */
+  projectionAt?(ms: number): import('../model/types').Projection | null;
   /** Called when fresh weather arrives (or is lost). */
   onWeather?(w: Weather | null): void;
   onSceneConditions(settings: AtmosphereOverride): void;

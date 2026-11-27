@@ -189,6 +189,18 @@ export interface TrainState {
   /** When the source observed this position (ms since epoch); live only. */
   observedAt?: number;
   label?: string;
+  /** Set only on a trip repeated from an expired timetable's last published week (`s` is then
+   * `inferred`): who published it and the last date it covered. */
+  projectedFrom?: Projection;
+}
+
+/** An expired timetable standing in for one no one has published yet. */
+export interface Projection {
+  feed: string;
+  /** "MARTA" */
+  agency: string;
+  /** The feed's last published service date, YYYYMMDD. */
+  ended: number;
 }
 
 /** MARTA VehiclePositions. Sourced fields share the vehicle observation time.

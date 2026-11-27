@@ -14,7 +14,7 @@ position can be `live` while its car count is `illustrative`.
 | `live` | A real-time feed reported it moments ago | MARTA rail (GPS fixes every 30–60 s) |
 | `scheduled` | Derived from a published timetable | MARTA rail/streetcar, Amtrak Crescent |
 | `reported` | An average an operator reported to a regulator | FRA crossing train counts |
-| `inferred` | We filled it in from nearby `reported` values | Freight arcs with no crossing |
+| `inferred` | We filled it in from nearby `reported` values, or repeated an expired timetable | Freight arcs with no crossing; MARTA trips past its feed's last date |
 | `illustrative` | A typical example, not a real observation | Freight trains in the future diorama |
 
 `Sourced<T> = { value, tier, source, asOf }` carries this on any value.
@@ -28,7 +28,9 @@ shows the tier only where someone might take a value as fact:
   each attribute: position, consist, berth, track and so on. A simulated freight still says
   `illustrative`.
 - **The scene clock.** One scene-wide word says whether the world is `Live`, only at the real
-  present with the feed up, or on `Timetable`. A shifted clock never reads as live.
+  present with the feed up, on `Timetable` while a published timetable covers the moment, or
+  `Inferred` once an expired timetable is repeated (see "Past a feed's end"). A shifted clock
+  never reads as live.
 - **Not ambient scenery.** The Final subject card names weather confidence alongside train status (Sam, 2026-11-24). No on-screen tier labels for trees and species,
   building heights, landscaping, crowds or area notes. The Key and About explain these.
 - **Weather.** At the real present, show the observed condition. If the fetch fails, show no
@@ -167,6 +169,26 @@ Compact, computed in the browser so scheduled trains cost zero server requests:
   exceed 86 400 (GTFS allows `25:30:00`).
 - `Service`: weekday bitmask + date range + `calendar_dates` additions/removals.
 
+### Past a feed's end
+
+Sam decided this on 2026-11-26, because MARTA's feed ends 2026-12-11 with no successor yet.
+A feed's end is its latest `end` or added date. A service day after it repeats the same weekday
+of the last full published week (the seven days ending on that date), using `calendar.txt`
+alone: `calendar_dates` exceptions and holiday-only services are dropped. Each repeated trip's
+position is `inferred`, never `scheduled`, and carries `projectedFrom` (agency and end date).
+Its trip id keeps the real service day.
+
+- **Boundary.** The last published day's after-midnight trips stay `scheduled` (MARTA's last
+  rail trip runs until 02:11 on the 12th). `Schedule.projectionsAt` reports a feed once none
+  of those can still run, or once a repeated trip has started.
+- **Card.** "Inferred from MARTA's last published timetable (ended Dec 11)", with an
+  `Inferred` chip. All stops says its times repeat the last published timetable.
+- **Corner.** `Inferred` with a hollow amber dot, instead of `Timetable`.
+- **Live down at the present.** "Live feed unavailable · showing MARTA trains inferred from its
+  last timetable". Live MARTA rail still replaces timetable rail at the real present.
+- **When a new feed ships**, `pnpm data` moves the end date and the projection disappears on
+  its own. The feed watcher (`.github/workflows/feeds.yml`) opens the issue.
+
 ## Normalized train state
 
 All four source kinds become one `TrainState` (`id, routeId, pathId, s, heading,
@@ -193,7 +215,7 @@ Colour means the kind of service, the same in every city: city rail is blue, int
 passenger is violet, and freight is rust, with width and glow scaling with trains per day.
 Agency line colours (MARTA Red/Gold/Blue/Green) are an accent. They appear in train
 cards, and as a tint on city rail above zoom 12.5. Train style shows the truth tier:
-a solid train is live, an outlined one is scheduled.
+a solid train is live, an outlined one comes from a timetable (scheduled or inferred).
 
 ## Vehicles and art
 

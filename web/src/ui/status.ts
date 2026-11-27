@@ -1,8 +1,11 @@
 /**
  * Words the shells show about data certainty, kept pure so the truth-tier rules are tested:
- * Live only at the real present with the live feed up; anything else reads Timetable, and a
- * sky that wasn't observed says so.
+ * Live only at the real present with the live feed up; Timetable while a published timetable
+ * covers the moment; Inferred once an expired one is repeated; and a sky that wasn't observed
+ * says so.
  */
+import type { Projection } from '../model/types';
+import { shortYmd } from '../sched/time';
 
 export type View = 'map' | 'city' | 'models';
 
@@ -13,21 +16,25 @@ export interface LiveState {
   cityFreight: boolean;
   cityTraffic: boolean;
   buses: number | null; // null: bus feed unavailable or not shown
+  /** An expired timetable repeated for this moment (MARTA past its last published date), or null
+   * while every published timetable covers it. */
+  projected: Projection | null;
 }
 
 export interface Confidence {
-  /** `live`: real present and the MARTA feed is up. Otherwise trains come from the timetable. */
-  tier: 'live' | 'timetable' | 'loading';
+  /** `live`: real present and the MARTA feed is up. Otherwise trains come from the timetable,
+   * or `inferred` from a repeat of an expired one. */
+  tier: 'live' | 'timetable' | 'inferred' | 'loading';
   /** The sky on screen was observed (live weather, no preview override). */
   skyObserved: boolean;
   /** The clock is shifted, paused or sped up: offer a way back to now. */
   shifted: boolean;
 }
 
-export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false, loading = false): Confidence {
+export function confidence(s: Pick<LiveState, 'realTime' | 'rail'> & Partial<Pick<LiveState, 'projected'>>, observedWeather: boolean, preview = false, loading = false): Confidence {
   return {
     // While City builds the scene isn't on screen yet: no word, a grey dot, never Live.
-    tier: loading ? 'loading' : s.realTime && s.rail === 'live' ? 'live' : 'timetable',
+    tier: loading ? 'loading' : s.realTime && s.rail === 'live' ? 'live' : s.projected ? 'inferred' : 'timetable',
     skyObserved: s.realTime && observedWeather && !preview,
     shifted: !s.realTime,
   };
@@ -41,9 +48,23 @@ export function railStatus(liveActive: boolean, error: string | null): LiveState
 /** The Final subject card names rail and weather confidence separately. */
 export function confidenceWords(c: Confidence): string[] {
   if (c.tier === 'loading') return [];
-  const rail = c.tier === 'live' ? 'Live trains' : 'Timetable';
+  const rail = c.tier === 'live' ? 'Live trains' : c.tier === 'inferred' ? 'Inferred' : 'Timetable';
   return [rail, c.skyObserved ? 'weather reported' : 'illustrative sky'];
 }
+
+/** A projected trip's source, as its card reads it. */
+export const projectionText = (p: Projection) => `Inferred from ${p.agency}’s last published timetable (ended ${shortYmd(p.ended)})`;
+
+/** The notice when live rail is down at the present: it names what is actually shown. */
+export function feedNotice(s: Pick<LiveState, 'realTime' | 'rail' | 'projected'>): string | null {
+  if (!s.realTime || s.rail !== 'down') return null;
+  return s.projected ? `Live feed unavailable · showing ${s.projected.agency} trains inferred from its last timetable` : 'Live feed unavailable · showing the timetable';
+}
+
+/** What a paused share link shows of the trains. The projection names only its own agency's
+ * trains: another feed (Amtrak) can still be on a published timetable. */
+export const frozenTrains = (projected: Projection | null) =>
+  projected ? `Trains from the timetable; ${projected.agency}’s inferred from its last published one.` : 'Trains from the timetable.';
 
 /** The first-visit hint, matched to the view and the input. */
 export function hintText(view: View, touch: boolean): string {

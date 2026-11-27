@@ -28,7 +28,7 @@ import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { prepareNorthLine, type createNorthLine } from './midtown-marta-rail';
 import { drawnAt } from './drawn-at';
-import { FOLLOW_CAMERA, leadFirst, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
+import { FOLLOW_CAMERA, leadFirst, liveSource, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -2124,7 +2124,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     let fix = followed ? locate(followed, states) : null;
     // A timetable trip replaced by live rail (or the reverse) hands off to its nearest match.
     if (followed && needsHandoff(followed, fix)) {
-      const others = states.filter(s => s.s.tier !== followed.tier).flatMap(s => locate({ kind: 'train', id: s.id, tier: s.s.tier }, states) ?? []);
+      const others = states.filter(s => liveSource(s.s.tier) !== liveSource(followed.tier)).flatMap(s => locate({ kind: 'train', id: s.id, tier: s.s.tier }, states) ?? []);
       fix = options.follow!.handoff(others) ?? fix;
     }
     // A followed vehicle loads the area it is heading into, without a manual pan. On the full

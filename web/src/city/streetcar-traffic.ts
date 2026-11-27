@@ -41,7 +41,7 @@ export function streetcarTraffic(rf: RoutesFile, origin:{lon:number;lat:number},
     const saved=cache.get(seconds);if(saved)return saved;
     const poses:Tram[]=[];
     for(const state of statesAt(TRAFFIC_EPOCH_MS+seconds*1000)) {
-      if(state.routeId!==STREETCAR_ROUTE || state.s.tier!=='scheduled')continue;
+      if(state.routeId!==STREETCAR_ROUTE || state.s.tier==='live')continue;
       const path=paths.get(state.pathId);if(!path)continue;
       const s=alongAt(path,state.s.value);
       const rear=pointAlong(path,s-S70_LENGTH/2),front=pointAlong(path,s+S70_LENGTH/2);
