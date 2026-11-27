@@ -85,6 +85,7 @@ Draft #710 is part 1 (overlaps, merge and diverge with one surface owner). Its n
   2. Restore headroom: night windows, programs phase A, freeing and packing near houses.
   3. Area unload. The plan lists 5 undo gaps in main.
   4. A coarse horizon LOD about 20x lighter per km² than far-board's boxes.
+- **Streaming rule (Sam):** the far version may show first, with detail streaming in, but there must **never be empty squares**. Every area always has at least its far or coarse form drawn. Unloading drops an area to far, never to blank, and loading starts from far. Make this a test.
 - **Next expansion:** not before road kit parts 1–3 and area unload, or its roads and rail structures will need rework. Realistically release 22 or 23.
 
 ### 6. Vehicles (`docs/handoffs/studio-vehicles.md`)
