@@ -4071,3 +4071,7 @@ Lilli Midtown is a slender glass tower on a third of an acre. The lidar puts its
 ### 2026-11-24 · Piedmont House breaks up the pale cluster
 
 Around Vireo and the park edge, City drew six or seven near-identical pale boxes. Piedmont House now reads differently: Street View shows blue glass on a fine white grid over a cream precast base. The lidar puts its roof at 77 m, against an estimated 72.6 m. Its outline crosses a board seam 5 m from the south face. Drawing each clip separately would have doubled the corner piers at the seam, so the upper row builds the whole tower and the lower row only claims its sliver. [Before and after](log/ui/piedmont-house/day-before-after.jpg) · [night](log/ui/piedmont-house/night-before-after.jpg)
+
+### 2026-11-24 · Ansley Above the Park, an older slab in the pale cluster
+
+Ansley Above the Park is the only mid-century building among the glass towers at the park edge. It is a white slab whose blue-glass elevator strip rises past its roof, above a semicircular porte-cochère with a blue fascia. The lidar puts it at 43 m, not the estimated 52.8 m. A first cut came in at 2,444 triangles with a quad per punched window. A window band per floor behind a white pier per bay looks the same at City distance and brought it to about 2,100. [Before and after](log/ui/ansley-above-the-park/day-before-after.jpg) · [four sides](log/ui/ansley-above-the-park/four-sides.jpg)

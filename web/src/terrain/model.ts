@@ -64,6 +64,7 @@ import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
 import { createNorfolkSouthern, norfolkSouthernId } from '../city/norfolk-southern';
 import { createVireo, vireoId } from '../city/vireo';
 import { createPiedmontHouse, piedmontHouseId } from '../city/piedmont-house';
+import { ansleyId, createAnsley } from '../city/ansley-above-the-park';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
@@ -473,6 +474,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : create === createMidtownLandmark ? yield* buildMidtownLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : create === createArtsCampusLandmark ? yield* buildArtsCampusLandmark(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : site.id === piedmontHouseId ? createPiedmontHouse(sceneryCity.buildings, site, grid)
+      : site.id === ansleyId ? createAnsley(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
