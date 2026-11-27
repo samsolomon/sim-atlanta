@@ -53,11 +53,16 @@ above are OSM footprints or scaled from photos, as marked.
      edge, and the night photo shows rows of warm globes. Their count and spacing are estimated.
    - The deck's light pools fall only on the lawn beyond the deck. Lighting the deck itself would
      need a new shader program.
-2. **Park path lamps** (`piedmontLampPaths`, `World.buildLights` `dimPaths`). Every pedestrian
-   promenade and every footway at least 100 m long inside the park gets a 4 m lamp every 30 m,
+2. **Park path lamps** (`piedmontLampPaths`, `World.buildLights` `dimPaths`). The stretches
+   inside the park of every pedestrian promenade, and of every footway with at least 100 m inside
+   it, get a 4 m lamp every 30 m,
    with a small, faint warm pool (radius 7 m, about half a street lamp's strength). The park's
    paths are not tagged lit in OSM. Beyond an 800 m orbit (back at 680 m), the park lamps drop out by day, as transport's far form does, because their posts read as a fence line of dark dots on open lawn. They stay at night and up close. They are the last instances in the shared lamp buffers, so trimming the count costs nothing. Which paths are lit and the spacing are **illustrative**, not
    surveyed, and carry no label on screen: they are ambient scenery, listed in About.
+   A lamp beside an edge path stands on the park side of it. Since 2026-11-27 paths are split exactly at the park edge (before, a path was kept or dropped
+   whole by its middle vertex), and park lamps draw their own random offsets so a change to them
+   never moves a street lamp. The lamp counts below predate that rule; a flat-ground count on the
+   staged rows moves from 264 to 260.
 3. **Active Oval mow stripes**. Low-contrast stripes, about 9 m wide, painted into the ground map
    on the two soccer fields only. Illustrative.
 
