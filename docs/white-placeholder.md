@@ -56,14 +56,14 @@ filled from Overture footprints and heights alone with the same reader.
 | | Measured (17.3 km², 12 areas) |
 | --- | --- |
 | Download | 227 KiB gz, 13 KiB/km² (scaling plan §3.1: L1 ≤ 80, L2 ≤ 10 KB/km²) |
-| Low geometry, resident | 2.81 MB (0.16 MB/km²) |
-| Triangles, every area shown | 140k (all areas loaded: 0 drawn) |
-| Fetch and decode | 2 ms at 1×, 52 ms at 6× |
-| Mesh build (one task, before the first frame) | 11 ms at 1×, about 130 ms at 6× |
+| Low geometry, resident | 2.89 MB (0.17 MB/km²) |
+| Triangles, every area shown | 144k (all areas loaded: 0 drawn) |
+| Fetch and decode | 2 ms at 1×, 13 ms at 6× |
+| Mesh build (one task, before the first frame) | 10 ms at 1×, 61 ms at 6× |
 | New programs | 0 on Low and High (shares the mosaic plinth's plain Lambert program) |
 | Draws | one per area shown, plus its shadow |
 
-At 1,239 km² the same density is about 16 MB of download and 200 MB of geometry, so the full square needs
+At 1,239 km² the same density is about 16 MB of download and 210 MB of geometry, so the full square needs
 the L2 form (scaling plan §3.3). The format carries that form unchanged.
 
 ## Budget: same-build A/B (`test:perf`, 2026-11-27)
@@ -108,7 +108,7 @@ The timing figures overlap another agent's captures (16:37–16:50, the "on" sid
 | Studio ready, Low and High | 1,377 and 1,496 ms | 1,447 and 1,554 ms | |
 
 Partial boards, where the layer actually draws, cost less than the full board in every currency except
-geometry: each white area replaces the area that would stand there. Every area shown draws 140k triangles in
+geometry: each white area replaces the area that would stand there. Every area shown draws 144k triangles in
 12 draws.
 
 ## One system with the opening
@@ -166,7 +166,7 @@ The >15 km view (the full-board frame is about 22 km) therefore changes only whi
 fails: those areas are white instead of bare table (`04-full-board-mid-load.jpg`). Fully loaded, it is unchanged.
 
 The placeholder geometry stays resident for loaded areas too, so unload can show it with no work. That
-2.81 MB is held beside the far boxes, which cost about 9 MB.
+2.89 MB is held beside the far boxes, which cost about 9 MB.
 
 The other choice is to make the placeholder the far form of loaded areas too: drop the far boxes and save
 about 9 MB of Low geometry. The cost is that the >15 km view of a loaded board turns white and loses #613's lit
@@ -193,7 +193,7 @@ tells the visitor why.
 | Switch | Where | Effect |
 | --- | --- | --- |
 | `?perf&placeholder=off` | any build | No placeholder, for A/B runs |
-| `?perf&placeholder=flat` | any build | Shared vertices, flat shading: 1.37 MB instead of 2.81, one more program |
+| `?perf&placeholder=flat` | any build | Shared vertices, flat shading: 1.41 MB instead of 2.89, one more program |
 | `?placeholderhold` | dev only | Load no area past downtown, to review the placeholder |
 | `?placeholderfade=0.3` or `=brookwood-station:0.3` | dev only | Hold dissolves at that progress, for stills |
 | `PERF_QUERY='&placeholder=off' pnpm test:perf` | script | Same-build A/B |
