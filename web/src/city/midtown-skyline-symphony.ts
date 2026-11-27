@@ -240,7 +240,8 @@ export function* symphonyTower(shell: Shell) {
   // Kendall/Heaton's night skyline: the veil glass is a soft pale grey-green wash,
   // dimmer than the white lattice behind it; nothing on the crown clips to white.
   const veilMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    forceSinglePass: true, opacity: .88, depthWrite: true, emissive: '#d5dfdc', emissiveIntensity: 0 });
+    opacity: .88, depthWrite: true, emissive: '#d5dfdc', emissiveIntensity: 0 });
+  // Two passes: from overhead, one pass changes the faint lines where the crown glass overlaps itself.
   // The ink pass needs the veil's own depth, rather than the lattice/scene behind it.
   // A single smooth wash rises gently towards the crest; no window atlas or texture.
   veilMaterial.onBeforeCompile = shader => {

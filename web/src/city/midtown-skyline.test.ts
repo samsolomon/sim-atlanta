@@ -480,3 +480,16 @@ it('attaches every Mayfair balcony rail to the wall by its floor slab', () => {
   expect(floating).toBe(0);
   expect(body.count / 3).toBeLessThanOrEqual(2400);
 });
+
+it('draws the 1180 Peachtree crown veil in two passes', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885660351');
+  const model = createSkylineLandmark([building], building, -8, () => -3)!;
+  // The veil is the only 88% glass on the tower; one pass changes its overlaps seen from overhead.
+  const veil: boolean[] = [];
+  model.group.traverse(o => {
+    const m = (o as Mesh).material as MeshLambertMaterial | undefined;
+    if (m?.opacity === .88) veil.push(m.forceSinglePass);
+  });
+  expect(veil.length).toBeGreaterThan(0);
+  expect(veil).not.toContain(true);
+});

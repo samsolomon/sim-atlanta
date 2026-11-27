@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import details from '../../../pipeline/prototypes/piedmont-edge/details.json';
-import { Builder, segDist, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, segDist, type P2 } from '../vignette/geom';
 import { FURNITURE, type FurnitureKind } from '../landscape/furniture';
 import { landscapeMesh, type Ground } from '../landscape/primitives';
 import { roadWidth, type TerrainCity } from '../terrain/transport-data';
@@ -100,24 +100,51 @@ export function piedmontPark(city: TerrainCity, ground: Ground, quality: 'high' 
   };
 }
 
+/** The stretches of a path that lie inside a ring, split exactly where it crosses the edge. */
+function stretchesInside(pts: P2[], ring: P2[]): P2[][] {
+  const out: P2[][] = [];
+  let run: P2[] = [];
+  const end = () => { if (run.length > 1) out.push(run); run = []; };
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, az] = pts[i - 1], dx = pts[i][0] - ax, dz = pts[i][1] - az;
+    const cuts = [0, 1];
+    for (let j = 0; j < ring.length; j++) {
+      const [px, pz] = ring[j], [qx, qz] = ring[(j + 1) % ring.length], ex = qx - px, ez = qz - pz;
+      const cross = dx * ez - dz * ex;
+      if (Math.abs(cross) < 1e-9) continue;
+      const t = ((px - ax) * ez - (pz - az) * ex) / cross, u = ((px - ax) * dz - (pz - az) * dx) / cross;
+      if (t > 0 && t < 1 && u >= 0 && u <= 1) cuts.push(t);
+    }
+    cuts.sort((x, y) => x - y);
+    const at = (t: number): P2 => [ax + dx * t, az + dz * t];
+    for (let k = 1; k < cuts.length; k++) {
+      if (cuts[k] - cuts[k - 1] < 1e-9) continue;
+      const mid = at((cuts[k] + cuts[k - 1]) / 2);
+      if (!pointInRing(mid[0], mid[1], ring)) { end(); continue; }
+      if (!run.length) run.push(at(cuts[k - 1]));
+      run.push(at(cuts[k]));
+    }
+  }
+  end();
+  return out;
+}
+
+const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+
 /**
- * Piedmont Park's main paths, for dim path lamps (World.buildLights dimPaths): every pedestrian
- * promenade and every footway at least 100 m long inside the park. The park's paths carry no
- * lit=yes tag in OSM; the photographs show black acorn-globe posts about 4 m tall along the main
- * loops. Which paths are lit, and the 30 m spacing, are illustrative.
+ * Piedmont Park's main paths, for dim path lamps (World.buildLights dimPaths): the stretches
+ * inside the park of every pedestrian promenade, and of every footway with at least 100 m inside
+ * it. The park's paths carry no lit=yes tag in OSM; the photographs show black acorn-globe posts
+ * about 4 m tall along the main loops. Which paths are lit, and the 30 m spacing, are illustrative.
  */
 export function piedmontLampPaths(city: TerrainCity): P2[][] {
   const park = city.ground?.find(g => g.name === 'Piedmont Park' && g.kind === 'park')?.rings[0] as P2[] | undefined;
   if (!park) return [];
-  const inPark = ([x, z]: P2) => {
-    let c = false;
-    for (let i = 0, j = park.length - 1; i < park.length; j = i++)
-      if ((park[i][1] > z) !== (park[j][1] > z) && x < (park[j][0] - park[i][0]) * (z - park[i][1]) / (park[j][1] - park[i][1]) + park[i][0]) c = !c;
-    return c;
-  };
-  const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
-  return city.roads.filter(r => !r.bridge && !r.tunnel && (r.cls === 'pedestrian' || (r.cls === 'footway' && length(r.pts as P2[]) >= 100))
-    && inPark(r.pts[Math.floor(r.pts.length / 2)] as P2)).map(r => r.pts as P2[]);
+  return city.roads.flatMap(r => {
+    if (r.bridge || r.tunnel || (r.cls !== 'pedestrian' && r.cls !== 'footway')) return [];
+    const inside = stretchesInside(r.pts as P2[], park);
+    return r.cls === 'footway' && inside.reduce((n, pts) => n + length(pts), 0) < 100 ? [] : inside;
+  });
 }
 
 /**
