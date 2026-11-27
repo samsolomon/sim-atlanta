@@ -4065,3 +4065,5 @@ Review found this after the first batch of building skins landed. Piedmont Park'
 ### 2026-11-24 · Lilli Midtown on a skin budget
 
 Lilli Midtown is a slender glass tower on a third of an acre. The lidar puts its roof at 78 m with an amenity level rising to 86–89 m, so the map's 86.4 m guess was close but flat. This was the first skin built to the new per-skin triangle budget from the start: the low tier draws the curtain wall in double-width panes, which reads the same at the board camera, and the high tier keeps the photographed 3 m module. [Day, night and close views](log/ui/lilli-midtown/README.md)
+
+**2026-11-24 — The Renaissance Midtown.** Here the map and the lidar agree, with a 64 m roof and plant to 66.5 m, so the work was the facade. Street View shows a tan precast slab with punched windows and a recessed glass slot down the West Peachtree end, sitting on a dark podium. The slot gets its own lit rooms, so at night it reads as a thin vertical line on the narrow end. [Captures and references](log/ui/renaissance-midtown/README.md)
