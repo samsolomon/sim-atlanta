@@ -119,6 +119,7 @@ function office(s: Shell, height: number) {
       opacity: 0.42,
       depthWrite: false,
       side: DoubleSide,
+      // Two passes: from above, one pass lightens the roof where it overlaps a side pane.
     }),
   );
 }
