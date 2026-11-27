@@ -19,7 +19,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
 const PODIUM = 36, OFFICE = 72, ROOF = 219, SHOULDER = 223.4, CROWN = 228;
 const STONE = '#d8d2c6', SCREEN = '#a7a49c', PRECAST = '#ddd6ca', DARK = '#3d4a57';
-const TOWER = '#7d97ad', MULLION = '#d6e0e7', SLOT = '#3b4754';
+const TOWER = '#7d97ad', MULLION = '#d6e0e7', SLOT = '#2c3640';
 
 /** The tower plan with one recessed balcony slot per face, turned as a pinwheel (counter-clockwise). */
 export function pinwheel(cu: number, cv: number, hu: number, hv: number, w = 3, d = 1.5, k1 = 5, k2 = 3): P2[] {
@@ -93,14 +93,19 @@ export function westPeachtree1072(shell: Shell) {
 
   // The tower: reflective glass with a light floor line each storey and a mullion
   // every unit; the slots are dark balcony recesses with glass rails.
-  const tower = pinwheel(12.05, -18.25, 11.75, 16.25);
+  // Slots 4.5 m wide: in the April 2026 Urbanize close-up the slot spans about a fifth of a face.
+  const tower = pinwheel(12.05, -18.25, 11.75, 16.25, 4.5);
   shell.prism(tower, OFFICE, ROOF, TOWER, '#7d8b97');
   const floors = 41, pitch = (ROOF - 2 - OFFICE) / floors;
   edges(tower, (a, b, len) => {
     const at = along(a, b);
-    if (len < 2) {
-      // Slot walls and back: darker, the inset balconies.
+    if (len < 5) {
+      // The balcony slot's back wall (4.5 m) and side walls (1.5 m): a dark recess full height,
+      // crossed by a light rail line at each floor. The April 2026 Urbanize photograph shows the
+      // slot as the strongest mark on the shaft from a distance: a dark vertical down each face.
       body.quad(at(0, OFFICE, .02), at(0, ROOF, .02), at(len, ROOF, .02), at(len, OFFICE, .02), SLOT);
+      if (len > 2) for (let y = OFFICE + pitch; y < ROOF - 1; y += pitch)
+        body.quad(at(0, y + .9, .05), at(0, y + 1.05, .05), at(len, y + 1.05, .05), at(len, y + .9, .05), MULLION);
       return;
     }
     const units = Math.max(1, Math.round(len / 4.6)), face = wall++;
