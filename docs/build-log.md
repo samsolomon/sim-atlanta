@@ -4109,3 +4109,7 @@ The dissolve uses no blending. The index is shuffled, so shrinking one draw rang
 Two bugs hid in the bake. The first full-board bake never finished. My ring cap raised its tolerance only when a pass shrank the ring, and one footprint never shrank. The review then built a ring that defeats any tolerance, so the cap now falls back to the hull and then the rectangle. The second was quieter: Midtown's white towers were all podiums. Each tower's upper bands start where the band below ends, so the "drop anything floating" rule, meant for skybridges, threw them away. That came to 305 parts. They now stay when they rest on their own landmark, and the bake fails if any landmark stops short of its top.
 
 ![Midtown link at 6× CPU: the white still, downtown in colour, Midtown still white, then loaded](log/white-placeholder/01-midtown-opening.jpg)
+
+### 2026-11-27 — A slice with nothing in it
+
+Two small faults from review. Piedmont House crosses a board seam 5 m from its south face, and one row builds the whole tower while the other only claimed its slice. Until the second row loaded, those 5 m were simply missing. The slice is now two plain blocks tucked just inside the real walls, at 14 triangles, which brings the skin to exactly its 2,400-triangle limit. On Centergy One, one post of the white roof trellis touched neither the parapet nor the frame it was meant to carry; each post now has a foot and an arm. The 1180 Peachtree crown glass stays a single drawing pass: the second pass costs a shader program the budget does not have.

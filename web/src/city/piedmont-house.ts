@@ -1,4 +1,3 @@
-import { Group } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -10,8 +9,9 @@ import { litHash, seedOf } from './skin-kit';
  * of blue glass on a fine white grid, with stacked balconies, over a cream precast base and a
  * parking podium on its west side. The outline crosses the midtown-central / midtown-upper seam
  * at z = -3300: midtown-upper builds the whole building, moving its seam vertices out to the true
- * south face at z = -3295, and midtown-central only claims its 5 m sliver (no draws). Heights are NAVD88 metres from the April 2019 3DEP lidar: roof 358.2 m (about 77 m over
- * the 281 m street), a central penthouse to 360.2 m, the podium at 302.5 m
+ * south face at z = -3295, and midtown-central draws two plain blocks inside those walls, which
+ * stand in for its 5 m sliver while only that row is loaded. Heights are NAVD88 metres from the
+ * April 2019 3DEP lidar: roof 358.2 m (about 77 m over the 281 m street), a central penthouse to 360.2 m, the podium at 302.5 m
  * (docs/log/ui/piedmont-house/README.md). City z grows to the south. Flat vertex colours, no library
  * surfaces: a painted body is a hooked material that costs its own draw and program.
  */
@@ -38,16 +38,36 @@ const glass = '#9aaebc', // S 18%, V 74%
   garageBand = '#a8a296',
   roof = '#9a9892';
 
+/**
+ * The 5 m of the building that falls in midtown-central: two plain blocks tucked just inside the
+ * walls midtown-upper draws, so they are hidden once that row is up and stand in for the slice
+ * while only this one is.
+ */
+function southSliver(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
+  const s = landmarkShell(buildings, grid, site.id, 'Piedmont House (south sliver)', [1031, -3297], [1, 0], [[-5, 0], [5, 0]]);
+  if (!s) return null;
+  const inset = .3, north = seamZ + inset, south = southZ - inset;
+  // Only the faces that can show: neither block needs a north side (midtown-upper's half is
+  // there), nor the podium an east side against the tower. Corners run NW, NE, SE, SW.
+  for (const [id, top, wall, sides] of [[towerPart, roofTop - .5, glass, [1, 2, 3]], [podiumPart, baseTop - .5, cream, [2, 3]]] as const) {
+    const ring = site.parts?.find(q => q.id === id)?.rings[0];
+    if (!ring) continue;
+    const west = Math.min(...ring.map(([x]) => x)) + inset - 1031, east = Math.max(...ring.map(([x]) => x)) - inset - 1031;
+    const z0 = north + 3297, z1 = south + 3297;
+    const at = [[west, z0], [east, z0], [east, z1], [west, z1]];
+    const point = (i: number, y: number) => [at[i % 4][0], y, at[i % 4][1]];
+    for (const i of sides) s.body.quad(point(i, s.base), point(i, top), point(i + 1, top), point(i + 1, s.base), wall);
+    s.body.quad(point(0, top), point(3, top), point(2, top), point(1, top), roof);
+  }
+  return s.finish('#f4d9a8', 0);
+}
+
 export function createPiedmontHouse(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const tower = site.parts?.find(p => p.id === towerPart);
   const podium = site.parts?.find(p => p.id === podiumPart);
   if (tower?.rings.length !== 1 || podium?.rings.length !== 1) return null;
-  // The midtown-central clip lies wholly south of the seam: claim it so no generic box is left.
-  if (site.rings[0].every(([, z]) => z >= seamZ - 0.05)) {
-    const group = new Group();
-    group.name = 'Piedmont House (south sliver, drawn by midtown-upper)';
-    return { group, buildings: buildings.filter(b => b !== site), setNight() {} };
-  }
+  // The midtown-central clip lies wholly south of the seam.
+  if (site.rings[0].every(([, z]) => z >= seamZ - 0.05)) return southSliver(buildings, site, grid);
   const s = landmarkShell(buildings, grid, site.id, 'Piedmont House', origin, [1, 0], [[8, 12], [8, -25]]);
   if (!s) return null;
   const seed = seedOf(site.id);

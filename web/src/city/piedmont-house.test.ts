@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
+import { Box3, Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { createPiedmontHouse, piedmontHouseId } from './piedmont-house';
+import { pointInRing, type P2 } from '../vignette/geom';
 
 const context = (board: string): VBuilding[] => JSON.parse(readFileSync(new URL(
   `../../../pipeline/prototypes/square-board/${board}/context.json`, import.meta.url), 'utf8')).buildings;
@@ -48,8 +49,28 @@ it('stands at the lidar roof and penthouse, with the podium at its lidar height'
   expect(roof(1045, -3293)).toBeNull();
 });
 
-it('claims the midtown-central sliver without drawing anything', () => {
+it('stands in for the midtown-central sliver, hidden inside the walls midtown-upper draws', () => {
   const buildings = context('midtown-central');
   const model = createPiedmontHouse(buildings, buildings.find(b => b.id === piedmontHouseId)!, grid)!;
-  expect(model.group.children).toHaveLength(0);
+  model.group.updateMatrixWorld(true);
+  const box = new Box3().setFromObject(model.group);
+  // South of the seam and north of the true south face at z = -3295.
+  expect(box.min.z).toBeGreaterThan(-3300);
+  expect(box.max.z).toBeLessThan(-3295);
+  // The tower part reaches just under the 358.2 m roof; the podium just under 302.5 m.
+  expect(box.max.y + 300).toBeCloseTo(357.7, 1);
+  const down = (x: number) => new Raycaster(new Vector3(x, 400, -3297), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y + 300;
+  expect(down(1041)).toBeCloseTo(357.7, 1);
+  expect(down(1020)).toBeCloseTo(302, 1);
+  // Every vertex lies inside the walls midtown-upper draws, which move the seam out to z = -3295.
+  const upper = context('midtown-upper').find(b => b.id === piedmontHouseId)!.rings[0]
+    .map(([x, z]): P2 => [x, Math.abs(z + 3300) < 0.05 ? -3295 : z]);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    const p = (o.geometry as BufferGeometry).getAttribute('position');
+    for (let i = 0; i < p.count; i++) {
+      const v = new Vector3().fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+      expect(pointInRing(v.x, v.z, upper)).toBe(true);
+    }
+  });
 });
