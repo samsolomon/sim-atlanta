@@ -4005,7 +4005,7 @@ The boundary took the most care. GTFS service days run past midnight, and Friday
 At 22:00 City's High tier drew 629 times, one under its ceiling. Most of the jump from day (439)
 came from one place, the landmark batcher. By day it merges a cell's skins into one draw, because
 lit panes look like the wall then. At night every landmark's light colour becomes its own draw. On
-High at 22:00 that took landmark batches from 87 draws to 196.
+High at 22:00 that took landmark batches from about 54 draws to 193.
 
 The fix puts those lights inside the wall draw. Generic buildings already shared one facade shader
 that hashes its own window cells. Landmark batches now draw with that same program, with the
@@ -4017,7 +4017,7 @@ light, found by `gl_VertexID`. That costs nothing per vertex and adds no program
 
 What surprised me was how much a pixel diff needs a noise floor. Diffed raw, every High frame
 changed 2–5% of its pixels. The animated film grain did all of that. With grain off, night frames
-differ from main by at most 0.21% of pixels, and main against itself differs by the same amount,
-frame for frame. Skins keep choosing their lit panes when they build them. Re-picking them in the
+differ from main by at most 0.21% of pixels. Main against itself differs by the same amount on
+the six frames I checked. Skins keep choosing their lit panes when they build them. Re-picking them in the
 shader would have lit different windows on every approved landmark.
 [docs/perf.md views](log/facade-night/sheet-views.jpg) · [12 landmarks](log/facade-night/sheet-landmarks.jpg) · [design note](facade-night.md)

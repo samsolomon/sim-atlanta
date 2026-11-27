@@ -16,8 +16,8 @@ light `setNight` turns up.
 The landmark batcher (#441) merged those meshes into one draw per 500 m cell by day, when lit
 panes look like the wall. At night each lit-pane colour became its own draw, because every landmark
 has its own light colour and intensity. Each cell's far version also switched off. On High at
-22:00, landmark batches went from 87 draws (48 near plus 39 far) to 196. That is +109 of the night's
-+190.
+22:00, landmark batches went from about 54 draws (15 near plus 39 far) to about 193. That is about
++139 of the night's +190.
 
 ## What changed
 
@@ -104,9 +104,10 @@ all 12 areas):
 
 - **High night calls**: 629 → 486. That is 144 free against the 630 ceiling, and the 40-call
   reserve is restored. The ceiling ratchets to 535 (target 480).
-- **Where the 143 come from**: all from landmark batches. On High at 22:00 they draw 53 times
-  (49 near and 4 far), against 196 on main and 87 by day. The rest of the night draw list is
-  unchanged, draw for draw.
+- **Where the 143 come from**: all from landmark batches. On High at 22:00 they draw about 49
+  times (45 near and 4 far), against about 193 on main and 54 by day. These counts come from
+  per-draw captures, leaving out full versions hidden behind their far version. The rest of the
+  night draw list is unchanged, draw for draw.
 - **Cost per facade draw**: 2 × 16 vertex uniform vectors in the one shared program, plus a loop
   of at most 16 compares per vertex. The loop stops at once for walls with no ranges, which means
   generic buildings and far boxes. Per-vertex bytes: 0. Textures: 0.
@@ -137,7 +138,9 @@ facade. Moving them would change an approved look or need another program. Below
   - a few front-sided landmark classes (4 draws at this view);
   - textured landmark meshes. Their runs keep the old night split.
 
-  `stats.litWallOverflow` counts groups with more than 16 runs. There are none on today's board.
+  `stats.litWallOverflow` counts groups with more than 16 runs. It wasn't read from a live board.
+  At the default view's 12 areas, the night batch count (about 49, under the day's group count)
+  leaves no room for an overflowing group. R16 is unchecked.
 
 ## Verification
 
@@ -147,7 +150,7 @@ facade. Moving them would change an approved look or need another program. Below
   - High runs with `&perf=silent&nopass=grade`, because film grain is animated and swamps a diff.
   - Every night frame differs from main by at most 0.21% of pixels over 8/255, about the same
     as day frames, where nothing changed (up to 0.44%).
-  - A second capture of main against itself gives the same numbers (Mayfair at night: 0.205% for
+  - A second capture of main against itself, on six of the frames, gives the same numbers (Mayfair at night: 0.205% for
     main vs main, 0.202% for main vs this change). The fixed 0.08% over 32/255 is the radio's
     album art.
   - Sheets: [docs/perf.md views](log/facade-night/sheet-views.jpg) ·
