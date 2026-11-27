@@ -41,6 +41,11 @@ describe('station from the scene clock', () => {
     expect(at(22)).toBe('afterglow');
     expect(at(0)).toBe('afterglow');
   });
+  it('skips a manual preset before the first matching clock preset', () => {
+    const manual = stations.find((s) => s.id === 'long-haul')!;
+    const timed = stations.filter((s) => s.defaultHours);
+    expect(startStation([manual, ...timed], 14, null).id).toBe('sol-cafe');
+  });
   it('lets a station the visitor picked beat the clock, and ignores a stale id', () => {
     expect(startStation(stations, 14, 'afterglow').id).toBe('afterglow');
     expect(startStation(stations, 14, 'long-haul').id).toBe('long-haul');
