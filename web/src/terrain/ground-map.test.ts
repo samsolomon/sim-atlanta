@@ -107,3 +107,43 @@ it('keeps North Avenue sidewalks under the covers and Marietta sidewalks on top'
   expect(ctx.strokes).toContainEqual({ first: lower.pts[0], clipped: true });
   expect(ctx.strokes).toContainEqual({ first: upper.pts[0], clipped: false });
 });
+
+it('paves commercial and retail landuse beneath mapped lawns and leaves campuses for a separate step', async () => {
+  const { PAVE_CAMPUS_LANDUSE } = await import('./ground-map');
+  const fills: string[] = [];
+  const ctx = { strokeStyle: '', fillStyle: '', lineWidth: 0, scale() {}, translate() {}, rotate() {}, fillRect() {}, closePath() {},
+    fill() { fills.push(this.fillStyle); }, clip() {}, restore() {}, save() {}, beginPath() {}, moveTo() {}, lineTo() {},
+    setLineDash() {}, stroke() {} };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const ring: P2[][] = [[[10, 10], [90, 10], [90, 90], [10, 90]]];
+  const ground = ['grass', 'university', 'retail', 'commercial'].map(kind => ({ kind, name: null, sub: null, rings: ring }));
+  const map = groundMap({ bounds: { minX: 0, maxX: 100, minZ: 0, maxZ: 100 }, rail: [], buildings: [], ground, roads: [], points: {} }, 'low');
+  // Both paved kinds draw before the lawn, so a mapped lawn inside a commercial block stays green.
+  expect(fills.slice(0, 2)).toEqual([PAL.sidewalk, PAL.sidewalk]);
+  expect(fills[2]).not.toBe(PAL.sidewalk);
+  expect(PAVE_CAMPUS_LANDUSE).toBe(false); // flipping it is Sam's call (see docs/log/ui/landuse-paving)
+  expect(fills).toHaveLength(3);
+  map.dispose();
+});
+
+it('paves the Robinson College frontage after City has removed the skinned Empire Building', () => {
+  const fills: { color: string; points: P2[] }[] = [];
+  let points: P2[] = [];
+  const ctx = { strokeStyle: '', fillStyle: '', lineWidth: 0, scale() {}, translate() {}, rotate() {}, fillRect() {}, closePath() {},
+    fill() { fills.push({ color: this.fillStyle, points }); }, clip() {}, restore() {}, save() {}, beginPath() { points = []; },
+    moveTo(x: number, z: number) { points.push([x, z]); }, lineTo(x: number, z: number) { points.push([x, z]); },
+    setLineDash() {}, stroke() {} };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  // City's landmark skins drop the footprint they replace before the ground is painted.
+  const paint = (area: TerrainCity['bounds'], lawn: P2[][]) => groundMap({ bounds: area, rail: [], buildings: [], roads: [], points: {},
+    ground: [{ kind: 'grass', name: null, sub: null, rings: lawn }] }, 'low').dispose();
+  const frontage = (f: { points: P2[] }) => f.points[0]?.[0] === 119.6 && f.points[0]?.[1] === -118.43;
+  paint({ minX: 0, maxX: 300, minZ: -300, maxZ: 0 }, [[[110, -170], [175, -170], [175, -110], [110, -110]]]);
+  expect(fills.filter(frontage).map(f => f.color)).toEqual([PAL.sidewalk]);
+  expect(fills.findIndex(frontage)).toBe(0); // beneath mapped lawns
+  expect(fills.length).toBeGreaterThan(1);
+  // A board that does not hold the whole strip never paints it.
+  fills.length = 0;
+  paint({ minX: 0, maxX: 100, minZ: 0, maxZ: 100 }, [[[10, 10], [90, 10], [90, 90], [10, 90]]]);
+  expect(fills.filter(frontage)).toHaveLength(0);
+});

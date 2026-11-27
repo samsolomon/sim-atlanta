@@ -20,7 +20,15 @@ import { paintWinnPark } from '../city/winn-park';
 
 import { golfPaint } from './golf';
 
+// Downtown blocks map their landuse but not the paving between the kerb casing and the
+// building line, which otherwise shows the board's sage. Commercial and retail landuse
+// paints first, in sidewalk concrete, so every mapped lawn, park and lot still draws over it.
+// Campuses keep real unmapped lawns, so their landuse is a separate, off-by-default step.
+export const PAVE_CAMPUS_LANDUSE = false;
+const campusLanduse = ['university', 'institutional', 'hospital', 'religious'];
+const pavedLanduse = ['commercial', 'retail', ...(PAVE_CAMPUS_LANDUSE ? campusLanduse : [])];
 const landColors: Record<string, string> = {
+  ...Object.fromEntries(pavedLanduse.map((kind) => [kind, PAL.sidewalk])),
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
   brownfield: '#a99a7c', construction: '#b49a76', pedestrian: '#d6cdbd', plaza: '#d6cdbd',
   loading_apron: '#b2a89a', track: '#b98c77', pitch: '#78a467', playground: '#bba486', parking: '#76787c', fountain: '#91b4bc',
@@ -95,6 +103,17 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   ctx.translate(-b.minX, -b.minZ);
   ctx.fillStyle = '#b5bd97';
   ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
+  // Broad Street face of the Empire Building footprint and the mapped sidewalk
+  // opposite it. Clip the sidewalk segment to the two ends of the facade.
+  // Paint beneath mapped land cover so lawns still take precedence.
+  const robinson: P2[] = [[119.6, -118.43], [167.1, -159.15], [163.72, -163.09], [117.78, -120.56]];
+  if (robinson.every(([x, z]) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ)) {
+    ctx.beginPath();
+    trace(ctx, robinson);
+    ctx.closePath();
+    ctx.fillStyle = PAL.sidewalk;
+    ctx.fill();
+  }
   // Keep the illustrative stripes legible on coarse maps without allocating a second
   // texture or changing the 2.6 m parking spacing. Widths follow the texel up to the
   // old low-tier 0.98 m; the 1.38 m low tier keeps those proportions and antialiases,
