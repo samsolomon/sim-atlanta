@@ -194,7 +194,9 @@ export function commuterCoachGeometry(low = false) {
     k.box(0.06, 0.06, 0.62, armX, H - 0.32, ZF - SCREEN_SET + 0.08, C.mirror);
     k.box(Math.abs(tipX - armX) + 0.06, 0.06, 0.06, (armX + tipX) / 2, H - 0.32, ZF - SCREEN_SET + 0.38, C.mirror);
     if (!low) k.box(0.05, 0.55, 0.05, tipX, H - 0.6, ZF - SCREEN_SET + 0.4, C.mirror);
-    k.box(0.1, 0.42, 0.22, tipX, 2.35, ZF - SCREEN_SET + 0.42, C.mirror);
+    // Low drops the stem, so its housing reaches up to the arm instead (no extra triangles).
+    const top = low ? H - 0.32 : 2.56;
+    k.box(0.1, top - 2.14, 0.22, tipX, (top + 2.14) / 2, ZF - SCREEN_SET + 0.42, C.mirror);
   }
 
   // Rear: no rear window. A body-colour cap with an upper intake grille, the louvred engine door

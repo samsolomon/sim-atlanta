@@ -22,6 +22,23 @@ describe('Xpress-like highway commuter coach', () => {
       g.dispose();
     });
   }
+  for (const low of [false, true]) {
+    it(`hangs each mirror from its arm with no gap (${low ? 'low' : 'high'})`, () => {
+      const p = commuterCoachGeometry(low).getAttribute('position');
+      for (const side of [-1, 1]) {
+        // Height spans of the triangles in the mirror's drop, from the arm down to the housing.
+        const spans: [number, number][] = [];
+        for (let i = 0; i < p.count; i += 3) {
+          const v = [0, 1, 2].map(j => [p.getX(i + j), p.getY(i + j), p.getZ(i + j)]);
+          if (v.every(([x, , z]) => Math.abs(x - side * (COACH_WIDTH / 2 + 0.12)) < 0.06 && z > COACH_LENGTH / 2 - 1))
+            spans.push([Math.min(...v.map(q => q[1])), Math.max(...v.map(q => q[1]))]);
+        }
+        let reach = 2.2;
+        for (const [lo, hi] of spans.sort((a, b) => a[0] - b[0])) if (lo <= reach + 0.01) reach = Math.max(reach, hi);
+        expect(reach).toBeGreaterThan(3.05); // the arm's underside is at about 3.04 m
+      }
+    });
+  }
   it('lights headlights at the front and tail lamps at the rear', () => {
     const g = commuterCoachGeometry();
     const p = g.getAttribute('position'), k = g.getAttribute('aKind');
