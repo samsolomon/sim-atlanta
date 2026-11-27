@@ -48,6 +48,7 @@ export function* federalReserve(shell: Shell, ground: LocalGround) {
   const paired = (ring: P2[], lo: number, hi: number, floor = 3.9) => {
     const rows = Math.max(1, Math.round((hi - lo) / floor));
     for (const e of edges(ring)) {
+      if (e.length < 4.2) continue; // too short for a 3.9 m pair: the frame would run past the corners
       const n = Math.max(1, Math.round(e.length / 6.4)), m = e.length / n;
       for (let r = 0; r < rows; r++) for (let c = 0; c < n; c++) {
         const y0 = lo + r * (hi - lo) / rows + .7, y1 = y0 + 2.5;
