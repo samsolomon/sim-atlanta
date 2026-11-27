@@ -3987,3 +3987,7 @@ A second cause came from the coordinator's Air, where links failed with no input
 Long Haul 103.9 adds three Axle & Pine instrumentals to the radio, 6 minutes 15 seconds from a driving shuffle through country soul to a Western swing waltz. That brings the dial to five stations and 17 tracks. Long Haul is a listener preset at every hour. The four scene-clock defaults still cover the full day.
 
 Stacking the frequency under the station name leaves room for all five on the same recessed control as Map and Models. At 320 CSS pixels the narrowest segment still measured 45 pixels wide, with all five names visible in one row. [Phone](log/ui/long-haul/390.jpg) · [Desktop](log/ui/long-haul/1280.jpg).
+
+### 2026-11-27 · Two records on Long Haul
+
+The two-minute “Somebody Owes Me a Dance” takes the third slot in the station rotation. The electric shuffles share the *Sunday Shoes* sleeve, while the fingerpicked “Porch Light” gets a moth against a lit screen door. We kept the original performances of both returning tracks and changed their MP3 tags. The radio now passes each record’s album title through to the system player. [Listening room](log/ui/long-haul/records.jpg).

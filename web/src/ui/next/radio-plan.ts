@@ -6,6 +6,7 @@
 export interface StationTrack {
   id: string;
   artist: string;
+  album?: string;
   title: string;
   /** Relative to the site root, e.g. "music/tracks/x.mp3". */
   src: string;

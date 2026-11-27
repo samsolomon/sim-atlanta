@@ -148,4 +148,9 @@ Afterglow 88.5 · A streetlamp blooms into a star as summer daylight fades.
 
 [polaroid-coast.png](polaroid-coast.png) · [polaroid-coast-512.webp](polaroid-coast-512.webp) · [polaroid-coast-128.webp](polaroid-coast-128.webp)
 
-**Axle & Pine.** Built-in ImageGen. Square vintage screenprint of a brick-red long-hood semi cresting a two-lane Georgia blacktop, with pine silhouettes and a low butter-yellow sun. Diagonal road, cream paper grain, pine-green and oxblood inks, slight misregistration. Designed to read at 32 pixels, with no lettering or logos.
+## Axle & Pine
+
+Two square sleeves generated with ImageGen.
+
+- **Sunday Shoes** pairs the two electric shuffles. A scuffed oxblood boot lifts from a mustard dance floor beneath a denim cuff. Direct flash, warm paper wear and condensed slab lettering suggest a dancehall record sleeve.
+- **Porch Light** is the acoustic single. A cream moth rests on a dark screen door with amber light behind it. Fine grain and small ivory serif lettering keep the sleeve quiet.

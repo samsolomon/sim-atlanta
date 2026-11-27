@@ -533,7 +533,7 @@ export function createRadio(o: RadioOptions): Radio {
       ms.metadata = new MediaMetadata({
         title: shown.title,
         artist: shown.artist,
-        album: station?.name ?? '',
+        album: shown.album ?? station?.name ?? '',
         artwork: [{ src: o.resolve(shown.cover.large), sizes: '512x512', type: 'image/webp' }],
       });
     const state = playing ? 'playing' : 'paused';

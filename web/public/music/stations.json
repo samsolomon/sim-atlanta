@@ -217,43 +217,46 @@
     {
       "id": "long-haul",
       "name": "Long Haul 103.9",
-      "description": "Truck-driving country, country soul and Western swing",
+      "description": "Electric country shuffles and fingerpicked acoustic guitar",
       "tracks": [
         {
-          "id": "axle-and-pine--seventeenth-street-shuffle",
+          "id": "axle-and-pine--sunday-shoes",
           "artist": "Axle & Pine",
-          "title": "Seventeenth Street Shuffle",
-          "src": "music/tracks/axle-and-pine--seventeenth-street-shuffle.mp3",
+          "title": "Sunday Shoes",
+          "src": "music/tracks/axle-and-pine--sunday-shoes.mp3",
           "cover": {
-            "small": "music/covers/axle-and-pine-128.webp",
-            "large": "music/covers/axle-and-pine-512.webp"
+            "small": "music/covers/sunday-shoes-128.webp",
+            "large": "music/covers/sunday-shoes-512.webp"
           },
           "durationS": 120.02,
-          "source": "elevenlabs"
+          "source": "elevenlabs",
+          "album": "Sunday Shoes"
         },
         {
-          "id": "axle-and-pine--porch-light-in-rearview",
+          "id": "axle-and-pine--somebody-owes-me-a-dance",
           "artist": "Axle & Pine",
-          "title": "Porch Light in the Rearview",
-          "src": "music/tracks/axle-and-pine--porch-light-in-rearview.mp3",
+          "title": "Somebody Owes Me a Dance",
+          "src": "music/tracks/axle-and-pine--somebody-owes-me-a-dance.mp3",
           "cover": {
-            "small": "music/covers/axle-and-pine-128.webp",
-            "large": "music/covers/axle-and-pine-512.webp"
+            "small": "music/covers/sunday-shoes-128.webp",
+            "large": "music/covers/sunday-shoes-512.webp"
+          },
+          "durationS": 120.02,
+          "source": "elevenlabs",
+          "album": "Sunday Shoes"
+        },
+        {
+          "id": "axle-and-pine--porch-light",
+          "artist": "Axle & Pine",
+          "title": "Porch Light",
+          "src": "music/tracks/axle-and-pine--porch-light.mp3",
+          "cover": {
+            "small": "music/covers/porch-light-128.webp",
+            "large": "music/covers/porch-light-512.webp"
           },
           "durationS": 135.02,
-          "source": "elevenlabs"
-        },
-        {
-          "id": "axle-and-pine--weigh-station-waltz",
-          "artist": "Axle & Pine",
-          "title": "Weigh Station Waltz",
-          "src": "music/tracks/axle-and-pine--weigh-station-waltz.mp3",
-          "cover": {
-            "small": "music/covers/axle-and-pine-128.webp",
-            "large": "music/covers/axle-and-pine-512.webp"
-          },
-          "durationS": 120.02,
-          "source": "elevenlabs"
+          "source": "elevenlabs",
+          "album": "Porch Light"
         }
       ]
     }
