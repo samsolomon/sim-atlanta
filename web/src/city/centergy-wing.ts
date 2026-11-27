@@ -85,5 +85,7 @@ export function createCentergyWing(buildings: VBuilding[], site: VBuilding, grid
     // Lobby glazing, where the street can see it.
     if (first === 0) quad(0.03, 0.97, g0 + 0.3, lobby - 0.6, 0.05, base, true);
   });
-  return s.finish('#f5d8a8', 0.5);
+  // Nine15 Midtown's and University House's lamp look: in the same 500 m batch cell, so the
+  // wing's lit panes share their night draw instead of adding one (High night is at its cap).
+  return s.finish('#f2d6a8', 0.66);
 }
