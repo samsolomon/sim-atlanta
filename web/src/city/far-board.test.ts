@@ -32,7 +32,7 @@ it('picks the wall style covering the most area, and never a ground-floor base s
 });
 
 it("gives each far wall the near wall's normal and facade axis, whichever way its footprint runs", () => {
-  // The facade shader takes its u axis from the wall normal (vignette/world.ts patchFacades); a far
+  // The facade shader takes its u axis from the wall normal (materials/facade.ts patchFacades); a far
   // wall facing the other way would mirror the window cells and light different windows at night.
   const tangent = (nx: number, nz: number) => { const l = Math.hypot(-nz, nx); return [-nz / l, nx / l]; };
   for (const ring of [[[5, 5], [35, 5], [35, 15], [5, 15]], [[5, 15], [35, 15], [35, 5], [5, 5]]] as [number, number][][]) {

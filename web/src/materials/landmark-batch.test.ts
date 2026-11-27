@@ -1,6 +1,7 @@
 import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { batchLandmarks, buildLandmarkBatches, landmarkBatchReport, StaticLandmarkMaterial } from './landmark-batch';
+import { FACADE_GLOW_RUNS, patchFacades } from './facade';
 
 /** A landmarkShell-like site: a shadowed body and an unshadowed lit-window mesh with its own night factor. */
 function landmark(x: number, glow = '#f2d5a5', factor = 0.64, z = 20) {
@@ -64,6 +65,67 @@ describe('batchLandmarks', () => {
     const day = meshes(b.group).find(m => !m.castShadow && !m.visible && m.name.includes('day'))!;
     expect(lit.reduce((n, m) => n + m.geometry.drawRange.count, 0)).toBe(day.geometry.drawRange.count);
     expect(lit.every(m => m.geometry.attributes.position === day.geometry.attributes.position)).toBe(true);
+  });
+
+  it('keeps lit panes in the wall draw at any night factor, each run lit by its own source (lit walls)', () => {
+    const container = new Group();
+    // As landmarkShell builds them since #484: lit panes share the body's shadow flags and side.
+    const sites = [landmark(10, '#f2d5a5', 0.64), landmark(30, '#e4d3a2', 0.5), landmark(50, '#f2d5a5', 0.64)];
+    for (const s of sites) {
+      s.lamps.castShadow = s.lamps.receiveShadow = true;
+      s.lamps.material.side = DoubleSide;
+      container.add(s.group);
+    }
+    const b = batchLandmarks(sites, container);
+    container.add(b.group);
+    expect(b.stats.litWalls).toBe(1);
+    // 0.3 is not one of the probes (1, 0.5, 0): the runs' light still follows their sources.
+    for (const n of [0, 0.3, 1]) {
+      for (const s of sites) s.setNight(n);
+      b.sync();
+      const drawn = shown(b.group);
+      expect(drawn).toHaveLength(1);
+      const mesh = drawn[0], mat = mesh.material as MeshLambertMaterial;
+      const { glow, plain } = mat.userData.facade;
+      expect(plain).toBe(true);
+      // Body, then the two lamp runs (two sites share a colour and factor), in buffer order.
+      expect(glow.count.value).toBe(3);
+      const rgb = Array.from(glow.rgb.value as Float32Array).slice(0, 9);
+      const lamp = (hex: string, k: number) => new Color(hex).toArray().map(c => c * k * n);
+      const expected = [[0, 0, 0], lamp('#f2d5a5', 0.64), lamp('#e4d3a2', 0.5)];
+      // Run order follows the probe looks; match each run to its expected light.
+      const runs = [0, 1, 2].map(i => rgb.slice(i * 3, i * 3 + 3));
+      for (const e of expected) expect(runs.some(r => r.every((v, c) => Math.abs(v - e[c]) < 1e-6))).toBe(true);
+      // The ranges tile the draw.
+      const range = Array.from(glow.range.value as Int32Array).slice(0, 6);
+      expect(range[0]).toBe(mesh.geometry.drawRange.start);
+      expect(range[2]).toBe(range[1]);
+      expect(range[4]).toBe(range[3]);
+      expect(range[5]).toBe(mesh.geometry.drawRange.start + mesh.geometry.drawRange.count);
+    }
+    // One program: the batch draws with the generic buildings' facade hook and their settings.
+    const generic = new MeshLambertMaterial({ vertexColors: true, side: DoubleSide });
+    patchFacades(generic);
+    const mat = shown(b.group)[0].material as MeshLambertMaterial;
+    expect(mat.customProgramCacheKey()).toBe(generic.customProgramCacheKey());
+    expect([mat.type, mat.side, mat.vertexColors, mat.flatShading, mat.fog]).toEqual([generic.type, generic.side, generic.vertexColors, generic.flatShading, generic.fog]);
+  });
+
+  it('falls back to night runs when a group has more runs than one draw can carry', () => {
+    const container = new Group();
+    const sites = Array.from({ length: FACADE_GLOW_RUNS + 1 }, (_, i) => landmark(10 + i * 20, `#${(0x101010 + i * 0x0a0805).toString(16)}`, 0.6, 20));
+    for (const s of sites) {
+      s.lamps.castShadow = s.lamps.receiveShadow = true;
+      s.lamps.material.side = DoubleSide;
+      container.add(s.group);
+    }
+    const b = batchLandmarks(sites, container);
+    container.add(b.group);
+    expect(b.stats.litWalls).toBe(0);
+    expect(b.stats.litWallOverflow).toBe(1);
+    for (const s of sites) s.setNight(1);
+    b.sync();
+    expect(shown(b.group).length).toBeGreaterThan(FACADE_GLOW_RUNS);
   });
 
   it('bakes a constant material colour into the vertices and keeps a colour that changes at night', () => {
@@ -176,8 +238,8 @@ describe('batchLandmarks', () => {
     await b.farReady;
     const far = b.group.getObjectByName('landmark batch (far)') as Mesh;
     const farTris = far.geometry.index!.count / 3;
-    // Walls and lit panes share one day draw; that is the full version a far cell swaps out.
-    const near = meshes(b.group).find(m => m.name === 'landmark batch (day)')!;
+    // Walls and lit panes share one draw, day and night (lit walls); that is the full version a far cell swaps out.
+    const near = meshes(b.group).find(m => m.name === 'landmark batch (lit walls)')!;
     // Two walls (four triangles) stand in for ~500 pane triangles; the lamp cubes sit on no wall and stay.
     expect(farTris).toBeLessThan(30);
     expect(farTris).toBeGreaterThanOrEqual(4);
@@ -205,12 +267,16 @@ describe('batchLandmarks', () => {
     b.setCellDetail(`${cell.cell}`, 'lod');
     at(550);
     expect(far.visible).toBe(true);
-    // At night the lit panes, which share the walls' day draw, change, so the cell draws in full.
+    // At night the lit panes, which share the walls' draw, change, so the cell draws in full: the
+    // same one draw, with the panes' light in its glow ranges (the far walls carry no panes).
     for (const s of sites) s.setNight(1);
     b.sync();
     expect(far.visible).toBe(false);
-    const lit = meshes(b.group).filter(m => m.visible && (m.material as MeshLambertMaterial).emissiveIntensity > 0);
-    expect(lit.length).toBeGreaterThan(0);
+    expect(near.onBeforeRender).toBe(Mesh.prototype.onBeforeRender);
+    expect(shown(b.group)).toEqual([near]);
+    const glow = (near.material as MeshLambertMaterial).userData.facade.glow;
+    expect(glow.count.value).toBe(2);
+    expect(Math.max(...glow.rgb.value)).toBeGreaterThan(0);
   });
 
   it('builds the same batches as a sliced generator as all at once', () => {
