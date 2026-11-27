@@ -150,7 +150,8 @@ Afterglow 88.5 · A streetlamp blooms into a star as summer daylight fades.
 
 ## Axle & Pine
 
-Two square sleeves generated with ImageGen.
+**Sunday Shoes.** The two electric shuffles share a flash-lit oxblood boot on a mustard dance floor. ImageGen revised the walking heel with a flat rubber lift, a recessed rear edge and a vertical breast under the arch.
 
-- **Sunday Shoes** pairs the two electric shuffles. A scuffed oxblood boot lifts from a mustard dance floor beneath a denim cuff. Direct flash, warm paper wear and condensed slab lettering suggest a dancehall record sleeve.
-- **Porch Light** is the acoustic single. A cream moth rests on a dark screen door with amber light behind it. Fine grain and small ivory serif lettering keep the sleeve quiet.
+## Nell Tiller
+
+**Porch Light.** ImageGen painted a honey-brown acoustic guitar against a ladder-back chair in gouache on oatmeal paper. Sage and dusty blue window shadows frame the dark blue artist credit and italic title.
