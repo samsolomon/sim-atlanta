@@ -108,6 +108,9 @@ export class SquareMosaic {
   /** Section loads still running, including follow-ups they start. */
   private inflight = new Set<Promise<void>>();
   private failed = new Set<Section>();
+  /** Called when a failed section is no longer requested (the camera moved off it): its failure
+   * notice no longer applies, and coming back loads it again. */
+  onForget?: (d: Section) => void;
   private wanted?: Point;
   private seeking?: Point;
   /** The newest request, which follow-up loads continue from. */
@@ -174,7 +177,7 @@ export class SquareMosaic {
       const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
       if (next && (next !== 'r16' || showNorth || inside(bounds.r16, target.x, target.z, 100) || sought('r16'))) requested.push(next);
     }
-    for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
+    for (const id of this.failed) if (!requested.includes(id)) { this.failed.delete(id); this.onForget?.(id); }
     for (const direction of requested) {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
       if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;

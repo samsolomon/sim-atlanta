@@ -425,3 +425,36 @@ it('retries only a failed row from the notice, where the last request stood, and
     expect(requested.length).toBe(before);
   } finally { mosaic.dispose(); downtown.dispose(); }
 });
+
+it('reports a failed row it stops asking for, so its notice and Retry go away', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('fetch', async (url: string) => {
+    if (!url.startsWith('/notice-forget/')) return new Response(null, { status: 404 });
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      if (id === 'midtown-central') return new Response(null, { status: 503 });
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/notice-forget', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const forgotten: string[] = [];
+  mosaic.onForget = d => forgotten.push(d);
+  try {
+    mosaic.remember(-81, -4000);
+    mosaic.approach(0, 0, 'low', signal, () => {}, () => {});
+    await mosaic.idle();
+    mosaic.approach(0, 0, 'low', signal, () => {}, () => {}); // still wanted: kept
+    expect(forgotten).toEqual([]);
+    mosaic.cancelTarget();
+    mosaic.approach(0, 0, 'low', signal, () => {}, () => {}); // the camera gave the row up
+    expect(forgotten).toEqual(['midtown-central']);
+  } finally { mosaic.dispose(); downtown.dispose(); }
+});

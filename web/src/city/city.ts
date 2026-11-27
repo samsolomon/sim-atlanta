@@ -392,8 +392,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const text = [...areaFailures.values()].join(' · ') || null;
     options.areaNote?.(text, [...areaFailures.keys()].some(retryable) ? retryAreas : undefined);
   }
-  /** The notice's Retry: loads each failed area again, where it stands, without moving the camera
-   * or asking for areas that never failed. A failure that recurs puts its note back. */
+  /** The notice's Retry: loads each failed area again from where the last request stood, asking
+   * for no area that never failed. Retry itself never moves the camera; a camera link's pending
+   * destination in that area still resumes once it loads. A failure that recurs puts its note
+   * back. A failure the camera has since moved away from clears its own note (the mosaic's
+   * onForget, approachEast, approachNorth), so the notice never offers a retry that loads nothing. */
   function retryAreas() {
     const failed = [...areaFailures.keys()].filter(retryable);
     for (const key of failed) areaFailures.delete(key);
@@ -408,6 +411,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (retryEast) approachEast(at.x, at.z);
     if (retryNorth) approachNorth(at.x, at.z);
   }
+  if (mosaic) mosaic.onForget = d => areaResult(d, null);
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
@@ -1217,7 +1221,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
     if (!nearNorth(x, z)) {
-      if (northFailed && !mosaic) areaResult('auburn', null);
+      if (northFailed) areaResult('auburn', null);
       northFailed = false;
       return;
     }
@@ -1296,7 +1300,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachEast(x: number, z: number) {
     if (!previewEast || east || !terrain || !grid) return;
     if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
-      if (eastFailed && !mosaic) areaResult('king', null);
+      if (eastFailed) areaResult('king', null);
       eastFailed = false;
       pendingEastTarget = undefined;
       return;
