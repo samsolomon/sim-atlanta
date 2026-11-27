@@ -21,7 +21,9 @@ it.each(['high', 'low'] as const)('joins the rendered ground, skirts and triple 
   const west = baked('downtown-ground'), south = baked('king-memorial/ground'), north = baked('sweet-auburn/ground');
   verifyNorth(west, south, north);
   vi.stubGlobal('document', { createElement: () => ({ getContext: () =>
-    ({ scale() {}, translate() {}, fillRect() {}, setLineDash() {} }) }) });
+    ({ scale() {}, translate() {}, fillRect() {}, setLineDash() {},
+      // The downtown board paints its Robinson College frontage strip even with no buildings.
+      beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {} }) }) });
   const area = (g: GroundGrid, join: JoiningEdge[]) => createDowntownTerrain(g,
     { bounds: g.manifest.bounds, buildings: [], roads: [], rail: [] }, [], { quality, join });
   const w = area(west, [eastJoin, northWestJoin]), s = area(south, [eastJoin, northSouthJoin]),
@@ -70,7 +72,9 @@ it.each(['high', 'low'] as const)('keeps the Irwin porch decks above their slopi
   const buildings = context.buildings.filter(b => irwinHouseFinish(b));
   expect(buildings.map(b => b.id).sort()).toEqual(['osm:way:270493826', 'osm:way:270493832', 'osm:way:270493845']);
   vi.stubGlobal('document', { createElement: () => ({ getContext: () =>
-    ({ scale() {}, translate() {}, fillRect() {}, setLineDash() {} }) }) });
+    ({ scale() {}, translate() {}, fillRect() {}, setLineDash() {},
+      // The downtown board paints its Robinson College frontage strip even with no buildings.
+      beginPath() {}, moveTo() {}, lineTo() {}, closePath() {}, fill() {} }) }) });
   const area = createDowntownTerrain(grid, { bounds: grid.manifest.bounds, buildings, roads: [], rail: [] }, [],
     { quality, finishFor: irwinHouseFinish });
   try {

@@ -8,6 +8,8 @@ Sam saw grass-green ground at the Robinson College doors on Broad Street. The ca
 
 Only the downtown and east boards carry these landuse polygons. Midtown boards have none, so Midtown's verges stay sage under both steps.
 
+**Robinson frontage strip (fixed November 27).** A separate strip paves the ground between the Empire Building's Broad Street face and the mapped sidewalk. As first written it only painted when the building was still in the ground map's building list. City's landmark skin removes that footprint before the ground is painted, so the strip never drew: in City the wall's base stayed green. It now paints on any board whose bounds hold the whole strip. [Facade base at 35 m: before this PR, the first version, and the fix](frontage-fix.jpg), camera `144,-131,140,62,35` with `&dev&mindist=20`.
+
 No material, shader program or texture changes. The ground canvas is the same size, and only colours inside it change.
 
 | View | City camera | Day and night, three states |

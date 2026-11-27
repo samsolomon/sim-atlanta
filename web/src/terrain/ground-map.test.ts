@@ -125,3 +125,25 @@ it('paves commercial and retail landuse beneath mapped lawns and leaves campuses
   expect(fills).toHaveLength(3);
   map.dispose();
 });
+
+it('paves the Robinson College frontage after City has removed the skinned Empire Building', () => {
+  const fills: { color: string; points: P2[] }[] = [];
+  let points: P2[] = [];
+  const ctx = { strokeStyle: '', fillStyle: '', lineWidth: 0, scale() {}, translate() {}, rotate() {}, fillRect() {}, closePath() {},
+    fill() { fills.push({ color: this.fillStyle, points }); }, clip() {}, restore() {}, save() {}, beginPath() { points = []; },
+    moveTo(x: number, z: number) { points.push([x, z]); }, lineTo(x: number, z: number) { points.push([x, z]); },
+    setLineDash() {}, stroke() {} };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  // City's landmark skins drop the footprint they replace before the ground is painted.
+  const paint = (area: TerrainCity['bounds'], lawn: P2[][]) => groundMap({ bounds: area, rail: [], buildings: [], roads: [], points: {},
+    ground: [{ kind: 'grass', name: null, sub: null, rings: lawn }] }, 'low').dispose();
+  const frontage = (f: { points: P2[] }) => f.points[0]?.[0] === 119.6 && f.points[0]?.[1] === -118.43;
+  paint({ minX: 0, maxX: 300, minZ: -300, maxZ: 0 }, [[[110, -170], [175, -170], [175, -110], [110, -110]]]);
+  expect(fills.filter(frontage).map(f => f.color)).toEqual([PAL.sidewalk]);
+  expect(fills.findIndex(frontage)).toBe(0); // beneath mapped lawns
+  expect(fills.length).toBeGreaterThan(1);
+  // A board that does not hold the whole strip never paints it.
+  fills.length = 0;
+  paint({ minX: 0, maxX: 100, minZ: 0, maxZ: 100 }, [[[10, 10], [90, 10], [90, 90], [10, 90]]]);
+  expect(fills.filter(frontage)).toHaveLength(0);
+});

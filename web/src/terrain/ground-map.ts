@@ -106,9 +106,10 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   // Broad Street face of the Empire Building footprint and the mapped sidewalk
   // opposite it. Clip the sidewalk segment to the two ends of the facade.
   // Paint beneath mapped land cover so lawns still take precedence.
-  if (data.buildings?.some(building => building.id === '06942e29-e032-4d6b-a30f-7e1f4bc9f2a4')) {
+  const robinson: P2[] = [[119.6, -118.43], [167.1, -159.15], [163.72, -163.09], [117.78, -120.56]];
+  if (robinson.every(([x, z]) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ)) {
     ctx.beginPath();
-    trace(ctx, [[119.6, -118.43], [167.1, -159.15], [163.72, -163.09], [117.78, -120.56]]);
+    trace(ctx, robinson);
     ctx.closePath();
     ctx.fillStyle = PAL.sidewalk;
     ctx.fill();
