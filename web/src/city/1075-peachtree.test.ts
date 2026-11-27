@@ -1,5 +1,6 @@
-import { Mesh, Raycaster, Vector3 } from 'three';
+import { Color, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
+import { pointInRing } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { GroundGrid } from '../terrain/grid';
 import { create1075Peachtree, peachtree1075Id, simplify } from './1075-peachtree';
@@ -58,4 +59,29 @@ it('keeps real corners when it thins a traced curve', () => {
   const out = simplify(ring, 3);
   for (const corner of [[0, 0], [10, 0], [10, 10], [0, 10]]) expect(out).toContainEqual(corner);
   expect(out).not.toContainEqual([4, 10.25]);
+});
+
+it('cuts the reveal on the outside of both joints between the masses, Peachtree and Juniper', () => {
+  const result = create1075Peachtree([upper], upper, grid)!;
+  result.group.updateMatrixWorld(true);
+  const body = result.group.children[0] as Mesh;
+  const position = body.geometry.attributes.position, color = body.geometry.attributes.color;
+  const dark = new Color('#1f2b33'), v = new Vector3();
+  const rings = ['osm:way:1434982572', 'podium'].map(id => upper.parts!.find(p => p.id === id)!.rings[0] as [number, number][]);
+  // Reveal quads are two triangles of six vertices; take each quad's centre.
+  const strips: Vector3[] = [];
+  for (let i = 0; i + 5 < position.count; i += 6) {
+    if (Math.abs(color.getX(i) - dark.r) + Math.abs(color.getY(i) - dark.g) + Math.abs(color.getZ(i) - dark.b) > 1e-3) continue;
+    const c = new Vector3();
+    for (let k = 0; k < 6; k++) c.add(v.fromBufferAttribute(position, i + k).applyMatrix4(body.matrixWorld));
+    strips.push(c.divideScalar(6));
+  }
+  // One strip on each side of each joint, all of them outside both masses.
+  expect(strips).toHaveLength(4);
+  for (const c of strips) for (const ring of rings) expect(pointInRing(c.x, c.z, ring)).toBe(false);
+  for (const joint of [[798.24, -3344.04], [845.55, -3315.64]]) {
+    expect(strips.filter(c => Math.hypot(c.x - joint[0], c.z - joint[1]) < 2)).toHaveLength(2);
+  }
+  // Above the parking podium (323.6 m roof beside the Juniper joint) and in front of the floor lines.
+  for (const c of strips) expect(c.y + 300).toBeGreaterThan(323.6);
 });

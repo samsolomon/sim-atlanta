@@ -159,7 +159,7 @@ function bulge(plan: P2[], a: P2, b: P2) {
 /**
  * Floor lines, the vertical mullion rhythm and a sparse, stable set of lit office panes. Layers
  * stand at least 4 cm apart so none z-fights at City range: lit panes 0.09, floor lines 0.15,
- * mullions 0.21 (the reveal at 0.2 only meets the floor lines).
+ * mullions 0.21; the joint reveal stands in front of them all at 0.25.
  */
 function curtain(s: Shell, solids: Solid[], self: Solid, grade: Grade, hi: number, seed: number) {
   exposed(self.bands, solids, self, (a, b, length, from, edge) => {
@@ -270,18 +270,22 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     s.prism(local([[812, -3362], [838, -3362], [838, -3352], [812, -3352]]), north.top, north.top + 3.6, '#b3b6b1', '#9a9d99');
   }
 
-  // The deep reveal where the two masses meet: a dark slot down each side of their shared corners.
+  // The deep reveal where the two masses meet: a dark slot down each side of the two joints, at
+  // Peachtree and on the Juniper side. A joint is a shared vertex on an outside wall, so a strip
+  // goes only on an exposed edge with exactly one shared end; edges with both ends shared run
+  // between the masses. The Juniper returns are 2.5 and 2.9 m, so short edges count. Strips start
+  // above any neighbour's roof. The four joint edges are also band edges (no bulge), so at 0.25 m
+  // out the strips stand in front of the floor lines (0.15) and mullions (0.21).
   if (north && crown) {
     const shared = crown.plan.filter(([x, z]) => north!.plan.some(([u, v]) => Math.hypot(x - u, z - v) < 0.6));
+    const near = (p: P2) => shared.some(([x, z]) => Math.hypot(x - p[0], z - p[1]) < 0.6);
     for (const solid of [crown, north]) {
-      solid.plan.forEach((a, i) => {
-        const b = solid.plan[(i + 1) % solid.plan.length];
-        const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        if (length < 3) return;
+      exposed(solid.plan, solids, solid, (a, b, length, from) => {
+        const lo = Math.max(floor + 8.6, from), hi = north!.top;
+        if (length < 2 || near(a) === near(b) || hi - lo < 1) return;
         const w = Math.min(0.3, 1.6 / length);
-        const near = (p: P2) => shared.some(([x, z]) => Math.hypot(x - p[0], z - p[1]) < 0.6);
-        if (near(a)) panel(s, a, b, 0, w, floor + 8.6, north!.top, 0.2, reveal);
-        if (near(b)) panel(s, a, b, 1 - w, 1, floor + 8.6, north!.top, 0.2, reveal);
+        if (near(a)) panel(s, a, b, 0, w, lo, hi, 0.25, reveal);
+        else panel(s, a, b, 1 - w, 1, lo, hi, 0.25, reveal);
       });
     }
   }
