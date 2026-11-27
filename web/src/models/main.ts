@@ -11,6 +11,7 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
 import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
+import { commuterCoachGeometry } from '../vignette/commuter-coach';
 import { FREIGHT_LENGTH, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { FreightBatches, freightMaterial } from '../city/freight-batches';
 import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-consist';
@@ -87,6 +88,7 @@ const models = {
   semi589: 'Long-hood sleeper tractor · 53 ft dry van',
   f150: 'Full-size crew-cab pickup (F-150 SuperCrew-like)',
   xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
+  xpressCoach: 'Highway commuter coach · Xpress-like',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
   freightGrainHopper: 'Three-bay covered grain hopper',
@@ -768,6 +770,15 @@ function build() {
     document.getElementById('blurb')!.append(link);
     return;
   }
+  if (model === 'xpressCoach') {
+    document.getElementById('tier')!.hidden = false;
+    document.getElementById('blurb')!.textContent = 'A 45-foot highway commuter coach like the MCI D4500s that make up most of the Xpress express-lane fleet, in look-alike colours without logos. Lab study; City placement waits on the bus-network plan.';
+    const coach = new THREE.Mesh(commuterCoachGeometry(treeQuality === 'low'), busMaterial(night));
+    coach.castShadow = coach.receiveShadow = true;
+    cars = [coach];
+    scene.add(coach);
+    return;
+  }
   if (model === 'xn40' || model === 'xn40Rapid') {
     if (model === 'xn40Rapid') document.getElementById('blurb')!.textContent = 'The A-Line opened with purple 40-foot XN40 buses powered by compressed natural gas.';
     const bus = new THREE.Mesh(busGeometry(model === 'xn40Rapid' ? RAPID_LIVERY : undefined), busMaterial(night));
@@ -802,6 +813,15 @@ function build() {
 }
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 400);
+let presetNear = 0.1;
+/** From far orbits (City distance), a 0.1 m near plane leaves too little depth precision: layered
+ * glass and decals z-fight and the ink pass hatches them. Beyond 60 m use a fifth of the orbit
+ * distance, capped at City's own 20 m near plane. */
+function fitNearPlane() {
+  const dist = camera.position.distanceTo(controls.target);
+  const near = dist > 60 ? Math.min(20, dist * 0.2) : presetNear;
+  if (near !== camera.near) { camera.near = near; camera.updateProjectionMatrix(); }
+}
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 /** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
@@ -932,7 +952,7 @@ function view(name: string) {
   camera.position.x += dx;
   controls.target.x += dx;
   camera.fov = v.fov;
-  camera.near = v.near ?? 0.1;
+  presetNear = camera.near = v.near ?? 0.1;
   camera.updateProjectionMatrix();
   controls.update();
   fitModel(true);
@@ -1018,6 +1038,7 @@ const draw = (t: number) => {
   trees?.update?.(dt, camera);
   lastFrame = t;
   controls.update();
+  if (model === 'xpressCoach') fitNearPlane();
   ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
   ink.uniforms.uNear.value = camera.near;
   ink.uniforms.uFar.value = camera.far;
@@ -1144,7 +1165,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, f150: PICKUP_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xpressCoach: BUS_VIEWS, xe60: passengerViews, semi589: SEMI_VIEWS, f150: PICKUP_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = entry;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -1202,7 +1223,7 @@ function variantControls() {
   document.getElementById('title')!.textContent = title;
   document.title = title + ' · Model Lab · Sim Atlanta';
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'semi589', 'f150', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xpressCoach', 'xe60', 'semi589', 'f150', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
