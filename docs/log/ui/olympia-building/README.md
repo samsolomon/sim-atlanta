@@ -29,3 +29,13 @@ Sources, consulted in a fresh Orca tab:
 ![The same view at 23:30](olympia-building-night.jpg)
 ![Close](olympia-building-close.jpg)
 ![Four sides](olympia-building-four-sides.jpg)
+
+## Rework stills (2026-11-27)
+
+Matched BEFORE (blank sign, `306472ea`) and AFTER (generic ad) at 11:30 and 23:30, low tier, 1350 × 760. The day and night views above now show the ad. The close view and four-side sheet still show the earlier blank sign; the building itself is unchanged.
+
+![From the south](olympia-rework-south.jpg)
+`?view=city&q=low&cam=205,-45,350,50,280` (the original money shot)
+
+![From the north, the sign's other face](olympia-rework-north.jpg)
+`?view=city&q=low&cam=190,-50,195,35,200`. The original north view in the four-side sheet is hidden by a tower, so this camera looks over it from higher up.
