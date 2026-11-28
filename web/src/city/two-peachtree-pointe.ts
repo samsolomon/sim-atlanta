@@ -21,7 +21,7 @@ export const TWO_PEACHTREE_POINTE = {
 } as const;
 
 // Glass under the base-value table (S 28, V 69); cream precast and silver crown from photographs.
-const glass = '#7f9fb0', ribbon = '#c9cdd0', precast = '#ddd5c4', window = '#6c8594', crown = '#b7bcc0',
+const glass = '#7f9fb0', ribbon = '#c9cdd0', precast = '#ddd5c4', window = '#6c8594', crown = '#d6d3cb', canopy = '#e4e2dc',
   roof = '#9c9890', storefront = '#4a5a64';
 
 export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
@@ -69,7 +69,11 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
   parts.filter(p => p.id === BLOCK).forEach((block, fragment) => {
     const plan = local(block.rings[0]);
     s.prism(plan, base, H.block, window, roof);
-    faces(plan).forEach((f, face) => {
+    const blockFaces = faces(plan);
+    // Both boards hold an east run; the canopy goes on the brookwood-south clip (south of the seam).
+    const entrance = !north
+      ? blockFaces.filter(f => f.n[0] > 0.9).sort((p, q) => q.length - p.length)[0] : undefined;
+    blockFaces.forEach((f, face) => {
       const lo = f.a[1] < -20 && f.b[1] < -20 ? H.podium : H.grade;
       const piers = Math.max(1, Math.round(f.length / 3));
       for (let k = 0; k <= piers; k++) {
@@ -82,6 +86,17 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
         panel(f, 0, 1, y - 0.7, y + 0.7, 0.1, precast);
       }
       panel(f, 0, 1, H.block - 1.4, H.block + 0.6, 0.12, precast);
+      // Base on Peachtree (east): a dark lobby storey and a flat entrance canopy seated on the
+      // facade, projecting 2.4 m over the drive (photograph from Peachtree).
+      if (f.n[0] > 0.9 && f.length > 12) {
+        panel(f, 0.05, 0.95, H.grade + 0.3, H.grade + 5.6, 0.13, storefront);
+      }
+      // One canopy, on the longest Peachtree run (the entrance).
+      if (f === entrance) {
+        const [cx, , cz] = at(f, 0.5, 0, 0);
+        s.body.box(2.4, 0.5, Math.min(12, f.length * 0.6), cx + 1.2, H.grade + 5.2, cz, canopy);
+        s.lights.quad(at(f, 0.35, H.grade + 0.4, 0.17), at(f, 0.35, H.grade + 4.4, 0.17), at(f, 0.65, H.grade + 4.4, 0.17), at(f, 0.65, H.grade + 0.4, 0.17), storefront);
+      }
       // Offices: about 6% of window bays lit at night.
       for (let j = 0; j < n; j++) for (let k = 0; k < piers; k++) {
         if (litHash(seed, fragment * 16 + face, j, k) >= 0.06) continue;
@@ -101,14 +116,17 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
       const over = 0.4 / f.length, n = floors(H.curve - 2, H.grade + 5);
       for (let j = 1; j <= n; j++) {
         const y = H.grade + 5 + j * H.floor;
+        if (y > H.curve - 2 * H.floor) break; // under the crown band
         panel(f, -over, 1 + over, y - 0.9, y + 0.5, 0.08, ribbon);
       }
-      // The crown screen rises from the roof edge, higher toward the west.
-      const ya = crownAt(f.a[0]), yb = crownAt(f.b[0]);
-      s.body.quad(at(f, 0, H.curve - 1.2, 0.1), at(f, 0, ya, 0.1), at(f, 1, yb, 0.1), at(f, 1, H.curve - 1.2, 0.1), crown);
+      // Crown: the top two floors of the curve are a solid cream metal band, not glass, whose top
+      // edge sweeps up toward the west (photographs; lidar crown 360-365.5 m). It sits on the face.
+      const band = H.curve - 2 * H.floor, ya = crownAt(f.a[0]), yb = crownAt(f.b[0]);
+      s.body.quad(at(f, -over, band, 0.12), at(f, -over, ya, 0.12), at(f, 1 + over, yb, 0.12), at(f, 1 + over, band, 0.12), crown);
       for (let j = 0; j < n; j++) {
         if (litHash(seed, 20 + face, j, 0) >= 0.06) continue;
         const y = H.grade + 5 + j * H.floor;
+        if (y + H.floor > H.curve - 2 * H.floor) break;
         panel(f, 0.1, 0.9, y + 0.5, y + H.floor - 0.9, 0.04, glass, true);
       }
     });
