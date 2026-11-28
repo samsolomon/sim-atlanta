@@ -11,6 +11,11 @@ go; the go for batch 1 covered batch 1 only.
   #560, #563, #568, #578, #591, #595, #598. `pnpm test:perf` on that tip: High night 480 of 535
   calls (the reserve starts at 495), High programs 94 (inside the reserve), Low geometry 160.7 MB,
   High heap 544 of 570 MB, Low heap 432 of 460 MB.
+- **#729 merged**, `main` `584939eb`: Centergy One's trellis posts. #544's south slice is left to
+  the white stand-in (#726), which covers it; #728, the dropped fix, is closed.
+- **Release 20 packaged** from `584939eb` for the coordinator to test and deploy:
+  `~/Developer/releases/sim-atlanta-release-584939eb.tar.gz` (SHA-256 `6bd3ebda…0afad`), evidence
+  and packaging scripts beside it in `…-584939eb-evidence/`.
 - The 1180 Peachtree crown veil stays single-pass: two passes need one more High program. The
   held branch is `samsolomon/veil-two-pass-held`.
 
@@ -28,18 +33,14 @@ go; the go for batch 1 covered batch 1 only.
 
 ## Next
 
-1. The release 20 gate is #578's trellis post, on #726 (`c9990e15`). #544's south sliver is left
-   to the white stand-in, which covers it; `samsolomon/group2-fixes` (#728) holds the dropped fix.
-   Packaging needs `pnpm data:bake` (`scene/placeholder/board.bin.gz`).
-2. Group 3, chained on that fix: #600 #602 #605 #606 #607 #609 #614 #617 #618 #620 and the
-   approved reworks #634 (`35371006`), #573 (`efdb5923`), #587 (`c7588892`). Squash #606 and #620
-   (merge commits) and check their diffs.
-3. Later groups, about ten each in PR-number order: #624 (retarget #652 to `main` first) #626
-   #628 #629 #630 #633 #635 #636 #637 #640 #641 #642 #643 #645 #648 #650 #652 #653 #655 #657
-   #658 #659 #660 #661 #662 #664 #679 (a draft). The rest of the Rework set stays out.
-4. Budgets: High night calls have a 535 ceiling and a 40-call reserve, so batches stop at 495
-   unless Sam says otherwise. No PR may add a High program, Low geometry stays under 165 MB (its
-   reserve), and heap is the one to watch.
+1. #730 (the feeds release 20 ships) is merged, `main` `f3935004`.
+2. Group 3, in this order: #573 #587 #600 #602 #605 #606 #607 #609 #614 #617 #618 #620 #634 (#606
+   and #620 squashed). These PRs predate #726, so each changes the stand-in bake (`pnpm data:bake`).
+3. Later groups, about ten each in PR-number order: #624 (retarget #652 to `main` first) #626 #628
+   #629 #630 #633 #635 #636 #637 #640 #641 #642 #643 #645 #648 #650 #652 #653 #655 #657 #658
+   #659 #660 #661 #662 #664 #679 (a draft). The rest of the Rework set stays out.
+4. Budgets: measure each PR. Low geometry was 163.5 MB at release 20 and stops at its 165 MB
+   reserve. High night calls were 481 and stop at 495. No PR may add a High program; heap is tight.
 
 Evidence, scripts and contact sheets are in `~/Developer/merge-batch-sheets-2026-11-27/` on the
 Studio.

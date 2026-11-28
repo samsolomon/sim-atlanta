@@ -69,3 +69,47 @@ Clock 2026-11-20, high tier unless noted. Prefix each camera with `/?view=city&c
 | Entrance corner (close) | `806,-3360,115,45,220` with `&dev&mindist=20` | 11:30 / 23:30 |
 
 At the start cam, the Loews Atlanta Hotel stands in front of the tower, so the crown view is the money shot.
+
+## Rework (2026-11-24)
+
+The registry audit failed #416: from a distance it read as a flat navy slab (sunlit glass about V 20), and the brim, louvre crown and mullions did not register. The lead confirmed three identifiers, from the [2025 aerial](https://commons.wikimedia.org/wiki/File:A1075PchTrMT2511-0662.jpg) and [the view from the north](https://commons.wikimedia.org/wiki/File:One_Midtown_ATL.jpg): the white brim line at the top, the deep reveal between the two masses, and thin pale floor lines.
+
+What changed:
+- Brim top and soffit: white (`#ecebe5`, `#f4f3ee`). Louvre band: pale (`#e2e3de`).
+- Floor lines: pale (`#c6d0d4`), 0.8 m deep. Mullions are lighter.
+- A dark reveal (`#1f2b33`) runs down the shared corners of the two masses.
+- No new material and no new geometry apart from the reveal strips.
+
+Glass, for Sam's palette pick (rendered sunlit, 11:30 high tier, `820,-3335,0,78,320` with `&dev&mindist=20`):
+
+| Version | Base | Hue | S | V |
+|---|---|---|---|---|
+| Original glass (#416) | `#46606e` | 201 | 74 | 35 |
+| Photo-matched glass (option A) | `#8ca8bc` | 192 | 20 | 64 |
+| **Deeper blue (option B, Sam's pick, in code)** | `#718a9d` | 200 | 33 | 53 |
+
+The photo-matched value follows the photos' light, reflective sky-blue and is inside the rule (V ≥ 62 → S ≤ 30). At 800 m it sits close to the generic pale-blue towers, so the lead asked for a middle option. The deeper blue renders at S 33 and V 53, inside the cap and more distinct from its neighbours. The current glass, at S 74, is over the S ≤ 36 cap.
+
+[Before / current / photo-matched](rework-compare.jpg) · [Four sides at 400 m](1075-peachtree-four-sides.jpg)
+
+## Glass pick (Sam, 2026-11-24)
+
+Sam picked option B, the deeper blue `#718a9d` ("The glass pick looks good to me"), from a strip that showed both options with #631's glass shade floor merged in locally. B reads clearly apart from the pale-blue towers around it at the money-shot distance, and its sunlit render (S 32 / V 53) is inside the rule. The lit-pane colour follows it (`#738ca0`). [The A/B strip](https://github.com/samsolomon/sim-atlanta/blob/e2ab64c62aa4975a01e8dbe59ce58ed88f49f2a3/review/1075-glass-pick/glass-pick.jpg?raw=true)
+
+The final before and after ([rework-compare.jpg](rework-compare.jpg), `815,-3330,215,70,950`) is shot **pre-floor**: #631's glass shade floor was not yet on main. The four-side sheet comes from `scripts/four-side-sheet.mjs` (low tier, 500 m, target 815,-3330).
+
+## Reveal geometry (2026-11-27)
+
+Review found the dark reveal strips misplaced: the loop matched 11 shared vertices along the curve between the two masses and the Juniper wall and drew 42 strips, 40 of them with their centre 0.2 m inside the other mass. The Juniper-side returns (2.46 and 2.89 m) fell under a 3 m cut-off, so that joint got none. Now a strip goes only on an exposed edge with exactly one shared end, the two joints, at Peachtree and on the Juniper side, which gives four strips, all outside both masses. Each starts above any neighbouring roof (the 323.6 m parking podium at Juniper) and stands 0.25 m out, in front of the floor lines (0.15) and mullions (0.21). `1075-peachtree.test.ts` pins the four strips, two at each joint.
+
+Matched stills, BEFORE `82dd86c4` and AFTER at 11:30 and 23:30, high tier:
+
+![Juniper joint, 3x crop](reveal-juniper-joint.jpg)
+The new Juniper-side slot. `cam=846,-3316,345,62,700`, then `__setView(345,62,700,846,-3316,2.4)` in dev, cropped around the joint.
+
+![Peachtree joint, 3x crop](reveal-peachtree-joint.jpg)
+`cam=798,-3344,35,62,700`, then `__setView(35,62,700,798,-3344,2.4)`. The Peachtree strips exist (the test pins them) but don't read at City range: from the west the towers across Peachtree hide the joint, and from the south-west its faces turn away.
+
+![Crown three-quarter, the money shot](reveal-crown.jpg)
+![Juniper side](reveal-juniper.jpg)
+`815,-3330,215,70,950` and `815,-3330,270,55,500`: at these ranges the 0.7 m strips are below a pixel, so before and after match, as they should.

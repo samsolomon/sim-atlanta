@@ -4117,3 +4117,9 @@ Two small faults from review, and only one needed code. On Centergy One, one pos
 ![Centergy One's middle post, before and after](log/ui/group2-fixes/centergy-post.jpg)
 
 ![The corner strip the dropped slice fix would have shown](log/ui/group2-fixes/strip-central-white.jpg)
+
+### 2026-11-27 — Release 20, packaged
+
+Twenty building PRs, a streaming look and live-train smoothing in one release. High's night view draws 481 calls against release 19's 629, because lit windows now ride the wall draw. The download got smaller even with 6.1 MB of new radio tracks on the host: the 1.9 MB (phones) and 4.0 MB (desktop) ground bake every visitor fetched is gone, and the white stand-in that replaces blank squares costs 0.23 MB. The bill is memory, about 3.4 MB more geometry, which leaves phones 1.5 MB before their reserve. The surprise in the frame comparison was the north end of the board: the one row that loads only when you look at it now shows as a stand-in, white by day and a flat blue strip at night.
+
+![The default night view, release 19 against release 20, changed pixels in magenta](log/release-20/default-night.jpg)

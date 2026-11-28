@@ -1,5 +1,6 @@
-import { Mesh, Raycaster, Vector3 } from 'three';
+import { Color, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
+import { pointInRing } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { GroundGrid } from '../terrain/grid';
 import { create1075Peachtree, peachtree1075Id, simplify } from './1075-peachtree';
@@ -58,4 +59,45 @@ it('keeps real corners when it thins a traced curve', () => {
   const out = simplify(ring, 3);
   for (const corner of [[0, 0], [10, 0], [10, 10], [0, 10]]) expect(out).toContainEqual(corner);
   expect(out).not.toContainEqual([4, 10.25]);
+});
+
+it('cuts the reveal on the outside of both joints between the masses, Peachtree and Juniper', () => {
+  const result = create1075Peachtree([upper], upper, grid)!;
+  result.group.updateMatrixWorld(true);
+  const body = result.group.children[0] as Mesh;
+  const position = body.geometry.attributes.position, color = body.geometry.attributes.color;
+  const dark = new Color('#1f2b33'), v = new Vector3();
+  const rings = ['osm:way:1434982572', 'podium'].map(id => upper.parts!.find(p => p.id === id)!.rings[0] as [number, number][]);
+  // Reveal quads are two triangles of six vertices; take each quad's centre.
+  const strips: Vector3[] = [], bottoms: number[] = [];
+  for (let i = 0; i + 5 < position.count; i += 6) {
+    if (Math.abs(color.getX(i) - dark.r) + Math.abs(color.getY(i) - dark.g) + Math.abs(color.getZ(i) - dark.b) > 1e-3) continue;
+    const c = new Vector3();
+    let low = Infinity;
+    for (let k = 0; k < 6; k++) {
+      c.add(v.fromBufferAttribute(position, i + k).applyMatrix4(body.matrixWorld));
+      low = Math.min(low, v.y);
+    }
+    strips.push(c.divideScalar(6));
+    bottoms.push(low + 300);
+  }
+  // Each strip stands 0.25 m proud of the wall, in front of the floor lines (0.15) and mullions (0.21).
+  const edge = (ring: [number, number][], x: number, z: number) => Math.min(...ring.map((a, i) => {
+    const b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dz = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
+  }));
+  for (const c of strips) expect(Math.min(...rings.map(r => edge(r, c.x, c.z)))).toBeGreaterThan(0.22);
+  // One strip on each side of each joint, all of them outside both masses.
+  expect(strips).toHaveLength(4);
+  for (const c of strips) for (const ring of rings) expect(pointInRing(c.x, c.z, ring)).toBe(false);
+  for (const joint of [[798.24, -3344.04], [845.55, -3315.64]]) {
+    expect(strips.filter(c => Math.hypot(c.x - joint[0], c.z - joint[1]) < 2)).toHaveLength(2);
+  }
+  // Each strip starts above whatever covers its edge: the Juniper pair above the 323.6 m parking
+  // podium, the Peachtree pair above the 8.6 m street storey (300.6 m on this flat ground).
+  strips.forEach((c, i) => {
+    const juniper = Math.hypot(c.x - 845.55, c.z + 3315.64) < 2;
+    expect(bottoms[i]).toBeGreaterThanOrEqual(juniper ? 323.6 - 1e-3 : 300.6 - 1e-3);
+  });
 });
