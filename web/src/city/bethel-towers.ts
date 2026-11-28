@@ -51,9 +51,10 @@ type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 const origin: P2 = [1012, -252];
 
 /**
- * The tower and its podium are two mapped sites but one shell, so they share one lamps mesh (one
- * night draw). Whichever site the terrain builder reaches first builds both and claims both; the
- * other then finds its site gone and returns null.
+ * The tower and its podium are two mapped sites with a body each and one lamps mesh (one night
+ * draw). Separate bodies keep the white stand-in's masses apart: it boxes each mesh, so one shared
+ * body raised the garage to the tower's height. Whichever site the terrain builder reaches first
+ * builds both and claims both; the other then finds its site gone and returns null.
  */
 export function createBethel(buildings: VBuilding[], grid: GroundGrid) {
   const tower = buildings.find(b => b.id === bethelTowersId), podium = buildings.find(b => b.id === bethelPodiumId);
@@ -62,10 +63,14 @@ export function createBethel(buildings: VBuilding[], grid: GroundGrid) {
   if (!s) return null;
   // The podium's L, probed as the tower is: the arm (1006,-220 and -240) and the deck (1031,-248).
   const podiumRing = frame(podium, origin).ring;
-  if (![[-6, 32], [-6, 12], [19, 4]].every(([u, v]) => pointInRing(u, v, podiumRing))) return null;
+  const probes: P2[] = [[-6, 32], [-6, 12], [19, 4]];
+  if (!probes.every(([u, v]) => pointInRing(u, v, podiumRing))) return null;
+  const p = landmarkShell(buildings, grid, podium.id, 'Bethel Towers podium', origin, [1, 0], probes);
+  if (!p) return null;
   buildTower(s, tower);
-  buildPodium(s, podium, grid);
+  buildPodium({ ...p, lights: s.lights }, podium, grid);
   const out = s.finish('#ffdcae', 0.8);
+  out.group.add(...p.finish('#ffdcae', 0.8).group.children);
   return { ...out, buildings: out.buildings.filter(b => b !== podium) };
 }
 

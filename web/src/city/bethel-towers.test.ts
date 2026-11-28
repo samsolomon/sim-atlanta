@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
+import { Group, Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { bethelPodiumId, bethelTowersId, createBethel } from './bethel-towers';
 import { detachedParts } from './skin-kit';
+import { boxesFromObject } from './far-board';
 
 const buildings: VBuilding[] = JSON.parse(readFileSync(new URL(
   '../../../pipeline/prototypes/sweet-auburn/context.json', import.meta.url), 'utf8')).buildings;
@@ -29,7 +30,7 @@ it('replaces Bethel Towers and its Auburn Avenue podium at the lidar heights, no
   expect(t.buildings).not.toContain(podium);
   expect(t.buildings).toHaveLength(buildings.length - 2);
   expect(createBethel(t.buildings, grid)).toBeNull();
-  expect(t.group.children).toHaveLength(2); // the shell and one lamps mesh
+  expect(t.group.children).toHaveLength(3); // the tower's body, one lamps mesh and the podium's body
   expect(tris(t.group)).toBeLessThanOrEqual(2400);
   const roof = (g: typeof t.group, x: number, z: number) => {
     g.updateMatrixWorld(true);
@@ -54,3 +55,18 @@ it('replaces Bethel Towers and its Auburn Avenue podium at the lidar heights, no
   expect(above).toEqual([]);
   expect(detachedParts(t.group, [...tower.rings, ...podium.rings])).toEqual([]);
 });
+
+it('keeps the garage at its own height in the white stand-in', () => {
+  const model = createBethel(buildings, grid)!;
+  const board = new Group();
+  board.add(model.group);
+  // As placeholder.node.ts boxes a landmark: one stack of masses per mesh. Over the garage deck
+  // east of the tower, none may rise past the Auburn frontage (303 m).
+  const over = boxesFromObject(model.group, board, 3, true).filter(b => {
+    const dx = 1033 - b.cx, dz = -248 - b.cz;
+    return Math.abs(dx * b.ux + dz * b.uz) < b.hx && Math.abs(-dx * b.uz + dz * b.ux) < b.hz;
+  });
+  expect(over.length).toBeGreaterThan(0);
+  expect(Math.max(...over.map(b => b.y1 + 300))).toBeLessThan(303.5);
+});
+
