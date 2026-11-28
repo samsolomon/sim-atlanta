@@ -80,7 +80,9 @@ export function createModeraParkside(buildings: VBuilding[], site: VBuilding, gr
   });
   for (const [u, v] of [[-13, -16], [13.5, -16], [17.5, 37], [-12.5, 37]] as P2[])
     shell.prism([[u - .4, v - .4], [u + .4, v - .4], [u + .4, v + .4], [u - .4, v + .4]], roof, visorLo, white, white);
-  for (let v = -15; v < 6; v += 2.2) shell.prism([[-13, v], [14, v], [14, v + .35], [-13, v + .35]], visorHi - .5, visorHi, white, white);
+  // Each slat runs from the west band to the east one, which angles out with the face.
+  const eastBand = (v: number) => 14.6 + (v + 18) / 57 * 5.1 - 1.3;
+  for (let v = -15; v < 6; v += 2.2) shell.prism([[-13, v], [eastBand(v), v], [eastBand(v + .35), v + .35], [-13, v + .35]], visorHi - .5, visorHi, white, white);
   shell.prism(ccw([[-6, 18], [6, 18], [6.6, 32], [-6, 32]]), roof, amenityTop + 8, '#8a9094', '#6b7175');
   return shell.finish('#f4d9a8', 0.62);
 }
