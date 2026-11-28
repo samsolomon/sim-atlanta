@@ -61,8 +61,7 @@ above are OSM footprints or scaled from photos, as marked.
    surveyed, and carry no label on screen: they are ambient scenery, listed in About.
    A lamp beside an edge path stands on the park side of it. Since 2026-11-27 paths are split exactly at the park edge (before, a path was kept or dropped
    whole by its middle vertex), and park lamps draw their own random offsets so a change to them
-   never moves a street lamp. The lamp counts below predate that rule; a flat-ground count on the
-   staged rows moves from 264 to 260.
+   never moves a street lamp. The lamp counts below predate that rule.
 3. **Active Oval mow stripes**. Low-contrast stripes, about 9 m wide, painted into the ground map
    on the two soccer fields only. Illustrative.
 

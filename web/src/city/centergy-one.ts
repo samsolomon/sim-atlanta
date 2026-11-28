@@ -69,7 +69,13 @@ export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid:
     // Sunshade trellis: a deck ring on posts, cantilevered 0.9 m past the wall (inside the 2.5 m footprint allowance).
     quad(-0.03, 1.03, trellisLo, trellisHi, 0.9, trellis);
     // Posts rise from the parapet to the slats, so the trellis is carried, not floating.
-    for (const t of [0.05, 0.5, 0.95]) quad(t - 0.15 / len, t + 0.15 / len, parapet, trellisHi, 0.2, trellis);
+    for (const t of [0.05, 0.5, 0.95]) {
+      const l = t - 0.15 / len, r = t + 0.15 / len;
+      quad(l, r, parapet, trellisHi, 0.2, trellis);
+      // A foot on the parapet and an arm out to the trellis ring hold each post.
+      for (const [y, from, to] of [[parapet, 0, 0.2], [trellisHi, 0.2, 0.9]] as const)
+        s.body.quad(at(l, y, from), at(l, y, to), at(r, y, to), at(r, y, from), trellis);
+    }
   });
   // Follow every lobby setback at street level.
   for (let i = 0; i < plan.length; i++) {

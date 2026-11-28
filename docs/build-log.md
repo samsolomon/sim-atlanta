@@ -4109,3 +4109,11 @@ The dissolve uses no blending. The index is shuffled, so shrinking one draw rang
 Two bugs hid in the bake. The first full-board bake never finished. My ring cap raised its tolerance only when a pass shrank the ring, and one footprint never shrank. The review then built a ring that defeats any tolerance, so the cap now falls back to the hull and then the rectangle. The second was quieter: Midtown's white towers were all podiums. Each tower's upper bands start where the band below ends, so the "drop anything floating" rule, meant for skybridges, threw them away. That came to 305 parts. They now stay when they rest on their own landmark, and the bake fails if any landmark stops short of its top.
 
 ![Midtown link at 6× CPU: the white still, downtown in colour, Midtown still white, then loaded](log/white-placeholder/01-midtown-opening.jpg)
+
+### 2026-11-27 — A slice with nothing in it
+
+Two small faults from review, and only one needed code. On Centergy One, one post of the white roof trellis touched neither the parapet nor the frame it was meant to carry; each post now has a foot and an arm. The other was a 5 m slice of Piedmont House that went missing while only the southern of its two board rows had loaded. By the end of the day the white stand-in (#726) was covering it. I built a fix anyway and measured it: it cost a draw call, and while the southern row was still white its mass showed as a thin strip through the tower's corner, so it was dropped. The 1180 Peachtree crown glass stays a single drawing pass: the second pass costs a shader program the budget does not have.
+
+![Centergy One's middle post, before and after](log/ui/group2-fixes/centergy-post.jpg)
+
+![The corner strip the dropped slice fix would have shown](log/ui/group2-fixes/strip-central-white.jpg)

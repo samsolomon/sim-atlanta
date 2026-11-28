@@ -31,3 +31,20 @@ it('builds the brick tower at the lidar roof with the trellis crown', () => {
   const split = { ...site, rings: [site.rings[0], site.rings[0]] };
   expect(createCentergyOne([split], split, grid)).toBeNull();
 });
+
+it('stands each trellis post on the parapet and ties it to the trellis ring', () => {
+  const site = fixture as unknown as VBuilding;
+  const model = createCentergyOne([site], site, grid)!;
+  model.group.updateMatrixWorld(true);
+  // The middle north post, which no roof slat reaches. `out` is metres away from the wall.
+  const corner = (sx: number) => site.rings[0].reduce((best, p) =>
+    sx * p[0] - p[1] > sx * best[0] - best[1] ? p : best);
+  const a = corner(-1), b = corner(1);
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+  const below = (out: number, from: number) => new Raycaster(
+    new Vector3(a[0] + dx / 2 + out * dz / len, from + 291.2 - 323.8, a[1] + dz / 2 - out * dx / len),
+    new Vector3(0, -1, 0),
+  ).intersectObject(model.group)[0].point.y + 323.8 - 291.2;
+  expect(below(0.1, 62)).toBeCloseTo(59.2, 1); // the foot, at parapet height
+  expect(below(0.5, 200)).toBeCloseTo(64.4, 1); // the arm, at the ring's top
+});
