@@ -26,6 +26,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GHOST_SELF_POINTS } from '../vignette/ink';
 import { busMaterial } from '../vignette/xcelsior';
 
 /** Ghost levels, written as level / 16. Lower levels win where ghosts overlap (MIN blending). */
@@ -53,6 +54,20 @@ export function tunnelLevel(profileHeight: number) {
 export function trackLevel(d: number, w: number) {
   if (d <= 0) return GHOST.track;
   return Math.min(GHOST.trackFaintest, GHOST.track + Math.ceil((GHOST.trackFaintest - GHOST.track) * d / w));
+}
+
+/**
+ * Add one car of the x-rayed vehicle to its centreline: both ends at mid-height, `half` metres
+ * along its own axis, in world space. The end nearer the line so far goes first, so a consist
+ * listed lead first makes one polyline whatever way each car faces. The ink pass leaves pixels
+ * whose surface lies near this line alone: they are the vehicle's own visible faces.
+ */
+export function pushCarEnds(points: THREE.Vector3[], world: THREE.Matrix4, half: number, y: number) {
+  if (points.length + 2 > GHOST_SELF_POINTS) return;
+  const a = new THREE.Vector3(0, y, half).applyMatrix4(world), b = new THREE.Vector3(0, y, -half).applyMatrix4(world);
+  const last = points[points.length - 1];
+  if (last && last.distanceToSquared(b) < last.distanceToSquared(a)) points.push(b, a);
+  else points.push(a, b);
 }
 
 /** No clip: the generic attribute default (0, 0, 0, 1) keeps every fragment. */

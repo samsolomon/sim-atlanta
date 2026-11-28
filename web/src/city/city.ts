@@ -76,7 +76,8 @@ import { HeadlightPools } from './headlight-pools';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
-import { CityGhosts, GHOST } from './ghosts';
+import { CAR_LENGTH } from '../vignette/cq400';
+import { CityGhosts, GHOST, pushCarEnds } from './ghosts';
 import { xrayTarget } from './xray';
 import { registerStationLine, stationTrack, type StationTrack } from './station-track';
 import { createGeorgiaState } from './station';
@@ -2228,7 +2229,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (i < 0) return;
       buses.mesh.getMatrixAt(i, xrayMatrix);
       ghosts.batch(buses.mesh.geometry, () => buses.mesh.geometry, edges, 1, false).add(xrayMatrix.premultiply(buses.mesh.matrixWorld), GHOST.xrayBus);
-      for (const z of [-5.5, 5.5]) xraySelf.push(new THREE.Vector3(0, 1.6, z).applyMatrix4(xrayMatrix));
+      pushCarEnds(xraySelf, xrayMatrix, 5.5, 1.6);
       xraySelfR = 2.3;
       return;
     }
@@ -2237,12 +2238,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const trams = new Set<THREE.Object3D>(streetcar.cars());
     const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...trams]
       .filter(c => c.visible && c.userData.trainId === target.id && !c.userData.cityTrains) as THREE.Mesh[];
+    // Lead first, so the centreline runs along the consist.
+    cars.sort((a, b) => (a.userData.consistIndex ?? 0) - (b.userData.consistIndex ?? 0));
     for (const car of cars) {
       if (!car.isMesh) continue;
       const streetcarCar = trams.has(car);
       car.updateWorldMatrix(true, false);
       ghosts.batch(car.geometry, () => car.geometry, edges, 8, false).add(car.matrixWorld, streetcarCar ? GHOST.xrayStreetcar : GHOST.xrayTrain);
-      if (xraySelf.length < 10) xraySelf.push(new THREE.Vector3(0, 1.8, 0).applyMatrix4(car.matrixWorld));
+      pushCarEnds(xraySelf, car.matrixWorld, (car.userData.lengthM ?? CAR_LENGTH) / 2 - 1, 1.8);
       if (streetcarCar) xraySelfR = 2.4;
     }
   }

@@ -22,7 +22,7 @@ import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 /** The most areas the ink pass tests for the placeholder's cream night lines. */
 export const MARK_RECTS = 16;
 /** Points on the x-rayed vehicle's centreline (city/ghosts.ts): its own surface is never ghosted. */
-export const GHOST_SELF_POINTS = 10;
+export const GHOST_SELF_POINTS = 18;
 
 export function inkShader() {
   return {

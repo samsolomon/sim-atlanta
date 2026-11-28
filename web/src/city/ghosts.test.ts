@@ -129,7 +129,10 @@ describe('Ghost underground classification', () => {
     const x = g.filter(c => c.level === GHOST.xrayTrain);
     expect(x).toHaveLength(4);
     expect(x.every(c => c.clip.x === 0 && c.clip.w === 1)).toBe(true);
-    expect(trains.xrayPoints).toHaveLength(4);
+    // Its centreline for ink's self test: both ends of each car, one polyline from lead to tail.
+    expect(trains.xrayPoints).toHaveLength(8);
+    const xs = trains.xrayPoints.map(p => p.x);
+    expect(xs).toEqual([...xs].sort((a, b) => b - a));
     // The other train is in tunnel: an ordinary ghost.
     expect(g.filter(c => c.level >= GHOST.tunnel && c.level <= GHOST.tunnelDeepest)).toHaveLength(4);
   });

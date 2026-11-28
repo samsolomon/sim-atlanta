@@ -6,7 +6,7 @@ import { PlacementIndex } from '../vignette/spatial';
 import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '../vignette/world';
 
 import type { prepareEastCut, ServiceTrack } from './east-cut';
-import { GHOST, trackLevel, tunnelLevel, type CityGhosts } from './ghosts';
+import { GHOST, pushCarEnds, trackLevel, tunnelLevel, type CityGhosts } from './ghosts';
 import { POOL, type PoolSink } from './headlight-pools';
 
 type Segment = { al: Alignment; i: number };
@@ -225,10 +225,9 @@ export class CityTrains {
     if (batch.add(this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), level, clip)) this.ghostCars++;
   }
 
-  /** The x-rayed train's centreline: each car's middle at mid-height, in world space. */
-  private xrayPoint(local: THREE.Matrix4, z = 0) {
-    if (this.xrayPoints.length >= 10) return;
-    this.xrayPoints.push(new THREE.Vector3(0, 1.9, z).applyMatrix4(local).applyMatrix4(this.group.matrixWorld));
+  /** The x-rayed train's centreline: each car's ends at mid-height, in world space. */
+  private xrayPoint(local: THREE.Matrix4) {
+    pushCarEnds(this.xrayPoints, this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), CAR_LENGTH / 2, 1.9);
   }
 
   /** The ghost track window around a train in tunnel, on its own track, only where hidden. */
