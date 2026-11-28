@@ -4212,3 +4212,7 @@ Bethel Towers, the 13-storey apartment slab behind Big Bethel AME Church, was a 
 ### 2026-11-24 · The Barclay in brick
 
 Next to the newly skinned downtown landmarks, the Barclay Hotel on Luckie Street still stood out as a generic grey box. The lidar splits its rotated rectangle into a 36.4 m tower and a 12.9 m front block. Street View from three sides gives the rust-red brick, buff base and cream balcony bands. The hotel-name blade sign stays out under the no-logos rule. [Before/after](log/ui/barclay-hotel/README.md)
+
+### 2026-11-24 · Capital City Club
+
+This was the first of the downtown generics Sam flagged next to the skinned landmarks. The 1911 club was a 33.6 m grey box. Lidar puts its brick block at 23 m, with a taller rear range and a one-storey terrace. It is now tan brick with stone trim, a balustraded cornice, and its deep porch of paired columns along John Portman Boulevard. Most City views barely see it between its tall neighbours. It mattered anyway: the grey box had read as an unfinished hole beside the Marquis towers. [Before and after](log/ui/capital-city-club/before-after.jpg)
