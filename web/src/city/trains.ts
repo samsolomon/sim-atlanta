@@ -230,8 +230,8 @@ export class CityTrains {
     pushCarEnds(this.xrayPoints, this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), CAR_LENGTH / 2, 1.9);
   }
 
-  /** The ghost track window around a train in tunnel (its hidden cars span s0–s1; the whole
-   * consist is `consist` metres), on its own track, only where hidden. */
+  /** The ghost track window around a train (its cars span s0–s1 on this track; the whole consist
+   * is `consist` metres), on its own track, only where hidden. */
   private ghostTrack(al: Alignment, s0: number, s1: number, off: number, consist: number) {
     const g = this.ghosts;
     if (!g) return;
@@ -296,7 +296,7 @@ export class CityTrains {
         ? berthShift(t.s.value, units * pitch - CAR_GAP, this.berths.get(t.pathId)) : 0;
       const mapped = this.cut?.paths.get(t.pathId);
       const xray = this.ghosts !== null && t.id === this.xrayId;
-      // The consist's extent along its track while any car is in tunnel, for its track window.
+      // The consist's extent along its track, for its track window (dashes only where hidden).
       let ghostFrom = Infinity, ghostTo = -Infinity;
       for (let i = 0; i < units; i++) {
         // The Map symbol is centred on the source position. Both ends can straddle a portal.
@@ -340,6 +340,10 @@ export class CityTrains {
         if (!track) continue;
         const { al, s, dir } = track;
         const sc = s + dir * (offset + berth);
+        // Every car counts toward the window, so a train nearing a portal brings its faint far end
+        // into the tunnel first: the dashes fade in ahead of it rather than appear at the mouth.
+        ghostFrom = Math.min(ghostFrom, sc - CAR_LENGTH / 2);
+        ghostTo = Math.max(ghostTo, sc + CAR_LENGTH / 2);
         const drawn = carInDaylight(al, sc);
         const cover = this.ghosts ? carCover(al, sc) : null;
         if (!drawn && !(cover && cover.kind !== 'open')) continue;
@@ -368,10 +372,6 @@ export class CityTrains {
           }
           this.ghostCar(color, role !== 0, local, xray ? GHOST.xrayTrain : tunnelLevel(profileAt(al, sc)), clip);
           if (xray) this.xrayPoint(local);
-          if (cover.kind !== 'open') {
-            ghostFrom = Math.min(ghostFrom, sc - CAR_LENGTH / 2);
-            ghostTo = Math.max(ghostTo, sc + CAR_LENGTH / 2);
-          }
         }
         if (!drawn) continue;
         const car = this.car(t.id, color, role);

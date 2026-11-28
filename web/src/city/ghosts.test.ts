@@ -121,6 +121,28 @@ describe('Ghost underground classification', () => {
     expect(a.filter(d => Math.abs(d.x - 201) < 100).every(d => b.some(x => Math.abs(x - d.x) < 1e-6))).toBe(true);
   });
 
+  it('fades the track window in ahead of a train nearing a portal, never all at once', () => {
+    const { run, ghosts, edges } = setup();
+    const near = (x: number) => {
+      run([train('t', x, 4)]);
+      const b = ghosts.track(edges);
+      return Array.from({ length: b.n }, (_, i) => Math.round((b.mesh.geometry.getAttribute('aGhost').array[i] as number) * 16));
+    };
+    // Far from the mouth: nothing. Approaching: only faint dashes. At the mouth: full strength.
+    expect(near(-500)).toHaveLength(0);
+    const approach = near(-48 - 100);
+    expect(approach.length).toBeGreaterThan(0);
+    expect(Math.min(...approach)).toBeGreaterThan(GHOST.track + 1);
+    let prev = GHOST.trackFaintest + 1;
+    for (let x = -260; x <= -40; x += 4) {
+      const levels = near(x);
+      const strongest = levels.length ? Math.min(...levels) : GHOST.trackFaintest + 1;
+      // Each step brings it at most one level nearer.
+      expect(prev - strongest, `at ${x}`).toBeLessThanOrEqual(1);
+      prev = strongest;
+    }
+  });
+
   it('x-rays every car of the selected train, open or buried, unclipped', () => {
     const { trains, run, ghostCars } = setup();
     trains.xrayId = 'sel';
