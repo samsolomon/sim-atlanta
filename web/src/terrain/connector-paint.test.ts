@@ -12,7 +12,7 @@ function recording() {
   const fills: P2[][] = [], stops: [number, string][][] = [];
   let points: P2[] = [], dash: number[] = [];
   const ctx = {
-    lineWidth: 0, save() {}, restore() {}, closePath() {},
+    lineWidth: 0, save() {}, restore() {}, closePath() {}, clip() {},
     beginPath() { points = []; }, moveTo(x: number, z: number) { points.push([x,z]); },
     lineTo(x: number, z: number) { points.push([x,z]); },
     setLineDash(value: number[]) { dash = value; },
@@ -68,9 +68,33 @@ it('paints all eight edges of the seven-lane Midtown approach from its stationed
   const tile = { ...city, name: 'midtown-south', bounds: { minX: -1000, maxX: 1800, minZ: -2500, maxZ: -1700 } };
   const { ctx, strokes } = recording();
   paintConnector(ctx, tile, 1);
-  for (let edge = 0; edge <= 7; edge++) {
+  for (let edge = 1; edge < 7; edge++) {
     const points = approach.rows.map(row => stripePoint(row, edge / 7));
     expect(strokes.some(stroke => stroke.points.length === points.length &&
       stroke.points.every(([x,z], i) => x === points[i][0] && z === points[i][1]))).toBe(true);
+  }
+  // The two edges may be split where a merge or diverge shares them (one surface owner):
+  // every row is still painted unless a sibling owns that edge there.
+  for (const [edge, side] of [[0, 'inner'], [7, 'outer']] as const) {
+    const painted = new Set(strokes.flatMap(stroke => stroke.points.map(([x, z]) => `${x},${z}`)));
+    approach.rows.forEach((row, i) => {
+      const own = row.joined?.[side] !== 'none' || approach.rows[i + 1]?.joined?.[side] !== 'none';
+      if (own) expect(painted.has(stripePoint(row, edge / 7).join(','))).toBe(true);
+    });
+  }
+});
+
+it('draws a merge or diverge edge once: dashed by its owner, not by the other branch', () => {
+  const { ctx, strokes } = recording();
+  paintConnector(ctx, { ...city, name: 'midtown-south', bounds: { minX: -1000, maxX: 1800, minZ: -2500, maxZ: -1700 } } as typeof city, 1);
+  const shared = ribbons.filter(r => r.rows.some(row => row.joined?.inner === 'dash' || row.joined?.outer === 'dash'));
+  expect(shared.length).toBeGreaterThan(0);
+  const dashed = strokes.filter(s => s.dash.length);
+  for (const r of shared) for (const side of ['inner', 'outer'] as const) {
+    const rows = r.rows.filter(row => row.joined?.[side] === 'dash' && row.inner[1] < -1700 && row.inner[1] > -2500);
+    for (const row of rows) {
+      const p = stripePoint(row, side === 'inner' ? 0 : 1);
+      expect(dashed.some(s => s.points.some(q => q[0] === p[0] && q[1] === p[1]))).toBe(true);
+    }
   }
 });

@@ -1,6 +1,7 @@
 import type { P2 } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
+import { alongOn, joinedWith, matchRibbon, sectionAt, type Ribbon } from '../terrain/connector-corridor';
 
 function nearest(p: P2, pts: P2[]) {
   let best = Infinity, x = 0, z = 0, ux = 0, uz = 0;
@@ -55,6 +56,29 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
     }
     return null;
   };
+  // One surface owner (road kit, part 1): a deck's option lane under its sibling until the gore
+  // opens is the sibling's tread, so the deck's own tread stops at the sibling's edge. A car in
+  // that covered part rides the sibling's deck.
+  const ribbonOf = new WeakMap<TransportRun, Ribbon | null>();
+  const ribbon = (part: TransportRun) => {
+    if (!ribbonOf.has(part)) ribbonOf.set(part, part.cls === 'motorway' && part.pts.length > 1 ? matchRibbon(part.pts[0], part.pts[1], part.sub === 'link') ?? null : null);
+    return ribbonOf.get(part)!;
+  };
+  const ownerTread = (x: number, z: number, part: TransportRun) => {
+    const own = ribbon(part);
+    if (!own) return null;
+    const s = alongOn(own, [x, z]).s, row = sectionAt(own, s);
+    for (const side of ['inner', 'outer'] as const) {
+      const sibling = row.covered?.[side] ? joinedWith(own, s, side) : undefined;
+      if (!sibling) continue;
+      for (const other of parts) {
+        if (other === part || other.kind !== 'bridge' || ribbon(other) !== sibling) continue;
+        const tread = deckAt?.(x, z, other);
+        if (tread != null) return tread;
+      }
+    }
+    return null;
+  };
   return (x: number, z: number, road: VRoad) => {
     const ground = !road.bridge && !road.tunnel;
     // The directed OSM lane owner can be tagged ground even where the Sweet
@@ -74,14 +98,14 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
     const onRoad = nearest([x,z],road.pts);
     for (const part of candidates) {
       if (part.sourceAxis) {
-        const tread = deckAt?.(x,z,part);
+        const tread = deckAt?.(x,z,part) ?? (part.kind === 'bridge' ? ownerTread(x,z,part) : null);
         if (tread != null) return tread;
         continue;
       }
       const near = nearest([onRoad.x,onRoad.z],part.pts);
       if (near.distance > .08 || near.ux*onRoad.ux + near.uz*onRoad.uz < .98) continue;
       if (part.kind === 'ground') return groundAt(x,z,road);
-      return deckAt?.(x,z,part) ?? noseTread(x,z,part);
+      return deckAt?.(x,z,part) ?? noseTread(x,z,part) ?? ownerTread(x,z,part);
     }
     return ground ? groundAt(x,z,road) : null;
   };
