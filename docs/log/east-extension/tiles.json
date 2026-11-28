@@ -1,1 +1,1191 @@
-[{"i": 3, "j": -1, "x0": 1800, "x1": 2200, "z0": -6500, "z1": -5700, "shares": [["Piedmont Heights", 0.94], ["(outside city)", 0.06]]}, {"i": 4, "j": -1, "x0": 2200, "x1": 3000, "z0": -6500, "z1": -5700, "shares": [["Morningside/Lenox Park", 0.84], ["Piedmont Heights", 0.16]]}, {"i": 5, "j": -1, "x0": 3000, "x1": 3800, "z0": -6500, "z1": -5700, "shares": [["Morningside/Lenox Park", 0.78], ["Lindridge/Martin Manor", 0.22]]}, {"i": 6, "j": -1, "x0": 3800, "x1": 4600, "z0": -6500, "z1": -5700, "shares": [["(outside city)", 0.78], ["Morningside/Lenox Park", 0.13], ["Lindridge/Martin Manor", 0.08]]}, {"i": 7, "j": -1, "x0": 4600, "x1": 5400, "z0": -6500, "z1": -5700, "shares": [["(outside city)", 0.97]]}, {"i": 3, "j": 0, "x0": 1800, "x1": 2200, "z0": -5700, "z1": -4900, "shares": [["Piedmont Heights", 0.98]]}, {"i": 4, "j": 0, "x0": 2200, "x1": 3000, "z0": -5700, "z1": -4900, "shares": [["Morningside/Lenox Park", 0.97]]}, {"i": 5, "j": 0, "x0": 3000, "x1": 3800, "z0": -5700, "z1": -4900, "shares": [["Morningside/Lenox Park", 1.0]]}, {"i": 6, "j": 0, "x0": 3800, "x1": 4600, "z0": -5700, "z1": -4900, "shares": [["Morningside/Lenox Park", 0.95], ["(outside city)", 0.05]]}, {"i": 7, "j": 0, "x0": 4600, "x1": 5400, "z0": -5700, "z1": -4900, "shares": [["(outside city)", 0.43], ["Morningside/Lenox Park", 0.33], ["Emory", 0.24]]}, {"i": 3, "j": 1, "x0": 1800, "x1": 2200, "z0": -4900, "z1": -4100, "shares": [["Morningside/Lenox Park", 0.52], ["Piedmont Heights", 0.19], ["(outside city)", 0.14], ["Midtown", 0.08], ["Ansley Park", 0.07]]}, {"i": 4, "j": 1, "x0": 2200, "x1": 3000, "z0": -4900, "z1": -4100, "shares": [["Morningside/Lenox Park", 1.0]]}, {"i": 5, "j": 1, "x0": 3000, "x1": 3800, "z0": -4900, "z1": -4100, "shares": [["Morningside/Lenox Park", 1.0]]}, {"i": 6, "j": 1, "x0": 3800, "x1": 4600, "z0": -4900, "z1": -4100, "shares": [["Morningside/Lenox Park", 0.73], ["(outside city)", 0.2], ["Edmund Park", 0.07]]}, {"i": 7, "j": 1, "x0": 4600, "x1": 5400, "z0": -4900, "z1": -4100, "shares": [["(outside city)", 0.92], ["Edmund Park", 0.06]]}, {"i": 3, "j": 2, "x0": 1800, "x1": 2200, "z0": -4100, "z1": -3300, "shares": [["Virginia Highland", 0.42], ["(outside city)", 0.29], ["Morningside/Lenox Park", 0.21], ["Midtown", 0.09]]}, {"i": 4, "j": 2, "x0": 2200, "x1": 3000, "z0": -4100, "z1": -3300, "shares": [["Virginia Highland", 0.6], ["Morningside/Lenox Park", 0.4]]}, {"i": 5, "j": 2, "x0": 3000, "x1": 3800, "z0": -4100, "z1": -3300, "shares": [["Virginia Highland", 0.56], ["Morningside/Lenox Park", 0.44]]}, {"i": 6, "j": 2, "x0": 3800, "x1": 4600, "z0": -4100, "z1": -3300, "shares": [["(outside city)", 0.7], ["Morningside/Lenox Park", 0.19], ["Virginia Highland", 0.11]]}, {"i": 7, "j": 2, "x0": 4600, "x1": 5400, "z0": -4100, "z1": -3300, "shares": [["(outside city)", 1.0]]}, {"i": 3, "j": 3, "x0": 1800, "x1": 2200, "z0": -3300, "z1": -2500, "shares": [["Midtown", 0.77], ["(outside city)", 0.16], ["Virginia Highland", 0.08]]}, {"i": 4, "j": 3, "x0": 2200, "x1": 3000, "z0": -3300, "z1": -2500, "shares": [["Virginia Highland", 0.88], ["Midtown", 0.12]]}, {"i": 5, "j": 3, "x0": 3000, "x1": 3800, "z0": -3300, "z1": -2500, "shares": [["Virginia Highland", 0.97]]}, {"i": 6, "j": 3, "x0": 3800, "x1": 4600, "z0": -3300, "z1": -2500, "shares": [["(outside city)", 0.37], ["Virginia Highland", 0.36], ["Druid Hills", 0.22]]}, {"i": 7, "j": 3, "x0": 4600, "x1": 5400, "z0": -3300, "z1": -2500, "shares": [["(outside city)", 0.6], ["Druid Hills", 0.4]]}, {"i": 3, "j": 4, "x0": 1800, "x1": 2200, "z0": -2500, "z1": -1700, "shares": [["Old Fourth Ward", 0.62], ["Midtown", 0.38]]}, {"i": 4, "j": 4, "x0": 2200, "x1": 3000, "z0": -2500, "z1": -1700, "shares": [["Poncey-Highland", 0.35], ["Old Fourth Ward", 0.27], ["Virginia Highland", 0.24], ["Midtown", 0.13]]}, {"i": 5, "j": 4, "x0": 3000, "x1": 3800, "z0": -2500, "z1": -1700, "shares": [["Poncey-Highland", 0.65], ["Virginia Highland", 0.27], ["Atkins Park", 0.08]]}, {"i": 6, "j": 4, "x0": 3800, "x1": 4600, "z0": -2500, "z1": -1700, "shares": [["Druid Hills", 0.52], ["Candler Park", 0.3], ["Poncey-Highland", 0.1], ["Atkins Park", 0.07]]}, {"i": 7, "j": 4, "x0": 4600, "x1": 5400, "z0": -2500, "z1": -1700, "shares": [["Druid Hills", 0.66], ["Candler Park", 0.34]]}, {"i": 3, "j": 5, "x0": 1800, "x1": 2200, "z0": -1700, "z1": -900, "shares": [["Old Fourth Ward", 1.0]]}, {"i": 4, "j": 5, "x0": 2200, "x1": 3000, "z0": -1700, "z1": -900, "shares": [["Old Fourth Ward", 0.85], ["Poncey-Highland", 0.12]]}, {"i": 5, "j": 5, "x0": 3000, "x1": 3800, "z0": -1700, "z1": -900, "shares": [["Inman Park", 0.67], ["Poncey-Highland", 0.33]]}, {"i": 6, "j": 5, "x0": 3800, "x1": 4600, "z0": -1700, "z1": -900, "shares": [["Candler Park", 0.84], ["Inman Park", 0.16]]}, {"i": 7, "j": 5, "x0": 4600, "x1": 5400, "z0": -1700, "z1": -900, "shares": [["Candler Park", 0.99]]}, {"i": 3, "j": 6, "x0": 1800, "x1": 2200, "z0": -900, "z1": -100, "shares": [["Old Fourth Ward", 1.0]]}, {"i": 4, "j": 6, "x0": 2200, "x1": 3000, "z0": -900, "z1": -100, "shares": [["Inman Park", 0.57], ["Old Fourth Ward", 0.43]]}, {"i": 5, "j": 6, "x0": 3000, "x1": 3800, "z0": -900, "z1": -100, "shares": [["Inman Park", 0.77], ["Reynoldstown", 0.23]]}, {"i": 6, "j": 6, "x0": 3800, "x1": 4600, "z0": -900, "z1": -100, "shares": [["Edgewood", 0.71], ["Candler Park", 0.13], ["Reynoldstown", 0.11], ["Inman Park", 0.05]]}, {"i": 7, "j": 6, "x0": 4600, "x1": 5400, "z0": -900, "z1": -100, "shares": [["Edgewood", 0.98]]}, {"i": 3, "j": 7, "x0": 1800, "x1": 2200, "z0": -100, "z1": 700, "shares": [["Old Fourth Ward", 0.39], ["Grant Park", 0.29], ["Cabbagetown", 0.26], ["Sweet Auburn", 0.05]]}, {"i": 4, "j": 7, "x0": 2200, "x1": 3000, "z0": -100, "z1": 700, "shares": [["Cabbagetown", 0.5], ["Reynoldstown", 0.31], ["Inman Park", 0.13], ["Old Fourth Ward", 0.06]]}, {"i": 5, "j": 7, "x0": 3000, "x1": 3800, "z0": -100, "z1": 700, "shares": [["Reynoldstown", 0.99]]}, {"i": 6, "j": 7, "x0": 3800, "x1": 4600, "z0": -100, "z1": 700, "shares": [["Edgewood", 0.84], ["Reynoldstown", 0.16]]}, {"i": 7, "j": 7, "x0": 4600, "x1": 5400, "z0": -100, "z1": 700, "shares": [["Kirkwood", 0.64], ["Edgewood", 0.36]]}, {"i": 3, "j": 8, "x0": 1800, "x1": 2200, "z0": 700, "z1": 1500, "shares": [["Grant Park", 0.99]]}, {"i": 4, "j": 8, "x0": 2200, "x1": 3000, "z0": 700, "z1": 1500, "shares": [["Grant Park", 0.7], ["Reynoldstown", 0.22], ["Cabbagetown", 0.08]]}, {"i": 5, "j": 8, "x0": 3000, "x1": 3800, "z0": 700, "z1": 1500, "shares": [["Ormewood Park", 0.49], ["Reynoldstown", 0.46], ["Grant Park", 0.05]]}, {"i": 6, "j": 8, "x0": 3800, "x1": 4600, "z0": 700, "z1": 1500, "shares": [["East Atlanta", 0.61], ["Edgewood", 0.24], ["Ormewood Park", 0.11]]}, {"i": 7, "j": 8, "x0": 4600, "x1": 5400, "z0": 700, "z1": 1500, "shares": [["East Atlanta", 0.68], ["Kirkwood", 0.25], ["Edgewood", 0.07]]}]
+{
+"_doc": "East extension tiles: lattice cell (i,j) anchored at (-1000,-5700), 800 m; parts are the drawn (clipped) rectangles in scene metres; shares from a 25 m raster of City of Atlanta DCP neighbourhoods, then city limits and TIGER CDPs. 2026-11-27.",
+"tiles": [
+{
+"i": 3,
+"j": 4,
+"block": "A",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -2500,
+"maxZ": -1700
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Old Fourth Ward",
+0.623
+],
+[
+"Midtown",
+0.377
+]
+]
+},
+{
+"i": 4,
+"j": 4,
+"block": "A",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -2500,
+"maxZ": -1700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Poncey-Highland",
+0.354
+],
+[
+"Old Fourth Ward",
+0.268
+],
+[
+"Virginia Highland",
+0.243
+],
+[
+"Midtown",
+0.135
+]
+]
+},
+{
+"i": 5,
+"j": 4,
+"block": "A",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -2500,
+"maxZ": -1700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Poncey-Highland",
+0.646
+],
+[
+"Virginia Highland",
+0.269
+],
+[
+"Atkins Park",
+0.075
+]
+]
+},
+{
+"i": 6,
+"j": 4,
+"block": "A",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -2500,
+"maxZ": -1700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Druid Hills",
+0.516
+],
+[
+"Candler Park",
+0.297
+],
+[
+"Poncey-Highland",
+0.097
+],
+[
+"Atkins Park",
+0.072
+]
+]
+},
+{
+"i": 7,
+"j": 4,
+"block": "A",
+"parts": [
+{
+"minX": 4600,
+"maxX": 5400,
+"minZ": -2500,
+"maxZ": -1700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Druid Hills",
+0.658
+],
+[
+"Candler Park",
+0.342
+]
+]
+},
+{
+"i": 3,
+"j": 5,
+"block": "A",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -1700,
+"maxZ": -900
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Old Fourth Ward",
+1.0
+]
+]
+},
+{
+"i": 4,
+"j": 5,
+"block": "A",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -1700,
+"maxZ": -900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Old Fourth Ward",
+0.846
+],
+[
+"Poncey-Highland",
+0.117
+]
+]
+},
+{
+"i": 5,
+"j": 5,
+"block": "A",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -1700,
+"maxZ": -900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Inman Park",
+0.669
+],
+[
+"Poncey-Highland",
+0.331
+]
+]
+},
+{
+"i": 6,
+"j": 5,
+"block": "A",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -1700,
+"maxZ": -900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Candler Park",
+0.844
+],
+[
+"Inman Park",
+0.156
+]
+]
+},
+{
+"i": 7,
+"j": 5,
+"block": "A",
+"parts": [
+{
+"minX": 4600,
+"maxX": 5400,
+"minZ": -1700,
+"maxZ": -900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Candler Park",
+0.986
+]
+]
+},
+{
+"i": 3,
+"j": 6,
+"block": "A",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -900,
+"maxZ": -100
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Old Fourth Ward",
+1.0
+]
+]
+},
+{
+"i": 4,
+"j": 6,
+"block": "A",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -900,
+"maxZ": -100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Inman Park",
+0.573
+],
+[
+"Old Fourth Ward",
+0.427
+]
+]
+},
+{
+"i": 5,
+"j": 6,
+"block": "A",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -900,
+"maxZ": -100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Inman Park",
+0.772
+],
+[
+"Reynoldstown",
+0.228
+]
+]
+},
+{
+"i": 6,
+"j": 6,
+"block": "A",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -900,
+"maxZ": -100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Edgewood",
+0.71
+],
+[
+"Candler Park",
+0.134
+],
+[
+"Reynoldstown",
+0.105
+],
+[
+"Inman Park",
+0.051
+]
+]
+},
+{
+"i": 7,
+"j": 6,
+"block": "A",
+"parts": [
+{
+"minX": 4600,
+"maxX": 5400,
+"minZ": -900,
+"maxZ": -100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Edgewood",
+0.98
+]
+]
+},
+{
+"i": 3,
+"j": 7,
+"block": "A",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -100,
+"maxZ": 700
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Old Fourth Ward",
+0.387
+],
+[
+"Grant Park",
+0.295
+],
+[
+"Cabbagetown",
+0.264
+],
+[
+"Sweet Auburn",
+0.055
+]
+]
+},
+{
+"i": 4,
+"j": 7,
+"block": "A",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -100,
+"maxZ": 700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Cabbagetown",
+0.495
+],
+[
+"Reynoldstown",
+0.309
+],
+[
+"Inman Park",
+0.132
+],
+[
+"Old Fourth Ward",
+0.064
+]
+]
+},
+{
+"i": 5,
+"j": 7,
+"block": "A",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -100,
+"maxZ": 700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Reynoldstown",
+0.993
+]
+]
+},
+{
+"i": 6,
+"j": 7,
+"block": "A",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -100,
+"maxZ": 700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Edgewood",
+0.844
+],
+[
+"Reynoldstown",
+0.156
+]
+]
+},
+{
+"i": 7,
+"j": 7,
+"block": "A",
+"parts": [
+{
+"minX": 4600,
+"maxX": 5400,
+"minZ": -100,
+"maxZ": 700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Kirkwood",
+0.638
+],
+[
+"Edgewood",
+0.362
+]
+]
+},
+{
+"i": 3,
+"j": 8,
+"block": "A+strip",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": 700,
+"maxZ": 1500
+},
+{
+"minX": 1400,
+"maxX": 1800,
+"minZ": 1100,
+"maxZ": 1500
+}
+],
+"km2": 0.48,
+"shares": [
+[
+"Grant Park",
+0.995
+]
+]
+},
+{
+"i": 4,
+"j": 8,
+"block": "A",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": 700,
+"maxZ": 1500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Grant Park",
+0.701
+],
+[
+"Reynoldstown",
+0.221
+],
+[
+"Cabbagetown",
+0.078
+]
+]
+},
+{
+"i": 5,
+"j": 8,
+"block": "A",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": 700,
+"maxZ": 1500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Ormewood Park",
+0.49
+],
+[
+"Reynoldstown",
+0.455
+],
+[
+"Grant Park",
+0.055
+]
+]
+},
+{
+"i": 6,
+"j": 8,
+"block": "A",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": 700,
+"maxZ": 1500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"East Atlanta",
+0.606
+],
+[
+"Edgewood",
+0.237
+],
+[
+"Ormewood Park",
+0.108
+]
+]
+},
+{
+"i": 7,
+"j": 8,
+"block": "A",
+"parts": [
+{
+"minX": 4600,
+"maxX": 5400,
+"minZ": 700,
+"maxZ": 1500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"East Atlanta",
+0.679
+],
+[
+"Kirkwood",
+0.251
+],
+[
+"Edgewood",
+0.07
+]
+]
+},
+{
+"i": 3,
+"j": -1,
+"block": "B",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -6500,
+"maxZ": -5700
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Piedmont Heights",
+0.943
+],
+[
+"(in city, no neighbourhood polygon)",
+0.057
+]
+]
+},
+{
+"i": 4,
+"j": -1,
+"block": "B",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -6500,
+"maxZ": -5700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.837
+],
+[
+"Piedmont Heights",
+0.158
+]
+]
+},
+{
+"i": 5,
+"j": -1,
+"block": "B",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -6500,
+"maxZ": -5700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.775
+],
+[
+"Lindridge/Martin Manor",
+0.225
+]
+]
+},
+{
+"i": 6,
+"j": -1,
+"block": "B",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -6500,
+"maxZ": -5700
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"(outside city: North Druid Hills CDP)",
+0.777
+],
+[
+"Morningside/Lenox Park",
+0.135
+],
+[
+"Lindridge/Martin Manor",
+0.084
+]
+]
+},
+{
+"i": 3,
+"j": 0,
+"block": "B",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -5700,
+"maxZ": -4900
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Piedmont Heights",
+0.984
+]
+]
+},
+{
+"i": 4,
+"j": 0,
+"block": "B",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -5700,
+"maxZ": -4900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.968
+]
+]
+},
+{
+"i": 5,
+"j": 0,
+"block": "B",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -5700,
+"maxZ": -4900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+1.0
+]
+]
+},
+{
+"i": 6,
+"j": 0,
+"block": "B",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -5700,
+"maxZ": -4900
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.945
+]
+]
+},
+{
+"i": 3,
+"j": 1,
+"block": "B",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -4900,
+"maxZ": -4100
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.516
+],
+[
+"Piedmont Heights",
+0.189
+],
+[
+"(in city, no neighbourhood polygon)",
+0.141
+],
+[
+"Midtown",
+0.084
+],
+[
+"Ansley Park",
+0.07
+]
+]
+},
+{
+"i": 4,
+"j": 1,
+"block": "B",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -4900,
+"maxZ": -4100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+1.0
+]
+]
+},
+{
+"i": 5,
+"j": 1,
+"block": "B",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -4900,
+"maxZ": -4100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+1.0
+]
+]
+},
+{
+"i": 6,
+"j": 1,
+"block": "B",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -4900,
+"maxZ": -4100
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Morningside/Lenox Park",
+0.733
+],
+[
+"(outside city: Druid Hills CDP)",
+0.197
+],
+[
+"Edmund Park",
+0.069
+]
+]
+},
+{
+"i": 3,
+"j": 2,
+"block": "B",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -4100,
+"maxZ": -3300
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Virginia Highland",
+0.416
+],
+[
+"(in city, no neighbourhood polygon)",
+0.287
+],
+[
+"Morningside/Lenox Park",
+0.207
+],
+[
+"Midtown",
+0.09
+]
+]
+},
+{
+"i": 4,
+"j": 2,
+"block": "B",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -4100,
+"maxZ": -3300
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Virginia Highland",
+0.596
+],
+[
+"Morningside/Lenox Park",
+0.404
+]
+]
+},
+{
+"i": 5,
+"j": 2,
+"block": "B",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -4100,
+"maxZ": -3300
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Virginia Highland",
+0.562
+],
+[
+"Morningside/Lenox Park",
+0.438
+]
+]
+},
+{
+"i": 6,
+"j": 2,
+"block": "B",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -4100,
+"maxZ": -3300
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"(outside city: Druid Hills CDP)",
+0.697
+],
+[
+"Morningside/Lenox Park",
+0.188
+],
+[
+"Virginia Highland",
+0.113
+]
+]
+},
+{
+"i": 3,
+"j": 3,
+"block": "B",
+"parts": [
+{
+"minX": 1800,
+"maxX": 2200,
+"minZ": -3300,
+"maxZ": -2500
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Midtown",
+0.766
+],
+[
+"(in city, no neighbourhood polygon)",
+0.156
+],
+[
+"Virginia Highland",
+0.078
+]
+]
+},
+{
+"i": 4,
+"j": 3,
+"block": "B",
+"parts": [
+{
+"minX": 2200,
+"maxX": 3000,
+"minZ": -3300,
+"maxZ": -2500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Virginia Highland",
+0.885
+],
+[
+"Midtown",
+0.115
+]
+]
+},
+{
+"i": 5,
+"j": 3,
+"block": "B",
+"parts": [
+{
+"minX": 3000,
+"maxX": 3800,
+"minZ": -3300,
+"maxZ": -2500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"Virginia Highland",
+0.973
+]
+]
+},
+{
+"i": 6,
+"j": 3,
+"block": "B",
+"parts": [
+{
+"minX": 3800,
+"maxX": 4600,
+"minZ": -3300,
+"maxZ": -2500
+}
+],
+"km2": 0.64,
+"shares": [
+[
+"(outside city: Druid Hills CDP)",
+0.373
+],
+[
+"Virginia Highland",
+0.363
+],
+[
+"Druid Hills",
+0.224
+]
+]
+},
+{
+"i": 1,
+"j": 8,
+"block": "strip",
+"parts": [
+{
+"minX": -200,
+"maxX": 600,
+"minZ": 1100,
+"maxZ": 1500
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Summerhill",
+0.713
+],
+[
+"Mechanicsville",
+0.264
+]
+]
+},
+{
+"i": 2,
+"j": 8,
+"block": "strip",
+"parts": [
+{
+"minX": 600,
+"maxX": 1400,
+"minZ": 1100,
+"maxZ": 1500
+}
+],
+"km2": 0.32,
+"shares": [
+[
+"Grant Park",
+0.578
+],
+[
+"Summerhill",
+0.344
+],
+[
+"Capitol Gateway",
+0.078
+]
+]
+}
+]
+}
