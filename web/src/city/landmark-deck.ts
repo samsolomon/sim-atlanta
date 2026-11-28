@@ -32,6 +32,8 @@ import { seedOf } from './skin-kit';
 export const landmarkDeckId = '22d70224-fe9f-4b26-a240-ff01563c03a2';
 
 const lidarLot = 296.9; // NAVD88
+/** Where OSM's drive from Piedmont crosses the outline; the gate's 6 m width is estimated. */
+const entrance: P2 = [924.17, -742.36], entranceHalf = 3;
 
 const concrete = '#a7a39a',
   concreteShade = '#96928a',
@@ -87,15 +89,21 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
     const exposed = lot - ground;
 
     if (exposed < 1.6) {
-      // Level with the street: the lot's edge is a black picket fence (rails and posts).
+      // Level with the street: the lot's edge is a black picket fence (rails and posts), open
+      // where the mapped drive from Piedmont comes in.
       quad(0, 1, s.base, lot, 0.05, concreteShade);
-      for (const [y0, y1] of [[lot + 0.12, lot + 0.2], [fence - 0.1, fence]]) {
-        quad(0, 1, y0, y1, 0.05, picket);
-        quad(1, 0, y0, y1, 0.03, picket);
+      const ex = entrance[0] - origin[0] - a[0], ez = entrance[1] - origin[1] - a[1];
+      const along = (ex * dx + ez * dz) / (len * len), off = Math.abs(ex * dz - ez * dx) / len;
+      const gap = off < 1 && along > 0 && along < 1 ? [along - entranceHalf / len, along + entranceHalf / len] : null;
+      const runs = gap ? [[0, Math.max(0, gap[0])], [Math.min(1, gap[1]), 1]].filter(([l, r]) => r - l > 1e-3) : [[0, 1]];
+      for (const [y0, y1] of [[lot + 0.12, lot + 0.2], [fence - 0.1, fence]]) for (const [l, r] of runs) {
+        quad(l, r, y0, y1, 0.05, picket);
+        quad(r, l, y0, y1, 0.03, picket);
       }
       const posts = Math.max(1, Math.round(len / 3));
-      for (let k = 0; k <= posts; k++) {
-        const u = k / posts, w = 0.05 / len;
+      const at3 = [...Array.from({ length: posts + 1 }, (_, k) => k / posts).filter(u => !gap || u < gap[0] || u > gap[1]), ...(gap ?? [])];
+      for (const u of at3) {
+        const w = 0.05 / len;
         quad(Math.max(0, u - w), Math.min(1, u + w), lot, fence, 0.1, picket);
       }
       return;

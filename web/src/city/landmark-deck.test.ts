@@ -138,3 +138,26 @@ it('takes over its own mapped aisles, and no other road', () => {
   expect(model.ownDrive({ cls: 'service', kind: 'ground', pts: aisle })).toBe(false);
 });
 
+it('leaves the fence open where the drive from Piedmont comes in', () => {
+  const model = createLandmarkDeck([deck, landmark], grid, [deck, landmark])!;
+  model.group.updateMatrixWorld(true);
+  const iron = new Color('#2b2d2f');
+  const posts: number[] = [];
+  model.group.traverse(o => {
+    const g = (o as Mesh).geometry;
+    if (!g) return;
+    const p = g.getAttribute('position'), c = g.getAttribute('color');
+    // Each fence triangle's extent in plan: how near the entrance its iron comes.
+    for (let i = 0; i < p.count; i += 3) {
+      if (Math.abs(c.getX(i) - iron.r) + Math.abs(c.getY(i) - iron.g) + Math.abs(c.getZ(i) - iron.b) > .002) continue;
+      const [a, b, d] = [0, 1, 2].map(k => new Vector3().fromBufferAttribute(p, i + k).applyMatrix4(o.matrixWorld));
+      for (let u = 0; u <= 20; u++) for (let v = 0; u + v <= 20; v++) {
+        const x = a.x + (b.x - a.x) * u / 20 + (d.x - a.x) * v / 20, z = a.z + (b.z - a.z) * u / 20 + (d.z - a.z) * v / 20;
+        posts.push(Math.hypot(x - 924.17, z + 742.36));
+      }
+    }
+  });
+  expect(Math.min(...posts)).toBeGreaterThan(2.5);
+  expect(posts.some(d => d < 4)).toBe(true); // the gate posts stand just either side
+});
+
