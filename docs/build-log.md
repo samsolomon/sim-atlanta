@@ -4200,3 +4200,7 @@ Mira is one of the few Midtown towers you know first by its car park. Its eight 
 The chevrons are sloped quads: one rising stripe per 7 m of face on the lower half and a falling one above it. The whole skin is 1,197 triangles on two tiles. The first render turned the slab into a dark glass box, because the recess colour I picked by eye rendered at V 23. Lifting it to a mid grey helped the shaded faces. The sunny south face still read navy, which looked like a bug. Shadow-map acne from the frame standing proud and inward-facing walls were both possible, and a raycast test ruled out the walls. A throwaway bright-red recess settled it in one render: the colour was arriving, and the face is simply in the shadow of the tower to its south-east at 11:30.
 
 [Before and after](log/ui/mira-midtown-union/compare.jpg)
+
+### 2026-11-24 · Renaissance Lofts, grey-white again
+
+Renaissance Lofts on Ralph McGill is a 1974 office slab that became lofts for the 1996 Olympics. City drew it as a generic glass box. The lidar puts the roof at 57.8 m, with a penthouse to 63.4 m. The photographs supply the rest: grey-white paint, deep piers framing ribbon windows, and a dark base. [Before/after](log/ui/renaissance-lofts/README.md)
