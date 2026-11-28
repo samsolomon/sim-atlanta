@@ -2215,6 +2215,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   /** The x-rayed vehicle's centreline (world, at mid-height) and the ink's self radius. */
   const xraySelf: THREE.Vector3[] = [];
+  /** Whether ink ran last frame (ghosts are drawn by it). */
+  let inkRan = false;
   /** The x-rayed body around its centreline: half width, and reach below and above (metres). */
   const xraySelf_ = { r: 1.8, below: 2.8, above: 2.15 };
   const BODY = { train: { r: 1.8, below: 2.8, above: 2.15 }, bus: { r: 1.5, below: 2.0, above: 1.85 } };
@@ -2353,7 +2355,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // The followed vehicle, else the selected one (main.ts): its cars x-ray wherever hidden.
     // Ghosts draw only while ink runs (decided below, last frame's answer here): beyond ink's fade
     // they build nothing, so the far view pays no CPU and no ghost buffers.
-    const ghostsLive = !!ghosts && ink.enabled;
+    const ghostsLive = !!ghosts && inkRan;
     const xray = ghostsLive ? xrayTarget(options.follow?.vehicle, options.selected?.() ?? null) : null;
     ghosts?.begin();
     trains.ghosts = ghostsLive ? ghosts : null;
@@ -2456,6 +2458,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       ink.enabled = foliageMask.enabled = near < INK_FADE_END_M;
     }
+    // Decided only now: the first frame, before this check, mustn't build ghosts for a far view.
+    inkRan = ink.enabled;
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
