@@ -141,7 +141,8 @@ export function createPeachtreeInternationalDeck(buildings: VBuilding[], grid: G
 
   // The corner sign on the Peachtree face, near the corner: a blank screen, content never drawn.
   {
-    const x = 26.5 + 0.45, y0 = 338.0, y1 = 345.5, z0 = 3.5, z1 = 10.5;
+    // Its south end stops short of the bay, which bulges out from z = 9.1.
+    const x = 26.5 + 0.45, y0 = 338.0, y1 = 345.5, z0 = 2.0, z1 = 9.0;
     s.body.quad([x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1], screen);
     s.lights.quad([x + 0.05, y0 + 0.3, z0 + 0.3], [x + 0.05, y1 - 0.3, z0 + 0.3], [x + 0.05, y1 - 0.3, z1 - 0.3], [x + 0.05, y0 + 0.3, z1 - 0.3], '#4c5866');
   }

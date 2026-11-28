@@ -54,3 +54,27 @@ it('stays inside the routine triangle budget and its own outline, with nothing l
   expect(r.vertical).toBe(0);
   expect(detachedParts(model.group, rings)).toEqual([]);
 });
+
+it('hangs the corner sign clear of the curved glass bay', () => {
+  const model = createPeachtreeInternationalDeck([site], grid)!;
+  model.group.updateMatrixWorld(true);
+  // The sign's face: the lamps vertices 27 m east of the skin's origin.
+  const face: Vector3[] = [];
+  model.group.traverse(o => {
+    const position = (o as Mesh).geometry?.getAttribute('position');
+    if (!position) return;
+    for (let i = 0; i < position.count; i++) {
+      const v = new Vector3().fromBufferAttribute(position, i).applyMatrix4(o.matrixWorld);
+      if (Math.abs(v.x - 360) < 0.01) face.push(v);
+    }
+  });
+  expect(face.length).toBeGreaterThan(0);
+  const ys = face.map(v => v.y), zs = face.map(v => v.z);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  for (const u of [0.02, 0.5, 0.98]) for (const t of [0.02, 0.5, 0.98]) {
+    const y = lerp(Math.min(...ys), Math.max(...ys), u), z = lerp(Math.min(...zs), Math.max(...zs), t);
+    // Seen straight on from Peachtree, nothing stands in front of it.
+    const hit = new Raycaster(new Vector3(400, y, z), new Vector3(-1, 0, 0)).intersectObject(model.group)[0];
+    expect(hit.point.x).toBeCloseTo(360, 1);
+  }
+});
