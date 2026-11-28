@@ -45,7 +45,9 @@ export function createTenParkPlace(buildings: VBuilding[], grid: GroundGrid, qua
     litFacade(shell, seed, i, a, b, shopTop + 0.6, roof - 1.2, high ? 6 : 3, high ? 2.6 : 8, 0.5, 0.6, glass, 0.35);
     // Stone base course with shopfronts, and a stone cornice.
     shell.body.quad(at(0, shell.base, 0.06), at(0, shopTop, 0.06), at(length, shopTop, 0.06), at(length, shell.base, 0.06), stone);
-    if (length > 6) litFacade(shell, seed, 20 + i, a, b, shell.base + 0.8, shopTop - 0.6, 1, high ? 4 : 10, 0.75, 0.8, ['#3c4850'], 0.45);
+    // litFacade sets panes 7 cm off its line; move the line out so they clear the 6 cm stone.
+    const out = (p: P2): P2 => [p[0] + nx * 0.04, p[1] + nz * 0.04];
+    if (length > 6) litFacade(shell, seed, 20 + i, out(a), out(b), shell.base + 0.8, shopTop - 0.6, 1, high ? 4 : 10, 0.75, 0.8, ['#3c4850'], 0.45);
     shell.body.quad(at(0, roof - 0.9, 0.06), at(0, roof, 0.06), at(length, roof, 0.06), at(length, roof - 0.9, 0.06), stone);
   });
   return shell.finish('#f2d6a8', 0.66);

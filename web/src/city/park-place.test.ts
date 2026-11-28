@@ -35,3 +35,26 @@ it('draws each Park Place building at its own lidar height (Overture inverts the
     if (tier === 'low') expect(tris(t.group) + tris(o.group)).toBeLessThan(1000);
   }
 });
+
+it('stands the Ten Park Place shopfront panes clear of the stone base', () => {
+  const t = createTenParkPlace([ten, one], grid)!;
+  t.group.updateMatrixWorld(true);
+  const base = 317 - 300 - 0.35, shopTop = 316.8 - 300 + 4.6, v = new Vector3(), off: number[] = [];
+  t.group.traverse(o => {
+    const mesh = o as Mesh;
+    if (!mesh.isMesh) return;
+    const position = mesh.geometry.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      v.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
+      if (v.y < base + 0.5 || v.y > shopTop - 0.3) continue;
+      off.push(Math.min(...tenRing.map(([ax, az], k) => {
+        const [bx, bz] = tenRing[(k + 1) % tenRing.length], dx = bx - ax, dz = bz - az;
+        const u = Math.max(0, Math.min(1, ((v.x - ax) * dx + (v.z - az) * dz) / (dx * dx + dz * dz)));
+        return Math.hypot(v.x - ax - dx * u, v.z - az - dz * u);
+      })));
+    }
+  });
+  expect(off.length).toBeGreaterThan(0);
+  // The stone base stands 6 cm off the wall; coplanar layers keep 4 cm apart.
+  expect(Math.min(...off)).toBeGreaterThan(0.099);
+});
