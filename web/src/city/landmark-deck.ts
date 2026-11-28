@@ -39,7 +39,11 @@ const concrete = '#a7a39a',
   stripe = '#dcd8cc',
   picket = '#2b2d2f';
 
-export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
+/**
+ * `neighbours` are the outlines the party walls are read from. City passes the list from before The
+ * Landmark's skin claims the tower: `buildings` no longer holds it by the time the deck is built.
+ */
+export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, neighbours: VBuilding[]) {
   const origin: P2 = [955, -718];
   const s = landmarkShell(buildings, grid, landmarkDeckId, 'The Landmark deck', origin, [1, 0], [[0, 0], [15, 5]]);
   if (!s) return null;
@@ -61,7 +65,7 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
 
   // Party walls: edges whose ends are both corners of another building's outline
   // (The Landmark tower). Its skin draws those walls.
-  const otherCorners = buildings.filter(b => b.id !== landmarkDeckId)
+  const otherCorners = neighbours.filter(b => b.id !== landmarkDeckId)
     .flatMap(b => b.rings[0] ?? [])
     .filter(([x, z]) => Math.abs(x - origin[0]) < 60 && Math.abs(z - origin[1]) < 60);
   const shared = ([x, z]: P2) => otherCorners.some(([u, v]) => Math.hypot(u - x - origin[0], v - z - origin[1]) < 0.05);
@@ -145,7 +149,8 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
     for (let spot = 0, u = -30; u < east.len + 30; u += 2.7, spot++) {
       if (![[-1.35, -2.5], [1.35, -2.5], [1.35, 2.5], [-1.35, 2.5]].every(([du, dv]) => inside(u + du, v + dv))) continue;
       // One stripe serves both stalls of a back-to-back pair of rows.
-      if (row % 2 === 0) flat(u - 1.35, u - 1.21, v - 2.45, inside(u, v + 5.4) ? v + 7.85 : v + 2.45);
+      // It runs on into the second row only where its far end is still on the roof.
+      if (row % 2 === 0) flat(u - 1.35, u - 1.21, v - 2.45, inside(u, v + 5.4) && inside(u - 1.35, v + 7.85) && inside(u - 1.21, v + 7.85) ? v + 7.85 : v + 2.45);
       else if (!inside(u, v - 5.4)) flat(u - 1.35, u - 1.21, v - 2.45, v + 2.45);
       // About two in five stalls taken, spread over every row (illustrative occupancy).
       if (((seed >>> ((spot + row) % 24)) + spot * 7 + row * 3) % 5 >= 2 || car >= 16) continue;

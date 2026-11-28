@@ -614,7 +614,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
         theLandmark = createTheLandmark(afterHardRock, ground);
-        landmarkDeck = createLandmarkDeck(theLandmark?.buildings ?? afterHardRock, ground);
+        landmarkDeck = createLandmarkDeck(theLandmark?.buildings ?? afterHardRock, ground, afterHardRock);
         const afterLandmark = landmarkDeck?.buildings ?? theLandmark?.buildings ?? afterHardRock;
         tDeck = createTDeck(afterLandmark, ground);
         const afterTDeck = tDeck?.buildings ?? afterLandmark;
