@@ -28,6 +28,7 @@ import { colony100Id, colony400Id, createColony100, createColony400 } from '../c
 import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createTenPeachtreePlace, tenPeachtreePlaceId } from '../city/ten-peachtree-place';
+import { create715Peachtree, peachtree715Id } from '../city/715-peachtree';
 import { createCrestOnPeachtree, crestOnPeachtreeId } from '../city/crest-on-peachtree';
 import { createTwoPeachtreePointe, twoPeachtreePointeId } from '../city/two-peachtree-pointe';
 import { createLilliMidtown, lilliMidtownId } from '../city/lilli-midtown';
@@ -441,6 +442,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === tenPeachtreePlaceId ? createTenPeachtreePlace(sceneryCity.buildings, site, grid)
+      : site.id === peachtree715Id ? create715Peachtree(sceneryCity.buildings, site, grid, options.quality)
       : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid, options.quality)
       : site.id === twoPeachtreePointeId ? createTwoPeachtreePointe(sceneryCity.buildings, site, grid)
       : site.id === lilliMidtownId ? createLilliMidtown(sceneryCity.buildings, site, grid, options.quality)
