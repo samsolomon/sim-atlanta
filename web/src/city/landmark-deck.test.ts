@@ -6,6 +6,7 @@ import fixture from './fixtures/landmark-deck.json';
 import tower from './fixtures/the-landmark.json';
 import { createLandmarkDeck, landmarkDeckId } from './landmark-deck';
 import { pointInRing } from '../vignette/geom';
+import { footprintContains, yieldPlanes } from '../terrain/surface-build';
 
 // Grade along x: Piedmont (west) at the lidar lot, falling 4.4 m toward the Connector (east).
 const cols = [296.9, 296.9, 296.9, 292.5];
@@ -102,22 +103,21 @@ it('keeps every painted stall line on the roof', () => {
   expect(off).toEqual([]);
 });
 
-it('lies above ground that rises inside its outline, not only at its corners', () => {
-  // 5 m posts, level at the lidar lot but for one 45 cm higher inside the outline.
-  const high: number[] = [938, -716];
-  const bump = new GroundGrid({
-    version: 1, rows: 31, cols: 31, stepM: 5,
-    bounds: { minX: 863, maxX: 1013, minZ: -791, maxZ: -641 },
-    encoding: 'signed int16 little-endian',
-    vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 323.8 },
-    scaleM: 0.1, offsetM: 0, noData: -32768, sha256: '',
-  }, new Int16Array(Array.from({ length: 961 }, (_, i) =>
-    863 + (i % 31) * 5 === high[0] && -791 + Math.floor(i / 31) * 5 === high[1] ? 2974 : 2969)).buffer);
-  expect(pointInRing(high[0], high[1], deck.rings[0])).toBe(true);
-  expect(bump.sample(high[0], high[1])).toBeCloseTo(297.4, 1);
-  const model = createLandmarkDeck([deck, landmark], bump, [deck, landmark])!;
+it('hands the terrain a cut under its whole outline, below everything it draws there', () => {
+  const model = createLandmarkDeck([deck, landmark], grid, [deck, landmark])!;
   model.group.updateMatrixWorld(true);
-  const hit = new Raycaster(new Vector3(high[0], 200, high[1]), new Vector3(0, -1, 0)).intersectObject(model.group)[0];
-  expect(hit.point.y + 323.8).toBeGreaterThan(297.4);
+  const cuts = model.yields.map(q => ({ planes: yieldPlanes(q), floor: q.floor }));
+  // Every metre inside the outline, including (937, -717) where drawn ground rose through the lot.
+  const xs = deck.rings[0].map(p => p[0]), zs = deck.rings[0].map(p => p[1]);
+  let checked = 0;
+  for (let x = Math.ceil(Math.min(...xs)) + .3; x < Math.max(...xs); x++) for (let z = Math.ceil(Math.min(...zs)) + .3; z < Math.max(...zs); z++) {
+    if (!pointInRing(x, z, deck.rings[0])) continue;
+    const cut = cuts.find(q => footprintContains(q.planes, x, z, .03));
+    expect(cut, `${x},${z}`).toBeDefined();
+    const hit = new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0];
+    expect(cut!.floor(x, z)).toBeLessThan(hit.point.y);
+    checked++;
+  }
+  expect(checked).toBeGreaterThan(1500);
 });
 

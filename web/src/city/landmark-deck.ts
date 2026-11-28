@@ -1,4 +1,6 @@
+import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
+import type { GroundYield } from '../terrain/surface';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
@@ -49,15 +51,9 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
   if (!s) return null;
   const seed = seedOf(landmarkDeckId);
   const groundAt = (x: number, z: number) => grid.sample(x + origin[0], z + origin[1]) ?? lidarLot;
-  // The rendered terrain runs up to 0.5 m above the lidar lot, at the Piedmont corners and inside
-  // the outline. Lift the lot just clear of it (at most 0.6 m) so grass never shows through the
-  // asphalt: sample the corners and every metre between them.
-  const heights = s.ring.map(([x, z]) => groundAt(x, z));
-  const xs = s.ring.map(p => p[0]), zs = s.ring.map(p => p[1]);
-  for (let x = Math.min(...xs); x <= Math.max(...xs); x++) for (let z = Math.min(...zs); z <= Math.max(...zs); z++)
-    if (pointInRing(x, z, s.ring)) heights.push(groundAt(x, z));
-  // The drawn triangles stand up to 7 cm above the grid's samples, so the clearance is 12 cm.
-  const lot = Math.min(lidarLot + 0.6, Math.max(lidarLot, ...heights.map(y => y + 0.12))),
+  // The rendered terrain at the Piedmont corners runs up to 0.4 m above the lidar lot. Lift the
+  // lot just clear of it (at most 0.6 m); inside the outline the terrain yields to the lot (below).
+  const lot = Math.min(lidarLot + 0.6, Math.max(lidarLot, ...s.ring.map(([x, z]) => groundAt(x, z) + 0.08))),
     parapet = lot + 0.95,
     fence = lot + 1.1;
 
@@ -164,5 +160,14 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
       carBlock(u, v, paints[(spot + row) % paints.length]);
     }
   }
-  return s.finish('#f1ead6', 0.6);
+  // The drawn ground rose through the asphalt, so it is cut just below the lot under the whole
+  // outline, one convex triangle at a time. City carves these with the street cuttings.
+  const corners = plan.map(([x, z]) => new Vector2(x, z));
+  const yields: GroundYield[] = ShapeUtils.triangulateShape(corners, []).flatMap(face => {
+    const ring = face.map(i => [plan[i][0] + origin[0], plan[i][1] + origin[1]] as P2);
+    const [[ax, az], [bx, bz], [cx, cz]] = ring;
+    if (Math.abs((bx - ax) * (cz - az) - (bz - az) * (cx - ax)) < 0.02) return [];
+    return [{ ring, floor: () => lot - grid.manifest.vertical.sceneZeroNavd88M - 0.05 }];
+  });
+  return { ...s.finish('#f1ead6', 0.6), yields };
 }

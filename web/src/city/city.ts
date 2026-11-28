@@ -843,7 +843,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain!.addFar(farBoxesDowntown, farRoots);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve([...transport.cutting, ...(landmarkDeck?.yields ?? [])]); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
