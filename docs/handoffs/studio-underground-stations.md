@@ -2,7 +2,7 @@
 
 ## State (2026-11-27)
 
-Docs only, no City code. [The table and notes](../underground-stations.md) and [the JSON](../underground-stations.json) cover 20 below-grade stations (22 platform levels) and list the 18 left out. The JSON was checked for parsing, resolvable source ids, track centrelines that span each platform, and each of the 81 pipeline rail stop ids appearing once. No tests or browser checks: nothing runs this data.
+Docs only, no City code. [PR #731](https://github.com/samsolomon/sim-atlanta/pull/731) is open and not merged. [The table and notes](../underground-stations.md) and [the JSON](../underground-stations.json) cover 20 below-grade stations (22 platform levels) and list the 18 left out. The JSON was checked for parsing, resolvable source ids, track centrelines that span each platform, and each of the 81 pipeline rail stop ids appearing once. No tests or browser checks: nothing runs this data.
 
 ## Before drawing ghost stations
 
