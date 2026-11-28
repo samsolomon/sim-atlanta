@@ -25,8 +25,8 @@
 
 ## A16 pass (coordinator runs it)
 
-The frozen build is at `~/Developer/sim-atlanta-dayfps-frozen` on the Studio, built from `64df0d57`.
-Later commits change only tests and docs. Release 19's staged dist is at
+The frozen build is at `~/Developer/sim-atlanta-dayfps-frozen` on the Studio, built from `de899a1e` (the PR head's code;
+later commits are docs only). Release 19's staged dist is at
 `~/Developer/sim-atlanta-release-92e71e45/web/dist`. Serve both from `web/` in this worktree:
 
 ```sh
@@ -34,7 +34,7 @@ npx vite preview --outDir ~/Developer/sim-atlanta-dayfps-frozen --host 0.0.0.0 -
 npx vite preview --outDir ~/Developer/sim-atlanta-release-92e71e45/web/dist --host 0.0.0.0 --port 4692 --strictPort
 ```
 
-Run each URL with `P=http://<studio>:4691/?view=city&q=low&perf=run&t=2026-11-20T14:00:00-05:00`.
+Run each URL with `P=http://100.78.214.26:4691/?view=city&q=low&perf=run&t=2026-11-20T14:00:00-05:00`.
 Use a fresh Chrome per URL, and alternate the order twice:
 
 | # | What | URL |
@@ -44,7 +44,7 @@ Use a fresh Chrome per URL, and alternate the order twice:
 | 3 | Old landmark path (release 19's batches) | `$P&nightwall=off` |
 | 4 | Fix, no placeholder | `$P&placeholder=off` |
 | 5 | Release 20 path, no placeholder | `$P&daywall=facade&placeholder=off` |
-| 6 | Release 19 itself | `http://<studio>:4692/?view=city&q=low&perf=run&t=2026-11-20T14:00:00-05:00` |
+| 6 | Release 19 itself | `http://100.78.214.26:4692/?view=city&q=low&perf=run&t=2026-11-20T14:00:00-05:00` |
 | 7 | Night check, fix | `$P` with `t=…T22:00:00-05:00` |
 
 - **Pass:** #1 is about #3 and #6 (the release 19 day fps), and better than #2. #7 is within noise
