@@ -108,6 +108,7 @@ import { createMariettaBackdrop } from './marietta-backdrop';
 import { createOne12Courtland } from './one12-courtland';
 import { createCitizensTrust } from './citizens-trust';
 import { createFultonGovernmentCenter } from './fulton-government-center';
+import { createPeachtreeInternationalDeck } from './peachtree-international-deck';
 import { createGeorgiaAquarium } from './georgia-aquarium';
 import { createWorldOfCocaCola } from './world-of-coca-cola';
 import { createWilliams250 } from './250-williams';
@@ -513,6 +514,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
   let internationalGarage: ReturnType<typeof createInternationalGarage> = null;
   let georgiaAquarium: ReturnType<typeof createGeorgiaAquarium> = null;
+  let peachtreeInternationalDeck: ReturnType<typeof createPeachtreeInternationalDeck> = null;
   let worldOfCocaCola: ReturnType<typeof createWorldOfCocaCola> = null;
   let williams250: ReturnType<typeof createWilliams250> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
@@ -659,7 +661,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         internationalGarage = createInternationalGarage(fultonGovernmentCenter?.buildings ?? afterCitizensTrust, ground);
         const afterFultonGovernmentCenter = internationalGarage?.buildings ?? fultonGovernmentCenter?.buildings ?? afterCitizensTrust;
         georgiaAquarium = createGeorgiaAquarium(afterFultonGovernmentCenter, ground);
-        const afterGeorgiaAquarium = georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
+        peachtreeInternationalDeck = createPeachtreeInternationalDeck(georgiaAquarium?.buildings ?? afterFultonGovernmentCenter, ground);
+        const afterGeorgiaAquarium = peachtreeInternationalDeck?.buildings ?? georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
         worldOfCocaCola = createWorldOfCocaCola(afterGeorgiaAquarium, ground);
         const afterWorldOfCocaCola = worldOfCocaCola?.buildings ?? afterGeorgiaAquarium;
         williams250 = createWilliams250(afterWorldOfCocaCola, ground);
@@ -796,6 +799,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
         if (internationalGarage) world.group.add(internationalGarage.group);
         if (georgiaAquarium) world.group.add(georgiaAquarium.group);
+        if (peachtreeInternationalDeck) world.group.add(peachtreeInternationalDeck.group);
         if (worldOfCocaCola) world.group.add(worldOfCocaCola.group);
         if (williams250) world.group.add(williams250.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
@@ -849,7 +853,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter, internationalGarage,
-            georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
+            georgiaAquarium, peachtreeInternationalDeck, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, fairliePoplar, georgiaPower, peachtreeTowers, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady, tenParkPlace, oneParkPlace, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
@@ -2041,6 +2045,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       fultonGovernmentCenter?.setNight(night);
       internationalGarage?.setNight(night);
       georgiaAquarium?.setNight(night);
+      peachtreeInternationalDeck?.setNight(night);
       worldOfCocaCola?.setNight(night);
       williams250?.setNight(night);
       fultonCourthouse?.setNight(night);
