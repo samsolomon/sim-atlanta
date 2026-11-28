@@ -2,7 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
-import { seedOf } from './skin-kit';
+import { litHash, seedOf } from './skin-kit';
 
 /**
  * The parking deck at the north-west corner of Peachtree Street and Andrew Young International
@@ -144,7 +144,17 @@ export function createPeachtreeInternationalDeck(buildings: VBuilding[], grid: G
     // Its south end stops short of the bay, which bulges out from z = 9.1.
     const x = 26.5 + 0.45, y0 = 338.0, y1 = 345.5, z0 = 2.0, z1 = 9.0;
     s.body.quad([x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z1], screen);
-    s.lights.quad([x + 0.05, y0 + 0.3, z0 + 0.3], [x + 0.05, y1 - 0.3, z0 + 0.3], [x + 0.05, y1 - 0.3, z1 - 0.3], [x + 0.05, y0 + 0.3, z1 - 0.3], '#4c5866');
+    const pane = (into: Shell['body'], out: number, lo: number, hi: number, a: number, b: number) =>
+      into.quad([x + out, lo, a], [x + out, hi, a], [x + out, hi, b], [x + out, lo, b], '#4c5866');
+    pane(s.body, 0.05, y0 + 0.3, y1 - 0.3, z0 + 0.3, z1 - 0.3);
+    // At night only some modules glow: one lit sheet read as a fault. They share the panel's
+    // colour, so by day the screen is one flat face.
+    const columns = 4, rows = 5, w = (z1 - z0 - 0.6) / columns, h = (y1 - y0 - 0.6) / rows;
+    for (let i = 0; i < columns; i++) for (let j = 0; j < rows; j++) {
+      if (litHash(seed, 40, j, i) >= 0.4) continue;
+      const a = z0 + 0.3 + i * w, lo = y0 + 0.3 + j * h;
+      pane(s.lights, 0.1, lo + 0.15, lo + h - 0.15, a + 0.15, a + w - 0.15);
+    }
   }
 
   // The roof: two back-to-back pairs of stall rows running east-west.
