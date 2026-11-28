@@ -92,6 +92,7 @@ import { createTDeck } from './t-deck';
 import { createHardRock } from './hard-rock';
 import { createTheLandmark } from './the-landmark';
 import { createInternationalGarage } from './international-garage';
+import { createLandmarkDeck } from './landmark-deck';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -492,6 +493,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let tDeck: ReturnType<typeof createTDeck> = null;
   let hardRock: ReturnType<typeof createHardRock> = null;
   let theLandmark: ReturnType<typeof createTheLandmark> = null;
+  let landmarkDeck: ReturnType<typeof createLandmarkDeck> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -554,6 +556,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let skyView: ReturnType<typeof createSkyView> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
+  /** The downtown data as City draws its ground and streets. */
+  let drawn = vd;
   try {
     await build('alignments', () => {
       ({ tracks: marta, station } = martaAlignments(rf, manifest, b, stationSite, grid));
@@ -612,7 +616,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
         theLandmark = createTheLandmark(afterHardRock, ground);
-        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
+        landmarkDeck = createLandmarkDeck(theLandmark?.buildings ?? afterHardRock, ground, afterHardRock);
+        const afterLandmark = landmarkDeck?.buildings ?? theLandmark?.buildings ?? afterHardRock;
         tDeck = createTDeck(afterLandmark, ground);
         const afterTDeck = tDeck?.buildings ?? afterLandmark;
         parkPlaceTower = createParkPlaceTower(afterTDeck, ground);
@@ -722,9 +727,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         barclayHotel = createBarclayHotel(afterRenaissanceLofts, ground, low ? 'low' : 'high');
         const afterBarclayHotel = barclayHotel?.buildings ?? afterRenaissanceLofts;
         allenPlaza55 = createAllenPlaza55(afterBarclayHotel, ground, low ? 'low' : 'high');
-        const city = { ...vd, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
+        // The Landmark deck draws its own lot, aisles included.
+        drawn = landmarkDeck ? { ...vd, roads: vd.roads.filter(r => !landmarkDeck!.ownDrive(r)),
+          terrainTransport: vd.terrainTransport && { ...vd.terrainTransport, roads: vd.terrainTransport.roads.filter(r => !landmarkDeck!.ownDrive(r)) } } : vd;
+        const city = { ...drawn, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, yields: landmarkDeck?.yields, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;
@@ -755,6 +763,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (tDeck) world.group.add(tDeck.group);
         if (hardRock) world.group.add(hardRock.group);
         if (theLandmark) world.group.add(theLandmark.group);
+        if (landmarkDeck) world.group.add(landmarkDeck.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -817,7 +826,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, capitalCityClub, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter, hub,
-            peachtree, library, flatiron, healey, footballHall, museumTower, courtlandGrand, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark,
+            peachtree, library, flatiron, healey, footballHall, museumTower, courtlandGrand, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark, landmarkDeck,
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter, internationalGarage,
@@ -839,7 +848,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain!.addFar(farBoxesDowntown, farRoots);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(drawn) ?? drawn), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
@@ -1995,6 +2004,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       tDeck?.setNight(night);
       hardRock?.setNight(night);
       theLandmark?.setNight(night);
+      landmarkDeck?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
