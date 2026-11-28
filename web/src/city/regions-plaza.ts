@@ -30,8 +30,8 @@ const stoneShade = '#cfc8be', band = '#ebe6dd';
 // neighbour's dark strips.
 const glass = ['#737c86', '#707983', '#76808a'];
 // The hip roof is cool slate-grey standing-seam metal (2014 and 2025 photos), not copper.
-export const regionsRoof = '#6b7378';
-const roofDeck = '#5e6569';
+export const regionsRoof = '#717a7b';
+const roofDeck = '#666d70';
 
 export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const shell = landmarkShell(buildings, grid, site.id, 'Regions Plaza', origin, [1, 0], [[0, 0], [-20, -18], [20, 18]]);
