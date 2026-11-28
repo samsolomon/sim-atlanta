@@ -75,6 +75,24 @@ it('hangs the corner sign clear of the curved glass bay', () => {
     const y = lerp(Math.min(...ys), Math.max(...ys), u), z = lerp(Math.min(...zs), Math.max(...zs), t);
     // Seen straight on from Peachtree, nothing stands in front of it.
     const hit = new Raycaster(new Vector3(400, y, z), new Vector3(-1, 0, 0)).intersectObject(model.group)[0];
-    expect(hit.point.x).toBeCloseTo(360, 1);
+    // The sign's own layers sit between 27 and 27.1 m east of the origin; the bay reaches 28.1.
+    expect(hit.point.x).toBeLessThan(360.1);
   }
+});
+
+it('lights the corner screen in separate modules at night, not as one sheet', () => {
+  const model = createPeachtreeInternationalDeck([site], grid)!;
+  model.group.updateMatrixWorld(true);
+  const lamps = model.group.children[1] as Mesh, position = lamps.geometry.getAttribute('position');
+  let lit = 0, modules = 0;
+  for (let i = 0; i < position.count; i += 3) {
+    const [a, b, c] = [0, 1, 2].map(k => new Vector3().fromBufferAttribute(position, i + k).applyMatrix4(lamps.matrixWorld));
+    if (![a, b, c].every(p => p.x > 359.9 && p.x < 360.1)) continue;
+    modules += 0.5;
+    lit += b.sub(a).cross(c.sub(a)).length() / 2;
+  }
+  // A share of the 7 x 7.5 m screen, in several pieces.
+  expect(modules).toBeGreaterThanOrEqual(4);
+  expect(lit / (7 * 7.5)).toBeGreaterThan(0.12);
+  expect(lit / (7 * 7.5)).toBeLessThan(0.4);
 });
