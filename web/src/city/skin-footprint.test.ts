@@ -99,7 +99,11 @@ const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:39450314': 9, // One Atlantic Center, midtown-upper, worst 0.67 m off
   'osm:way:208355680': 8, // Ponce de Leon Apartments, midtown-south, worst 0.34 m off
   'osm:way:28961767': 7, // Woodruff Arts Center, midtown-upper, worst 0.33 m off: under 0.5 m (fins and loggia trim), tidy later
-  'osm:way:269747513': 7, // clara-meer, midtown-upper, worst 5.85 m off
+  // clara-meer, midtown-upper: seven intentional free-standing parts, not loose geometry (checked 2026-11-24):
+  // 12th Street gate's two granite piers (5.85 m apart, either side of the opening); its two lamp posts;
+  // the 14th Street gate's piers and railing (same hook, piedmont-gates.ts); the dock (OSM 1089189870) on
+  // the shore; and the footbridge's east parapet piers and lamps, seated on the transport deck at deckHeight().
+  'osm:way:269747513': 7,
   'osm:way:42725820': 6, // Academy of Medicine, midtown-central, worst 0.46 m off
   'osm:way:42792936': 4, // Crum and Forster Building, midtown-south, worst 0.42 m off: under 0.5 m (facade trim), tidy later
   // North Avenue station, midtown-south. Declared: Tower Square's three station-entrance door sets, drawn
