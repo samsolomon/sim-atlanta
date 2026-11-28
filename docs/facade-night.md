@@ -38,7 +38,8 @@ The batcher draws a group as **lit walls** when:
 - its runs differ only in emitted light at every probe;
 - it has at most 16 runs.
 
-Then the group has one draw, day and night, with the facade program and `plain` set. Each run is a
+Then the group has one draw, day and night, with the facade program and `plain` set. While no run
+glows, that draw swaps to a plain twin (see "By day: off the facade program" below). Each run is a
 range of that draw. `sync()` copies each run's emitted light from its source material every frame,
 as it used to copy it onto the run's own material. So any `setNight` curve works, including night
 values between the probes. The group's day light stays on the material's `emissive`, so the far
@@ -115,6 +116,68 @@ all 12 areas):
 - **Growth**: night windows add no draw for any building count. Each lit-wall group draws once
   whether it is lit or not. A coarse level that uses the generic material gets procedural windows
   inside its existing draws.
+
+## By day: off the facade program (release 21)
+
+Release 20 shipped this design, and on the A16 its day fps fell about 9% (46.8/45.7 → 42.7/41.1 at
+14:00, with p50 unchanged at 22.2 ms). Night stayed level. The cause: a lit-wall group drew with the
+facade program **by day too**, and so did its far version, which shares the material. So every
+daytime vertex in those draws ran the glow loop (up to 16 compares) and wrote the facade varyings
+(world position, normal, style, base, glow: 11 floats), all to add nothing. At Low's default view
+that is about 346k of 1.68M triangles: 337k in 38 far draws plus 9k in 14 near ones. The A16 is
+bound by triangles, so this slowed it. The release 19 day draws used a plain landmark material
+instead.
+
+**The fix.** Each lit-wall group keeps two materials:
+- the facade material;
+- a twin cloned just before the hook goes on, so it is the release 19 day material, on a program
+  that already exists.
+
+`sync()` already computes each run's glow every frame. When every glow is exactly zero, it puts the
+twin on the full draw and the far draw. When any run glows, it puts the facade material back. With
+every glow at zero, the facade program's output equals the twin's: `plain` skips the windows, and the
+added emission is 0. So nothing visible changes at any `setNight` curve or night factor. A dusk value
+of 0.01 already switches to the facade program.
+
+Things the swap has to carry:
+- **Board clipping.** City sets clipping planes on whatever material a mesh holds when it mounts
+  (`clipScenery`). The swap copies `clippingPlanes`, `clipShadows` and `clipIntersection` to the
+  material it puts on. Without that, the facade twin drew unclipped and compiled an 81st program on
+  Low at night. Found by diffing the two programs' cache keys (`numClippingPlanes` 4 vs 0).
+- **Disposal.** Disposing either material disposes both, because City disposes whichever one the
+  mesh holds.
+- **Far versions.** A far version is built with the material its full version holds at that moment.
+
+`?perf&daywall=facade` keeps release 20's behaviour, for same-build A/B runs.
+
+| Same build, `?perf=run` | Calls | Programs | Triangles | Geometry MB |
+|---|---|---|---|---|
+| Low 14:00, release 20 path → fix | 338 → 338 | 80 → 80 | 1.685M → 1.685M | 160.7 → 160.7 |
+| Low 17:50 (dusk) | 385 → 385 | 80 → 80 | 2.060M → 2.060M | 161.1 → 161.1 |
+| Low 22:00 | 375 → 375 | 80 → 80 | 2.035M → 2.035M | 160.7 → 160.7 |
+| High 14:00 | 431 → 431 | 94 → 94 | 6.483M → 6.483M | 272.0 → 272.0 |
+| High 17:50 | 491 → 491 | 94 → 94 | 6.907M → 6.907M | 272.6 → 272.6 |
+| High 22:00 | 480 → 480 | 94 → 94 | 6.856M → 6.856M | 272.0 → 272.0 |
+
+What draws with which program by day at Low's default view: before, 31 lit-wall draws and 30 far
+draws were on the facade program. After, all of them use the plain landmark program that 3 day
+batches and 3 far batches already used.
+
+Desktop can't show the win. At 6x CPU on the A16 canvas, render CPU per frame at 14:00 is 9.3 and
+10.4 ms with the fix against 9.5 and 10.3 ms on the release 20 path. The cost is GPU vertex work, and
+the Studio's GPU hides it. The A16 run decides.
+
+**No visible change, checked on matched frames.** That is 36 frames per side: 6 views (the four
+docs/perf.md views, Five Points and a 450 m downtown close-up) at 14:00, 17:50 and 22:00, on High and
+Low. Captures use `speed=0`, `weather=clear` and `perf=silent`, and High adds `nopass=grade`.
+- **High, main against the fix:** at most 0.22% of pixels differ by more than 8/255 in any frame.
+  The fixed 0.06–0.10% over 32/255 is the radio's album art. Main against itself gives the same:
+  0.10%, 0.00% and 0.10% on the default view.
+- **Low:** at 17:50 and 22:00, main against main and main against the fix both differ by about 5%
+  over 8/255, with every pixel under 12/255. That is film grain, which `nopass=grade` removes only
+  on High. At 14:00 the off-default views differ by 1.0–1.6% under 12/255. The diff images show
+  uniform grain over the whole frame, the UI glass included, with nothing following a building.
+- Sheet: [main / fix / diff ×4](log/day-fps-r21/sheet-main-fix-diff.jpg).
 
 ## Kept as they are
 
