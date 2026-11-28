@@ -2351,8 +2351,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     // The followed vehicle, else the selected one (main.ts): its cars x-ray wherever hidden.
-    const xray = ghosts ? xrayTarget(options.follow?.vehicle, options.selected?.() ?? null) : null;
+    // Ghosts draw only while ink runs (decided below, last frame's answer here): beyond ink's fade
+    // they build nothing, so the far view pays no CPU and no ghost buffers.
+    const ghostsLive = !!ghosts && ink.enabled;
+    const xray = ghostsLive ? xrayTarget(options.follow?.vehicle, options.selected?.() ?? null) : null;
     ghosts?.begin();
+    trains.ghosts = ghostsLive ? ghosts : null;
     trains.xrayId = xray?.kind === 'train' ? xray.id : null;
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
@@ -2360,7 +2364,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
-    if (ghosts) xrayOthers(xray);
+    if (ghostsLive) xrayOthers(xray);
+    else xraySelf.length = 0;
     const sceneTime = options.clockMs();
     freight?.update(sceneTime);
     brookwood?.updateFreight(sceneTime);

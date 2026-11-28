@@ -223,8 +223,8 @@ export class CityGhosts {
 
   /**
    * scene.onAfterRender: draw every batch's codes into the scene target's alpha. Three's own state
-   * is synced first (blending off, colour writes on), then only what three doesn't track per
-   * material is changed by hand and restored: the alpha-only write mask and the MIN equation.
+   * is synced first (blending off, colour writes on, the clear colour), then only what three doesn't
+   * track per material is changed by hand and restored: the alpha-only write mask and the MIN equation.
    */
   draw(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     if (!this.armed) return;
@@ -236,12 +236,10 @@ export class CityGhosts {
     const state = renderer.state;
     state.setBlending(THREE.NoBlending);
     state.buffers.color.setMask(true);
-    const eqRGB = gl.getParameter(gl.BLEND_EQUATION_RGB) as number;
-    const eqA = gl.getParameter(gl.BLEND_EQUATION_ALPHA) as number;
-    const clear = gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array;
+    // Through three, so its cache stays true: its next clear sets its own colour again.
+    state.buffers.color.setClear(0, 0, 0, 1, false);
     gl.colorMask(false, false, false, true);
     // Alpha starts clean (1, no ghost) wherever the scene left it, then each ghost keeps the lowest code.
-    gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND);
     gl.blendEquationSeparate(gl.FUNC_ADD, gl.MIN);
@@ -255,9 +253,10 @@ export class CityGhosts {
       mesh.count = 0;
     }
     gl.disable(gl.BLEND);
-    gl.blendEquationSeparate(eqRGB, eqA);
+    // City blends only with three's standard modes, all FUNC_ADD (nothing uses CustomBlending), so
+    // ADD is what three's cache holds; no getParameter round trips per frame.
+    gl.blendEquation(gl.FUNC_ADD);
     gl.colorMask(true, true, true, true);
-    gl.clearColor(clear[0], clear[1], clear[2], clear[3]);
   }
 
   dispose() {
