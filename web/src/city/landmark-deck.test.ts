@@ -122,3 +122,17 @@ it('hands the terrain a cut under its whole outline, below everything it draws t
   expect(checked).toBeGreaterThan(1500);
 });
 
+it('takes over its own mapped aisles, and no other road', () => {
+  const model = createLandmarkDeck([deck, landmark], grid, [deck, landmark])!;
+  // OSM's two aisles round the lot (downtown vignette), and the way that leaves it westward.
+  const aisle = [[930.8, -741.68], [933.87, -739.31], [938.19, -732.54], [958.49, -692.22], [961.28, -689.22], [965.12, -687.13], [969.38, -686.71], [972.45, -688.18], [975.52, -690.41], [976.35, -691.67], [976.49, -694.1]];
+  const back = [[976.49, -694.1], [954.1, -738.68], [952.35, -740.56], [950.05, -741.82], [940.21, -744.41], [936.8, -744.82], [934.07, -743.98], [930.8, -741.68]];
+  const out = [[930.8, -741.68], [917.26, -743.07], [911.14, -743.8]];
+  const way = (pts: number[][], cls = 'service', bridge = true) => ({ cls, bridge, pts });
+  expect(model.ownDrive(way(aisle))).toBe(true);
+  expect(model.ownDrive(way(back))).toBe(true);
+  expect(model.ownDrive(way(out))).toBe(false);
+  expect(model.ownDrive(way(aisle, 'residential'))).toBe(false);
+  expect(model.ownDrive(way(aisle, 'service', false))).toBe(false);
+});
+

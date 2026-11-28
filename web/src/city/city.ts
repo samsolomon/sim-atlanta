@@ -556,6 +556,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let skyView: ReturnType<typeof createSkyView> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
+  /** The downtown data as City draws its ground and streets. */
+  let drawn = vd;
   try {
     await build('alignments', () => {
       ({ tracks: marta, station } = martaAlignments(rf, manifest, b, stationSite, grid));
@@ -725,7 +727,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         barclayHotel = createBarclayHotel(afterRenaissanceLofts, ground, low ? 'low' : 'high');
         const afterBarclayHotel = barclayHotel?.buildings ?? afterRenaissanceLofts;
         allenPlaza55 = createAllenPlaza55(afterBarclayHotel, ground, low ? 'low' : 'high');
-        const city = { ...vd, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
+        // The Landmark deck draws its own lot, aisles included.
+        drawn = landmarkDeck ? { ...vd, roads: vd.roads.filter(r => !landmarkDeck!.ownDrive(r)) } : vd;
+        const city = { ...drawn, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, yields: landmarkDeck?.yields, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
@@ -843,7 +847,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain!.addFar(farBoxesDowntown, farRoots);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(drawn) ?? drawn), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });

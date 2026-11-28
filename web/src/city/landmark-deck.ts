@@ -46,6 +46,8 @@ const concrete = '#a7a39a',
  * Landmark's skin claims the tower: `buildings` no longer holds it by the time the deck is built.
  */
 export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, neighbours: VBuilding[]) {
+  const site = buildings.find(b => b.id === landmarkDeckId);
+  if (!site) return null;
   const origin: P2 = [955, -718];
   const s = landmarkShell(buildings, grid, landmarkDeckId, 'The Landmark deck', origin, [1, 0], [[0, 0], [15, 5]]);
   if (!s) return null;
@@ -170,5 +172,15 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
     if (Math.abs((bx - ax) * (cz - az) - (bz - az) * (cx - ax)) < 0.02) return [];
     return [{ ring, floor: () => lot - grid.manifest.vertical.sceneZeroNavd88M - 0.3 }];
   });
-  return { ...s.finish('#f1ead6', 0.6), yields };
+  // OSM also maps the aisles on the lot, as bridge-tagged service ways. The skin is the lot, so City
+  // leaves them out rather than draw road ribbons across it.
+  const ring = site.rings[0];
+  const onLot = ([x, z]: P2) => pointInRing(x, z, ring) || ring.some(([ax, az], i) => {
+    const [bx, bz] = ring[(i + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz) < 2;
+  });
+  const ownDrive = (road: { cls: string; bridge?: boolean; pts: readonly number[][] }) =>
+    road.cls === 'service' && !!road.bridge && road.pts.every(q => onLot(q as P2));
+  return { ...s.finish('#f1ead6', 0.6), yields, ownDrive };
 }
