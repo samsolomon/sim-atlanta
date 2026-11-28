@@ -1,0 +1,2967 @@
+{
+ "version": 1,
+ "researched": "2026-11-27",
+ "osm_data_as_of": "2026-11-28T02:55:04Z",
+ "pipeline_data_compared": {"commit": "81db0d05e", "generated": "2026-11-26"},
+ "attribution": "OSM geometry (c) OpenStreetMap contributors, ODbL: https://www.openstreetmap.org/copyright",
+ "conventions": {
+  "coordinates": "[longitude, latitude], WGS84",
+  "confidence": ["sourced", "inferred", "unknown"],
+  "bearing": "degrees clockwise from north, 0-180",
+  "city_board": "x -1000..1800, z -6500..1100 metres from 33.7539, -84.3916 (bounding box of the baked rows)",
+  "scope": ["on_board", "near_board (within 1.5 km)", "inside_i285", "outside_i285"],
+  "track_approximation": "No platform way: centre is the OSM station node; tracks are clipped to +/- 91.5 m of it."
+ },
+ "sources": {
+  "nycsubway": {
+   "title": "nycsubway.org: Atlanta, Georgia (station-by-station descriptions, undated rail enthusiast page, copyright notice ends 2012)",
+   "url": "https://www.nycsubway.org/wiki/Atlanta,_Georgia"
+  },
+  "marta-ea-b": {
+   "title": "MARTA, Five Points Station Transformation, EA Appendix B (concept report 17 March 2023), section render on PDF page 46",
+   "url": "https://itsmarta.com/uploadedFiles/MARTA%20Five%20Points_EA_AppendixB.pdf"
+  },
+  "marta-rac": {
+   "title": "MARTA, Five Points RAC update, 7 May 2025, PDF page 25",
+   "url": "https://itsmarta.com/uploadedFiles/More/About_MARTA/20250507_Five%20Points%20RAC%20Update.pdf"
+  },
+  "marta-ptc": {"title": "MARTA, Peachtree Center Station Area Profile (2010)", "url": "https://itsmarta.com/pdfs/Peachtree%20Center%20Station%20Profile.pdf"},
+  "marta-1978": {
+   "title": "M. Padron / MARTA, Rapid Transit and Urban Development in Atlanta, May 1978 (GSU Library, marta0155)",
+   "url": "https://digitalcollections.library.gsu.edu/digital/collection/marta/id/7050"
+  },
+  "railtech": {
+   "title": "Railway Technology: Atlanta Metro Rail (\"All stations have a 183m-long platform\")",
+   "url": "https://www.railway-technology.com/projects/atlantametrorail/"
+  },
+  "epqs": {"title": "USGS 3DEP elevation, Elevation Point Query Service (bare earth, metres NAVD88)", "url": "https://epqs.nationalmap.gov/v1/docs"},
+  "repo-data-model": {"title": "docs/data-model.md, \"Open-air MARTA track downtown\"", "url": "data-model.md"},
+  "repo-east-cut": {"title": "docs/five-points-east-trench.md", "url": "five-points-east-trench.md"},
+  "wiki:Five Points station": {"title": "Wikipedia: Five Points station (revision 1370974347)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370974347"},
+  "wiki:Peachtree Center station": {"title": "Wikipedia: Peachtree Center station (revision 1370810928)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370810928"},
+  "wiki:Civic Center station (MARTA)": {"title": "Wikipedia: Civic Center station (MARTA) (revision 1370897022)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370897022"},
+  "wiki:North Avenue station (MARTA)": {"title": "Wikipedia: North Avenue station (MARTA) (revision 1370962685)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370962685"},
+  "wiki:Midtown station (MARTA)": {"title": "Wikipedia: Midtown station (MARTA) (revision 1379966060)", "url": "https://en.wikipedia.org/w/index.php?oldid=1379966060"},
+  "wiki:Arts Center station (MARTA)": {"title": "Wikipedia: Arts Center station (MARTA) (revision 1370790157)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370790157"},
+  "wiki:SEC District station": {"title": "Wikipedia: SEC District station (revision 1386297290)", "url": "https://en.wikipedia.org/w/index.php?oldid=1386297290"},
+  "wiki:Vine City station": {"title": "Wikipedia: Vine City station (revision 1371105542)", "url": "https://en.wikipedia.org/w/index.php?oldid=1371105542"},
+  "wiki:Ashby station (MARTA)": {"title": "Wikipedia: Ashby station (MARTA) (revision 1370790902)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370790902"},
+  "wiki:West Lake station (MARTA)": {"title": "Wikipedia: West Lake station (MARTA) (revision 1380628219)", "url": "https://en.wikipedia.org/w/index.php?oldid=1380628219"},
+  "wiki:Lindbergh Center station": {"title": "Wikipedia: Lindbergh Center station (revision 1371274390)", "url": "https://en.wikipedia.org/w/index.php?oldid=1371274390"},
+  "wiki:Lenox station (MARTA)": {"title": "Wikipedia: Lenox station (MARTA) (revision 1371273066)", "url": "https://en.wikipedia.org/w/index.php?oldid=1371273066"},
+  "marta-lenox": {"title": "MARTA, Lenox Station Area Profile", "url": "https://itsmarta.com/pdfs/Lenox%20Station%20Profile.pdf"},
+  "wiki:Buckhead station": {"title": "Wikipedia: Buckhead station (revision 1370883748)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370883748"},
+  "wiki:Medical Center station (MARTA)": {"title": "Wikipedia: Medical Center station (MARTA) (revision 1373096606)", "url": "https://en.wikipedia.org/w/index.php?oldid=1373096606"},
+  "wiki:Sandy Springs station": {"title": "Wikipedia: Sandy Springs station (revision 1370894929)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370894929"},
+  "wiki:East Point station": {"title": "Wikipedia: East Point station (revision 1376980489)", "url": "https://en.wikipedia.org/w/index.php?oldid=1376980489"},
+  "wiki:College Park station (MARTA)": {"title": "Wikipedia: College Park station (MARTA) (revision 1370898256)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370898256"},
+  "wiki:Decatur station": {"title": "Wikipedia: Decatur station (revision 1370903903)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370903903"},
+  "wiki:Kensington station (MARTA)": {"title": "Wikipedia: Kensington station (MARTA) (revision 1375477333)", "url": "https://en.wikipedia.org/w/index.php?oldid=1375477333"},
+  "wiki:Indian Creek station": {"title": "Wikipedia: Indian Creek station (revision 1375476193)", "url": "https://en.wikipedia.org/w/index.php?oldid=1375476193"},
+  "wiki:Georgia State station": {"title": "Wikipedia: Georgia State station (revision 1370980266)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370980266"},
+  "wiki:King Memorial station": {"title": "Wikipedia: King Memorial station (revision 1379257112)", "url": "https://en.wikipedia.org/w/index.php?oldid=1379257112"},
+  "wiki:Garnett station": {"title": "Wikipedia: Garnett station (revision 1380778792)", "url": "https://en.wikipedia.org/w/index.php?oldid=1380778792"},
+  "wiki:West End station (MARTA)": {"title": "Wikipedia: West End station (MARTA) (revision 1370798188)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370798188"},
+  "wiki:Oakland City station": {"title": "Wikipedia: Oakland City station (revision 1370964376)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370964376"},
+  "wiki:Lakewood/Fort McPherson station": {"title": "Wikipedia: Lakewood/Fort McPherson station (revision 1384061271)", "url": "https://en.wikipedia.org/w/index.php?oldid=1384061271"},
+  "wiki:Airport station (MARTA)": {"title": "Wikipedia: Airport station (MARTA) (revision 1369752926)", "url": "https://en.wikipedia.org/w/index.php?oldid=1369752926"},
+  "wiki:Hamilton E. Holmes station": {"title": "Wikipedia: Hamilton E. Holmes station (revision 1371014058)", "url": "https://en.wikipedia.org/w/index.php?oldid=1371014058"},
+  "wiki:Bankhead station": {"title": "Wikipedia: Bankhead station (revision 1387249397)", "url": "https://en.wikipedia.org/w/index.php?oldid=1387249397"},
+  "wiki:Inman Park/Reynoldstown station": {"title": "Wikipedia: Inman Park/Reynoldstown station (revision 1377787453)", "url": "https://en.wikipedia.org/w/index.php?oldid=1377787453"},
+  "wiki:Edgewood/Candler Park station": {"title": "Wikipedia: Edgewood/Candler Park station (revision 1370912381)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370912381"},
+  "wiki:East Lake station": {"title": "Wikipedia: East Lake station (revision 1386102283)", "url": "https://en.wikipedia.org/w/index.php?oldid=1386102283"},
+  "wiki:Avondale station (MARTA)": {"title": "Wikipedia: Avondale station (MARTA) (revision 1377790458)", "url": "https://en.wikipedia.org/w/index.php?oldid=1377790458"},
+  "wiki:Brookhaven/Oglethorpe station": {"title": "Wikipedia: Brookhaven/Oglethorpe station (revision 1370883121)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370883121"},
+  "wiki:Chamblee station": {"title": "Wikipedia: Chamblee station (revision 1370891123)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370891123"},
+  "wiki:Doraville station": {"title": "Wikipedia: Doraville station (revision 1370908071)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370908071"},
+  "wiki:Dunwoody station": {"title": "Wikipedia: Dunwoody station (revision 1370910092)", "url": "https://en.wikipedia.org/w/index.php?oldid=1370910092"},
+  "wiki:North Springs station": {"title": "Wikipedia: North Springs station (revision 1379768379)", "url": "https://en.wikipedia.org/w/index.php?oldid=1379768379"}
+ },
+ "stations": [
+  {
+   "slug": "five-points",
+   "name": "Five Points",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/318451223",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Five Points station", "nycsubway", "https://www.openstreetmap.org/way/428067989", "https://www.openstreetmap.org/way/428067988"]
+   },
+   "levels": [
+    {
+     "name": "B1 upper: east-west",
+     "lines": ["BLUE", "GREEN"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908981",
+       "direction": "eastbound",
+       "name": "FIVE POINTS STATION",
+       "lonlat": [-84.3914, 33.75384],
+       "along_platform_offset_m": 18,
+       "offset_toward": "SE",
+       "city_profile_height_m": [-10.0, -7.6]
+      },
+      {
+       "id": "marta:stop:908990",
+       "direction": "westbound",
+       "name": "FIVE POINTS STATION",
+       "lonlat": [-84.39188, 33.75412],
+       "along_platform_offset_m": 36,
+       "offset_toward": "NW",
+       "city_profile_height_m": [-10.0, -4.0]
+      }
+     ],
+     "layout": {
+      "value": "combined: centre island between the two tracks plus one side platform outside each track (Spanish solution)",
+      "confidence": "sourced",
+      "sources": ["wiki:Five Points station", "nycsubway", "marta-rac", "marta-ea-b"],
+      "note": "Centre platform: MARTA RAC update names a centre platform on each level. All three platforms: Wikipedia and nycsubway.org on both levels; MARTA section render shows the arrangement end-on for the lower level. Wikipedia: island doors on the left, side doors on the right."
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Five Points station",
+       "nycsubway",
+       "marta-rac",
+       "marta-ea-b",
+       "https://www.openstreetmap.org/way/702258826",
+       "https://www.openstreetmap.org/way/1430665343",
+       "https://www.openstreetmap.org/way/702258825",
+       "https://www.openstreetmap.org/way/1430665342"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [140],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/428067989"],
+       "note": "One OSM polygon covers each whole level; it is not a per-platform outline and its length is shorter than the system figure."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [17.2],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/428067989"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [10, 13],
+      "confidence": "inferred",
+      "sources": ["epqs", "repo-east-cut", "repo-data-model"],
+      "note": "Track bed in the open cuts on both sides (Gulch 310.4-313.0 m, east cut 310.9-311.4 m NAVD88) against bare ground at the station (320.5-323.8 m). Assumes the track is near level between the cuts.",
+      "datum": "track bed below the bare ground at the station",
+      "samples": {
+       "floor": [
+        {"lonlat": [-84.389638, 33.752554], "elev_m": 311.0},
+        {"lonlat": [-84.389007, 33.752099], "elev_m": 311.4},
+        {"lonlat": [-84.393431, 33.754916], "elev_m": 310.4},
+        {"lonlat": [-84.392716, 33.754475], "elev_m": 312.4}
+       ],
+       "flank": [
+        {"lonlat": [-84.3916, 33.75389], "elev_m": 323.8},
+        {"lonlat": [-84.3917, 33.7536], "elev_m": 322.7},
+        {"lonlat": [-84.3908, 33.7539], "elev_m": 321.0},
+        {"lonlat": [-84.3927, 33.7535], "elev_m": 320.5}
+       ]
+      }
+     },
+     "level_description": "Below the concourse; the upper of the two platform levels.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3915943, 33.7538884],
+      "bearing_deg": 124.7,
+      "platforms": [
+       {
+        "osm_way": 428067989,
+        "url": "https://www.openstreetmap.org/way/428067989",
+        "version": 10,
+        "role": "whole platform level (centre and both side platforms)",
+        "tags": {
+         "railway": "platform",
+         "public_transport": "platform",
+         "area": "yes",
+         "layer": "-1",
+         "level": "-1",
+         "location": "underground",
+         "ref": "908981;908990",
+         "loc_ref": "East-West"
+        },
+        "length_m": 140,
+        "width_m": 17.2,
+        "bearing_deg": 124.7,
+        "centre_lonlat": [-84.3915943, 33.7538884],
+        "axis_lonlat": [[-84.3922141, 33.7542467], [-84.3909745, 33.7535301]],
+        "outline_lonlat": [
+         [-84.3922597, 33.7541787], [-84.3916529, 33.7538279], [-84.3910275, 33.7534663], [-84.3909261, 33.7535965],
+         [-84.3912469, 33.7537795], [-84.3914006, 33.7538672], [-84.3915493, 33.753952], [-84.3918398, 33.7541178],
+         [-84.3921664, 33.7543041], [-84.3922597, 33.7541787]
+        ]
+       }
+      ],
+      "tracks": [
+       [{"osm_way": 702258826, "url": "https://www.openstreetmap.org/way/702258826", "version": 11, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3909439, 33.7535669], [-84.3915726, 33.7539259]]}, {"osm_way": 1430665343, "url": "https://www.openstreetmap.org/way/1430665343", "version": 4, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3915726, 33.7539259], [-84.3921807, 33.7542869]]}], [{"osm_way": 702258825, "url": "https://www.openstreetmap.org/way/702258825", "version": 10, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3916238, 33.7538598], [-84.3915449, 33.753815], [-84.3909965, 33.7535036]]}, {"osm_way": 1430665342, "url": "https://www.openstreetmap.org/way/1430665342", "version": 4, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3922448, 33.7542097], [-84.3916238, 33.7538598]]}]
+      ],
+      "osm_track_spacing_m": 8.7
+     }
+    },
+    {
+     "name": "B2 lower: north-south",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908986",
+       "direction": "northbound",
+       "name": "FIVE POINTS STATION",
+       "lonlat": [-84.39145, 33.75405],
+       "along_platform_offset_m": 36,
+       "offset_toward": "NE",
+       "city_profile_height_m": [-16.0, -15.2]
+      },
+      {
+       "id": "marta:stop:908976",
+       "direction": "southbound",
+       "name": "FIVE POINTS STATION",
+       "lonlat": [-84.39156, 33.7539],
+       "along_platform_offset_m": 17,
+       "offset_toward": "NE",
+       "city_profile_height_m": [-16.0, -15.2]
+      }
+     ],
+     "layout": {
+      "value": "combined: centre island between the two tracks plus one side platform outside each track (Spanish solution)",
+      "confidence": "sourced",
+      "sources": ["wiki:Five Points station", "nycsubway", "marta-rac", "marta-ea-b"],
+      "note": "Centre platform: MARTA RAC update names a centre platform on each level. All three platforms: Wikipedia and nycsubway.org on both levels; MARTA section render shows the arrangement end-on for the lower level. Wikipedia: island doors on the left, side doors on the right."
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Five Points station",
+       "nycsubway",
+       "marta-rac",
+       "marta-ea-b",
+       "https://www.openstreetmap.org/way/319512632",
+       "https://www.openstreetmap.org/way/1430441260",
+       "https://www.openstreetmap.org/way/702089818",
+       "https://www.openstreetmap.org/way/1430441259"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [100],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/428067988"],
+       "note": "One OSM polygon covers each whole level; it is not a per-platform outline and its length is shorter than the system figure."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [14.0],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/428067988"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. One level below the east-west platforms."},
+     "level_description": "Below the east-west level; crosses it at about right angles.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3916863, 33.7537897],
+      "bearing_deg": 34.0,
+      "platforms": [
+       {
+        "osm_way": 428067988,
+        "url": "https://www.openstreetmap.org/way/428067988",
+        "version": 10,
+        "role": "whole platform level (centre and both side platforms)",
+        "tags": {
+         "railway": "platform",
+         "public_transport": "platform",
+         "area": "yes",
+         "layer": "-2",
+         "level": "2",
+         "location": "underground",
+         "ref": "908986;908976",
+         "loc_ref": "North-South"
+        },
+        "length_m": 100,
+        "width_m": 14.0,
+        "bearing_deg": 34.0,
+        "centre_lonlat": [-84.3916863, 33.7537897],
+        "axis_lonlat": [[-84.3919887, 33.753416], [-84.3913838, 33.7541634]],
+        "outline_lonlat": [
+         [-84.3914438, 33.7541972], [-84.391658, 33.7539376], [-84.3916997, 33.7538853], [-84.3920509, 33.7534514],
+         [-84.3919283, 33.753382], [-84.3915757, 33.7538139], [-84.3915334, 33.7538657], [-84.3913214, 33.754128],
+         [-84.3914438, 33.7541972]
+        ]
+       }
+      ],
+      "tracks": [
+       [{"osm_way": 319512632, "url": "https://www.openstreetmap.org/way/319512632", "version": 24, "tags": {"layer": "-2", "tunnel": "yes"}, "centreline_lonlat": [[-84.3914043, 33.7541749], [-84.3914666, 33.7541023], [-84.3916633, 33.7538636]]}, {"osm_way": 1430441260, "url": "https://www.openstreetmap.org/way/1430441260", "version": 6, "tags": {"layer": "-2", "tunnel": "yes"}, "centreline_lonlat": [[-84.3916633, 33.7538636], [-84.3916675, 33.7538584], [-84.3920115, 33.7534289]]}], [{"osm_way": 702089818, "url": "https://www.openstreetmap.org/way/702089818", "version": 20, "tags": {"layer": "-2", "tunnel": "yes"}, "centreline_lonlat": [[-84.391609, 33.7538326], [-84.3914183, 33.7540705], [-84.3913533, 33.7541462]]}, {"osm_way": 1430441259, "url": "https://www.openstreetmap.org/way/1430441259", "version": 6, "tags": {"layer": "-2", "tunnel": "yes"}, "centreline_lonlat": [[-84.3919577, 33.7533985], [-84.391609, 33.7538326]]}]
+      ],
+      "osm_track_spacing_m": 6.1
+     }
+    }
+   ],
+   "notes": [
+    "Sam's recollection is confirmed: both levels have a centre platform and two side platforms.",
+    "Wikipedia calls the east-west level \"at-grade below the intersecting elevated street viaducts\"; OSM maps it as tunnel=yes, location=underground, and docs/data-model.md says underground. Both fit a level at old rail grade, roofed by streets and plaza.",
+    "Non-revenue interline ways (1453238811, 1453238820) pass the station and are not counted.",
+    "Way 428067988 is tagged layer=-2 but level=2, apparently a tagging slip."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 323.8, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "peachtree-center",
+   "name": "Peachtree Center",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/4170221445",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Peachtree Center station", "nycsubway", "marta-ptc", "https://www.openstreetmap.org/way/1034672676"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908601",
+       "direction": "northbound",
+       "name": "PEACHTREE CENTER STATION",
+       "lonlat": [-84.3876, 33.75819],
+       "along_platform_offset_m": 147,
+       "offset_toward": "S",
+       "city_profile_height_m": [-16.0, -16.0]
+      },
+      {
+       "id": "marta:stop:907842",
+       "direction": "southbound",
+       "name": "PEACHTREE CENTER STATION",
+       "lonlat": [-84.3876, 33.75808],
+       "along_platform_offset_m": 159,
+       "offset_toward": "S",
+       "city_profile_height_m": [-16.0, -16.0]
+      }
+     ],
+     "layout": {
+      "value": "island",
+      "confidence": "sourced",
+      "sources": ["wiki:Peachtree Center station", "nycsubway", "marta-ptc", "https://www.openstreetmap.org/way/1034672676"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Peachtree Center station",
+       "nycsubway",
+       "marta-ptc",
+       "https://www.openstreetmap.org/way/1034672676",
+       "https://www.openstreetmap.org/way/319512632",
+       "https://www.openstreetmap.org/way/702089818"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [140],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1034672676"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [6.0],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1034672676"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": 36.6,
+      "confidence": "sourced",
+      "sources": ["marta-ptc", "wiki:Peachtree Center station", "marta-1978"],
+      "note": "MARTA profile: platform 120 ft beneath Peachtree Street. The 1978 MARTA paper says the rock tunnel is 115 ft (35.1 m) below the surface \"at the deepest point\".",
+      "datum": "platform below Peachtree Street"
+     },
+     "level_description": "Street, mezzanine, platform. Rock cavern in gneiss; deepest MARTA station.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3875975, 33.7595176],
+      "bearing_deg": 0.5,
+      "platforms": [
+       {
+        "osm_way": 1034672676,
+        "url": "https://www.openstreetmap.org/way/1034672676",
+        "version": 6,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2"},
+        "length_m": 140,
+        "width_m": 6.0,
+        "bearing_deg": 0.5,
+        "centre_lonlat": [-84.3875975, 33.7595176],
+        "axis_lonlat": [[-84.387604, 33.7588868], [-84.387591, 33.7601485]],
+        "outline_lonlat": [
+         [-84.3876365, 33.758887], [-84.3875978, 33.7588876], [-84.3875776, 33.7588878], [-84.3875681, 33.7595142],
+         [-84.387561, 33.7599961], [-84.3875585, 33.7601481], [-84.3876234, 33.7601487], [-84.3876248, 33.7599972],
+         [-84.38763, 33.7595162], [-84.3876365, 33.758887]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 319512632,
+         "url": "https://www.openstreetmap.org/way/319512632",
+         "version": 24,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3876352, 33.7601488], [-84.38764, 33.7595147], [-84.3876506, 33.7588871]]
+        }
+       ],
+       [
+        {
+         "osm_way": 702089818,
+         "url": "https://www.openstreetmap.org/way/702089818",
+         "version": 20,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3875638, 33.7588865], [-84.3875569, 33.7595141], [-84.3875475, 33.7601482]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 7.7
+     }
+    }
+   ],
+   "notes": [
+    "The OSM platform (centre 33.7595) is about 150 m north of both GTFS stop points (33.7581). Station entrances in OSM run from 33.7579 to 33.7607, so the platform lies between them. The platform position has no independent survey.",
+    "The mezzanine poster quotes a 900 ft station length. That is the station, not the platform."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 322.6, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "civic-center",
+   "name": "Civic Center",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/4172450832",
+   "below_grade": {"value": "partly", "confidence": "sourced", "sources": ["wiki:Civic Center station (MARTA)", "nycsubway", "marta-1978"]},
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908912",
+       "direction": "northbound",
+       "name": "CIVIC CENTER STATION",
+       "lonlat": [-84.3875, 33.76624],
+       "along_platform_offset_m": 30,
+       "offset_toward": "S",
+       "city_profile_height_m": [-15.2, -10.0]
+      },
+      {
+       "id": "marta:stop:908911",
+       "direction": "southbound",
+       "name": "CIVIC CENTER STATION",
+       "lonlat": [-84.3875, 33.76611],
+       "along_platform_offset_m": 44,
+       "offset_toward": "S",
+       "city_profile_height_m": [-15.6, -10.0]
+      }
+     ],
+     "layout": {"value": "side", "confidence": "sourced", "sources": ["wiki:Civic Center station (MARTA)", "nycsubway", "marta-1978"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Civic Center station (MARTA)",
+       "nycsubway",
+       "marta-1978",
+       "https://www.openstreetmap.org/way/702089817",
+       "https://www.openstreetmap.org/way/1038378472",
+       "https://www.openstreetmap.org/way/702089816",
+       "https://www.openstreetmap.org/way/1038378471"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way."},
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way and no published figure found."},
+     "depth_m": {
+      "value": null,
+      "confidence": "unknown",
+      "sources": [],
+      "note": "No published figure. One platform level below West Peachtree Street, above the Downtown Connector."
+     },
+     "level_description": "Street; platform level; underpass between platforms; freeway.",
+     "geometry": {
+      "kind": "track_approximation",
+      "confidence": "inferred",
+      "centre_lonlat": [-84.3875419, 33.7665094],
+      "bearing_deg": 1.1,
+      "platforms": [],
+      "tracks": [
+       [{"osm_way": 702089817, "url": "https://www.openstreetmap.org/way/702089817", "version": 13, "tags": {"layer": "1", "bridge": "yes"}, "centreline_lonlat": [[-84.3875018, 33.767065], [-84.3875144, 33.7665134], [-84.3875262, 33.7658936]]}, {"osm_way": 1038378472, "url": "https://www.openstreetmap.org/way/1038378472", "version": 9, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3874983, 33.7673336], [-84.3874999, 33.7672065], [-84.3875018, 33.767065]]}], [{"osm_way": 702089816, "url": "https://www.openstreetmap.org/way/702089816", "version": 12, "tags": {"layer": "1", "bridge": "yes"}, "centreline_lonlat": [[-84.3874683, 33.7658869], [-84.3874613, 33.7665042], [-84.3874515, 33.7670641]]}, {"osm_way": 1038378471, "url": "https://www.openstreetmap.org/way/1038378471", "version": 9, "tags": {"layer": "-1", "tunnel": "yes"}, "centreline_lonlat": [[-84.3874515, 33.7670641], [-84.3874497, 33.7672064], [-84.387448, 33.7673328]]}]
+      ],
+      "osm_track_spacing_m": 4.9
+     }
+    }
+   ],
+   "notes": [
+    "Bridges the Downtown Connector trench under West Peachtree Street: the middle is above the freeway, the platform ends are in tunnel (Wikipedia). OSM maps the two bridge ways (130 m) as layer=1 bridge=yes.",
+    "No platform way. The centreline is the station node projected on the tracks, +/- 91.5 m.",
+    "\"Underground\" in the usual sense is wrong here: the ghost platform should sit at deck level over the Connector, not in the ground."
+   ]
+  },
+  {
+   "slug": "north-avenue",
+   "name": "North Avenue",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/4172450833",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:North Avenue station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1038378450", "https://www.openstreetmap.org/way/1038378451"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:907914",
+       "direction": "northbound",
+       "name": "NORTH AVENUE STATION",
+       "lonlat": [-84.3872, 33.77174],
+       "along_platform_offset_m": 97,
+       "offset_toward": "S",
+       "city_profile_height_m": [-16.0, -11.6]
+      },
+      {
+       "id": "marta:stop:907913",
+       "direction": "southbound",
+       "name": "NORTH AVENUE STATION",
+       "lonlat": [-84.38726, 33.77147],
+       "along_platform_offset_m": 128,
+       "offset_toward": "S",
+       "city_profile_height_m": [-16.0, -10.4]
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:North Avenue station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1038378450", "https://www.openstreetmap.org/way/1038378451"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:North Avenue station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/1038378450",
+       "https://www.openstreetmap.org/way/1038378451",
+       "https://www.openstreetmap.org/way/1038378474",
+       "https://www.openstreetmap.org/way/1038378473"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [137, 137],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1038378450", "https://www.openstreetmap.org/way/1038378451"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [5.4, 5.2],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1038378450", "https://www.openstreetmap.org/way/1038378451"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure."},
+     "level_description": "Street, mezzanine, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3869966, 33.7725988],
+      "bearing_deg": 10.8,
+      "platforms": [
+       {
+        "osm_way": 1038378450,
+        "url": "https://www.openstreetmap.org/way/1038378450",
+        "version": 3,
+        "role": "side, west (southbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2", "ref": "907913"},
+        "length_m": 137,
+        "width_m": 5.4,
+        "bearing_deg": 10.8,
+        "centre_lonlat": [-84.3870717, 33.7726108],
+        "axis_lonlat": [[-84.3872104, 33.7720041], [-84.3869331, 33.7732175]],
+        "outline_lonlat": [
+         [-84.3871819, 33.7719996], [-84.3870432, 33.7726062], [-84.3869045, 33.7732129], [-84.3869245, 33.7732161],
+         [-84.386945, 33.7732193], [-84.3869617, 33.7732219], [-84.387239, 33.7720086], [-84.3872263, 33.7720066],
+         [-84.3872086, 33.7720038], [-84.3871819, 33.7719996]
+        ]
+       },
+       {
+        "osm_way": 1038378451,
+        "url": "https://www.openstreetmap.org/way/1038378451",
+        "version": 3,
+        "role": "side, east (northbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2", "ref": "907914"},
+        "length_m": 137,
+        "width_m": 5.2,
+        "bearing_deg": 10.8,
+        "centre_lonlat": [-84.3869205, 33.772586],
+        "axis_lonlat": [[-84.3870588, 33.7719801], [-84.3867822, 33.7731919]],
+        "outline_lonlat": [
+         [-84.3870314, 33.7719758], [-84.3867548, 33.7731875], [-84.3867658, 33.7731892], [-84.3867842, 33.7731921],
+         [-84.3868089, 33.773196], [-84.3869476, 33.7725903], [-84.3870862, 33.7719845], [-84.3870606, 33.7719806],
+         [-84.3870418, 33.7719774], [-84.3870314, 33.7719758]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 1038378474,
+         "url": "https://www.openstreetmap.org/way/1038378474",
+         "version": 8,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3868885, 33.7732104], [-84.3870272, 33.7726001], [-84.3871639, 33.7719967]]
+        }
+       ],
+       [
+        {
+         "osm_way": 1038378473,
+         "url": "https://www.openstreetmap.org/way/1038378473",
+         "version": 8,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3871039, 33.7719871], [-84.3869647, 33.7725916], [-84.3868257, 33.7732004]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 5.9
+     }
+    }
+   ],
+   "notes": ["GTFS stop points are about 100-130 m south of the OSM platform centre."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 304.0, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "midtown",
+   "name": "Midtown",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/way/230593407",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Midtown station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1050018742", "https://www.openstreetmap.org/way/1050018747"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908375",
+       "direction": "northbound",
+       "name": "MIDTOWN STATION",
+       "lonlat": [-84.38635, 33.78136],
+       "along_platform_offset_m": 35,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908374",
+       "direction": "southbound",
+       "name": "MIDTOWN STATION",
+       "lonlat": [-84.38634, 33.78125],
+       "along_platform_offset_m": 23,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:Midtown station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1050018742", "https://www.openstreetmap.org/way/1050018747"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Midtown station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/1050018742",
+       "https://www.openstreetmap.org/way/1050018747",
+       "https://www.openstreetmap.org/way/905944419",
+       "https://www.openstreetmap.org/way/905944418"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [167, 167],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1050018742", "https://www.openstreetmap.org/way/1050018747"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [11.2, 11.3],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1050018742", "https://www.openstreetmap.org/way/1050018747"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure."},
+     "level_description": "Street, platform (Wikipedia layout table).",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3863162, 33.7810411],
+      "bearing_deg": 176.9,
+      "platforms": [
+       {
+        "osm_way": 1050018742,
+        "url": "https://www.openstreetmap.org/way/1050018742",
+        "version": 2,
+        "role": "side, west (southbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "covered": "yes"},
+        "length_m": 167,
+        "width_m": 11.2,
+        "bearing_deg": 176.9,
+        "centre_lonlat": [-84.3864336, 33.7810355],
+        "axis_lonlat": [[-84.3864818, 33.781787], [-84.3863853, 33.7802839]],
+        "outline_lonlat": [
+         [-84.3864213, 33.7817897], [-84.3863249, 33.7802872], [-84.3863923, 33.7802836], [-84.3864328, 33.7809289],
+         [-84.3864898, 33.7809665], [-84.3864629, 33.780968], [-84.3864354, 33.7809693], [-84.3864458, 33.7811307],
+         [-84.3864561, 33.7812884], [-84.3864805, 33.7812875], [-84.3865057, 33.7812859], [-84.3864619, 33.7813299],
+         [-84.3864915, 33.7817865], [-84.3864213, 33.7817897]
+        ]
+       },
+       {
+        "osm_way": 1050018747,
+        "url": "https://www.openstreetmap.org/way/1050018747",
+        "version": 3,
+        "role": "side, east (northbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "covered": "yes"},
+        "length_m": 167,
+        "width_m": 11.3,
+        "bearing_deg": 176.9,
+        "centre_lonlat": [-84.3861995, 33.7810467],
+        "axis_lonlat": [[-84.3862475, 33.7817982], [-84.3861515, 33.7802953]],
+        "outline_lonlat": [
+         [-84.3862127, 33.7802926], [-84.3863087, 33.7817952], [-84.3862401, 33.7817985], [-84.3862097, 33.7813353],
+         [-84.3861561, 33.7812952], [-84.3861834, 33.7812934], [-84.3862079, 33.7812918], [-84.3861982, 33.7811387],
+         [-84.386197, 33.7811205], [-84.3861878, 33.7809752], [-84.3861631, 33.7809761], [-84.3861337, 33.7809772],
+         [-84.3861846, 33.7809322], [-84.3861448, 33.780296], [-84.3862127, 33.7802926]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 905944419,
+         "url": "https://www.openstreetmap.org/way/905944419",
+         "version": 12,
+         "tags": {"layer": "-1", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.386236, 33.7802906], [-84.3862858, 33.78111], [-84.386334, 33.7817943]]
+        }
+       ],
+       [
+        {
+         "osm_way": 905944418,
+         "url": "https://www.openstreetmap.org/way/905944418",
+         "version": 13,
+         "tags": {"layer": "-1", "tunnel": "yes", "covered": "yes"},
+         "centreline_lonlat": [[-84.3863918, 33.7817917], [-84.3863455, 33.781109], [-84.3862966, 33.7802879]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 5.5
+     }
+    }
+   ],
+   "notes": ["OSM tags the platforms layer=-1 and covered=yes. The 11 m platform widths look generous and are unchecked."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 292.3, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "arts-center",
+   "name": "Arts Center",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/4172450835",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Arts Center station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1035802257"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:906369",
+       "direction": "northbound",
+       "name": "ARTS CENTER STATION",
+       "lonlat": [-84.38741, 33.78967],
+       "along_platform_offset_m": 50,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:906370",
+       "direction": "southbound",
+       "name": "ARTS CENTER STATION",
+       "lonlat": [-84.38727, 33.78883],
+       "along_platform_offset_m": 44,
+       "offset_toward": "S",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:Arts Center station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1035802257"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Arts Center station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/1035802257",
+       "https://www.openstreetmap.org/way/9250407",
+       "https://www.openstreetmap.org/way/702089815"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [156],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1035802257"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [8.8],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1035802257"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure."},
+     "level_description": "Bridge level, street, mezzanine, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3873352, 33.7892221],
+      "bearing_deg": 171.7,
+      "platforms": [
+       {
+        "osm_way": 1035802257,
+        "url": "https://www.openstreetmap.org/way/1035802257",
+        "version": 6,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "covered": "yes", "ref": "906369;906370"},
+        "length_m": 156,
+        "width_m": 8.8,
+        "bearing_deg": 171.7,
+        "centre_lonlat": [-84.3873352, 33.7892221],
+        "axis_lonlat": [[-84.3874574, 33.7899186], [-84.387213, 33.7885256]],
+        "outline_lonlat": [
+         [-84.3872474, 33.7885214], [-84.3873557, 33.7890819], [-84.3873645, 33.7891271], [-84.3873886, 33.7892517],
+         [-84.3875046, 33.7899128], [-84.3874335, 33.78992], [-84.3873096, 33.7892629], [-84.3872952, 33.7891875],
+         [-84.3872856, 33.789137], [-84.3872771, 33.7890928], [-84.3871659, 33.7885322], [-84.3872474, 33.7885214]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 9250407,
+         "url": "https://www.openstreetmap.org/way/9250407",
+         "version": 31,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3871515, 33.7885331], [-84.3871732, 33.7886971], [-84.3872636, 33.7891361], [-84.3873981, 33.7898328], [-84.3874188, 33.7899233]]
+        }
+       ],
+       [
+        {
+         "osm_way": 702089815,
+         "url": "https://www.openstreetmap.org/way/702089815",
+         "version": 15,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3875323, 33.7899094], [-84.3875144, 33.7898002], [-84.3873846, 33.7891223], [-84.3873049, 33.7886983], [-84.3872726, 33.7885183]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 11.3
+     }
+    }
+   ],
+   "notes": ["A stub for the unbuilt northwest branch leaves north of the station (Wikipedia, weakly sourced)."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 282.6, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "sec-district",
+   "name": "SEC District",
+   "scope": "on_board",
+   "metres_outside_city_board": 0,
+   "osm_station": "https://www.openstreetmap.org/node/6863551312",
+   "below_grade": {
+    "value": "partly",
+    "confidence": "inferred",
+    "sources": ["wiki:SEC District station", "nycsubway", "repo-data-model", "https://www.openstreetmap.org/way/1034650217"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE", "GREEN"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908435",
+       "direction": "eastbound",
+       "name": "SEC DISTRICT STATION",
+       "lonlat": [-84.39722, 33.75618],
+       "along_platform_offset_m": 45,
+       "offset_toward": "E",
+       "city_profile_height_m": [-22.0, -22.0]
+      },
+      {
+       "id": "marta:stop:908694",
+       "direction": "westbound",
+       "name": "SEC DISTRICT STATION",
+       "lonlat": [-84.39729, 33.75619],
+       "along_platform_offset_m": 39,
+       "offset_toward": "E",
+       "city_profile_height_m": [-22.0, -22.0]
+      }
+     ],
+     "layout": {
+      "value": "island",
+      "confidence": "sourced",
+      "sources": ["wiki:SEC District station", "nycsubway", "repo-data-model", "https://www.openstreetmap.org/way/1034650217"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:SEC District station",
+       "nycsubway",
+       "repo-data-model",
+       "https://www.openstreetmap.org/way/1034650217",
+       "https://www.openstreetmap.org/way/702268368",
+       "https://www.openstreetmap.org/way/702268370"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [188],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1034650217"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [12.8],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1034650217"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. OSM layer=-3 is stacking order, not depth."},
+     "level_description": "Street, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3977084, 33.7562142],
+      "bearing_deg": 100.6,
+      "platforms": [
+       {
+        "osm_way": 1034650217,
+        "url": "https://www.openstreetmap.org/way/1034650217",
+        "version": 3,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-3", "ref": "908435;908694"},
+        "length_m": 188,
+        "width_m": 12.8,
+        "bearing_deg": 100.6,
+        "centre_lonlat": [-84.3977084, 33.7562142],
+        "axis_lonlat": [[-84.3987046, 33.7563693], [-84.3967122, 33.756059]],
+        "outline_lonlat": [
+         [-84.3966995, 33.7561155], [-84.3967084, 33.756076], [-84.3967249, 33.7560028], [-84.397602, 33.7561392],
+         [-84.3987173, 33.7563128], [-84.3987043, 33.7563703], [-84.3986918, 33.7564258], [-84.397576, 33.756252],
+         [-84.396955, 33.7561553], [-84.3966995, 33.7561155]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 702268368,
+         "url": "https://www.openstreetmap.org/way/702268368",
+         "version": 21,
+         "tags": {"layer": "-3", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3966948, 33.7561365], [-84.3975722, 33.7562703], [-84.3984087, 33.7564051], [-84.3986871, 33.7564478]]
+        }
+       ],
+       [
+        {
+         "osm_way": 702268370,
+         "url": "https://www.openstreetmap.org/way/702268370",
+         "version": 20,
+         "tags": {"layer": "-3", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3987223, 33.7562904], [-84.3984242, 33.7562449], [-84.3976031, 33.7561181], [-84.3967292, 33.7559826]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 17.2
+     }
+    }
+   ],
+   "notes": [
+    "Sources disagree on the word: Wikipedia \"open-cut\", nycsubway.org \"underground\" with the west end briefly at the surface under road bridges, docs/data-model.md \"covered\" under the Centennial Olympic Park Drive bridge and plaza. All agree the track is below street decks.",
+    "Former names include Omni, Dome/GWCC and GWCC/CNN Center; the GTFS name is SEC DISTRICT STATION."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 313.5, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "vine-city",
+   "name": "Vine City",
+   "scope": "near_board",
+   "metres_outside_city_board": 149,
+   "osm_station": "https://www.openstreetmap.org/node/7745032438",
+   "below_grade": {
+    "value": "partly",
+    "confidence": "sourced",
+    "sources": ["wiki:Vine City station", "nycsubway", "repo-data-model", "https://www.openstreetmap.org/way/1034650221"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE", "GREEN"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908958",
+       "direction": "eastbound",
+       "name": "VINE CITY STATION",
+       "lonlat": [-84.4039, 33.75661],
+       "along_platform_offset_m": 40,
+       "offset_toward": "E",
+       "city_profile_height_m": [-22.0, -6.4]
+      },
+      {
+       "id": "marta:stop:908959",
+       "direction": "westbound",
+       "name": "VINE CITY STATION",
+       "lonlat": [-84.40402, 33.75661],
+       "along_platform_offset_m": 29,
+       "offset_toward": "E",
+       "city_profile_height_m": [-22.0, -5.3]
+      }
+     ],
+     "layout": {
+      "value": "island",
+      "confidence": "sourced",
+      "sources": ["wiki:Vine City station", "nycsubway", "repo-data-model", "https://www.openstreetmap.org/way/1034650221"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Vine City station",
+       "nycsubway",
+       "repo-data-model",
+       "https://www.openstreetmap.org/way/1034650221",
+       "https://www.openstreetmap.org/way/702268369",
+       "https://www.openstreetmap.org/way/905946829",
+       "https://www.openstreetmap.org/way/702268368",
+       "https://www.openstreetmap.org/way/702268371",
+       "https://www.openstreetmap.org/way/905946830",
+       "https://www.openstreetmap.org/way/702268370"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [159],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1034650221"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [11.9],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1034650221"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [7, 9],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "Open west end only: the south bank stands 7-9 m above the track bed; the north side is about level with it.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.40562, 33.756488], "elev_m": 297.4}, {"lonlat": [-84.404973, 33.756516], "elev_m": 298.1}],
+       "flank": [{"lonlat": [-84.405603, 33.756218], "elev_m": 304.9}, {"lonlat": [-84.404956, 33.756246], "elev_m": 306.5}]
+      }
+     },
+     "level_description": "Street, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.4043262, 33.7565383],
+      "bearing_deg": 87.0,
+      "platforms": [
+       {
+        "osm_way": 1034650221,
+        "url": "https://www.openstreetmap.org/way/1034650221",
+        "version": 1,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1"},
+        "length_m": 159,
+        "width_m": 11.9,
+        "bearing_deg": 87.0,
+        "centre_lonlat": [-84.4043262, 33.7565383],
+        "axis_lonlat": [[-84.405185, 33.7565001], [-84.4034673, 33.7565764]],
+        "outline_lonlat": [
+         [-84.4051865, 33.7565539], [-84.4051825, 33.7564606], [-84.4046881, 33.7564717], [-84.4039843, 33.756501],
+         [-84.4034639, 33.7565227], [-84.403473, 33.7566283], [-84.4039896, 33.7566053], [-84.4046942, 33.756574],
+         [-84.4051865, 33.7565539]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 702268369,
+         "url": "https://www.openstreetmap.org/way/702268369",
+         "version": 14,
+         "tags": {},
+         "centreline_lonlat": [[-84.4046958, 33.7565856], [-84.4050229, 33.7565697], [-84.4051889, 33.7565615]]
+        },
+        {
+         "osm_way": 905946829,
+         "url": "https://www.openstreetmap.org/way/905946829",
+         "version": 10,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.4039896, 33.7566121], [-84.4046958, 33.7565856]]
+        },
+        {
+         "osm_way": 702268368,
+         "url": "https://www.openstreetmap.org/way/702268368",
+         "version": 21,
+         "tags": {"layer": "-3", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.4034713, 33.7566394], [-84.4039896, 33.7566121]]
+        }
+       ],
+       [
+        {
+         "osm_way": 702268371,
+         "url": "https://www.openstreetmap.org/way/702268371",
+         "version": 12,
+         "tags": {},
+         "centreline_lonlat": [[-84.4051819, 33.7564519], [-84.4049514, 33.7564574], [-84.4046857, 33.7564677]]
+        },
+        {
+         "osm_way": 905946830,
+         "url": "https://www.openstreetmap.org/way/905946830",
+         "version": 10,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.4046857, 33.7564677], [-84.4039844, 33.7564911]]
+        },
+        {
+         "osm_way": 702268370,
+         "url": "https://www.openstreetmap.org/way/702268370",
+         "version": 20,
+         "tags": {"layer": "-3", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.4039844, 33.7564911], [-84.4034632, 33.7565124]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 13.3
+     }
+    }
+   ],
+   "notes": ["West end open, the rest under cover (nycsubway.org: about three quarters underground; OSM tunnel ways 905946829/905946830 on the east part)."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 308.8, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "ashby",
+   "name": "Ashby",
+   "scope": "near_board",
+   "metres_outside_city_board": 1383,
+   "osm_station": "https://www.openstreetmap.org/node/6863544212",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Ashby station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/319512597", "https://www.openstreetmap.org/way/78090744"]
+   },
+   "levels": [
+    {
+     "name": "upper: westbound",
+     "lines": ["BLUE", "GREEN"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908964",
+       "direction": "westbound",
+       "name": "ASHBY STATION",
+       "lonlat": [-84.41733, 33.75648],
+       "along_platform_offset_m": 2,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "split: one platform south of the single track",
+      "confidence": "inferred",
+      "sources": ["wiki:Ashby station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/319512597", "https://www.openstreetmap.org/way/78090744"],
+      "note": "One track and one platform on each level. Both platforms lie south of their track: inferred from Wikipedia door sides (westbound left, eastbound right) and nycsubway.org's description."
+     },
+     "tracks": {
+      "value": 1,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Ashby station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512597",
+       "https://www.openstreetmap.org/way/78090744",
+       "https://www.openstreetmap.org/way/319512597"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way."},
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way and no published figure found."},
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. OSM layer=-2."},
+     "level_description": "Upper platform level.",
+     "geometry": {
+      "kind": "track_approximation",
+      "confidence": "inferred",
+      "centre_lonlat": [-84.4173474, 33.7564795],
+      "bearing_deg": 91.3,
+      "platforms": [],
+      "tracks": [
+       [
+        {
+         "osm_way": 319512597,
+         "url": "https://www.openstreetmap.org/way/319512597",
+         "version": 14,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [
+          [-84.416359, 33.7564623], [-84.4170581, 33.7564822], [-84.4173475, 33.7564903], [-84.4176141, 33.7564955],
+          [-84.4178313, 33.7565], [-84.4180728, 33.7565013], [-84.4183356, 33.7565043]
+         ]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": null
+     }
+    },
+    {
+     "name": "lower: eastbound",
+     "lines": ["BLUE", "GREEN"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908963",
+       "direction": "eastbound",
+       "name": "ASHBY STATION",
+       "lonlat": [-84.41723, 33.75648],
+       "along_platform_offset_m": 11,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "split: one platform south of the single track",
+      "confidence": "inferred",
+      "sources": ["wiki:Ashby station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/319512597", "https://www.openstreetmap.org/way/78090744"],
+      "note": "One track and one platform on each level. Both platforms lie south of their track: inferred from Wikipedia door sides (westbound left, eastbound right) and nycsubway.org's description."
+     },
+     "tracks": {
+      "value": 1,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Ashby station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512597",
+       "https://www.openstreetmap.org/way/78090744",
+       "https://www.openstreetmap.org/way/78090744"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way."},
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way and no published figure found."},
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. OSM layer=-3."},
+     "level_description": "Lower platform level.",
+     "geometry": {
+      "kind": "track_approximation",
+      "confidence": "inferred",
+      "centre_lonlat": [-84.4173474, 33.7564795],
+      "bearing_deg": 91.5,
+      "platforms": [],
+      "tracks": [
+       [
+        {
+         "osm_way": 78090744,
+         "url": "https://www.openstreetmap.org/way/78090744",
+         "version": 15,
+         "tags": {"layer": "-3", "tunnel": "yes"},
+         "centreline_lonlat": [
+          [-84.4183369, 33.7564618], [-84.4180629, 33.7564573], [-84.4178221, 33.7564553], [-84.4176147, 33.756453],
+          [-84.4174054, 33.7564492], [-84.4172009, 33.7564447], [-84.4163603, 33.7564208]
+         ]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": null
+     }
+    }
+   ],
+   "notes": ["Tracks are nearly one above the other (about 5 m apart in plan in OSM) and diverge just west of the station.", "No platform way."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 298.4, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "west-lake",
+   "name": "West Lake",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 3970,
+   "osm_station": "https://www.openstreetmap.org/node/4170391718",
+   "below_grade": {
+    "value": "open_cut",
+    "confidence": "inferred",
+    "sources": ["wiki:West Lake station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/905879516", "https://www.openstreetmap.org/way/905879517", "epqs"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908023",
+       "direction": "eastbound",
+       "name": "WEST LAKE STATION",
+       "lonlat": [-84.44533, 33.75333],
+       "along_platform_offset_m": 2,
+       "offset_toward": "SW",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:907906",
+       "direction": "westbound",
+       "name": "WEST LAKE STATION",
+       "lonlat": [-84.44557, 33.75325],
+       "along_platform_offset_m": 26,
+       "offset_toward": "SW",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:West Lake station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/905879516", "https://www.openstreetmap.org/way/905879517"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:West Lake station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/905879516",
+       "https://www.openstreetmap.org/way/905879517",
+       "https://www.openstreetmap.org/way/905879516",
+       "https://www.openstreetmap.org/way/905879517"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way."},
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No OSM platform way and no published figure found."},
+     "depth_m": {
+      "value": [6, 7],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "Cut floor against both flanks.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.446024, 33.753364], "elev_m": 306.4}, {"lonlat": [-84.445425, 33.753571], "elev_m": 304.4}],
+       "flank": [{"lonlat": [-84.446107, 33.75353], "elev_m": 313.8}, {"lonlat": [-84.445508, 33.753737], "elev_m": 310.7}]
+      }
+     },
+     "level_description": "Street, platform.",
+     "geometry": {
+      "kind": "track_approximation",
+      "confidence": "inferred",
+      "centre_lonlat": [-84.4453009, 33.7533207],
+      "bearing_deg": 67.5,
+      "platforms": [],
+      "tracks": [
+       [
+        {
+         "osm_way": 905879516,
+         "url": "https://www.openstreetmap.org/way/905879516",
+         "version": 9,
+         "tags": {"tunnel": "building_passage"},
+         "centreline_lonlat": [[-84.4445903, 33.7535804], [-84.4453446, 33.7533204], [-84.4462226, 33.753022]]
+        }
+       ],
+       [
+        {
+         "osm_way": 905879517,
+         "url": "https://www.openstreetmap.org/way/905879517",
+         "version": 9,
+         "tags": {"tunnel": "building_passage"},
+         "centreline_lonlat": [[-84.4462038, 33.7529841], [-84.4453268, 33.7532865], [-84.4445718, 33.7535456]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 4.1
+     }
+    }
+   ],
+   "notes": [
+    "Wikipedia: \"two below-grade side platforms\". nycsubway.org: \"ground level\". OSM: tunnel=building_passage over 187 m. The terrain shows a cut.",
+    "No platform way."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 304.9, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "lindbergh-center",
+   "name": "Lindbergh Center",
+   "scope": "near_board",
+   "metres_outside_city_board": 1165,
+   "osm_station": "https://www.openstreetmap.org/node/5346210486",
+   "below_grade": {
+    "value": "open_cut",
+    "confidence": "sourced",
+    "sources": ["wiki:Lindbergh Center station", "nycsubway", "https://www.openstreetmap.org/way/697038157", "https://www.openstreetmap.org/way/697038158"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908055",
+       "direction": "Gold northbound",
+       "name": "LINDBERGH CENTER STATION",
+       "lonlat": [-84.36932, 33.82349],
+       "along_platform_offset_m": 128,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908054",
+       "direction": "Gold southbound",
+       "name": "LINDBERGH CENTER STATION",
+       "lonlat": [-84.36936, 33.82339],
+       "along_platform_offset_m": 116,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:907775",
+       "direction": "Red northbound",
+       "name": "LINDBERGH CENTER STATION",
+       "lonlat": [-84.36931, 33.8235],
+       "along_platform_offset_m": 129,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:907823",
+       "direction": "Red southbound",
+       "name": "LINDBERGH CENTER STATION",
+       "lonlat": [-84.36932, 33.82345],
+       "along_platform_offset_m": 124,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "combined: island between the tracks plus a side platform outside the northbound track",
+      "confidence": "sourced",
+      "sources": ["wiki:Lindbergh Center station", "nycsubway", "https://www.openstreetmap.org/way/697038157", "https://www.openstreetmap.org/way/697038158"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Lindbergh Center station",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/697038157",
+       "https://www.openstreetmap.org/way/697038158",
+       "https://www.openstreetmap.org/way/905946821",
+       "https://www.openstreetmap.org/way/697222692",
+       "https://www.openstreetmap.org/way/697222693",
+       "https://www.openstreetmap.org/way/697038156",
+       "https://www.openstreetmap.org/way/697222695",
+       "https://www.openstreetmap.org/way/905946822"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [189, 189],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/697038157", "https://www.openstreetmap.org/way/697038158"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [7.8, 8.1],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/697038157", "https://www.openstreetmap.org/way/697038158"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [5, 7],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "South of the platform centre, where the trench is open.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.369862, 33.821305], "elev_m": 258.5}, {"lonlat": [-84.369719, 33.821833], "elev_m": 258.8}],
+       "flank": [{"lonlat": [-84.370178, 33.821365], "elev_m": 265.0}, {"lonlat": [-84.369403, 33.821774], "elev_m": 264.3}]
+      }
+     },
+     "level_description": "Street and bus level above one platform level in a trench.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3695763, 33.8223561],
+      "bearing_deg": 12.7,
+      "platforms": [
+       {
+        "osm_way": 697038157,
+        "url": "https://www.openstreetmap.org/way/697038157",
+        "version": 7,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "level": "-1", "ref": "907775;908055;907823;908054"},
+        "length_m": 189,
+        "width_m": 7.8,
+        "bearing_deg": 12.7,
+        "centre_lonlat": [-84.3696389, 33.8223677],
+        "axis_lonlat": [[-84.3698636, 33.8215357], [-84.3694142, 33.8231996]],
+        "outline_lonlat": [
+         [-84.369905, 33.8215435], [-84.3698222, 33.8215283], [-84.3696465, 33.8221789], [-84.3696298, 33.8222409],
+         [-84.369373, 33.8231917], [-84.3694112, 33.823199], [-84.3694518, 33.8232067], [-84.3696131, 33.8226168],
+         [-84.3697128, 33.8222525], [-84.3697421, 33.8221452], [-84.3697965, 33.8219342], [-84.369905, 33.8215435]
+        ]
+       },
+       {
+        "osm_way": 697038158,
+        "url": "https://www.openstreetmap.org/way/697038158",
+        "version": 4,
+        "role": "side, east (northbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "level": "-1"},
+        "length_m": 189,
+        "width_m": 8.1,
+        "bearing_deg": 12.8,
+        "centre_lonlat": [-84.3695171, 33.8223452],
+        "axis_lonlat": [[-84.3697436, 33.8215138], [-84.3692906, 33.8231767]],
+        "outline_lonlat": [
+         [-84.3697862, 33.821523], [-84.3697464, 33.8215143], [-84.3696706, 33.8217992], [-84.3696132, 33.8218271],
+         [-84.3692479, 33.8231679], [-84.3692843, 33.8231751], [-84.3693213, 33.8231825], [-84.369587, 33.8222339],
+         [-84.3697862, 33.821523]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 905946821,
+         "url": "https://www.openstreetmap.org/way/905946821",
+         "version": 10,
+         "tags": {"layer": "-1", "tunnel": "yes", "covered": "yes"},
+         "centreline_lonlat": [[-84.3696109, 33.8227272], [-84.3697973, 33.8220193]]
+        },
+        {
+         "osm_way": 697222692,
+         "url": "https://www.openstreetmap.org/way/697222692",
+         "version": 10,
+         "tags": {"cutting": "yes"},
+         "centreline_lonlat": [[-84.3697973, 33.8220193], [-84.369924, 33.8215471]]
+        },
+        {
+         "osm_way": 697222693,
+         "url": "https://www.openstreetmap.org/way/697222693",
+         "version": 12,
+         "tags": {"layer": "-1", "tunnel": "yes", "covered": "yes"},
+         "centreline_lonlat": [[-84.3694787, 33.8232121], [-84.3696109, 33.8227272]]
+        }
+       ],
+       [
+        {
+         "osm_way": 697038156,
+         "url": "https://www.openstreetmap.org/way/697038156",
+         "version": 13,
+         "tags": {"layer": "-1", "tunnel": "yes", "covered": "yes"},
+         "centreline_lonlat": [[-84.3696738, 33.8219953], [-84.3694749, 33.8227004]]
+        },
+        {
+         "osm_way": 697222695,
+         "url": "https://www.openstreetmap.org/way/697222695",
+         "version": 10,
+         "tags": {"cutting": "yes"},
+         "centreline_lonlat": [[-84.3698036, 33.8215244], [-84.3696738, 33.8219953]]
+        },
+        {
+         "osm_way": 905946822,
+         "url": "https://www.openstreetmap.org/way/905946822",
+         "version": 9,
+         "tags": {"layer": "-1", "tunnel": "yes", "covered": "yes"},
+         "centreline_lonlat": [[-84.3694749, 33.8227004], [-84.3693468, 33.8231873]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 12.3
+     }
+    }
+   ],
+   "notes": [
+    "Northbound trains open doors on both sides. The side platform was added in 2002.",
+    "The short-turn path marta:path:155225 (Red northbound from here) starts at its GTFS stop, about 123 m north of the platform centre, so it never reaches the platform centre."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 265.1, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "lenox",
+   "name": "Lenox",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 3907,
+   "osm_station": "https://www.openstreetmap.org/node/4172164015",
+   "below_grade": {
+    "value": "partly",
+    "confidence": "inferred",
+    "sources": ["wiki:Lenox station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1033006340", "https://www.openstreetmap.org/way/83179427", "marta-lenox"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:906827",
+       "direction": "northbound",
+       "name": "LENOX STATION",
+       "lonlat": [-84.35824, 33.84539],
+       "along_platform_offset_m": 67,
+       "offset_toward": "SW",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908717",
+       "direction": "southbound",
+       "name": "LENOX STATION",
+       "lonlat": [-84.35839, 33.84531],
+       "along_platform_offset_m": 83,
+       "offset_toward": "SW",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:Lenox station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/1033006340"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Lenox station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/1033006340",
+       "https://www.openstreetmap.org/way/83179427",
+       "https://www.openstreetmap.org/way/38985801"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [174],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1033006340"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [9.5],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1033006340"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. The hillside makes a terrain estimate one-sided."},
+     "level_description": "Street, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3576031, 33.8456764],
+      "bearing_deg": 58.4,
+      "platforms": [
+       {
+        "osm_way": 1033006340,
+        "url": "https://www.openstreetmap.org/way/1033006340",
+        "version": 4,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "level": "-1"},
+        "length_m": 174,
+        "width_m": 9.5,
+        "bearing_deg": 58.4,
+        "centre_lonlat": [-84.3576031, 33.8456764],
+        "axis_lonlat": [[-84.3584047, 33.8452657], [-84.3568014, 33.8460871]],
+        "outline_lonlat": [
+         [-84.3584316, 33.8453023], [-84.3584053, 33.8452669], [-84.3583776, 33.8452296], [-84.3567745, 33.8460505],
+         [-84.3568029, 33.8460881], [-84.3568287, 33.8461235], [-84.3584316, 33.8453023]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 83179427,
+         "url": "https://www.openstreetmap.org/way/83179427",
+         "version": 17,
+         "tags": {"layer": "-1", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3568408, 33.8461406], [-84.3577811, 33.845657], [-84.3584441, 33.8453192]]
+        }
+       ],
+       [
+        {
+         "osm_way": 38985801,
+         "url": "https://www.openstreetmap.org/way/38985801",
+         "version": 13,
+         "tags": {"layer": "-1", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3583631, 33.8452092], [-84.3577047, 33.8455487], [-84.3573482, 33.8457259], [-84.35676, 33.8460308]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 14.2
+     }
+    }
+   ],
+   "notes": [
+    "Wikipedia: \"open-cut\" (also \"at-grade\"). nycsubway.org: \"underground\". OSM: tracks tunnel=yes, layer=-1. MARTA's station profile says the Resurgens Plaza was built over the trackway, beside a below-grade bus loop."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 283.5, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "buckhead",
+   "name": "Buckhead",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 4062,
+   "osm_station": "https://www.openstreetmap.org/node/4172164016",
+   "below_grade": {"value": "open_cut", "confidence": "inferred", "sources": ["wiki:Buckhead station", "nycsubway", "https://www.openstreetmap.org/way/319512573"]},
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908639",
+       "direction": "northbound",
+       "name": "BUCKHEAD STATION",
+       "lonlat": [-84.36772, 33.84794],
+       "along_platform_offset_m": 147,
+       "offset_toward": "SE",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908718",
+       "direction": "southbound",
+       "name": "BUCKHEAD STATION",
+       "lonlat": [-84.36763, 33.84781],
+       "along_platform_offset_m": 163,
+       "offset_toward": "SE",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:Buckhead station", "nycsubway", "https://www.openstreetmap.org/way/319512573"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Buckhead station",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512573",
+       "https://www.openstreetmap.org/way/905910144",
+       "https://www.openstreetmap.org/way/905910149",
+       "https://www.openstreetmap.org/way/905910148"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [160],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/319512573"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [7.8],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/319512573"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": null,
+      "confidence": "unknown",
+      "sources": [],
+      "note": "No figure. Bare-ground samples within 50 m are about level with the platform centre, so they neither show nor rule out a wider highway cut."
+     },
+     "level_description": "Street, platform. Stairs down from the street.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.368474, 33.8491062],
+      "bearing_deg": 154.5,
+      "platforms": [
+       {
+        "osm_way": 319512573,
+        "url": "https://www.openstreetmap.org/way/319512573",
+        "version": 13,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2", "level": "-2", "ref": "908639;908718"},
+        "length_m": 160,
+        "width_m": 7.8,
+        "bearing_deg": 154.5,
+        "centre_lonlat": [-84.368474, 33.8491062],
+        "axis_lonlat": [[-84.3688476, 33.8497587], [-84.3681004, 33.8484537]],
+        "outline_lonlat": [
+         [-84.3688805, 33.8497455], [-84.3684419, 33.8489726], [-84.3681382, 33.8484386], [-84.3681036, 33.8484524],
+         [-84.3680888, 33.8484583], [-84.3680627, 33.8484687], [-84.368366, 33.8489986], [-84.3688098, 33.8497738],
+         [-84.3688343, 33.849764], [-84.3688477, 33.8497587], [-84.3688805, 33.8497455]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 905910144,
+         "url": "https://www.openstreetmap.org/way/905910144",
+         "version": 10,
+         "tags": {},
+         "centreline_lonlat": [[-84.3680724, 33.8485238], [-84.3683436, 33.8490108], [-84.3687878, 33.8497826]]
+        }
+       ],
+       [
+        {
+         "osm_way": 905910149,
+         "url": "https://www.openstreetmap.org/way/905910149",
+         "version": 12,
+         "tags": {},
+         "centreline_lonlat": [[-84.3689051, 33.8497358], [-84.3684594, 33.8489649]]
+        },
+        {
+         "osm_way": 905910148,
+         "url": "https://www.openstreetmap.org/way/905910148",
+         "version": 12,
+         "tags": {"tunnel": "building_passage"},
+         "centreline_lonlat": [[-84.3684594, 33.8489649], [-84.3681603, 33.8484298]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 11.9
+     }
+    }
+   ],
+   "notes": [
+    "In the GA 400 median. Wikipedia says \"at-grade\"; nycsubway.org has riders descend from the street; OSM tags the platform layer=-2. Weakest status in the table."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 290.8, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "medical-center",
+   "name": "Medical Center",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 11071,
+   "osm_station": "https://www.openstreetmap.org/node/4172164017",
+   "below_grade": {
+    "value": "partly",
+    "confidence": "inferred",
+    "sources": [
+     "wiki:Medical Center station (MARTA)",
+     "nycsubway",
+     "https://www.openstreetmap.org/way/697684977",
+     "https://www.openstreetmap.org/way/697684974",
+     "https://www.openstreetmap.org/way/697684980",
+     "epqs"
+    ]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908885",
+       "direction": "northbound",
+       "name": "MEDICAL CENTER STATION",
+       "lonlat": [-84.35176, 33.91074],
+       "along_platform_offset_m": 22,
+       "offset_toward": "W",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908872",
+       "direction": "southbound",
+       "name": "MEDICAL CENTER STATION",
+       "lonlat": [-84.35189, 33.91076],
+       "along_platform_offset_m": 34,
+       "offset_toward": "W",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:Medical Center station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/697684977", "https://www.openstreetmap.org/way/697684974"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Medical Center station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/697684977",
+       "https://www.openstreetmap.org/way/697684974",
+       "https://www.openstreetmap.org/way/697684980",
+       "https://www.openstreetmap.org/way/9171769"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [183, 183],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/697684974", "https://www.openstreetmap.org/way/697684977"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [3.5, 3.1],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/697684974", "https://www.openstreetmap.org/way/697684977"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No figure. Sidehill cut."},
+     "level_description": "Mezzanine above one platform level.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.351521, 33.9107619],
+      "bearing_deg": 90.4,
+      "platforms": [
+       {
+        "osm_way": 697684974,
+        "url": "https://www.openstreetmap.org/way/697684974",
+        "version": 3,
+        "role": "side, south",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "level": "-1"},
+        "length_m": 183,
+        "width_m": 3.5,
+        "bearing_deg": 90.4,
+        "centre_lonlat": [-84.351523, 33.9107113],
+        "axis_lonlat": [[-84.3525101, 33.9107174], [-84.3505358, 33.9107052]],
+        "outline_lonlat": [
+         [-84.35251, 33.910733], [-84.35251, 33.9107052], [-84.351865, 33.9107001], [-84.3511689, 33.9106946],
+         [-84.3505359, 33.9106896], [-84.3505359, 33.9107208], [-84.35251, 33.910733]
+        ]
+       },
+       {
+        "osm_way": 697684977,
+        "url": "https://www.openstreetmap.org/way/697684977",
+        "version": 3,
+        "role": "side, north",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "level": "-1"},
+        "length_m": 183,
+        "width_m": 3.1,
+        "bearing_deg": 90.3,
+        "centre_lonlat": [-84.3515199, 33.9108132],
+        "axis_lonlat": [[-84.3525081, 33.9108182], [-84.3505318, 33.9108082]],
+        "outline_lonlat": [
+         [-84.3505319, 33.9108018], [-84.3505319, 33.9107943], [-84.3511676, 33.9107978], [-84.3518642, 33.9108023],
+         [-84.352508, 33.9108054], [-84.352508, 33.9108321], [-84.350532, 33.9108221], [-84.3505319, 33.9108018]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 697684980,
+         "url": "https://www.openstreetmap.org/way/697684980",
+         "version": 10,
+         "tags": {"layer": "-1", "cutting": "yes"},
+         "centreline_lonlat": [[-84.350532, 33.9107789], [-84.3515369, 33.9107844], [-84.3525095, 33.9107898]]
+        }
+       ],
+       [
+        {
+         "osm_way": 9171769,
+         "url": "https://www.openstreetmap.org/way/9171769",
+         "version": 30,
+         "tags": {"layer": "-1", "cutting": "yes"},
+         "centreline_lonlat": [[-84.3525099, 33.9107475], [-84.3515386, 33.9107421], [-84.3505324, 33.9107366]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 4.7
+     }
+    }
+   ],
+   "notes": [
+    "Both references say ground level; OSM tags the tracks cutting, layer=-1, and the terrain is a sidehill. Borderline: could be treated as at grade.",
+    "OSM offsets the two platforms about 36 m from each other along the line."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 299.5, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "sandy-springs",
+   "name": "Sandy Springs",
+   "scope": "outside_i285",
+   "metres_outside_city_board": 13412,
+   "osm_station": "https://www.openstreetmap.org/node/5195035485",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Sandy Springs station", "nycsubway", "https://www.openstreetmap.org/way/697640433", "https://www.openstreetmap.org/way/697640434"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:907845",
+       "direction": "northbound",
+       "name": "SANDY SPRINGS STATION",
+       "lonlat": [-84.35107, 33.93167],
+       "along_platform_offset_m": 100,
+       "offset_toward": "SE",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:907846",
+       "direction": "southbound",
+       "name": "SANDY SPRINGS STATION",
+       "lonlat": [-84.35096, 33.93156],
+       "along_platform_offset_m": 115,
+       "offset_toward": "SE",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:Sandy Springs station", "nycsubway", "https://www.openstreetmap.org/way/697640433", "https://www.openstreetmap.org/way/697640434"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Sandy Springs station",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/697640433",
+       "https://www.openstreetmap.org/way/697640434",
+       "https://www.openstreetmap.org/way/9250442",
+       "https://www.openstreetmap.org/way/197110139"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [176, 176],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/697640433", "https://www.openstreetmap.org/way/697640434"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [5.6, 5.8],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/697640433", "https://www.openstreetmap.org/way/697640434"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No published figure. OSM layer=-2."},
+     "level_description": "Street, mezzanine, platform (nycsubway.org).",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.3519754, 33.9321631],
+      "bearing_deg": 122.5,
+      "platforms": [
+       {
+        "osm_way": 697640433,
+        "url": "https://www.openstreetmap.org/way/697640433",
+        "version": 2,
+        "role": "side",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2", "level": "-2", "location": "underground"},
+        "length_m": 176,
+        "width_m": 5.6,
+        "bearing_deg": 122.5,
+        "centre_lonlat": [-84.3519293, 33.9322269],
+        "axis_lonlat": [[-84.352731, 33.9326525], [-84.3511277, 33.9318013]],
+        "outline_lonlat": [
+         [-84.3511438, 33.9317802], [-84.3524469, 33.932472], [-84.3527451, 33.9326304], [-84.3527156, 33.9326726],
+         [-84.3514546, 33.9320043], [-84.3511145, 33.931824], [-84.3511438, 33.9317802]
+        ]
+       },
+       {
+        "osm_way": 697640434,
+        "url": "https://www.openstreetmap.org/way/697640434",
+        "version": 2,
+        "role": "side",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-2", "level": "-2", "location": "underground"},
+        "length_m": 176,
+        "width_m": 5.8,
+        "bearing_deg": 121.8,
+        "centre_lonlat": [-84.3520163, 33.9321085],
+        "axis_lonlat": [[-84.3528247, 33.9325269], [-84.3512078, 33.9316901]],
+        "outline_lonlat": [
+         [-84.3528082, 33.9325491], [-84.352839, 33.9325035], [-84.3512243, 33.9316679], [-84.3511948, 33.9317101],
+         [-84.3515348, 33.9318869], [-84.3525067, 33.9323923], [-84.3528082, 33.9325491]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 9250442,
+         "url": "https://www.openstreetmap.org/way/9250442",
+         "version": 28,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3511515, 33.9317633], [-84.3520149, 33.9322186], [-84.3527631, 33.9326104]]
+        }
+       ],
+       [
+        {
+         "osm_way": 197110139,
+         "url": "https://www.openstreetmap.org/way/197110139",
+         "version": 18,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.3527921, 33.9325724], [-84.3520532, 33.9321838], [-84.3511809, 33.9317248]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 5.2
+     }
+    }
+   ],
+   "notes": ["North of I-285."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 336.0, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "east-point",
+   "name": "East Point",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 8230,
+   "osm_station": "https://www.openstreetmap.org/node/4172450829",
+   "below_grade": {"value": "open_cut", "confidence": "sourced", "sources": ["wiki:East Point station", "nycsubway", "https://www.openstreetmap.org/way/319512586"]},
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908628",
+       "direction": "northbound",
+       "name": "EAST POINT STATION",
+       "lonlat": [-84.44054, 33.67742],
+       "along_platform_offset_m": 42,
+       "offset_toward": "N",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908707",
+       "direction": "southbound",
+       "name": "EAST POINT STATION",
+       "lonlat": [-84.4407, 33.67699],
+       "along_platform_offset_m": 8,
+       "offset_toward": "S",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:East Point station", "nycsubway", "https://www.openstreetmap.org/way/319512586"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:East Point station",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512586",
+       "https://www.openstreetmap.org/way/697611763",
+       "https://www.openstreetmap.org/way/697611760"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [177],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/319512586"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [8.0],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/319512586"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [7, 8],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "Open trench at one end of the platform.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.441037, 33.67602], "elev_m": 314.9}, {"lonlat": [-84.440858, 33.67654], "elev_m": 315.2}],
+       "flank": [{"lonlat": [-84.440726, 33.675945], "elev_m": 322.1}, {"lonlat": [-84.440546, 33.676465], "elev_m": 322.6}]
+      }
+     },
+     "level_description": "Street, platform in a trench.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.4406836, 33.6770582],
+      "bearing_deg": 16.1,
+      "platforms": [
+       {
+        "osm_way": 319512586,
+        "url": "https://www.openstreetmap.org/way/319512586",
+        "version": 7,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "layer": "-1", "level": "-1", "ref": "908707;908628"},
+        "length_m": 177,
+        "width_m": 8.0,
+        "bearing_deg": 16.1,
+        "centre_lonlat": [-84.4406836, 33.6770582],
+        "axis_lonlat": [[-84.4409476, 33.6762937], [-84.4404197, 33.6778227]],
+        "outline_lonlat": [
+         [-84.4404615, 33.6778319], [-84.440748, 33.6769923], [-84.4408125, 33.6768032], [-84.4409778, 33.676301],
+         [-84.4409052, 33.6762863], [-84.4407332, 33.6767843], [-84.4403781, 33.6778127], [-84.4404213, 33.6778223],
+         [-84.4404615, 33.6778319]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 697611763,
+         "url": "https://www.openstreetmap.org/way/697611763",
+         "version": 10,
+         "tags": {"layer": "-1", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.440482, 33.6778377], [-84.4407492, 33.67705], [-84.4408921, 33.6766443]]
+        }
+       ],
+       [
+        {
+         "osm_way": 697611760,
+         "url": "https://www.openstreetmap.org/way/697611760",
+         "version": 10,
+         "tags": {"layer": "-1", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.440762, 33.6766142], [-84.4406299, 33.6770206], [-84.4403577, 33.6778078]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 11.5
+     }
+    }
+   ],
+   "notes": ["OSM tags the tracks tunnel=yes, layer=-1 through the platform; the terrain shows open trench beyond a covered middle."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 322.5, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "college-park",
+   "name": "College Park",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 11106,
+   "osm_station": "https://www.openstreetmap.org/node/4172450830",
+   "below_grade": {"value": "open_cut", "confidence": "sourced", "sources": ["wiki:College Park station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/693625260"]},
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["RED", "GOLD"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908599",
+       "direction": "northbound",
+       "name": "COLLEGE PARK STATION",
+       "lonlat": [-84.44866, 33.65058],
+       "along_platform_offset_m": 147,
+       "offset_toward": "S",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:907844",
+       "direction": "southbound",
+       "name": "COLLEGE PARK STATION",
+       "lonlat": [-84.44861, 33.65028],
+       "along_platform_offset_m": 180,
+       "offset_toward": "S",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:College Park station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/693625260"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:College Park station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/693625260",
+       "https://www.openstreetmap.org/way/905944423",
+       "https://www.openstreetmap.org/way/83185419",
+       "https://www.openstreetmap.org/way/905944422",
+       "https://www.openstreetmap.org/way/83187146"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [183],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/693625260"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [10.2],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/693625260"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [3, 5],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "Weak: two samples near one end.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.448752, 33.651357], "elev_m": 316.9}, {"lonlat": [-84.448694, 33.650819], "elev_m": 316.0}],
+       "flank": [{"lonlat": [-84.448429, 33.651381], "elev_m": 321.5}, {"lonlat": [-84.449017, 33.650794], "elev_m": 320.4}]
+      }
+     },
+     "level_description": "Street, platform.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.4488096, 33.6518951],
+      "bearing_deg": 174.9,
+      "platforms": [
+       {
+        "osm_way": 693625260,
+        "url": "https://www.openstreetmap.org/way/693625260",
+        "version": 4,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "level": "-1", "ref": "908599;907844"},
+        "length_m": 183,
+        "width_m": 10.2,
+        "bearing_deg": 174.9,
+        "centre_lonlat": [-84.4488096, 33.6518951],
+        "axis_lonlat": [[-84.4488973, 33.6527156], [-84.4487219, 33.6510745]],
+        "outline_lonlat": [
+         [-84.4487772, 33.6510764], [-84.4486673, 33.6510786], [-84.4487508, 33.6516578], [-84.4489033, 33.6527152],
+         [-84.4489516, 33.6527085], [-84.4488371, 33.651637], [-84.4487772, 33.6510764]
+        ]
+       }
+      ],
+      "tracks": [
+       [{"osm_way": 905944423, "url": "https://www.openstreetmap.org/way/905944423", "version": 9, "tags": {"tunnel": "building_passage"}, "centreline_lonlat": [[-84.4486809, 33.6513129], [-84.4487281, 33.6516628], [-84.448873, 33.6527027]]}, {"osm_way": 83185419, "url": "https://www.openstreetmap.org/way/83185419", "version": 18, "tags": {}, "centreline_lonlat": [[-84.4486479, 33.65108], [-84.4486809, 33.6513129]]}], [{"osm_way": 905944422, "url": "https://www.openstreetmap.org/way/905944422", "version": 9, "tags": {"tunnel": "building_passage"}, "centreline_lonlat": [[-84.4489263, 33.6522993], [-84.4488574, 33.6516612], [-84.4488177, 33.651302]]}, {"osm_way": 83187146, "url": "https://www.openstreetmap.org/way/83187146", "version": 17, "tags": {}, "centreline_lonlat": [[-84.4488177, 33.651302], [-84.4487985, 33.6510688]]}]
+      ],
+      "osm_track_spacing_m": 11.3
+     }
+    }
+   ],
+   "notes": ["The platform is narrower at the north end (nycsubway.org). OSM tags the tracks building_passage over most of it."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 320.2, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "decatur",
+   "name": "Decatur",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 7045,
+   "osm_station": "https://www.openstreetmap.org/node/8140627609",
+   "below_grade": {
+    "value": "underground",
+    "confidence": "sourced",
+    "sources": ["wiki:Decatur station", "nycsubway", "marta-1978", "https://www.openstreetmap.org/way/1256234408", "https://www.openstreetmap.org/way/1256234409"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908700",
+       "direction": "eastbound",
+       "name": "DECATUR STATION",
+       "lonlat": [-84.29532, 33.77468],
+       "along_platform_offset_m": 62,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908475",
+       "direction": "westbound",
+       "name": "DECATUR STATION",
+       "lonlat": [-84.29542, 33.7747],
+       "along_platform_offset_m": 53,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {
+      "value": "side",
+      "confidence": "sourced",
+      "sources": ["wiki:Decatur station", "nycsubway", "marta-1978", "https://www.openstreetmap.org/way/1256234408", "https://www.openstreetmap.org/way/1256234409"]
+     },
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Decatur station",
+       "nycsubway",
+       "marta-1978",
+       "https://www.openstreetmap.org/way/1256234408",
+       "https://www.openstreetmap.org/way/1256234409",
+       "https://www.openstreetmap.org/way/40619188",
+       "https://www.openstreetmap.org/way/9171748"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [184, 183],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/1256234408", "https://www.openstreetmap.org/way/1256234409"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [7.8, 6.9],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/1256234408", "https://www.openstreetmap.org/way/1256234409"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": null,
+      "confidence": "unknown",
+      "sources": [],
+      "note": "No published figure. 1978 MARTA paper: platforms one level below the Church Street entrance."
+     },
+     "level_description": "Street, mezzanine, platform (Wikipedia). Station roof raised above ground to carry a pedestrian mall (1978 paper).",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.2959942, 33.7746087],
+      "bearing_deg": 90.2,
+      "platforms": [
+       {
+        "osm_way": 1256234408,
+        "url": "https://www.openstreetmap.org/way/1256234408",
+        "version": 3,
+        "role": "side, north (westbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "ref": "908475"},
+        "length_m": 184,
+        "width_m": 7.8,
+        "bearing_deg": 90.2,
+        "centre_lonlat": [-84.2959941, 33.774663],
+        "axis_lonlat": [[-84.2969877, 33.7746652], [-84.2950004, 33.7746609]],
+        "outline_lonlat": [
+         [-84.2950021, 33.7746259], [-84.2950003, 33.7746943], [-84.2953469, 33.7746953], [-84.2969876, 33.7747002],
+         [-84.296985, 33.7746303], [-84.2966484, 33.7746295], [-84.2950021, 33.7746259]
+        ]
+       },
+       {
+        "osm_way": 1256234409,
+        "url": "https://www.openstreetmap.org/way/1256234409",
+        "version": 2,
+        "role": "side, south (eastbound)",
+        "tags": {"railway": "platform", "public_transport": "platform", "ref": "908700"},
+        "length_m": 183,
+        "width_m": 6.9,
+        "bearing_deg": 90.3,
+        "centre_lonlat": [-84.2959928, 33.7745529],
+        "axis_lonlat": [[-84.2969822, 33.7745574], [-84.2950034, 33.7745485]],
+        "outline_lonlat": [
+         [-84.2969801, 33.7745857], [-84.2969824, 33.7745261], [-84.2950036, 33.7745172], [-84.2950098, 33.774578],
+         [-84.2966479, 33.774587], [-84.2967575, 33.7745876], [-84.2969801, 33.7745857]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 40619188,
+         "url": "https://www.openstreetmap.org/way/40619188",
+         "version": 26,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.2950005, 33.774616], [-84.2960588, 33.7746197], [-84.296985, 33.7746244], [-84.2969878, 33.7746243]]
+        }
+       ],
+       [
+        {
+         "osm_way": 9171748,
+         "url": "https://www.openstreetmap.org/way/9171748",
+         "version": 21,
+         "tags": {"layer": "-2", "tunnel": "yes"},
+         "centreline_lonlat": [[-84.2969879, 33.7745952], [-84.2965225, 33.774601], [-84.2960578, 33.7746009], [-84.2950006, 33.7745915]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 2.1
+     }
+    }
+   ],
+   "notes": [
+    "OSM draws the two tracks only about 2 m apart, closer than the 3.2 m car width, so its tunnel geometry is rough here.",
+    "OSM ref tags put stop 908475 on the north platform and 908700 on the south, offset about 45 m along the line."
+   ],
+   "bare_ground_elev_m_at_platform_centre": {"value": 317.2, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "kensington",
+   "name": "Kensington",
+   "scope": "inside_i285",
+   "metres_outside_city_board": 11131,
+   "osm_station": "https://www.openstreetmap.org/node/4172459856",
+   "below_grade": {
+    "value": "open_cut",
+    "confidence": "inferred",
+    "sources": ["wiki:Kensington station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/319512590", "epqs"]
+   },
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908634",
+       "direction": "eastbound",
+       "name": "KENSINGTON STATION",
+       "lonlat": [-84.25161, 33.77265],
+       "along_platform_offset_m": 25,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908709",
+       "direction": "westbound",
+       "name": "KENSINGTON STATION",
+       "lonlat": [-84.25215, 33.77276],
+       "along_platform_offset_m": 26,
+       "offset_toward": "W",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:Kensington station (MARTA)", "nycsubway", "https://www.openstreetmap.org/way/319512590"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Kensington station (MARTA)",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512590",
+       "https://www.openstreetmap.org/way/38937882",
+       "https://www.openstreetmap.org/way/697651244"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [178],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/319512590"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [8.8],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/319512590"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {
+      "value": [7, 10],
+      "confidence": "inferred",
+      "sources": ["epqs"],
+      "note": "Open ends of the trench.",
+      "datum": "track bed below the neighbouring bare ground; not platform floor below a street",
+      "samples": {
+       "floor": [{"lonlat": [-84.253151, 33.772901], "elev_m": 309.9}, {"lonlat": [-84.250623, 33.772418], "elev_m": 309.7}],
+       "flank": [{"lonlat": [-84.253224, 33.772637], "elev_m": 317.2}, {"lonlat": [-84.250696, 33.772154], "elev_m": 319.3}]
+      }
+     },
+     "level_description": "Bus level above one platform level in a trench.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.251887, 33.7726591],
+      "bearing_deg": 102.9,
+      "platforms": [
+       {
+        "osm_way": 319512590,
+        "url": "https://www.openstreetmap.org/way/319512590",
+        "version": 5,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "level": "-1"},
+        "length_m": 178,
+        "width_m": 8.8,
+        "bearing_deg": 102.9,
+        "centre_lonlat": [-84.251887, 33.7726591],
+        "axis_lonlat": [[-84.2528251, 33.7728378], [-84.2509489, 33.7724804]],
+        "outline_lonlat": [
+         [-84.2509594, 33.7724419], [-84.2509403, 33.7725193], [-84.2511563, 33.7725604], [-84.2526001, 33.7728354],
+         [-84.2528146, 33.7728762], [-84.2528344, 33.7727999], [-84.2526205, 33.7727591], [-84.2522379, 33.772686],
+         [-84.2515665, 33.7725578], [-84.2511287, 33.7724742], [-84.2509594, 33.7724419]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 38937882,
+         "url": "https://www.openstreetmap.org/way/38937882",
+         "version": 20,
+         "tags": {"tunnel": "building_passage", "cutting": "yes"},
+         "centreline_lonlat": [[-84.2511012, 33.7725684], [-84.2518719, 33.7727143], [-84.2526484, 33.7728608], [-84.2526871, 33.7728679]]
+        }
+       ],
+       [
+        {
+         "osm_way": 697651244,
+         "url": "https://www.openstreetmap.org/way/697651244",
+         "version": 10,
+         "tags": {"tunnel": "building_passage", "cutting": "yes"},
+         "centreline_lonlat": [[-84.2527171, 33.7727536], [-84.2526766, 33.7727459], [-84.2518989, 33.7725977], [-84.2510563, 33.7724394]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 13.2
+     }
+    }
+   ],
+   "notes": ["Wikipedia says \"at-grade\"; nycsubway.org and the terrain show a trench; OSM tags cutting."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 312.4, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  },
+  {
+   "slug": "indian-creek",
+   "name": "Indian Creek",
+   "scope": "outside_i285",
+   "metres_outside_city_board": 13183,
+   "osm_station": "https://www.openstreetmap.org/node/4172459857",
+   "below_grade": {"value": "partly", "confidence": "inferred", "sources": ["wiki:Indian Creek station", "nycsubway", "https://www.openstreetmap.org/way/319512563", "epqs"]},
+   "levels": [
+    {
+     "name": "platform",
+     "lines": ["BLUE"],
+     "gtfs_stops": [
+      {
+       "id": "marta:stop:908515",
+       "direction": "eastbound",
+       "name": "INDIAN CREEK STATION",
+       "lonlat": [-84.22891, 33.76986],
+       "along_platform_offset_m": 70,
+       "offset_toward": "E",
+       "city_profile_height_m": null
+      },
+      {
+       "id": "marta:stop:908516",
+       "direction": "westbound",
+       "name": "INDIAN CREEK STATION",
+       "lonlat": [-84.22987, 33.76989],
+       "along_platform_offset_m": 19,
+       "offset_toward": "W",
+       "city_profile_height_m": null
+      }
+     ],
+     "layout": {"value": "island", "confidence": "sourced", "sources": ["wiki:Indian Creek station", "nycsubway", "https://www.openstreetmap.org/way/319512563"]},
+     "tracks": {
+      "value": 2,
+      "confidence": "sourced",
+      "sources": [
+       "wiki:Indian Creek station",
+       "nycsubway",
+       "https://www.openstreetmap.org/way/319512563",
+       "https://www.openstreetmap.org/way/78044268",
+       "https://www.openstreetmap.org/way/696532983"
+      ]
+     },
+     "platform_length_m": {
+      "osm_measured": {
+       "value": [183],
+       "confidence": "sourced",
+       "sources": ["https://www.openstreetmap.org/way/319512563"],
+       "note": "Measured from the OSM platform way(s), one value per way, in the order of geometry.platforms."
+      },
+      "design": {
+       "value": 183,
+       "confidence": "inferred",
+       "sources": ["railtech"],
+       "note": "System-wide figure from a secondary source, not a per-station survey. Bankhead, which is not in this table, is shorter."
+      }
+     },
+     "platform_width_m": {
+      "value": [8.2],
+      "confidence": "inferred",
+      "sources": ["https://www.openstreetmap.org/way/319512563"],
+      "note": "Bounding width of the OSM polygon(s). Mapped widths are rough, especially under ground."
+     },
+     "depth_m": {"value": null, "confidence": "unknown", "sources": [], "note": "No figure. The cut is one-sided."},
+     "level_description": "Mezzanine above one platform level.",
+     "geometry": {
+      "kind": "osm_platform",
+      "confidence": "sourced",
+      "centre_lonlat": [-84.2296678, 33.7698319],
+      "bearing_deg": 92.0,
+      "platforms": [
+       {
+        "osm_way": 319512563,
+        "url": "https://www.openstreetmap.org/way/319512563",
+        "version": 7,
+        "role": "island",
+        "tags": {"railway": "platform", "public_transport": "platform", "area": "yes", "level": "-1", "ref": "908516;908515"},
+        "length_m": 183,
+        "width_m": 8.2,
+        "bearing_deg": 92.0,
+        "centre_lonlat": [-84.2296678, 33.7698319],
+        "axis_lonlat": [[-84.2306554, 33.769861], [-84.2286803, 33.7698029]],
+        "outline_lonlat": [
+         [-84.2306565, 33.7698242], [-84.230085, 33.7698078], [-84.2291784, 33.7697831], [-84.2286818, 33.7697674],
+         [-84.2286818, 33.7698397], [-84.2306538, 33.7698977], [-84.2306565, 33.7698242]
+        ]
+       }
+      ],
+      "tracks": [
+       [
+        {
+         "osm_way": 78044268,
+         "url": "https://www.openstreetmap.org/way/78044268",
+         "version": 14,
+         "tags": {},
+         "centreline_lonlat": [[-84.2286781, 33.7698554], [-84.229722, 33.769887], [-84.230653, 33.7699157]]
+        }
+       ],
+       [
+        {
+         "osm_way": 696532983,
+         "url": "https://www.openstreetmap.org/way/696532983",
+         "version": 9,
+         "tags": {},
+         "centreline_lonlat": [[-84.2306578, 33.7698038], [-84.2297272, 33.7697781], [-84.2286826, 33.7697483]]
+        }
+       ]
+      ],
+      "osm_track_spacing_m": 12.1
+     }
+    }
+   ],
+   "notes": ["Just east of I-285. nycsubway.org: \"ground level/trench\"; Wikipedia: \"at-grade\"; OSM level=-1."],
+   "bare_ground_elev_m_at_platform_centre": {"value": 275.0, "confidence": "sourced", "sources": ["epqs"], "note": "Under decks and roofs the bare-earth model is interpolated."}
+  }
+ ],
+ "excluded": [
+  {
+   "name": "Georgia State",
+   "gtfs_stops": ["marta:stop:908696", "marta:stop:908618"],
+   "reason": "Covered by the Floyd Building and platform canopies, but not below grade (open or elevated track either side). Side platforms, 2 tracks. City already draws it.",
+   "sources": ["wiki:Georgia State station", "repo-data-model"]
+  },
+  {
+   "name": "King Memorial",
+   "gtfs_stops": ["marta:stop:908436", "marta:stop:908693"],
+   "reason": "Elevated. City already draws it.",
+   "sources": ["wiki:King Memorial station", "nycsubway"]
+  },
+  {
+   "name": "Garnett",
+   "gtfs_stops": ["marta:stop:908600", "marta:stop:907843"],
+   "reason": "Elevated; the north end faces the tunnel portal toward Five Points.",
+   "sources": ["wiki:Garnett station", "nycsubway"]
+  },
+  {
+   "name": "West End",
+   "gtfs_stops": ["marta:stop:908704", "marta:stop:908705"],
+   "reason": "Elevated.",
+   "sources": ["wiki:West End station (MARTA)", "nycsubway"]
+  },
+  {
+   "name": "Oakland City",
+   "gtfs_stops": ["marta:stop:908301", "marta:stop:908302"],
+   "reason": "Above grade, on embankment.",
+   "sources": ["wiki:Oakland City station", "nycsubway"]
+  },
+  {
+   "name": "Lakewood-Fort McPherson",
+   "gtfs_stops": ["marta:stop:908629", "marta:stop:908706"],
+   "reason": "Above grade, on embankment (OSM building_passage is the roof).",
+   "sources": ["wiki:Lakewood/Fort McPherson station", "nycsubway"]
+  },
+  {
+   "name": "Airport",
+   "gtfs_stops": ["marta:stop:908695", "marta:stop:906647", "marta:stop:906837"],
+   "reason": "Elevated.",
+   "sources": ["wiki:Airport station (MARTA)", "nycsubway"]
+  },
+  {
+   "name": "Hamilton E. Holmes",
+   "gtfs_stops": ["marta:stop:907933", "marta:stop:907907"],
+   "reason": "Elevated.",
+   "sources": ["wiki:Hamilton E. Holmes station", "nycsubway"]
+  },
+  {"name": "Bankhead", "gtfs_stops": ["marta:stop:907960", "marta:stop:907961"], "reason": "Elevated.", "sources": ["wiki:Bankhead station", "nycsubway"]},
+  {
+   "name": "Inman Park-Reynoldstown",
+   "gtfs_stops": ["marta:stop:908437", "marta:stop:908692"],
+   "reason": "At grade.",
+   "sources": ["wiki:Inman Park/Reynoldstown station", "nycsubway"]
+  },
+  {
+   "name": "Edgewood-Candler Park",
+   "gtfs_stops": ["marta:stop:908699", "marta:stop:908476"],
+   "reason": "At grade (nycsubway.org) or elevated (Wikipedia).",
+   "sources": ["wiki:Edgewood/Candler Park station", "nycsubway"]
+  },
+  {"name": "East Lake", "gtfs_stops": ["marta:stop:908566", "marta:stop:908567"], "reason": "At grade.", "sources": ["wiki:East Lake station", "nycsubway"]},
+  {
+   "name": "Avondale",
+   "gtfs_stops": ["marta:stop:908438", "marta:stop:908691"],
+   "reason": "At grade by both references. Terrain puts the tracks up to about 8 m below ground beside the station, so a viewer might read it as a shallow cut. See [avondale-layout.md](avondale-layout.md).",
+   "sources": ["wiki:Avondale station (MARTA)", "nycsubway", "epqs"]
+  },
+  {
+   "name": "Brookhaven-Oglethorpe",
+   "gtfs_stops": ["marta:stop:908186", "marta:stop:908187"],
+   "reason": "Elevated.",
+   "sources": ["wiki:Brookhaven/Oglethorpe station", "nycsubway"]
+  },
+  {"name": "Chamblee", "gtfs_stops": ["marta:stop:908603", "marta:stop:908604"], "reason": "Elevated.", "sources": ["wiki:Chamblee station", "nycsubway"]},
+  {"name": "Doraville", "gtfs_stops": ["marta:stop:908845", "marta:stop:908862"], "reason": "Elevated.", "sources": ["wiki:Doraville station", "nycsubway"]},
+  {"name": "Dunwoody", "gtfs_stops": ["marta:stop:908047", "marta:stop:908051"], "reason": "Elevated.", "sources": ["wiki:Dunwoody station", "nycsubway"]},
+  {
+   "name": "North Springs",
+   "gtfs_stops": ["marta:stop:907766", "marta:stop:908480"],
+   "reason": "Elevated.",
+   "sources": ["wiki:North Springs station", "nycsubway"]
+  }
+ ]
+}
