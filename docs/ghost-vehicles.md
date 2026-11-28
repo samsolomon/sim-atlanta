@@ -7,7 +7,7 @@ with the track-window change from the same day.
    silhouette of its real CQ400 cars: city-rail blue, a thin ink line, no windows or livery. Deeper
    runs are fainter, so the two levels at Five Points read apart (Blue/Green above, Red/Gold below).
    Each ghost train carries a short window of ghost track, 1.5 train lengths ahead and behind
-   (120–320 m), fading toward its ends. At night the fill stays blue, and the ink and track turn
+   (120–320 m, sized on the whole consist), fading toward its ends. At night the fill stays blue, and the ink and track turn
    cream, matching the white placeholder's night look.
 2. **X-ray.** The selected or followed train, bus or streetcar draws as the same ghost, in its own
    service colour with a soft outline in that colour, wherever it is hidden: behind a tower, under a
@@ -47,13 +47,12 @@ each car is drawn, ghosted or both, and never neither (the portal test in `ghost
 - **Look.** The ink pass (`vignette/ink.ts`) reads the codes: it fills each level in its service colour,
   under the scene's own lines (see-through), and outlines levels 1–9 where the code changes. For the
   x-ray it rebuilds the surface point from depth and skips pixels within the vehicle's radius of
-  its centreline (`pushCarEnds`): those are the vehicle's own visible faces.
+  its centreline (`pushCarEnds`), sized from the car's own geometry: those are the vehicle's own
+  visible faces. The test is a body, not a ball, so a deck just over the roof still shows the x-ray.
 
 | Level | What | Fill | Line |
 |---|---|---|---|
-| 1 | X-ray bus | bus teal `#227971`, 50 % | its colour |
-| 2 | X-ray streetcar | streetcar blue `#3b82e6`, 50 % | its colour |
-| 3 | X-ray train | city-rail blue `#1f5fd1`, 50 % | its colour |
+| 1–3 | X-ray bus, streetcar, train | its service colour (`MODE_COLOR`: bus teal, streetcar blue, city-rail blue, intercity violet), 50 % | its colour |
 | 4–9 | Train in tunnel, shallow to deep | city-rail blue, 56 % to 26 % | ink (cream at night) |
 | 10–15 | Track window, at the train to its ends | city-rail blue (cream at night), 60 % to 15 % | none |
 

@@ -230,12 +230,14 @@ export class CityTrains {
     pushCarEnds(this.xrayPoints, this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), CAR_LENGTH / 2, 1.9);
   }
 
-  /** The ghost track window around a train in tunnel, on its own track, only where hidden. */
-  private ghostTrack(al: Alignment, s0: number, s1: number, off: number) {
+  /** The ghost track window around a train in tunnel (its hidden cars span s0–s1; the whole
+   * consist is `consist` metres), on its own track, only where hidden. */
+  private ghostTrack(al: Alignment, s0: number, s1: number, off: number, consist: number) {
     const g = this.ghosts;
     if (!g) return;
     const batch = g.track(this.clip);
-    const w = Math.min(TRACK_WINDOW.max, Math.max(TRACK_WINDOW.min, TRACK_WINDOW.share * (s1 - s0)));
+    // Sized on the whole consist, so it doesn't shrink as cars come out into the open.
+    const w = Math.min(TRACK_WINDOW.max, Math.max(TRACK_WINDOW.min, TRACK_WINDOW.share * consist));
     const b = this.bounds;
     const { pitch, dash } = TRACK_WINDOW;
     // Dashes on a fixed grid along the line, so they stay put as the train moves through them.
@@ -380,7 +382,7 @@ export class CityTrains {
         this.surfaceCars++;
         if (i === 0) this.light(al, sc, dir, off);
       }
-      if (ghostFrom < ghostTo && track) this.ghostTrack(track.al, ghostFrom, ghostTo, track.dir * MARTA_TRACK_OFFSET);
+      if (ghostFrom < ghostTo && track) this.ghostTrack(track.al, ghostFrom, ghostTo, track.dir * MARTA_TRACK_OFFSET, units * pitch - CAR_GAP);
     }
     for (const p of this.pools.values()) {
       for (let i = p.count; i < p.meshes.length; i++) p.meshes[i].visible = false;

@@ -59,8 +59,8 @@ export function inkShader() {
       uGhost: { value: 0 },
       uGhostNight: { value: 0 },
       uGhostRail: { value: new THREE.Color('#1f5fd1') },
-      uGhostBus: { value: new THREE.Color('#227971') },
-      uGhostStreetcar: { value: new THREE.Color('#3b82e6') },
+      // The x-rayed vehicle's service colour (one vehicle at a time): city rail, intercity, bus, streetcar.
+      uGhostXray: { value: new THREE.Color('#1f5fd1') },
       uGhostSelf: { value: Array.from({ length: GHOST_SELF_POINTS }, () => new THREE.Vector3()) },
       uGhostSelfCount: { value: 0 },
       uGhostSelfR: { value: 1.8 },
@@ -83,7 +83,7 @@ export function inkShader() {
       uniform mat4 uInvViewProj;
       uniform float uGhost, uGhostNight, uGhostSelfR;
       uniform vec2 uGhostSelfY;
-      uniform vec3 uGhostRail, uGhostBus, uGhostStreetcar;
+      uniform vec3 uGhostRail, uGhostXray;
       uniform vec3 uGhostSelf[${GHOST_SELF_POINTS}];
       uniform int uGhostSelfCount;
       float ghostLevel(float a) { float l = floor(a * 16.0 + 0.5); return l >= 1.0 && l <= 15.0 ? l : 0.0; }
@@ -140,7 +140,7 @@ export function inkShader() {
         if (uGhost > 0.5) {
           float g0 = ghostLevel(col.a);
           if (g0 > 0.0 && !(g0 < 3.5 && uGhostSelfCount > 0 && ghostSelf(vUv))) {
-            vec3 fill = g0 < 1.5 ? uGhostBus : g0 < 2.5 ? uGhostStreetcar : uGhostRail;
+            vec3 fill = g0 < 3.5 ? uGhostXray : uGhostRail;
             float a = g0 < 3.5 ? 0.5 : g0 < 9.5 ? 0.56 - 0.06 * (g0 - 4.0) : 0.6 - 0.09 * (g0 - 10.0);
             // Night: the fill stays in its colour, lifted a little; the track window goes cream.
             vec3 nightFill = g0 > 9.5 ? uMarkInk : mix(fill, vec3(1.0), 0.18);

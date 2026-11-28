@@ -192,7 +192,7 @@ export class CityGhosts {
   }
 
   /** The track window's dashes. */
-  track(clip: THREE.Plane[], cap = 1024) {
+  track(clip: THREE.Plane[], cap = 768) {
     return this.batch('track', () => this.trackSource, clip, cap, false);
   }
 

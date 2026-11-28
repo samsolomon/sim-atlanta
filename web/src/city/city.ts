@@ -79,6 +79,7 @@ import { CityTrains } from './trains';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { CityGhosts, GHOST, pushCarEnds } from './ghosts';
 import { xrayTarget } from './xray';
+import { MODE_COLOR } from '../map/layers';
 import { registerStationLine, stationTrack, type StationTrack } from './station-track';
 import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
@@ -2216,7 +2217,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const xraySelf: THREE.Vector3[] = [];
   /** The x-rayed body around its centreline: half width, and reach below and above (metres). */
   const xraySelf_ = { r: 1.8, below: 2.8, above: 2.15 };
-  const BODY = { train: { r: 1.8, below: 2.8, above: 2.15 }, bus: { r: 1.5, below: 2.0, above: 1.85 }, streetcar: { r: 1.55, below: 2.2, above: 2.0 } };
+  const BODY = { train: { r: 1.8, below: 2.8, above: 2.15 }, bus: { r: 1.5, below: 2.0, above: 1.85 } };
+  /** The x-rayed vehicle's service colour (map/layers.ts MODE_COLOR: colour means the kind of service). */
+  const xrayColor = new THREE.Color(MODE_COLOR.heavy_rail);
+  const routeMode = new Map(rf.routes.map(r => [r.id, r.mode]));
   // Downtown's board edges would cut away a car x-rayed on another board (Brookwood): such cars
   // keep their own four planes, or none.
   const NO_CLIP = Array.from({ length: 4 }, () => new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6));
@@ -2236,10 +2240,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       ghosts.batch(buses.mesh.geometry, () => buses.mesh.geometry, edges, 1, false).add(xrayMatrix.premultiply(buses.mesh.matrixWorld), GHOST.xrayBus);
       pushCarEnds(xraySelf, xrayMatrix, 5.5, 1.6);
       Object.assign(xraySelf_, BODY.bus);
+      xrayColor.set(MODE_COLOR.bus);
       return;
     }
     xraySelf.push(...trains.xrayPoints);
     Object.assign(xraySelf_, BODY.train);
+    const routeId = options.trains().find(t => t.id === target.id)?.routeId;
+    xrayColor.set(MODE_COLOR[(routeId && routeMode.get(routeId)) || 'heavy_rail'] ?? MODE_COLOR.heavy_rail);
     const trams = new Set<THREE.Object3D>(streetcar.cars());
     const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...trams]
       .filter(c => c.visible && c.userData.trainId === target.id && !c.userData.cityTrains) as THREE.Mesh[];
@@ -2252,8 +2259,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const own = (Array.isArray(car.material) ? car.material[0] : car.material)?.clippingPlanes;
       ghosts.batch(car.geometry, () => car.geometry, own?.length === 4 ? own : NO_CLIP, 8, false)
         .add(car.matrixWorld, streetcarCar ? GHOST.xrayStreetcar : GHOST.xrayTrain);
-      pushCarEnds(xraySelf, car.matrixWorld, (car.userData.lengthM ?? CAR_LENGTH) / 2 - 1, 1.8);
-      if (streetcarCar) Object.assign(xraySelf_, BODY.streetcar);
+      // Each source's own body: its geometry's box (a Viewliner roof stands higher than a CQ400's).
+      const box = car.geometry.boundingBox ?? (car.geometry.computeBoundingBox(), car.geometry.boundingBox!);
+      const mid = (box.min.y + box.max.y) / 2, half = (box.max.y - box.min.y) / 2;
+      pushCarEnds(xraySelf, car.matrixWorld, (car.userData.lengthM ?? CAR_LENGTH) / 2 - 1, mid);
+      xraySelf_.r = Math.max(xraySelf_.r, Math.max(box.max.x, -box.min.x) + 0.2);
+      xraySelf_.above = Math.max(xraySelf_.above, half + 0.25);
+      xraySelf_.below = Math.max(xraySelf_.below, half + 0.9);
     }
   }
   const frame = (ts: number) => {
@@ -2486,6 +2498,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         for (let i = 0; i < Math.min(pts.length, xraySelf.length); i++) pts[i].copy(xraySelf[i]);
         ink.uniforms.uGhostSelfCount.value = Math.min(pts.length, xraySelf.length);
         ink.uniforms.uGhostSelfR.value = xraySelf_.r;
+        (ink.uniforms.uGhostXray.value as THREE.Color).copy(xrayColor);
         (ink.uniforms.uGhostSelfY.value as THREE.Vector2).set(xraySelf_.below, xraySelf_.above);
       }
     }
