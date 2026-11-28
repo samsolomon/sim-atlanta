@@ -81,6 +81,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
+import { createPeachtreeTowers } from './peachtree-towers';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
 import { createMuseumTower } from './museum-tower';
@@ -480,6 +481,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
+  let peachtreeTowers: ReturnType<typeof createPeachtreeTowers> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
   let museumTower: ReturnType<typeof createMuseumTower> = null;
@@ -666,8 +668,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
-        georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
-        const stackSite = georgiaPacific?.buildings ?? afterPower;
+        peachtreeTowers = createPeachtreeTowers(afterPower, ground);
+        const afterPeachtreeTowers = peachtreeTowers?.buildings ?? afterPower;
+        georgiaPacific = createGeorgiaPacific(afterPeachtreeTowers, groundAt);
+        const stackSite = georgiaPacific?.buildings ?? afterPeachtreeTowers;
         const stack = createCoreyTower(stackSite, ground);
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
@@ -771,6 +775,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (fivePointsPlaza) world.group.add(fivePointsPlaza.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
         if (georgiaPower) world.group.add(georgiaPower.group);
+        if (peachtreeTowers) world.group.add(peachtreeTowers.group);
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
@@ -812,7 +817,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter, internationalGarage,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
-            omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
+            omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, peachtreeTowers, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
@@ -2009,6 +2014,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       fivePointsPlaza?.setNight(night);
       twoPeachtree?.setNight(night);
       georgiaPower?.setNight(night);
+      peachtreeTowers?.setNight(night);
       georgiaPacific?.setNight(night);
       russell?.setNight(night);
       centennial?.setNight(night);
