@@ -391,8 +391,11 @@ const PUSH_SLOPE = 0.1;
 const PARALLEL_SLOPE = 0.25;
 /** Total sideways push per row, across passes. */
 const pushed = new WeakMap<Section, number>();
+/** The unit direction of a row's push, and the edge that faces its owner (for the median pass). */
+const pushedAlong = new WeakMap<Section, P2>(), facingOwner = new WeakMap<Section, 'inner' | 'outer'>();
 /** Record how much of a row stays under its owner after the push (or clear it). */
 function cover(row: Section, side: 'inner' | 'outer', metres: number) {
+  if (pushed.has(row)) facingOwner.set(row, side);
   const { [side]: _, ...rest } = row.covered ?? {};
   row.covered = metres > 0.02 ? { ...rest, [side]: metres } : Object.keys(rest).length ? rest : undefined;
 }
@@ -409,8 +412,35 @@ function push(ribbon: Ribbon, row: Section, u: P2, t: number, cap: number) {
   if (Math.abs(m) < 1e-6) return 0;
   for (const k of ['inner', 'outer'] as const) row[k] = [row[k][0] + u[0] * m, row[k][1] + u[1] * m];
   pushed.set(row, done + Math.abs(m));
+  pushedAlong.set(row, [u[0] * Math.sign(m), u[1] * Math.sign(m)]);
   moved++;
   return m;
+}
+
+/** A push never closes a median: a moved edge stays this far from traffic running the other way.
+ * At Midtown's North Avenue an HOV ramp OSM counts among the mainline's lanes (7 in, 7 plus the
+ * ramp out) would otherwise be pushed into the median under the bridge's bent. The median there
+ * is 5.0 m between edge lines; a bent column (2.2 m along the lanes) with 1.2 m road clearance
+ * each side (road kit, primitive 2) needs 4.6 m, and 6 m keeps every push out of such medians. */
+const MEDIAN_M = 6.0;
+/** How far a row may move along unit dir before its leading edge comes within MEDIAN_M of a
+ * ribbon carrying traffic the other way. */
+function medianRoom(ribbon: Ribbon, row: Section, dir: P2) {
+  const lead = (row.outer[0] - row.inner[0]) * dir[0] + (row.outer[1] - row.inner[1]) * dir[1] > 0 ? row.outer : row.inner;
+  const here = ribbon.line.at(row.s);
+  let room = Infinity;
+  for (const other of index.at(lead[0], lead[1])) {
+    // Traffic the other way on the same level, running alongside (a ramp crossing over or under
+    // at another level, or at an angle, is not a median).
+    if (other === ribbon || other.kind !== ribbon.kind) continue;
+    const there = other.line.at(alongOn(other, lead).s);
+    if (here.dx * there.dx + here.dz * there.dz > -0.9) continue;
+    for (const edge of [other.rows.map(q => q.inner), other.rows.map(q => q.outer)]) {
+      const t = crossing(lead, dir, edge, 40);
+      if (t !== undefined && t > -1e-6) room = Math.min(room, t - MEDIAN_M);
+    }
+  }
+  return room;
 }
 
 type Step = { ribbon: Ribbon; forward: boolean };
@@ -588,6 +618,40 @@ for (let pass = 0; pass < 4; pass++) {
   separateParallel();
   separateSiblings();
   if (!moved) break;
+}
+// No push closes a median: a row moved toward traffic running the other way is pulled back to
+// MEDIAN_M from it, and what it no longer clears of its owner stays covered (drawn by the owner).
+// What a push keeps grows at most 1 m per 10 m from a row that had to give some back (along the
+// road, through chain nodes), so the pull-back never kinks an edge.
+{
+  const need = new Map<Section, number>();
+  for (const r of ribbons)
+    for (const row of r.rows) {
+      const along = pushedAlong.get(row);
+      const n = along ? Math.min(pushed.get(row)!, Math.max(0, -medianRoom(r, row, along))) : 0;
+      if (n > 0) need.set(row, n);
+    }
+  const pulls: [Ribbon, Section, number][] = [];
+  for (const r of need.size ? ribbons : []) {
+    const near = [
+      ...walkRows(chainFrom({ ribbon: r, forward: true })).map(q => ({ row: q.row, at: q.d })),
+      ...walkRows(chainFrom({ ribbon: r, forward: false })).map(q => ({ row: q.row, at: r.line.length - q.d })),
+    ].filter(q => need.has(q.row));
+    if (!near.length) continue;
+    for (const row of r.rows) {
+      if (!pushedAlong.has(row) || !facingOwner.has(row)) continue;
+      // The push left here: at most what each needy row keeps, plus 1 m per 10 m from it.
+      const keep = Math.min(...near.map(q => pushed.get(q.row)! - need.get(q.row)! + PUSH_SLOPE * Math.abs(q.at - row.s)));
+      const back = Math.max(0, pushed.get(row)! - Math.max(0, keep));
+      if (back > 1e-6) pulls.push([r, row, back]);
+    }
+  }
+  for (const [, row, back] of pulls) {
+    const along = pushedAlong.get(row)!, side = facingOwner.get(row)!;
+    for (const k of ['inner', 'outer'] as const) row[k] = [row[k][0] - along[0] * back, row[k][1] - along[1] * back];
+    pushed.set(row, pushed.get(row)! - back);
+    cover(row, side, (row.covered?.[side] ?? 0) + back);
+  }
 }
 // Pieces of one road pushed separately meet again exactly at their chain node.
 for (const joint of joints.values()) {
