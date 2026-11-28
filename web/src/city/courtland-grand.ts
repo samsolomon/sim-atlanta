@@ -21,7 +21,7 @@ import { litHash, seedOf } from './skin-kit';
 
 export const courtlandGrandId = 'c3d66433-c80f-417c-9093-c623624b208b';
 const CREAM = '#e6dcc6', STUCCO = '#c4c3bd', PANEL = '#dcdcd6', GLASS = '#7f9aae', FRAME = '#8296a8';
-const BAND = '#f1f1ec', ROOF = '#8f8d87', SKY = '#9fb3b8';
+const BAND = '#f1f1ec', ROOF = '#8f8d87', SKY = '#9fb3b8', SKYLIGHT = '#cfe0dc';
 
 export function createCourtlandGrand(buildings: VBuilding[], grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, courtlandGrandId, 'Courtland Grand hotel', [767, -565], [1, 0],
@@ -85,9 +85,22 @@ export function createCourtlandGrand(buildings: VBuilding[], grid: GroundGrid) {
   bands([-19, -44], [11, -44], [-4, -38], NORTH, NORTH_HIGH - .5, 1, 12, GLASS, BAND, .3);
   bands([-19, -32], [-19, -44], [-4, -38], NORTH, NORTH_HIGH - .5, 1, 13, GLASS, BAND, .3);
 
-  // The glass-roofed courtyard pool in the podium.
+  // The glass-roofed courtyard pool in the podium. At night it glows in some of its bays, between
+  // dark ribs: one lit sheet read as a fault. Lit panes and plain glass tile one flat layer in one
+  // colour, so by day it is a single sheet.
   s.prism([[3, -12], [43, -12], [43, 18], [3, 18]], PODIUM, PODIUM + 1.6, SKY, SKY);
-  lights.quad([4, PODIUM + 1.66, -11], [42, PODIUM + 1.66, -11], [42, PODIUM + 1.66, 17], [4, PODIUM + 1.66, 17], '#cfe0dc');
+  const bay = 38 / 8, run = 28 / 5, top = PODIUM + 1.66;
+  const sheet = (into: typeof body, u0: number, v0: number, u1: number, v1: number) =>
+    into.quad([u0, top, v0], [u1, top, v0], [u1, top, v1], [u0, top, v1], SKYLIGHT);
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 5; j++) {
+    const u0 = 4 + i * bay, u1 = u0 + bay, v0 = -11 + j * run, v1 = v0 + run;
+    if (litHash(seed, 20, j, i) >= .55) { sheet(body, u0, v0, u1, v1); continue; }
+    sheet(lights, u0 + .9, v0 + .5, u1 - .9, v1 - .5);
+    sheet(body, u0, v0, u0 + .9, v1);
+    sheet(body, u1 - .9, v0, u1, v1);
+    sheet(body, u0 + .9, v0, u1 - .9, v0 + .5);
+    sheet(body, u0 + .9, v1 - .5, u1 - .9, v1);
+  }
 
   // The 2025 box canopy at the arrival court, on its column, with downlit soffit.
   s.prism([[-29, -23], [-24, -23], [-24, -17], [-29, -17]], g + 5, g + 6.4, '#2f3134', '#3a3c3f'); // inner end inside the curved wall

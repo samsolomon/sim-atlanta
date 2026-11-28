@@ -38,7 +38,7 @@ Median rendered colour of the north tower's glass-band pixels on its sunlit sout
 
 ## Night
 
-City lights 30% of rooms, chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`, plus the courtyard roof and the canopy soffit. The 2025 dusk photograph shows the canopy downlights. I found no full-night exterior photograph; the courtyard glow comes from the 2014 night photograph of the pool.
+City lights 30% of rooms, chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`, plus the courtyard roof and the canopy soffit. The 2025 dusk photograph shows the canopy downlights. I found no full-night exterior photograph; the courtyard glow comes from the 2014 night photograph of the pool. Since 2026-11-27 the courtyard roof glows in about half of an 8 by 5 grid of panes, with dark ribs between (which panes is **illustrative**): lit as one sheet it read as a fault.
 
 ## Captures
 
@@ -47,4 +47,5 @@ City lights 30% of rooms, chosen by skin-kit `litHash(seedOf(id), face, floor, b
 | From the north-west, before and after, 11:30 | `cam=767,-565,135,55,420` | [compare-nw.jpg](log/ui/courtland-grand/compare-nw.jpg) |
 | From the south (Ellis Street), before and after | `cam=767,-565,0,55,420` | [compare-s.jpg](log/ui/courtland-grand/compare-s.jpg) |
 | From the north-west, 23:30 | `cam=767,-565,135,55,420` | [compare-night.jpg](log/ui/courtland-grand/compare-night.jpg) |
+| The courtyard roof at 22:00, one lit sheet against panes | `cam=767,-565,0,55,420` and `135,55,420`; close `790,-562,0,40,170` | [skylight-night.jpg](log/ui/courtland-grand/skylight-night.jpg) |
 | Four sides by day (checked: nothing floating, missing or z-fighting) | south `767,-595,0,60,400` · west `800,-565,90,50,520` · north `767,-535,180,60,400` · east `737,-565,270,60,400` | [four-side.jpg](log/ui/courtland-grand/four-side.jpg) |

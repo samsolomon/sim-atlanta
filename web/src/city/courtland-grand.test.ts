@@ -38,6 +38,15 @@ it('raises the Courtland Grand to its lidar towers over the podium, all within t
     for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); const d = dist(v.x, v.z); worst = Math.max(worst, d); }
   });
   expect(worst).toBeLessThanOrEqual(2.5);
-  const [body] = model.group.children as Mesh[];
+  // The courtyard roof (12.66 m up) lights in separate panes over part of its 38 x 28 m, not whole.
+  const [body, lamps] = model.group.children as Mesh[];
+  const q = lamps.geometry.getAttribute('position');
+  let lit = 0;
+  for (let i = 0; i < q.count; i += 3) {
+    const [a, b, c] = [0, 1, 2].map(k => new Vector3().fromBufferAttribute(q, i + k).applyMatrix4(lamps.matrixWorld));
+    if ([a, b, c].every(p => Math.abs(p.y + 300 - 309.1 - 12.66) < .03)) lit += b.sub(a).cross(c.sub(a)).length() / 2;
+  }
+  expect(lit / (38 * 28)).toBeGreaterThan(.15);
+  expect(lit / (38 * 28)).toBeLessThan(.45);
   expect(body.geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
