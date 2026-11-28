@@ -4234,3 +4234,9 @@ The parking deck at International Boulevard and Peachtree Center Avenue had been
 ### 2026-11-24 · 55 Allen Plaza, fifteen metres down
 
 An unnamed 72.6 m "commercial" box on Ivan Allen Jr Boulevard turned out to be 55 Allen Plaza, a 14-storey office tower from 2007. The lidar roof is 57.6 m. Street View supplied the blue curtain wall and the silver sunshade louvre at every floor line. Those louvres are what set it apart from the glass boxes around it. [Before/after](log/ui/allen-plaza-55/README.md)
+
+### 2026-11-24 · The Hub at Peachtree Center: a roof you see from the sky
+
+Downtown's generic boxes now stand out next to the skinned landmarks, so the next pass takes the named ones first. The Hub is the old Peachtree Center mall, a 30 m block wedged between two 115 m towers. From City's usual viewpoints you see almost nothing of its walls, but you look straight down on its roof, and the 2019 renovation painted that roof in sweeping white and pale-blue waves. Those waves, the mural on Peachtree Center Avenue and the glass atrium facing the plaza are the whole skin: 514 triangles. The lidar check matters downtown because parking polygons have twice hidden phantom towers. This one was clean, with a flat roof at 29.9 m against a mapped 32.6 m. Requires a web rebuild only.
+
+[Before and after](log/ui/hub-peachtree-center/compare.jpg)
