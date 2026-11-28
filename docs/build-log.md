@@ -4269,3 +4269,8 @@ The first render put all six stacks on one face and squeezed them into a white w
 ### 2026-11-24 · Muse's on Peachtree
 
 The old George Muse clothing store, now lofts, stands at Peachtree and Walton. City drew it as a generic 41.4 m box. The lidar roof is 36.4 m. In Street View it is cream limestone with paired windows and a projecting cornice, and that is how it is drawn now. The engraved name over the door stays off, like every other piece of lettering. [Before/after](log/ui/george-muse/README.md)
+
+### 2026-11-28 · A blank screen shouldn't glow like a billboard
+
+The corner screen on the Peachtree and International deck was one lit quad, and at night it read as a flat cream rectangle: the same fault the Courtland Grand's courtyard roof had. City adds one glow to every lit face, so a darker colour barely changes it. The lever is how much area is lit. Six of twenty modules now light, about 8 m² of the screen instead of 44 m². The modules and the panel behind them share a colour, so by day the screen is still one flat face. [Before and after](log/ui/peachtree-international-deck/sign-night.jpg)
+
