@@ -8,7 +8,7 @@ merge until the coordinator's go.
 
 - `web/src/city/regions-plaza.ts`: its own look. Pale near-neutral ivory stone (`#ddd6cc`), five
   tiers of three floors over a ~20 m base, window pairs between wide piers, an arched entrance, pier
-  finials, and a grey-green slate hip with a pale night wash. Same lidar heights. Vertex colours
+  finials, and a grey-green slate hip floodlit cream at night. Same lidar heights. Vertex colours
   only: 0 programs, 0 draws, triangles 2,726 → 2,084.
 - The test now fails on the old skin (stone saturation, lighter than One Atlantic's granite, cool roof).
 - Research, sources and colour samples: `docs/log/ui/regions-plaza/README.md`. Stills:

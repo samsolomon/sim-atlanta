@@ -153,6 +153,6 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
   faces(r1, (a, b) => {
     body.quad([a[0], floor + hipTop, a[1]], [a[0], floor + rail, a[1]], [b[0], floor + rail, b[1]], [b[0], floor + hipTop, b[1]], band);
   });
-  // The night wash is cool white, as in the night photo: the crown glows pale, not gold like its neighbour's.
-  return shell.finish('#f2ece0', 0.55);
+  // Warm lamp light for the offices and the crown wash, as in the night photo (cream roof, warm offices).
+  return shell.finish('#f4dcb4', 0.55);
 }

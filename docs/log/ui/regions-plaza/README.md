@@ -10,7 +10,7 @@ Sam's note (2026-11-27): the first skin (PR #502) read as One Atlantic Center's 
 |---|---|---|
 | Stone | Pink Spanish granite, `#ccaea0` | Pale, near-neutral ivory, `#ddd6cc` (was `#dcc3ae`) |
 | Facade | Grouped dark strips, full height | Five tiers of three floors, each framed by a light stone spandrel band; each bay holds a pair of tall windows between wide piers |
-| Crown | Steep copper-green pyramid, gold spire, gold night wash | Low truncated hip in cool grey-green slate metal (`#717a7b`, was warm `#8f877b`), rail on top, pale white night wash |
+| Crown | Steep copper-green pyramid, gold spire, gold night wash | Low truncated hip in cool grey-green slate metal (`#717a7b`, was warm `#8f877b`), rail on top, cream night wash on the slate |
 
 **Heights are unchanged:** the 22 April 2019 lidar per mapped part.
 
@@ -37,7 +37,7 @@ Everything is vertex colours on `landmarkShell`, using the same two builders (`b
 
 - **Shaft:** each floor of each window is one pane, so at night offices light one at a time (`litHash`, about 10%).
 - **Base:** tall lobby windows, a row of small square windows, and an arched entrance at the middle of each face (lamp mesh).
-- **Crown:** the slate hip is in the lamp mesh, so it glows as one even surface at night, with a pale wash (`#f2ece0`) instead of One Atlantic Center's gold.
+- **Crown:** the slate hip is in the lamp mesh, so it glows as one even cream surface at night (the warm lamp colour `#f4dcb4` the offices share), set apart from One Atlantic Center's tall gold pyramid by shape and its lighter slate.
 
 ## Captures
 
@@ -48,5 +48,10 @@ Before and after on 20 November 2026, at 11:30 and 23:30, on High. Use `/?view=c
 | Both towers and both crowns, from the south-south-west | `345,-3700,20,66,1150` | [pair.jpg](pair.jpg) |
 | South and west faces, One Atlantic Center to the right | `330,-3684,15,55,800` | [south.jpg](south.jpg) |
 | West and north faces, One Atlantic Center behind | `345,-3684,105,52,600` | [northwest.jpg](northwest.jpg) |
+| Crown close-up (dev `__setView(20,50,550,345,-3790,3.2)` with `&dev&mindist=20`), after only | — | [crown.jpg](crown.jpg) |
+
+In the pair frame, One Atlantic Center's crown is clipped at the top edge.
+
+**Pre-existing, unchanged:** the hip roof's rectangular base (from #502) reaches about 5.9 × 3.2 m into each corner notch, 12.4 m above the corner roofs. It shows in `crown.jpg` as a thin overhang at the notches.
 
 `compare.jpg`, `daynight.jpg` and `close.jpg` are the first pass (PR #502).
