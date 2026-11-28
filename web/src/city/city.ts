@@ -2225,6 +2225,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   /** The x-rayed vehicle's centreline (world, at mid-height) and the ink's self radius. */
   const xraySelf: THREE.Vector3[] = [];
+  const holeView = new THREE.Frustum(), holeViewMatrix = new THREE.Matrix4();
   /** Whether ink ran last frame (ghosts are drawn by it). */
   let inkRan = false;
   /** The x-rayed body around its centreline: half width, and reach below and above (metres). */
@@ -2374,6 +2375,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       trains.holeFocus.x = controls.target.x;
       trains.holeFocus.z = controls.target.z;
       trains.holeEye.copy(camera.position);
+      camera.updateMatrixWorld();
+      holeView.setFromProjectionMatrix(holeViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+      trains.holeView = holeView;
     }
     trains.xrayId = xray?.kind === 'train' ? xray.id : null;
     trains.update(states, atm.dark);

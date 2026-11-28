@@ -137,6 +137,7 @@ class Batch {
   /** Mark what changed for upload; three walks the scene before the hook draws. */
   commit() {
     if (!this.n) return;
+    if (this.pass === 'box') this.deepFirst();
     this.mesh.instanceMatrix.clearUpdateRanges();
     this.mesh.instanceMatrix.addUpdateRange(0, this.n * 16);
     this.mesh.instanceMatrix.needsUpdate = true;
@@ -146,6 +147,14 @@ class Batch {
       a.addUpdateRange(0, this.n * size);
       a.needsUpdate = true;
     }
+  }
+  /** Box sections paint with no depth test, so the last wins: draw the deepest first, and where two
+   * openings overlap (Five Points' two levels) the upper floor covers the lower train. */
+  private deepFirst() {
+    const m = this.mesh.instanceMatrix.array as Float32Array;
+    const order = Array.from({ length: this.n }, (_, i) => i).sort((a, b) => m[a * 16 + 13] - m[b * 16 + 13]);
+    const copy = m.slice(0, this.n * 16);
+    order.forEach((from, to) => m.set(copy.subarray(from * 16, from * 16 + 16), to * 16));
   }
   dispose() {
     // Only the attributes this batch owns: the shared ones belong to the vehicle.

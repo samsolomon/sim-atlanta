@@ -162,6 +162,9 @@ export class CityTrains {
   holes: HoleOptions | null = null;
   /** The camera's target (world x, z): the cutaway opens for the trains nearest it. */
   readonly holeFocus = { x: 0, z: 0 };
+  /** The camera's view: only trains in tunnel inside it open (nothing is built for the rest). */
+  holeView: THREE.Frustum | null = null;
+  private holeSphere = new THREE.Sphere();
   /** The camera's position (world): each opening lies where the ground stands between it and the train. */
   readonly holeEye = new THREE.Vector3(0, 1000, 0);
   /** Trains opened this frame (chosen from the last frame's trains in tunnel) and cars drawn in them. */
@@ -306,8 +309,10 @@ export class CityTrains {
         const u = along.clone().multiplyScalar(dirn);
         const end = centre.clone().addScaledVector(u, (pitch + overlap) / 2);
         if ((eye.x - end.x) * u.x + (eye.z - end.z) * u.z > 0) continue; // the eye is beyond this end
-        boxM.makeBasis(u, THREE.Object3D.DEFAULT_UP.clone().multiplyScalar(rim - centre.y), across.clone().multiplyScalar(2 * CUT_HALF))
-          .setPosition(end.x - u.x * CUT_HALF, centre.y, end.z - u.z * CUT_HALF);
+        // Its floor squashed to a sliver at the end, so it paints no rails across the track.
+        const thin = 0.01;
+        boxM.makeBasis(u.clone().multiplyScalar(thin), THREE.Object3D.DEFAULT_UP.clone().multiplyScalar(rim - centre.y), across.clone().multiplyScalar(2 * CUT_HALF))
+          .setPosition(end.x - u.x * CUT_HALF * thin, centre.y, end.z - u.z * CUT_HALF * thin);
         put(boxM, box);
       }
     }
@@ -500,7 +505,11 @@ export class CityTrains {
       let opened = false;
       if (hiddenFrom < hiddenTo && track) {
         const p = track.al.line.at((hiddenFrom + hiddenTo) / 2);
-        this.holeCandidates.push({ id: t.id, d: Math.hypot(p.x - this.holeFocus.x, p.z - this.holeFocus.z) });
+        // Only a train whose tunnel stretch is in view can open (its reach included).
+        this.holeSphere.center.set(p.x, track.al.elev((hiddenFrom + hiddenTo) / 2), p.z).applyMatrix4(this.group.matrixWorld);
+        this.holeSphere.radius = (hiddenTo - hiddenFrom) / 2 + 60;
+        if (!this.holeView || this.holeView.intersectsSphere(this.holeSphere))
+          this.holeCandidates.push({ id: t.id, d: Math.hypot(p.x - this.holeFocus.x, p.z - this.holeFocus.z) });
         if (hole && holes) opened = this.cutaway(track.al, hiddenFrom, hiddenTo, track.dir * MARTA_TRACK_OFFSET, units * pitch - CAR_GAP, holes.shape) > 0;
       }
       // No section opened (a cover too short to sample): its cars fall back to ghosts.

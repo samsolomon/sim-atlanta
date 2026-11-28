@@ -317,6 +317,23 @@ describe('Cutaway (Sam, 2026-11-28)', () => {
     expect(trains.holeCars).toBe(4);
   });
 
+  it('opens nothing for a train in tunnel outside the view, and draws floors deepest first', () => {
+    const { trains, run, ghosts, edges } = cutSetup({ scope: 'all', shape: 'cut', cap: 4 });
+    const cam = new THREE.PerspectiveCamera(30, 1, 1, 5000);
+    cam.position.set(0, 300, -2000); cam.lookAt(0, 0, -4000); cam.updateMatrixWorld();
+    trains.holeView = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    run([train('t', 300, 4)]);
+    expect(trains.holeTrains.size).toBe(0);
+    trains.holeView = null;
+    const deep = { line: new Line([[-600, 20], [600, 20]]), elev: (s: number) => (s < 600 ? 0 : -20), openToSky: (s: number) => s < 600 };
+    trains.setTracks([intoTunnel, deep], bounds);
+    run([train('a', 300, 4), { ...train('b', 300, 4), lat: -20 / M }]);
+    const box = ghosts.cutaway(edges).box, m = new THREE.Matrix4();
+    const ys = Array.from({ length: box.n }, (_, i) => { box.mesh.getMatrixAt(i, m); return m.elements[13]; });
+    expect(ys).toEqual([...ys].sort((p, q) => p - q));
+    expect(Math.min(...ys)).toBeLessThan(Math.max(...ys) - 5);
+  });
+
   it('costs nothing when no train is in tunnel', () => {
     const { trains, run, ghosts } = cutSetup({ scope: 'all', shape: 'cut', cap: 4 });
     run([train('open', -300, 4)]);
