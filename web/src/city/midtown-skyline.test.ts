@@ -124,7 +124,8 @@ it('mounts Tower Square at 206 m and feeds night lighting to its return walls', 
   expect(mesh.visible).toBe(false);
   // Each storey's recess is backed 0.8 m behind the long south face, not a hollow shaft.
   model.group.updateMatrixWorld(true);
-  const ray = new Raycaster(new Vector3(467.7, 12.5, -2200), new Vector3(0, 0, 1));
+  // Aimed between two storeys' panes, above the transfer beam, where only the backing stands.
+  const ray = new Raycaster(new Vector3(467.7, 20.75, -2200), new Vector3(0, 0, 1));
   expect(ray.intersectObject(model.group)[0].point.z).toBeLessThan(-2095.8 - 32);
 });
 

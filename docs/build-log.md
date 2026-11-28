@@ -4153,3 +4153,7 @@ A white 10-storey egg-crate office cube looks, at 500 m, almost exactly like the
 ### 2026-11-24 · The Mitchell at Centennial Yards
 
 The Mitchell opened in September 2025, six years after the lidar flight, so for once the lidar had nothing to say: the lot was empty in 2019. Its 19 storeys are reported, and Overture's 62.7 m fits them. April 2026 Street View from Mitchell Street put the slab on the Elliott Street side over a charcoal brick podium. The block that filled the whole lot is now a slender tower with a garage base. [Before/after](log/ui/the-mitchell/README.md)
+
+### 2026-11-24 · Tower Square stands on its piloti
+
+The audit said Tower Square had strong piers but a generic flat top and no base. The Commons photographs show both features plainly. The shaft's window banks rest on a ring of splayed concrete columns over a recessed glass lobby, and the window rows stop under a blank crown band about three floors deep. Both are cheap in geometry: three quads per column, and one band per face. [Piloti](log/ui/midtown-skyline/tower-square-piloti.jpg) · [Before and after](log/ui/midtown-skyline/tower-square-cmp-north.jpg)

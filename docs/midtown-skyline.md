@@ -121,6 +121,15 @@ The footprint reports concrete, a flat roof, 47 storeys and a 206 m height. Its 
 
 Camera (470, −2180), bearing 8°, tilt 45°, 0.73 m/px. [High daylight](log/ui/midtown-skyline/tower-square-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-low-night.jpg)
 
+**Base and crown (2026-11-24).** After the lead's audit (strong piers, but a flat generic roof and no distinct base), two photo-backed features were added.
+
+- **Base:** the window banks now stand on splayed concrete piloti, with feet 1.6 m outside the face, over a recessed dark glass lobby up to 13 m and a transfer beam above it.
+- **Crown:** the window rows stop at 186 m under a blank concrete band of about three floors.
+
+The punched windows stay dark, as the photographs show. [Commons, piloti and crown band](https://commons.wikimedia.org/wiki/File:ATowerSquareMT2511-0826.jpg) · [Corner piers and crown](https://commons.wikimedia.org/wiki/File:Tower_Square_ATL.jpg)
+
+[Before and after from the north](log/ui/midtown-skyline/tower-square-cmp-north.jpg) · [Original camera](log/ui/midtown-skyline/tower-square-cmp-orig.jpg) · [Piloti close](log/ui/midtown-skyline/tower-square-piloti.jpg) · [Night](log/ui/midtown-skyline/tower-square-base-night.jpg) · [Four sides](log/ui/midtown-skyline/tower-square-four-sides.jpg)
+
 A self-review found three geometry problems, all now fixed:
 - Each storey's recess opened into a 6 m hollow behind the glazing. A solid bank now backs every window row, so the recess is a true 0.8 m.
 - The end mullions stuck out into the corner notches.
