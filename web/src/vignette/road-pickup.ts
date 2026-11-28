@@ -262,8 +262,7 @@ function kindOf(color: string) {
   return color === body ? 0 : color === lens ? 1 : color === red ? 2 : color === glass || color === wind ? 3 : color === amber ? 5 : 4;
 }
 
-/** The pickup centred on its footprint. `paint` bakes a body colour for a plain (non-instanced) mesh. */
-export function roadPickupGeometry({ near = false, paint = body, trim = 'xlt' as PickupTrim } = {}) {
+function pickupFaces(near: boolean, trim: PickupTrim) {
   const k = faceKit();
   frontBody(k, near);
   cab(k);
@@ -271,7 +270,16 @@ export function roadPickupGeometry({ near = false, paint = body, trim = 'xlt' as
   for (const s of [-1, 1]) for (const z of [FRONT_AXLE, REAR_AXLE]) wheel(k, (s * TRACK) / 2, z, s, near, trim);
   flares(k, near, trim);
   details(k, near, trim);
-  return packFaces(k.faces, kindOf, paint);
+  return k.faces;
+}
+
+/**
+ * The pickup centred on its footprint. `paint` bakes a body colour for a plain (non-instanced) mesh.
+ * `alt` adds the other trim's colours as `aAlt` (the trims differ only in colour), so City traffic
+ * draws both trims from one mesh and picks per instance.
+ */
+export function roadPickupGeometry({ near = false, paint = body, trim = 'xlt' as PickupTrim, alt = undefined as PickupTrim | undefined } = {}) {
+  return packFaces(pickupFaces(near, trim), kindOf, paint, 0, alt ? pickupFaces(near, alt) : undefined);
 }
 
 /** Generic look-alike paints from the current range, for the Lab and the traffic palette. */

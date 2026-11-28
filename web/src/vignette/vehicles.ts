@@ -183,9 +183,12 @@ export function vehicleMaterial(night: { value: number }, brakes = false) {
   m.customProgramCacheKey = () => shaderKey() + (brakes ? '-brakes' : '');
   m.onBeforeCompile = (sh) => {
     if (brakes) {
-      // braking = lamp (0 or 1) + 2 × van paint index, so the semi's van colour needs no attribute of its own.
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float braking; varying float vBrake; varying float vVan;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrake = mod(braking, 2.0); vVan = floor(braking * 0.5 + 0.25);');
+      // braking = lamp (0 or 1) + 2 × index, so per-instance variants need no attribute of their own: the
+      // semi's van paint, or a pickup's alternate trim. A geometry with `aAlt` (rgb, kind + 10; see
+      // packFaces) takes those colours and kinds when its index is set. Geometries without it read the
+      // attribute's default (w 0 or 1), which the w > 9.5 guard ignores.
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float braking; attribute vec4 aAlt; varying float vBrake; varying float vVan;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrake = mod(braking, 2.0); vVan = floor(braking * 0.5 + 0.25);\nif (vVan > 0.5 && aAlt.w > 9.5) { vKind = aAlt.w - 10.0; vRaw = aAlt.rgb; }');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vBrake; varying float vVan;')
         .replace('#include <alphamap_fragment>', `if (vKind > 5.5 && vVan > 0.5) diffuseColor.rgb = vVan < 1.5 ? ${glslColor(VAN_PAINT[0])} : vVan < 2.5 ? ${glslColor(VAN_PAINT[1])} : ${glslColor(VAN_PAINT[2])};\n#include <alphamap_fragment>`)
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nif (vKind > 1.5 && vKind < 2.5) totalEmissiveRadiance += vec3(3.6, 0.06, 0.01) * vBrake;');
