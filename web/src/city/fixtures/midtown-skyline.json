@@ -138,5 +138,12 @@
     "x": 302.4,
     "z": -3420,
     "heightM": 78.4
+  },
+  "oneMidtownPlaza": {
+    "id": "osm:way:269637564",
+    "name": "One Midtown Plaza",
+    "x": 482,
+    "z": -4185,
+    "heightM": 56.5
   }
 }

@@ -19,7 +19,7 @@ import { mayfairTower } from './midtown-skyline-mayfair';
 import { alexanOn8th } from './midtown-skyline-alexan';
 import { mByRadius } from './midtown-skyline-mradius';
 import { squareOn5th } from './midtown-skyline-square5th';
-import { twoMidtownPlaza } from './midtown-skyline-twomidtown';
+import { oneMidtownPlaza, twoMidtownPlaza } from './midtown-skyline-twomidtown';
 import { westPeachtree1072 } from './midtown-skyline-1072';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 import { peachtree1100 } from './midtown-skyline-1100';
@@ -118,6 +118,7 @@ const landmarks = [
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },
   { site: sites.westPeachtree1072, axis: [1,.0153], probes: [[0,0],[12,-18],[-20,30],[20,30]], build: westPeachtree1072 },
   { site: sites.squareOn5th, axis: [1,0], probes: [[0,0],[-25,-8],[25,-8],[0,8]], build: squareOn5th },
+  { site: sites.oneMidtownPlaza, axis: [1,0], probes: [[0,0],[-15,-15],[8,10],[15,-12]], build: oneMidtownPlaza },
   { site: sites.twoMidtownPlaza, axis: [1,0], probes: [[0,0],[-15,-12],[10,-12],[-2,20]], build: twoMidtownPlaza },
   { site: sites.mayfair, axis: [1,0], probes: [[0,0],[-14,-14],[14,14],[14,-14]], build: mayfairTower },
   { site: sites.alexan8th, axis: [1,0], probes: [[10,0],[10,-35],[10,35],[-15,-30]], build: alexanOn8th },
