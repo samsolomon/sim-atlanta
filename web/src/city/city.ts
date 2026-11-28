@@ -90,6 +90,7 @@ import { createParkPlaceTower } from './park-place-tower';
 import { createTDeck } from './t-deck';
 import { createHardRock } from './hard-rock';
 import { createTheLandmark } from './the-landmark';
+import { createInternationalGarage } from './international-garage';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -501,6 +502,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let one12Courtland: ReturnType<typeof createOne12Courtland> = null;
   let citizensTrust: ReturnType<typeof createCitizensTrust> = null;
   let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
+  let internationalGarage: ReturnType<typeof createInternationalGarage> = null;
   let georgiaAquarium: ReturnType<typeof createGeorgiaAquarium> = null;
   let worldOfCocaCola: ReturnType<typeof createWorldOfCocaCola> = null;
   let williams250: ReturnType<typeof createWilliams250> = null;
@@ -632,7 +634,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         citizensTrust = createCitizensTrust(afterOne12Courtland, ground);
         const afterCitizensTrust = citizensTrust?.buildings ?? afterOne12Courtland;
         fultonGovernmentCenter = createFultonGovernmentCenter(afterCitizensTrust, ground);
-        const afterFultonGovernmentCenter = fultonGovernmentCenter?.buildings ?? afterCitizensTrust;
+        internationalGarage = createInternationalGarage(fultonGovernmentCenter?.buildings ?? afterCitizensTrust, ground);
+        const afterFultonGovernmentCenter = internationalGarage?.buildings ?? fultonGovernmentCenter?.buildings ?? afterCitizensTrust;
         georgiaAquarium = createGeorgiaAquarium(afterFultonGovernmentCenter, ground);
         const afterGeorgiaAquarium = georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
         worldOfCocaCola = createWorldOfCocaCola(afterGeorgiaAquarium, ground);
@@ -753,6 +756,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (one12Courtland) world.group.add(one12Courtland.group);
         if (citizensTrust) world.group.add(citizensTrust.group);
         if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
+        if (internationalGarage) world.group.add(internationalGarage.group);
         if (georgiaAquarium) world.group.add(georgiaAquarium.group);
         if (worldOfCocaCola) world.group.add(worldOfCocaCola.group);
         if (williams250) world.group.add(williams250.group);
@@ -801,7 +805,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             peachtree, library, flatiron, healey, footballHall, museumTower, courtlandGrand, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark,
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
-            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
+            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter, internationalGarage,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
@@ -1989,6 +1993,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       one12Courtland?.setNight(night);
       citizensTrust?.setNight(night);
       fultonGovernmentCenter?.setNight(night);
+      internationalGarage?.setNight(night);
       georgiaAquarium?.setNight(night);
       worldOfCocaCola?.setNight(night);
       williams250?.setNight(night);
