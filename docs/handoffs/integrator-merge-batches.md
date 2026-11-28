@@ -34,8 +34,8 @@ go; the go for batch 1 covered batch 1 only.
 ## Next
 
 1. #730 (the feeds release 20 ships) is merged, `main` `f3935004`.
-2. Group 3, in this order: #573 #587 #600 #602 #605 #606 #607 #609 #614 #617 #618 #620 #634 (#606
-   and #620 squashed). These PRs predate #726, so each changes the stand-in bake (`pnpm data:bake`).
+2. Group 3 is merged, `main` `81db0d05`. Packaging needs `pnpm data:bake`. `samsolomon/courtland-skylight`
+   (#609's courtyard roof) needs its own go before release 21.
 3. Later groups, about ten each in PR-number order: #624 (retarget #652 to `main` first) #626 #628
    #629 #630 #633 #635 #636 #637 #640 #641 #642 #643 #645 #648 #650 #652 #653 #655 #657 #658
    #659 #660 #661 #662 #664 #679 (a draft). The rest of the Rework set stays out.
