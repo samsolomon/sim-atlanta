@@ -4208,3 +4208,7 @@ Renaissance Lofts on Ralph McGill is a 1974 office slab that became lofts for th
 ### 2026-11-24 · Bethel Towers, plain brick on Auburn
 
 Bethel Towers, the 13-storey apartment slab behind Big Bethel AME Church, was a pale 63 m box. The 2019 lidar puts its roof at 47 m, with a brick mechanical box 5 m higher on the west end. A 2019 Commons photograph shows a slab with no tricks: orange-red brick, a regular grid of punched windows, a thin concrete parapet. So that is what it is now, plain and honest. The garage and shops in front, on Auburn Avenue, are mapped as their own polygon, and a 1979 HABS photograph shows them: a concrete frame with shopfronts, a garage portal and a slotted parapet. They became a second, 190-triangle mass at the lidar's 4.7 m deck and 7 m frontage. Sweet Auburn sits outside the square-board footprint audit, so I ran the audit on its board by hand, and it came back clean. [Before and after](log/ui/bethel-towers/day-before-after.jpg) · [four sides](log/ui/bethel-towers/bethel-towers-four-sides.jpg)
+
+### 2026-11-24 · The Barclay in brick
+
+Next to the newly skinned downtown landmarks, the Barclay Hotel on Luckie Street still stood out as a generic grey box. The lidar splits its rotated rectangle into a 36.4 m tower and a 12.9 m front block. Street View from three sides gives the rust-red brick, buff base and cream balcony bands. The hotel-name blade sign stays out under the no-logos rule. [Before/after](log/ui/barclay-hotel/README.md)
