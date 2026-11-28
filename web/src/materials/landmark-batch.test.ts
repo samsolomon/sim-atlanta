@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Vector3 } from 'three';
+import { BoxGeometry, BufferGeometry, DoubleSide, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, PerspectiveCamera, Plane, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { batchLandmarks, buildLandmarkBatches, landmarkBatchReport, StaticLandmarkMaterial } from './landmark-batch';
 import { FACADE_GLOW_RUNS, patchFacades } from './facade';
@@ -80,7 +80,7 @@ describe('batchLandmarks', () => {
     container.add(b.group);
     expect(b.stats.litWalls).toBe(1);
     // 0.3 is not one of the probes (1, 0.5, 0): the runs' light still follows their sources.
-    for (const n of [0, 0.3, 1]) {
+    for (const n of [0.3, 1]) {
       for (const s of sites) s.setNight(n);
       b.sync();
       const drawn = shown(b.group);
@@ -113,6 +113,46 @@ describe('batchLandmarks', () => {
     const mat = shown(b.group)[0].material as MeshLambertMaterial;
     expect(mat.customProgramCacheKey()).toBe(generic.customProgramCacheKey());
     expect([mat.type, mat.side, mat.vertexColors, mat.flatShading, mat.fog]).toEqual([generic.type, generic.side, generic.vertexColors, generic.flatShading, generic.fog]);
+  });
+
+  it('draws lit walls without the facade hook while no run glows, and with it once one does', () => {
+    const container = new Group();
+    const sites = [landmark(10, '#f2d5a5', 0.64), landmark(30, '#e4d3a2', 0.5), landmark(50, '#f2d5a5', 0.64)];
+    for (const s of sites) {
+      s.lamps.castShadow = s.lamps.receiveShadow = true;
+      s.lamps.material.side = DoubleSide;
+      container.add(s.group);
+    }
+    const b = batchLandmarks(sites, container);
+    container.add(b.group);
+    const generic = new MeshLambertMaterial({ vertexColors: true, side: DoubleSide });
+    patchFacades(generic);
+    const at = (n: number) => { for (const s of sites) s.setNight(n); b.sync(); return shown(b.group); };
+    // Day: still one draw, on a material with no facade hook (no glow loop per vertex), otherwise the same.
+    const day = at(0);
+    expect(day).toHaveLength(1);
+    const mesh = day[0], plain = mesh.material as MeshLambertMaterial;
+    expect(plain.userData.facade).toBeUndefined();
+    expect(plain.customProgramCacheKey()).not.toBe(generic.customProgramCacheKey());
+    // City clips whatever material a mounted mesh holds (clipScenery): the twin swapped in later keeps it.
+    const planes = [new Plane(new Vector3(1, 0, 0), 5)];
+    plain.clippingPlanes = planes;
+    plain.clipShadows = true;
+    // A dim dusk value glows, so the facade program takes over in the same draw.
+    expect(at(0.01)).toEqual([mesh]);
+    const lit = mesh.material as MeshLambertMaterial;
+    expect(lit).not.toBe(plain);
+    expect(lit.customProgramCacheKey()).toBe(generic.customProgramCacheKey());
+    // Every setting the day draw shades with matches the lit one's.
+    for (const k of ['type', 'side', 'vertexColors', 'flatShading', 'fog', 'transparent', 'opacity', 'emissiveIntensity', 'clippingPlanes', 'clipShadows', 'clipIntersection'] as const) expect(plain[k]).toEqual(lit[k]);
+    expect(lit.clippingPlanes).toBe(planes);
+    expect(plain.emissive.equals(lit.emissive) && plain.color.equals(lit.color)).toBe(true);
+    // Back to day: the plain twin again, and disposing the one attached disposes both.
+    expect((at(0)[0].material)).toBe(plain);
+    let litDisposed = false;
+    lit.addEventListener('dispose', () => { litDisposed = true; });
+    plain.dispose();
+    expect(litDisposed).toBe(true);
   });
 
   it('keeps the night runs when any member has a setting the facade program lacks (alpha hashing)', () => {
@@ -269,6 +309,9 @@ describe('batchLandmarks', () => {
     expect(far.castShadow).toBe(false);
     // One buffer: the far index reads the class's (grown) buffer, as the full draws do.
     expect(far.geometry.attributes.position).toBe(near.geometry.attributes.position);
+    // By day nothing glows: both versions draw with the full version's plain twin, not the facade program.
+    expect(far.material).toBe(near.material);
+    expect((far.material as MeshLambertMaterial).userData.facade).toBeUndefined();
     const camera = new PerspectiveCamera();
     const at = (d: number) => { camera.position.set(30, 10, 20 + d); camera.updateMatrixWorld(); cell.update(camera); };
     at(2000);
@@ -296,6 +339,7 @@ describe('batchLandmarks', () => {
     expect(far.visible).toBe(false);
     expect(near.onBeforeRender).toBe(Mesh.prototype.onBeforeRender);
     expect(shown(b.group)).toEqual([near]);
+    expect(far.material).toBe(near.material);
     const glow = (near.material as MeshLambertMaterial).userData.facade.glow;
     expect(glow.count.value).toBe(2);
     expect(Math.max(...glow.rgb.value)).toBeGreaterThan(0);
