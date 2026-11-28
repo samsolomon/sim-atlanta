@@ -149,10 +149,11 @@ describe('batchLandmarks', () => {
     expect(plain.emissive.equals(lit.emissive) && plain.color.equals(lit.color)).toBe(true);
     // Back to day: the plain twin again, and disposing the one attached disposes both.
     expect((at(0)[0].material)).toBe(plain);
-    let litDisposed = false;
-    lit.addEventListener('dispose', () => { litDisposed = true; });
+    let litDisposed = 0, plainDisposed = 0;
+    lit.addEventListener('dispose', () => { litDisposed++; });
+    plain.addEventListener('dispose', () => { plainDisposed++; });
     plain.dispose();
-    expect(litDisposed).toBe(true);
+    expect([plainDisposed, litDisposed]).toEqual([1, 1]);
   });
 
   it('keeps the night runs when any member has a setting the facade program lacks (alpha hashing)', () => {

@@ -862,10 +862,10 @@ export const landmarkBatchOff = (() => {
 
 /** Disposing either material of a lit-wall group (City disposes whichever its meshes hold) disposes both. */
 function twinDispose(a: Material, b: Material) {
+  // Each disposes only the other, once: re-disposing the one already disposing would fire its listeners twice.
   let done = false;
-  const both = () => { if (done) return; done = true; a.dispose(); b.dispose(); };
-  a.addEventListener('dispose', both);
-  b.addEventListener('dispose', both);
+  a.addEventListener('dispose', () => { if (!done) { done = true; b.dispose(); } });
+  b.addEventListener('dispose', () => { if (!done) { done = true; a.dispose(); } });
 }
 
 /**
