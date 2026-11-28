@@ -51,4 +51,9 @@ describe('Fairlie–Poplar block', () => {
     const partial = createFairliePoplar([...sites.filter(b => b.id !== aderholdId), other], grid)!;
     expect(partial.buildings).toEqual([other]);
   });
+
+  it('draws the other three when Haas-Howell is not on the board', () => {
+    const partial = createFairliePoplar([...sites.filter(b => b.id !== haasHowellId), other], grid);
+    expect(partial?.buildings).toEqual([other]);
+  });
 });

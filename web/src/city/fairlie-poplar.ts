@@ -292,12 +292,15 @@ const parts: [id: string, origin: P2, axis: P2, draw: (s: Shell) => void][] = [
 ];
 
 /**
- * The block as one landmark: one shell (one body, one lamps mesh) owned by Haas-Howell,
- * with each building that is on the board drawn in its own street frame and taken off
- * the generic list.
+ * The block as one landmark: one shell (one body, one lamps mesh) owned by Haas-Howell
+ * (or the next building present), with each building that is on the board drawn in its
+ * own street frame and taken off the generic list.
  */
 export function createFairliePoplar(buildings: VBuilding[], grid: GroundGrid) {
-  const owner = landmarkShell(buildings, grid, haasHowellId, 'Fairlie–Poplar block (GSU)', blockOrigin, [1, 0], [[-24.5, 17.6]]);
+  const anchor = parts.find(([id]) => buildings.some(b => b.id === id))?.[0];
+  if (!anchor) return null;
+  // The probe checks that Haas-Howell's outline is still where this skin expects it.
+  const owner = landmarkShell(buildings, grid, anchor, 'Fairlie–Poplar block (GSU)', blockOrigin, [1, 0], anchor === haasHowellId ? [[-24.5, 17.6]] : []);
   if (!owner) return null;
   const drawn = new Set<string>();
   for (const [id, origin, axis, draw] of parts) {
