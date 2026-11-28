@@ -7,7 +7,7 @@ import onePlan from './fixtures/midtown-skyline/one-midtown-plaza.json';
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
 // Two Midtown Plaza, 1349 West Peachtree (Smallwood, Reynolds, Stewart, Stewart, 1986).
-// - Tower: blue reflective ribbon glass with a thin maroon band at every floor.
+// - Tower: reflective ribbon glass with a thin maroon band at every floor.
 //   A half-round glass end faces West Peachtree, and the straight office slab
 //   behind it stands a little taller.
 // - Joints: a dark red granite shaft runs full height where the curve meets the slab.
@@ -21,25 +21,29 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
 const BASE = 9;
 const GRANITE = '#8a4844', PINK = '#a8706a', BAND = '#6b3a3c', LOBBY = '#9fb2bf';
+// One glass for both sisters, from the leasing site's 2026 drone photograph of the pair after the
+// ASD|SKY renovation: their mirror glass reads H202-219, S11-35, V56-62 there. The blue of the
+// pre-renovation day photograph (S64) was the sky in the mirror. See docs/two-midtown-plaza.md.
+const GLASS = '#8c9bab';
 
 type PlazaPlan = typeof twoPlan;
-interface PlazaStyle { id: string; plan: PlazaPlan; bands: number; glass: string }
+interface PlazaStyle { id: string; plan: PlazaPlan; bands: number }
 
-/** Two Midtown Plaza (1986): 15 glass bands, glass #5d82ad as merged (the held palette branch lightens it). */
+/** Two Midtown Plaza (1986): 15 glass bands. */
 export function twoMidtownPlaza(shell: Shell) {
-  return midtownPlazaTower(shell, { id: 'osm:way:269636880', plan: twoPlan, bands: 15, glass: '#5d82ad' });
+  return midtownPlazaTower(shell, { id: 'osm:way:269636880', plan: twoPlan, bands: 15 });
 }
 
 /**
  * One Midtown Plaza, 1360 Peachtree: the 14-storey sister of Two Midtown, with the same ribbon
- * glass, maroon floor bands, red granite base and joint shafts, at its own lidar roofs. Its glass
- * meets the 2026-11-24 rule (#8c9bab, S 18 V 67); see docs/one-midtown-plaza.md.
+ * glass, maroon floor bands, red granite base and joint shafts, at its own lidar roofs; see
+ * docs/one-midtown-plaza.md.
  */
 export function oneMidtownPlaza(shell: Shell) {
-  return midtownPlazaTower(shell, { id: 'osm:way:269637564', plan: onePlan as PlazaPlan, bands: 12, glass: '#8c9bab' });
+  return midtownPlazaTower(shell, { id: 'osm:way:269637564', plan: onePlan as PlazaPlan, bands: 12 });
 }
 
-function midtownPlazaTower(shell: Shell, { id, plan, bands: BANDS, glass: GLASS }: PlazaStyle) {
+function midtownPlazaTower(shell: Shell, { id, plan, bands: BANDS }: PlazaStyle) {
   const { body, lights } = shell;
   const seed = seedOf(id);
   let wall = 0;

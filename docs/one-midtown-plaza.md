@@ -13,7 +13,7 @@
 - **Base:** two storeys of red granite with a pink string course.
 - **Glass:** ribbon glass with a maroon band at every floor, in 12 glass bands over the base. The band count is estimated from the 14 floors.
 - **Joint shafts:** dark red granite shafts at the two seams where the curve meets the slab. Their positions are estimated.
-- **Glass colour:** base `#8c9bab` (S 18%, V 67%), set to meet the rule for new skins. On the sunlit south face at 11:30 it renders S 28%, V 41%. A first try at `#7a93ad` rendered S 47%, over the cap. Two Midtown keeps its merged `#5d82ad` until Sam picks a palette; the held branch moves it to `#6a87a6`.
+- **Glass colour:** base `#8c9bab` (S 18%, V 67%), set to meet the rule for new skins. On the sunlit south face at 11:30 it renders S 28%, V 41%. A first try at `#7a93ad` rendered S 47%, over the cap. Two Midtown now shares this glass, per the 2026 drone photograph of the pair (see docs/two-midtown-plaza.md).
 - **Budget:** under 2,400 triangles. A test holds every vertex within 1.5 m of the footprint, and the shared detachment check finds nothing loose.
 
 ## Night

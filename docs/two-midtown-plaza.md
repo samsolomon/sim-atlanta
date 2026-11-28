@@ -11,7 +11,7 @@
 
 ## What City draws
 
-City draws the two mapped parts at their lidar roofs. Both have a 9 m base of red granite with a pink string course. Above it, blue reflective ribbon glass (`#5d82ad`) runs up 15 storeys of 4.3 m each, with a thin maroon band at every floor and a granite top band. These figures are estimated from the floor count. Two dark red granite shafts, 4.4 m wide, mark where the curve meets the slab and rise 1 m above the slab roof. Their positions are estimated from the day photograph.
+City draws the two mapped parts at their lidar roofs. Both have a 9 m base of red granite with a pink string course. Above it, reflective ribbon glass (`#8c9bab`, shared with One Midtown Plaza) runs up 15 storeys of 4.3 m each, with a thin maroon band at every floor and a granite top band. These figures are estimated from the floor count. Two dark red granite shafts, 4.4 m wide, mark where the curve meets the slab and rise 1 m above the slab roof. Their positions are estimated from the day photograph.
 
 Two details are simplified. City draws the lobby glazing flush rather than the recessed colonnade and drum. The plaid granite inlay and the canopy are too small to read at City distances. The parking deck beside the tower is a separate mapped building that City leaves unchanged.
 
@@ -26,3 +26,5 @@ Offices light at 10% at 23:30, an estimate. Under the half-round end, the glazed
 | From the north-west, before and after, 11:30 | `cam=395,-4194,135,52,380` | [compare-day.jpg](log/ui/two-midtown-plaza/compare-day.jpg) |
 | Same, 23:30 | same | [compare-night.jpg](log/ui/two-midtown-plaza/compare-night.jpg) |
 | From West Peachtree to the west | `cam=390,-4194,70,42,300` | [west-day.jpg](log/ui/two-midtown-plaza/west-day.jpg) |
+
+**Glass, matched with One Midtown Plaza (2026-11-24).** Sam asked for one photo-backed glass on both sisters. The leasing site's 2026 drone photograph of the pair after the ASD|SKY renovation ([twilight drone](https://images.squarespace-cdn.com/content/v1/5fea1dc4dd8c772bce48f9be/1784734181310-NU2S5FW0BH9703RX3A5L/1349-w-peachtree-drn-twi0983.jpg)) shows both in the same mirror glass, reading H202–219, S11–35, V56–62. The strong blue of the pre-renovation Steinhart photograph (S64) is the sky in the mirror. Both towers now use `#8c9bab`: Two Midtown's sunlit curve renders S9 V54 at 11:30 (it was S59 V57 with `#5d82ad`), and One Midtown's sunlit south renders S28 V41. Both are within the sunlit rule. [Day](log/ui/one-midtown-plaza/glass-match-day.jpg) · [night](log/ui/one-midtown-plaza/glass-match-night.jpg), `cam=482,-4220,0,60,400`.
