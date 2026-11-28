@@ -6,7 +6,7 @@
   view (46.8/45.7 → 42.7/41.1 fps). Night held.
 - **Cause, as attributed:** since #721, a landmark lit-wall group drew with the facade program by
   day too, and its far version did as well, because it shares the material. At Low's default view
-  that is about 346k of 1.68M triangles (337k of them far), each vertex running the 16-range glow
+  that is up to 346k of 1.68M triangles (most of them far), each vertex running the 16-range glow
   loop and writing 11 floats of facade varyings, all to add nothing. #726's placeholder costs 1 call
   and 13k triangles by day, and its ink branch is off by day (`uMarkNight` 0), so it is the smaller
   suspect. The A16 set below separates the two.
@@ -50,4 +50,7 @@ Use a fresh Chrome per URL, and alternate the order twice:
 - **Pass:** #1 is about #3 and #6 (the release 19 day fps), and better than #2. #7 is within noise
   of release 20's night (about 38 fps), with landmark panes lit.
 - **Reading it:** #2 − #1 is the facade cost. #1 − #4 is what the placeholder costs. If #4 and #6
-  still differ, a third change since release 19 costs fps.
+  still differ, a third change since release 19 costs fps. The first place to look is #721's change to
+  the shared facade program itself. Every generic wall, far box and house far version now carries the
+  glow varying and the loop's uniforms, and the loop exits at once there. No switch removes that.
+- **Studio data:** `web/public/data` was copied from `release20-small` (`76037d4d`).

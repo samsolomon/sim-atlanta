@@ -120,12 +120,13 @@ all 12 areas):
 ## By day: off the facade program (release 21)
 
 Release 20 shipped this design, and on the A16 its day fps fell about 9% (46.8/45.7 → 42.7/41.1 at
-14:00, with p50 unchanged at 22.2 ms). Night stayed level. The cause: a lit-wall group drew with the
-facade program **by day too**, and so did its far version, which shares the material. So every
+14:00, with p50 unchanged at 22.2 ms). Night stayed level. The suspected cause, pending the A16 A/B in
+`docs/handoffs/studio-day-fps-r21.md`: a lit-wall group drew with the facade program **by day too**, and so did its far version, which shares the material. So every
 daytime vertex in those draws ran the glow loop (up to 16 compares) and wrote the facade varyings
 (world position, normal, style, base, glow: 11 floats), all to add nothing. At Low's default view
-that is about 346k of 1.68M triangles: 337k in 38 far draws plus 9k in 14 near ones. The A16 is
-bound by triangles, so this slowed it. The release 19 day draws used a plain landmark material
+that is up to 346k of 1.68M triangles: 9k in 14 near draws, plus 337k across all 38 far draws, of
+which 30 were on the facade program. The A16 is
+bound by triangles, so this is the likely cost. The release 19 day draws used a plain landmark material
 instead.
 
 **The fix.** Each lit-wall group keeps two materials:
@@ -173,10 +174,10 @@ Low. Captures use `speed=0`, `weather=clear` and `perf=silent`, and High adds `n
 - **High, main against the fix:** at most 0.22% of pixels differ by more than 8/255 in any frame.
   The fixed 0.06–0.10% over 32/255 is the radio's album art. Main against itself gives the same:
   0.10%, 0.00% and 0.10% on the default view.
-- **Low:** at 17:50 and 22:00, main against main and main against the fix both differ by about 5%
-  over 8/255, with every pixel under 12/255. That is film grain, which `nopass=grade` removes only
-  on High. At 14:00 the off-default views differ by 1.0–1.6% under 12/255. The diff images show
-  uniform grain over the whole frame, the UI glass included, with nothing following a building.
+- **Low:** the first Low captures kept film grain (5% of pixels over 8/255, main against main), so
+  they were re-captured with `nopass=grade`: 4 views at 14:00 and 22:00. Main against the fix differs
+  by at most 0.165% over 8/255. Main against itself differs by 0.000–0.165%, and the 0.1% over 32/255
+  in both is the radio's album art.
 - Sheet: [main / fix / diff ×4](log/day-fps-r21/sheet-main-fix-diff.jpg).
 
 ## Kept as they are
