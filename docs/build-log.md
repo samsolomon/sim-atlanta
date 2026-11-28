@@ -4169,3 +4169,9 @@ The generic builder drew the Olympia Building at Five Points as a 27.5 m block. 
 The Courtland Grand's glass courtyard roof was lit as one 38 by 28 m sheet. Next to windows a few metres wide it read as a rendering fault, a blank cream rectangle in the middle of the block. It now lights about half of an 8 by 5 grid of panes with dark ribs between. The first attempt laid the panes on top of the roof, and by day each one left a small shadow mark and the old rim disappeared. The fix was to tile lit and unlit glass in one flat layer in one colour, so by day no more than one pixel in 100,000 differs visibly from before.
 
 ![The courtyard roof at night, one sheet against panes](log/ui/courtland-grand/skylight-night.jpg)
+
+### 2026-11-27 · Tracks that go nowhere beside the Congress Center
+
+Sam asked why the tracks west of the Gulch seem to end, with no trains on them. Most are busy Norfolk Southern mains: railroads report 20 to 36 trains a day at those crossings, against 12 to 14 on the CSX line, and City routes its one illustrative downtown freight onto CSX only. The abrupt ends are honest data badly drawn. OpenStreetMap tags 225 m of the NS line as tunnel, the bake leaves tunnels out, and nothing marks the mouth, so three tracks stop on a lawn. The surprise was just north of the area: a whole 400 m row draws no track at all, the same missing-rail bug King Memorial had four days earlier, in a row its new test didn't cover. [Findings and marked views](log/gulch-tracks-investigation.md)
+
+![Three NS tracks ending on open lawn](log/gulch-tracks/06-ns-portal-south.jpg)
