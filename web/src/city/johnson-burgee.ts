@@ -98,3 +98,25 @@ export function graniteWindowAtlas(o: GraniteAtlasOptions) {
 
 // The ashlar coursing moved to the material library; these re-exports keep its importers unchanged.
 export { ashlarCoursing, withStonePosition } from '../materials/stone';
+import { ashlarCoursing, withStonePosition } from '../materials/stone';
+
+/**
+ * One Atlantic Center's facade: pink Spanish granite, a lighter trim, and dark grouped glass in light
+ * frames. Regions Plaza next door shares it (Sam, 2026-11-28: in life the pair read as one stone), so
+ * both towers take these values rather than near copies.
+ */
+export const oneAtlanticFacade = {
+  granite: '#ccaea0', trim: '#d7c1ae', glass: ['#485768', '#546577', '#435363'] as const,
+  /** The atlas frame colour (mullions and transoms), as hex. */
+  frame: '#d6cec4',
+};
+
+/** The flame-finished ashlar joints on One Atlantic's granite: only fragments with the granite's
+ * vertex colour, below 200 m in model space. */
+const oneAtlanticCoursing = ashlarCoursing(1.5, .75, 'vStonePos.y < 200.0 && diffuseColor.r > 0.45 && diffuseColor.g < 0.5', .08);
+
+/** Gives a material One Atlantic's ashlar. Every material that takes it shares one shader program. */
+export function oneAtlanticAshlar(material: THREE.Material) {
+  material.onBeforeCompile = shader => withStonePosition(shader, oneAtlanticCoursing);
+  material.customProgramCacheKey = () => 'one-atlantic-ashlar';
+}

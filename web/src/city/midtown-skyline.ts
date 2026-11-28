@@ -3,7 +3,7 @@ import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } fro
 import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
-import { ashlarCoursing, graniteWindowAtlas, withStonePosition } from './johnson-burgee';
+import { graniteWindowAtlas, oneAtlanticAshlar, oneAtlanticFacade } from './johnson-burgee';
 import sites from './fixtures/midtown-skyline.json';
 
 import { towerSquare } from './midtown-skyline-square';
@@ -31,7 +31,7 @@ export type LocalGround = (u: number, v: number) => number | null;
 const site = sites.oneAtlantic;
 
 function oneAtlantic(shell: Shell) {
-  const granite = '#ccaea0', trim = '#d7c1ae', glass = ['#485768', '#546577', '#435363'];
+  const { granite, trim, glass } = oneAtlanticFacade;
   const shaftGlass = new Builder(), shaftUv: number[] = [];
   shell.prism(shell.ring, shell.base, 201, granite, trim);
   for (let face = 0; face < 4; face++) {
@@ -87,14 +87,10 @@ function oneAtlantic(shell: Shell) {
   const strips = graniteWindowAtlas({ bays: Array.from({length: 36}, () => ({panes: 4, width: 16, grouped: true})),
     floors: 45, bayWidth: 24, floorHeight: 12, granite: [204, 174, 160], frame: [214, 206, 196],
     groupFloors: 3, bandHeight: 3, punchedSill: 2, punchedHead: 9, occupancy: .16, seed: 1987 });
-  const coursing = ashlarCoursing(1.5, .75, 'vStonePos.y < 200.0 && diffuseColor.r > 0.45 && diffuseColor.g < 0.5', .08);
   // finish() adds the vertex-coloured stone first and the lamps second.
   const [stone] = model.group.children as Mesh<BufferGeometry, MeshLambertMaterial>[];
   const isStone = stone?.material.vertexColors && stone.material.emissive.getHex() === 0;
-  for (const material of isStone ? [strips, stone.material] : [strips]) {
-    material.onBeforeCompile = shader => withStonePosition(shader, coursing);
-    material.customProgramCacheKey = () => 'one-atlantic-ashlar';
-  }
+  for (const material of isStone ? [strips, stone.material] : [strips]) oneAtlanticAshlar(material);
   const geometry = shaftGlass.geometry();
   geometry.setAttribute('uv', new Float32BufferAttribute(shaftUv, 2));
   const shaft = new Mesh(geometry, strips);
