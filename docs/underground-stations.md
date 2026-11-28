@@ -5,9 +5,10 @@ Research for "ghost stations": platforms drawn in the ghost style at their real 
 ## Summary
 
 - **20 of MARTA's 38 rail stations are fully or partly below grade**: 7 on the City board, 3 within 1.5 km of it, 8 elsewhere inside I-285 and 2 just outside it. The other 18 are listed [below](#stations-left-out). All 81 rail stop ids in the pipeline output are accounted for.
+- **They are not 20 tunnel stations:** 8 are underground, 6 partly below grade and 6 in open cuts. Seven of those statuses are inferred.
 - **Layouts:** island, side, split-level (Ashby) and two combined ones (Five Points, Lindbergh Center).
 - **Five Points has the Spanish solution on both levels**: each has two tracks, a centre platform between them and a side platform outside each. East–west (Blue, Green) is above north–south (Red, Gold).
-- **Depth is the main gap.** One station has a published depth (Peachtree Center, 36.6 m). Seven platform levels have a rough terrain estimate. The other levels are unknown.
+- **Depth is the main gap.** One station has a published depth (Peachtree Center, 36.6 m). Seven platform levels have a rough terrain estimate. The other 14 of 22 levels are unknown, including 6 of the 8 platform levels on the City board.
 
 ## How to read this
 
@@ -51,25 +52,27 @@ Estimated depths are **track bed below neighbouring bare ground** in an open par
 
 ## Platform geometry
 
-Length and width are the bounding size of the OSM platform polygon. Several underground ones are well short of the system-wide **183 m (600 ft)** figure, which comes from [one secondary source](https://www.railway-technology.com/projects/atlantametrorail/); the JSON keeps both. For a ghost, the OSM centre and axis with a 183 m length is a reasonable inferred shape.
+**Draw platforms 183 m (600 ft) long.** [Railway Technology](https://www.railway-technology.com/projects/atlantametrorail/) gives that for the system, and twelve open-air or surface-mapped OSM platforms measure 180–183 m. It is still `inferred` for any one station. Keep the OSM centre and axis.
+
+The table shows the bounding size of each OSM polygon. **†** marks a length under 175 m: these look like sketches, so don't draw them (`use_for_drawing: false` in the JSON). Widths are rough too.
 
 | Station and level | OSM platform ways (layer / level) | Length × width, m | Axis | OSM track spacing, m | Centre (lat, lon) |
 | --- | --- | --- | ---: | ---: | --- |
-| Five Points, B1 upper: east-west | [428067989](https://www.openstreetmap.org/way/428067989) (-1 / -1) | 140 × 17.2 | 125° | 8.7 | 33.753888, -84.391594 |
-| Five Points, B2 lower: north-south | [428067988](https://www.openstreetmap.org/way/428067988) (-2 / 2) | 100 × 14.0 | 34° | 6.1 | 33.753790, -84.391686 |
-| Peachtree Center | [1034672676](https://www.openstreetmap.org/way/1034672676) (-2 / –) | 140 × 6.0 | 0° | 7.7 | 33.759518, -84.387597 |
-| Civic Center | none; tracks [702089817](https://www.openstreetmap.org/way/702089817), [1038378472](https://www.openstreetmap.org/way/1038378472), [702089816](https://www.openstreetmap.org/way/702089816), [1038378471](https://www.openstreetmap.org/way/1038378471) | ≈ 183 *(inf.)* × unknown | 1° | 4.9 | 33.766509, -84.387542 |
-| North Avenue | [1038378450](https://www.openstreetmap.org/way/1038378450) (-2 / –)<br>[1038378451](https://www.openstreetmap.org/way/1038378451) (-2 / –) | 137 × 5.4<br>137 × 5.2 | 11° | 5.9 | 33.772599, -84.386997 |
-| Midtown | [1050018742](https://www.openstreetmap.org/way/1050018742) (-1 / –)<br>[1050018747](https://www.openstreetmap.org/way/1050018747) (-1 / –) | 167 × 11.2<br>167 × 11.3 | 177° | 5.5 | 33.781041, -84.386316 |
-| Arts Center | [1035802257](https://www.openstreetmap.org/way/1035802257) (-1 / –) | 156 × 8.8 | 172° | 11.3 | 33.789222, -84.387335 |
+| Five Points, B1 upper: east-west | [428067989](https://www.openstreetmap.org/way/428067989) (-1 / -1) | 140 † × 17.2 | 125° | 8.7 | 33.753888, -84.391594 |
+| Five Points, B2 lower: north-south | [428067988](https://www.openstreetmap.org/way/428067988) (-2 / 2) | 100 † × 14.0 | 34° | 6.1 | 33.753790, -84.391686 |
+| Peachtree Center | [1034672676](https://www.openstreetmap.org/way/1034672676) (-2 / –) | 140 † × 6.0 | 0° | 7.7 | 33.759518, -84.387597 |
+| Civic Center | none; tracks [319512632](https://www.openstreetmap.org/way/319512632), [702089817](https://www.openstreetmap.org/way/702089817), [1038378472](https://www.openstreetmap.org/way/1038378472), [702089818](https://www.openstreetmap.org/way/702089818), [702089816](https://www.openstreetmap.org/way/702089816), [1038378471](https://www.openstreetmap.org/way/1038378471) | ≈ 183 *(inf.)* × unknown | 1° | 4.9 | 33.766509, -84.387542 |
+| North Avenue | [1038378450](https://www.openstreetmap.org/way/1038378450) (-2 / –)<br>[1038378451](https://www.openstreetmap.org/way/1038378451) (-2 / –) | 137 † × 5.4<br>137 † × 5.2 | 11° | 5.9 | 33.772599, -84.386997 |
+| Midtown | [1050018742](https://www.openstreetmap.org/way/1050018742) (-1 / –)<br>[1050018747](https://www.openstreetmap.org/way/1050018747) (-1 / –) | 167 † × 11.2<br>167 † × 11.3 | 177° | 5.5 | 33.781041, -84.386316 |
+| Arts Center | [1035802257](https://www.openstreetmap.org/way/1035802257) (-1 / –) | 156 † × 8.8 | 172° | 11.3 | 33.789222, -84.387335 |
 | SEC District | [1034650217](https://www.openstreetmap.org/way/1034650217) (-3 / –) | 188 × 12.8 | 101° | 17.2 | 33.756214, -84.397708 |
-| Vine City | [1034650221](https://www.openstreetmap.org/way/1034650221) (-1 / –) | 159 × 11.9 | 87° | 13.3 | 33.756538, -84.404326 |
+| Vine City | [1034650221](https://www.openstreetmap.org/way/1034650221) (-1 / –) | 159 † × 11.9 | 87° | 13.3 | 33.756538, -84.404326 |
 | Ashby, upper: westbound | none; tracks [319512597](https://www.openstreetmap.org/way/319512597) | ≈ 183 *(inf.)* × unknown | 91° | – | 33.756479, -84.417347 |
 | Ashby, lower: eastbound | none; tracks [78090744](https://www.openstreetmap.org/way/78090744) | ≈ 183 *(inf.)* × unknown | 92° | – | 33.756479, -84.417347 |
-| West Lake | none; tracks [905879516](https://www.openstreetmap.org/way/905879516), [905879517](https://www.openstreetmap.org/way/905879517) | ≈ 183 *(inf.)* × unknown | 68° | 4.1 | 33.753321, -84.445301 |
+| West Lake | none; tracks [905879516](https://www.openstreetmap.org/way/905879516), [905879517](https://www.openstreetmap.org/way/905879517) | ≈ 183 *(inf.)* × unknown | 68° | 4.2 | 33.753242, -84.445517 |
 | Lindbergh Center | [697038157](https://www.openstreetmap.org/way/697038157) (-1 / -1)<br>[697038158](https://www.openstreetmap.org/way/697038158) (-1 / -1) | 189 × 7.8<br>189 × 8.1 | 13° | 12.3 | 33.822356, -84.369576 |
-| Lenox | [1033006340](https://www.openstreetmap.org/way/1033006340) (– / -1) | 174 × 9.5 | 58° | 14.2 | 33.845676, -84.357603 |
-| Buckhead | [319512573](https://www.openstreetmap.org/way/319512573) (-2 / -2) | 160 × 7.8 | 154° | 11.9 | 33.849106, -84.368474 |
+| Lenox | [1033006340](https://www.openstreetmap.org/way/1033006340) (– / -1) | 174 † × 9.5 | 58° | 14.2 | 33.845676, -84.357603 |
+| Buckhead | [319512573](https://www.openstreetmap.org/way/319512573) (-2 / -2) | 160 † × 7.8 | 154° | 11.9 | 33.849106, -84.368474 |
 | Medical Center | [697684974](https://www.openstreetmap.org/way/697684974) (-1 / -1)<br>[697684977](https://www.openstreetmap.org/way/697684977) (-1 / -1) | 183 × 3.5<br>183 × 3.1 | 90° | 4.7 | 33.910762, -84.351521 |
 | Sandy Springs | [697640433](https://www.openstreetmap.org/way/697640433) (-2 / -2)<br>[697640434](https://www.openstreetmap.org/way/697640434) (-2 / -2) | 176 × 5.6<br>176 × 5.8 | 122° | 5.2 | 33.932163, -84.351975 |
 | East Point | [319512586](https://www.openstreetmap.org/way/319512586) (-1 / -1) | 177 × 8.0 | 16° | 11.5 | 33.677058, -84.440684 |
@@ -96,27 +99,27 @@ Length and width are the bounding size of the OSM platform polygon. Several unde
 
 None of these is a change request yet. Each one affects a ghost station.
 
-1. **City heights are stacking order, not depth.** As [data-model.md](data-model.md#rail-elevation-profiles-downtown) says, −10, −16 and −22 m come from OSM layers. Peachtree Center is drawn at −16 m against a published 36.6 m. Five Points draws a 6 m gap between levels that has no source, with the upper level at −10 m against an estimated 10–13 m. SEC District gets −22 m from `layer=-3`. The ground at the station is about 313 m, and the open track either side is at about 298 m (Vine City) and 310–313 m (Gulch), so −22 m is deeper than either end suggests. Nothing surveys the station track itself.
+1. **City heights are stacking order, not depth.** As [data-model.md](data-model.md#rail-elevation-profiles-downtown) says, −10, −16 and −22 m come from OSM layers. Peachtree Center is profiled at −16 m against a published 36.6 m. The Five Points profiles put a 6 m gap between the levels that has no source, with the upper level at −10 m against an estimated 10–13 m. SEC District gets −22 m from `layer=-3`. The ground at the station is about 313 m, and the open track either side is at about 298 m (Vine City) and 310–313 m (Gulch), so −22 m is deeper than either end suggests. Nothing surveys the station track itself.
 2. **City's track spacing leaves no room for island platforms.** City draws both tracks 2.1 m either side of one smoothed GTFS centreline (`MARTA_TRACK_OFFSET`, [world.ts](../web/src/vignette/world.ts)), 4.2 m apart, leaving 1.0 m between cars. OSM spacing at the island stations is about 8–17 m. Ghost island and centre platforms need their own track positions, or the tracks must flare at stations.
 3. **GTFS stop points are not platform centres.** They sit up to about 180 m along the line from the OSM platform centre (table below). [`berthShift`](../web/src/city/trains.ts) applies only where `setBerths` supplies platform ends, which today means the King Memorial join. Ghost platforms placed from OSM would not line up with timetable dwells without berths for these paths.
 4. **City has no tunnel track to put platforms beside yet.** It draws track only where the profile is at or above −5.5 m (`PORTAL_E`). The downtown height profile also stops short of Midtown, so Midtown, Arts Center and every station off the board have none. `midtown-tunnel.json` only drives the "underground" follow message.
 5. **Stacked tracks share one line.** At Ashby both directions' GTFS shapes pass the same point, so nothing in the pipeline separates the two levels.
 6. **OSM geometry has its own limits.** Decatur's tracks are drawn about 2 m apart, which cars can't fit.
 
-| Station and level | Stop → platform centre, along the platform | City profile height, m |
+| Station and level | Stop point from platform centre, along the platform | City profile height, m |
 | --- | --- | --- |
 | Five Points, B1 upper: east-west | 908981: 18 m SE, 908990: 36 m NW | -10.0 to -4.0 |
 | Five Points, B2 lower: north-south | 908986: 36 m NE, 908976: 17 m NE | -16.0 to -15.2 |
 | Peachtree Center | 908601: 147 m S, 907842: 159 m S | -16.0 to -16.0 |
-| Civic Center | 908912: 30 m S, 908911: 44 m S | -15.6 to -10.0 |
+| Civic Center ‡ | 908912: 30 m S, 908911: 44 m S | -15.6 to -10.0 |
 | North Avenue | 907914: 97 m S, 907913: 128 m S | -16.0 to -10.4 |
 | Midtown | 908375: 35 m N, 908374: 23 m N | no profile |
 | Arts Center | 906369: 50 m N, 906370: 44 m S | no profile |
 | SEC District | 908435: 45 m E, 908694: 39 m E | -22.0 to -22.0 |
 | Vine City | 908958: 40 m E, 908959: 29 m E | -22.0 to -5.3 |
-| Ashby, upper: westbound | 908964: 2 m E | no profile |
-| Ashby, lower: eastbound | 908963: 11 m E | no profile |
-| West Lake | 908023: 2 m SW, 907906: 26 m SW | no profile |
+| Ashby, upper: westbound ‡ | 908964: 2 m E | no profile |
+| Ashby, lower: eastbound ‡ | 908963: 11 m E | no profile |
+| West Lake ‡ | 908023: 20 m E, 907906: 4 m SW | no profile |
 | Lindbergh Center | 908055: 128 m N, 908054: 116 m N, 907775: 129 m N, 907823: 124 m N | no profile |
 | Lenox | 906827: 67 m SW, 908717: 83 m SW | no profile |
 | Buckhead | 908639: 147 m SE, 908718: 163 m SE | no profile |
@@ -128,7 +131,7 @@ None of these is a change request yet. Each one affects a ghost station.
 | Kensington | 908634: 25 m E, 908709: 26 m W | no profile |
 | Indian Creek | 908515: 70 m E, 908516: 19 m W | no profile |
 
-The offset gives the direction from the platform centre to the stop point. "City profile height" is the range in `scene.json` within 90 m of the stop. Pipeline data compared: generated 2026-11-26 at commit `81db0d05e`.
+The offset is how far along the line the GTFS stop point lies from the platform centre, and in which direction. ‡ No platform way: the centre is the OSM station node, or at West Lake the middle of the roofed passage. "City profile height" is the range in `scene.json` within 90 m of the stop. Pipeline data compared: generated 2026-11-26 at commit `81db0d05e`.
 
 The pipeline's GTFS shapes run within about 11 m of every platform centre across the line, except one Lindbergh short turn noted below.
 
@@ -140,7 +143,7 @@ The pipeline's GTFS shapes run within about 11 m of every platform centre across
 - Wikipedia calls the east-west level "at-grade below the intersecting elevated street viaducts"; OSM maps it as tunnel=yes, location=underground, and docs/data-model.md says underground. Both fit a level at old rail grade, roofed by streets and plaza.
 - Non-revenue interline ways (1453238811, 1453238820) pass the station and are not counted.
 - Way 428067988 is tagged layer=-2 but level=2, apparently a tagging slip.
-- Depth, B1 upper level, ≈ 10–13 m. Track bed in the open cuts on both sides (Gulch 310.4-313.0 m, east cut 310.9-311.4 m NAVD88) against bare ground at the station (320.5-323.8 m). Assumes the track is near level between the cuts.
+- Depth, B1 upper level, ≈ 10–13 m. Track bed in the open cuts on both sides (Gulch 310.4-313.0 m, east cut 310.9-311.4 m NAVD88) against bare ground at the station (320.5-323.8 m). Assumes the track is near level between the cuts. MARTA's 2023 concept report (PDF page 83) puts the existing plaza slab between +1050 and just over +1062.5 ft (about 320-324 m, datum not stated), which agrees with the ground samples. Pages 83-87 label no concourse or platform elevation.
 - Depth, B2 lower level unknown. No published figure. One level below the east-west platforms.
 - Levels: B1 upper: Below the concourse; the upper of the two platform levels. B2 lower: Below the east-west level; crosses it at about right angles.
 - Sources: [node 318451223](https://www.openstreetmap.org/node/318451223) · [Wikipedia](https://en.wikipedia.org/w/index.php?oldid=1370974347) · [nycsubway.org](https://www.nycsubway.org/wiki/Atlanta,_Georgia) · [way 428067989](https://www.openstreetmap.org/way/428067989) · [way 428067988](https://www.openstreetmap.org/way/428067988) · [MARTA 2025 update](https://itsmarta.com/uploadedFiles/More/About_MARTA/20250507_Five%20Points%20RAC%20Update.pdf) · [MARTA section](https://itsmarta.com/uploadedFiles/MARTA%20Five%20Points_EA_AppendixB.pdf) · [USGS 3DEP](https://epqs.nationalmap.gov/v1/docs) · [east-cut study](five-points-east-trench.md) · [data model](data-model.md)
@@ -156,7 +159,7 @@ The pipeline's GTFS shapes run within about 11 m of every platform centre across
 ### Civic Center
 
 - Bridges the Downtown Connector trench under West Peachtree Street: the middle is above the freeway, the platform ends are in tunnel (Wikipedia). OSM maps the two bridge ways (130 m) as layer=1 bridge=yes.
-- No platform way. The centreline is the station node projected on the tracks, +/- 91.5 m.
+- No platform way. The centre is the OSM station node and the tracks run 91.5 m either side of it.
 - "Underground" in the usual sense is wrong here: the ghost platform should sit at deck level over the Connector, not in the ground.
 - Depth unknown. No published figure. One platform level below West Peachtree Street, above the Downtown Connector.
 - Levels: Street; platform level; underpass between platforms; freeway.
@@ -198,14 +201,14 @@ The pipeline's GTFS shapes run within about 11 m of every platform centre across
 ### Ashby
 
 - Tracks are nearly one above the other (about 5 m apart in plan in OSM) and diverge just west of the station.
-- No platform way.
+- No platform way. The centre is the OSM station node.
 - Levels: upper: Upper platform level. lower: Lower platform level.
 - Sources: [node 6863544212](https://www.openstreetmap.org/node/6863544212) · [Wikipedia](https://en.wikipedia.org/w/index.php?oldid=1370790902) · [nycsubway.org](https://www.nycsubway.org/wiki/Atlanta,_Georgia) · [way 319512597](https://www.openstreetmap.org/way/319512597) · [way 78090744](https://www.openstreetmap.org/way/78090744)
 
 ### West Lake
 
 - Wikipedia: "two below-grade side platforms". nycsubway.org: "ground level". OSM: tunnel=building_passage over 187 m. The terrain shows a cut.
-- No platform way.
+- No platform way. The centre is the middle of the roofed passage (inferred), about 20 m west of the station node.
 - Depth, ≈ 6–7 m. Cut floor against both flanks.
 - Levels: Street, platform.
 - Sources: [node 4170391718](https://www.openstreetmap.org/node/4170391718) · [Wikipedia](https://en.wikipedia.org/w/index.php?oldid=1380628219) · [nycsubway.org](https://www.nycsubway.org/wiki/Atlanta,_Georgia) · [way 905879516](https://www.openstreetmap.org/way/905879516) · [way 905879517](https://www.openstreetmap.org/way/905879517) · [USGS 3DEP](https://epqs.nationalmap.gov/v1/docs)
@@ -308,5 +311,6 @@ The pipeline's GTFS shapes run within about 11 m of every platform centre across
 - Platform widths everywhere, and a per-station platform length from MARTA.
 - No OSM platform way for Civic Center, Ashby or West Lake.
 - Individual platform outlines at Five Points.
+- A lead for Five Points: the structural sections on PDF page 86 of the MARTA concept report draw both platform levels without elevations. Scaling them against the dimensioned column grid might give both depths. Not attempted.
 - Status wording is disputed at SEC District, Lenox, Buckhead, Medical Center, West Lake, Kensington and Indian Creek.
 - The Wikipedia pages are the main layout reference and are only partly cited themselves. nycsubway.org is old enthusiast text that predates later renovations.
