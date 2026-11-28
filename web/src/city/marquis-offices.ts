@@ -156,12 +156,12 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
       const wide = vs ? vLines(bays, floor) : new Set<number>();
       for (const line of wide) {
         const l = (line - 1) / bays + half, r = (line + 1) / bays - half;
-        panel(l, r, y + band, y + pitch, 0.03, wideGlass, lit(floor, line, edge));
-        panel(l, r, y, y + band, 0.03, recess);
+        panel(l, r, y + band, y + pitch, 0.05, wideGlass, lit(floor, line, edge));
+        panel(l, r, y, y + band, 0.05, recess);
       }
       for (let bay = 0; bay < bays; bay++) {
         if (wide.has(bay) || wide.has(bay + 1) || !lit(floor, bay, edge)) continue;
-        panel(bay / bays + half, (bay + 1) / bays - half, y + band, y + pitch, 0.025, glass, true);
+        panel(bay / bays + half, (bay + 1) / bays - half, y + band, y + pitch, 0.05, glass, true);
       }
     }
   });
@@ -178,7 +178,7 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
     }
     for (let bay = 0; bay < bays; bay++) {
       panel(bay / bays + 0.28 / length, (bay + 1) / bays - 0.28 / length,
-        centreGlass + 1.2, crown - 1.1, 0.02, recess);
+        centreGlass + 1.2, crown - 1.1, 0.05, recess);
     }
   }
   return { s, shaft, start, pitch, crown };
