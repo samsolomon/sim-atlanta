@@ -1,6 +1,8 @@
+import type { BufferGeometry, Material, Mesh } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
+import { oneAtlanticAshlar, oneAtlanticFacade } from './johnson-burgee';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 
@@ -18,17 +20,13 @@ const corner = 84.4, parapet = 96.8, hipTop = 104, rail = 105.2;
 // three office floors each, every tier framed by a stone spandrel band. Each structural bay holds a
 // pair of tall multi-pane windows.
 const base = 20.4, tiers = 5, perTier = 3, tier = (corner - base) / tiers, storey = tier / perTier;
-const bay = 7.1, win = 2.35, mullion = 0.55;
+const bay = 7.1, win = 2.35, mullion = 0.35;
 
-// The stone is a pale, near-neutral ivory: in a 2014 photo with both towers in the same sun it reads
-// lighter and much greyer than One Atlantic Center's pink granite (#ccaea0 there), and its shaded
-// face reads neutral grey at golden hour. Exported for the test.
-export const regionsStone = '#ddd6cc';
-const stoneShade = '#cfc8be', band = '#ebe6dd';
-// Glass base #737c86: HSV saturation 14%, value 53%, near-neutral as the glass rules ask for dark
-// glass. The light frames and stone gaps between panes keep the facade reading lighter than its
-// neighbour's dark strips.
-const glass = ['#737c86', '#707983', '#76808a'];
+// The stone, trim, glass and frames are One Atlantic Center's own (johnson-burgee.ts), not copies:
+// Sam (2026-11-28) wants the pair to read as one granite, as they do in life. The stone mesh takes
+// One Atlantic's ashlar too, so it shares that tower's shader program.
+const { granite: stone, trim: band, glass, frame } = oneAtlanticFacade;
+const stoneShade = band;
 // The hip roof is cool slate-grey standing-seam metal (2014 and 2025 photos), not copper.
 export const regionsRoof = '#717a7b';
 const roofDeck = '#666d70';
@@ -50,11 +48,11 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
   ], 1);
   const out = outwardSign(box);
 
-  shell.prism(box, footing, floor + corner, regionsStone, stoneShade);
-  shell.prism(cross, floor + corner, floor + parapet, regionsStone, stoneShade);
+  shell.prism(box, footing, floor + corner, stone, stoneShade);
+  shell.prism(cross, floor + corner, floor + parapet, stone, stoneShade);
 
   const pane = (a: P2, b: P2, length: number, u0: number, u1: number, y0: number, y1: number, lit: boolean, color: string) => {
-    const p = along(a, b, length, u0, 0.07 * out), q = along(a, b, length, u1, 0.07 * out);
+    const p = along(a, b, length, u0, 0.12 * out), q = along(a, b, length, u1, 0.12 * out);
     (lit ? lights : body).quad([p[0], y0, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y0, q[1]], color);
   };
   const hband = (a: P2, b: P2, length: number, y: number, h: number, proud: number) => {
@@ -74,6 +72,12 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
     for (let t = 0; t < tiers; t++) {
       const y0 = floor + base + t * tier + 0.9, y1 = floor + base + (t + 1) * tier - 0.35;
       const h = (y1 - y0) / perTier;
+      // One Atlantic's light frame behind each bay's pair: it shows as mullions and transoms.
+      for (let k = 0; k < bays; k++) {
+        const c = (k + 0.5) * pitch, half = mullion / 2 + win + 0.12;
+        const p = along(a, b, length, c - half, 0.06 * out), q = along(a, b, length, c + half, 0.06 * out);
+        body.quad([p[0], y0 - 0.12, p[1]], [p[0], y1 + 0.05, p[1]], [q[0], y1 + 0.05, q[1]], [q[0], y0 - 0.12, q[1]], frame);
+      }
       for (let f = 0; f < perTier; f++) {
         const row = t * perTier + f;
         pairs.forEach(([u0, u1], i) => {
@@ -154,5 +158,8 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
     body.quad([a[0], floor + hipTop, a[1]], [a[0], floor + rail, a[1]], [b[0], floor + rail, b[1]], [b[0], floor + hipTop, b[1]], band);
   });
   // Warm lamp light for the offices and the crown wash, as in the night photo (cream roof, warm offices).
-  return shell.finish('#f4dcb4', 0.55);
+  const model = shell.finish('#f4dcb4', 0.55);
+  // finish() adds the stone first, then the lamps; only the stone takes the ashlar.
+  oneAtlanticAshlar((model.group.children[0] as Mesh<BufferGeometry, Material>).material);
+  return model;
 }
