@@ -67,6 +67,7 @@ it('stands in for the midtown-central sliver, hidden inside the walls midtown-up
     .intersectObject(model.group)[0].point.z;
   expect(fromNorth(1041, 330)).toBeCloseTo(-3299.7, 1);
   expect(fromNorth(1020, 290)).toBeCloseTo(-3299.7, 1);
+  expect(fromNorth(1029.8, 290)).toBeCloseTo(-3299.7, 1); // no slot between the two blocks
   // Every vertex lies inside the walls midtown-upper draws, which move the seam out to z = -3295.
   const upper = context('midtown-upper').find(b => b.id === piedmontHouseId)!.rings[0]
     .map(([x, z]): P2 => [x, Math.abs(z + 3300) < 0.05 ? -3295 : z]);

@@ -48,11 +48,14 @@ function southSliver(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) 
   if (!s) return null;
   const inset = .3, north = seamZ + inset, south = southZ - inset;
   // Corners run NW, NE, SE, SW. The north sides close the blocks while that half is not there
-  // yet; the podium needs no east side against the tower.
+  // yet. The podium block runs into the tower block, so it needs no east side.
+  let towerWest: number | undefined;
   for (const [id, top, wall, sides] of [[towerPart, roofTop - .5, glass, [0, 1, 2, 3]], [podiumPart, baseTop - .5, cream, [0, 2, 3]]] as const) {
     const ring = site.parts?.find(q => q.id === id)?.rings[0];
     if (!ring) continue;
-    const west = Math.min(...ring.map(([x]) => x)) + inset - 1031, east = Math.max(...ring.map(([x]) => x)) - inset - 1031;
+    const west = Math.min(...ring.map(([x]) => x)) + inset - 1031;
+    const east = towerWest ?? Math.max(...ring.map(([x]) => x)) - inset - 1031;
+    if (id === towerPart) towerWest = west;
     const z0 = north + 3297, z1 = south + 3297;
     const at = [[west, z0], [east, z0], [east, z1], [west, z1]];
     const point = (i: number, y: number) => [at[i % 4][0], y, at[i % 4][1]];

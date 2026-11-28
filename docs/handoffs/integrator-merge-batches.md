@@ -37,8 +37,9 @@ go; the go for batch 1 covered batch 1 only.
 3. Later groups, about ten each in PR-number order: #624 (retarget #652 to `main` first) #626
    #628 #629 #630 #633 #635 #636 #637 #640 #641 #642 #643 #645 #648 #650 #652 #653 #655 #657
    #658 #659 #660 #661 #662 #664 #679 (a draft). The rest of the Rework set stays out.
-4. Budgets: High night calls stop at the 535 ceiling, no PR may add a High program, Low geometry
-   stays under 165 MB, and heap is the one to watch.
+4. Budgets: High night calls have a 535 ceiling and a 40-call reserve, so batches stop at 495
+   unless Sam says otherwise. No PR may add a High program, Low geometry stays under 165 MB (its
+   reserve), and heap is the one to watch.
 
 Evidence, scripts and contact sheets are in `~/Developer/merge-batch-sheets-2026-11-27/` on the
 Studio.
