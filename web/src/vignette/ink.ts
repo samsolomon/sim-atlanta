@@ -21,6 +21,8 @@ import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 
 /** The most areas the ink pass tests for the placeholder's cream night lines. */
 export const MARK_RECTS = 16;
+/** Points on the x-rayed vehicle's centreline (city/ghosts.ts): its own surface is never ghosted. */
+export const GHOST_SELF_POINTS = 18;
 
 export function inkShader() {
   return {
@@ -47,6 +49,23 @@ export function inkShader() {
       uMarkCount: { value: 0 },
       uMarkRects: { value: Array.from({ length: MARK_RECTS }, () => new THREE.Vector4()) },
       uInvViewProj: { value: new THREE.Matrix4() },
+      // City's ghosts (city/ghosts.ts): hidden vehicles write a code (level / 16) into the scene's
+      // alpha; uGhost 1 when any did this frame. Levels 1–3 x-ray the selected bus, streetcar or
+      // train; 4–9 are trains in tunnel, shallow to deep; 10–15 their track window, near to far.
+      // The pass fills each level in its service colour and outlines levels 1–9. A pixel whose
+      // surface lies on the x-rayed vehicle itself (inside its body around its centreline: uGhostSelfR
+      // across, uGhostSelfY below and above) is its
+      // visible part and is left alone. uInvViewProj must be current while uGhost is 1.
+      uGhost: { value: 0 },
+      uGhostNight: { value: 0 },
+      uGhostRail: { value: new THREE.Color('#1f5fd1') },
+      // The x-rayed vehicle's service colour (one vehicle at a time): city rail, intercity, bus, streetcar.
+      uGhostXray: { value: new THREE.Color('#1f5fd1') },
+      uGhostSelf: { value: Array.from({ length: GHOST_SELF_POINTS }, () => new THREE.Vector3()) },
+      uGhostSelfCount: { value: 0 },
+      uGhostSelfR: { value: 1.8 },
+      // Below (down to the ground under it) and above (its roof, short of a deck over it), metres.
+      uGhostSelfY: { value: new THREE.Vector2(2.8, 2.15) },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -62,6 +81,27 @@ export function inkShader() {
       uniform int uMarkCount;
       uniform vec4 uMarkRects[${MARK_RECTS}];
       uniform mat4 uInvViewProj;
+      uniform float uGhost, uGhostNight, uGhostSelfR;
+      uniform vec2 uGhostSelfY;
+      uniform vec3 uGhostRail, uGhostXray;
+      uniform vec3 uGhostSelf[${GHOST_SELF_POINTS}];
+      uniform int uGhostSelfCount;
+      float ghostLevel(float a) { float l = floor(a * 16.0 + 0.5); return l >= 1.0 && l <= 15.0 ? l : 0.0; }
+      // The surface at uv lies on the x-rayed vehicle (near its centreline polyline).
+      bool ghostSelf(vec2 uv) {
+        vec4 w = uInvViewProj * vec4(uv * 2.0 - 1.0, texture2D(tDepth, uv).x * 2.0 - 1.0, 1.0);
+        vec3 p = w.xyz / w.w;
+        for (int i = 0; i < ${GHOST_SELF_POINTS}; i++) {
+          if (i >= uGhostSelfCount) break;
+          vec3 a = uGhostSelf[i], b = uGhostSelf[i + 1 < uGhostSelfCount ? i + 1 : i];
+          vec3 ab = b - a;
+          float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+          vec3 d = p - a - ab * t;
+          // A body, not a ball: a deck or bridge just over the roof is an occluder, not the vehicle.
+          if (length(d.xz) < uGhostSelfR && d.y > -uGhostSelfY.x && d.y < uGhostSelfY.y) return true;
+        }
+        return false;
+      }
       // Whether the surface at uv lies inside one of the placeholder's white areas.
       float marked(vec2 uv) {
         vec4 w = uInvViewProj * vec4(uv * 2.0 - 1.0, texture2D(tDepth, uv).x * 2.0 - 1.0, 1.0);
@@ -92,8 +132,26 @@ export function inkShader() {
         float jump = max(abs(dl + dr - 2.0 * d), abs(du + dd - 2.0 * d)) / d;
         float edgeD = smoothstep(0.0015, 0.008, jump);
         float c = lum(col.rgb);
-        float cl = lum(texture2D(tDiffuse, vUv - vec2(o.x, 0.0)).rgb), cr = lum(texture2D(tDiffuse, vUv + vec2(o.x, 0.0)).rgb);
-        float cd = lum(texture2D(tDiffuse, vUv - vec2(0.0, o.y)).rgb), cu = lum(texture2D(tDiffuse, vUv + vec2(0.0, o.y)).rgb);
+        vec4 sl = texture2D(tDiffuse, vUv - vec2(o.x, 0.0)), sr = texture2D(tDiffuse, vUv + vec2(o.x, 0.0));
+        vec4 sd = texture2D(tDiffuse, vUv - vec2(0.0, o.y)), su = texture2D(tDiffuse, vUv + vec2(0.0, o.y));
+        float cl = lum(sl.rgb), cr = lum(sr.rgb), cd = lum(sd.rgb), cu = lum(su.rgb);
+        // Ghosts: fill under this pixel's scene lines, then their own outline over them (applied last).
+        float gLine = 0.0; vec3 gInk = uInk;
+        if (uGhost > 0.5) {
+          float g0 = ghostLevel(col.a);
+          if (g0 > 0.0 && !(g0 < 3.5 && uGhostSelfCount > 0 && ghostSelf(vUv))) {
+            vec3 fill = g0 < 3.5 ? uGhostXray : uGhostRail;
+            float a = g0 < 3.5 ? 0.5 : g0 < 9.5 ? 0.56 - 0.06 * (g0 - 4.0) : 0.6 - 0.09 * (g0 - 10.0);
+            // Night: the fill stays in its colour, lifted a little; the track window goes cream.
+            vec3 nightFill = g0 > 9.5 ? uMarkInk : mix(fill, vec3(1.0), 0.18);
+            col.rgb = mix(col.rgb, mix(fill, nightFill, uGhostNight), a);
+            if (g0 < 9.5 && (ghostLevel(sl.a) != g0 || ghostLevel(sr.a) != g0 || ghostLevel(sd.a) != g0 || ghostLevel(su.a) != g0)) {
+              gLine = 1.0;
+              // Tunnel ghosts take the city's ink (cream at night); the x-ray its own colour.
+              gInk = g0 < 3.5 ? mix(fill * 0.6, mix(fill, vec3(1.0), 0.45), uGhostNight) : mix(uInk, uMarkInk, uGhostNight);
+            }
+          }
+        }
         float edgeC = smoothstep(0.035, 0.11, max(abs(cl - cr), abs(cu - cd)));
         // Fade lines out with distance so the far side doesn't fill with noise.
         float fade = 1.0 - smoothstep(1400.0, 4200.0, d);
@@ -109,7 +167,7 @@ export function inkShader() {
           if (du < near) { near = du; at = vUv + vec2(0.0, o.y); }
           ink = mix(uInk, uMarkInk, marked(at) * uMarkNight);
         }
-        if (uFoliage < 0.5) { gl_FragColor = vec4(mix(col.rgb, ink, line), 1.0); return; }
+        if (uFoliage < 0.5) { gl_FragColor = vec4(mix(mix(col.rgb, ink, line), gInk, gLine), 1.0); return; }
         float m = mode(vUv);
         float ml = mode(vUv - vec2(o.x, 0.0)), mr = mode(vUv + vec2(o.x, 0.0));
         float md = mode(vUv - vec2(0.0, o.y)), mu = mode(vUv + vec2(0.0, o.y));
@@ -139,7 +197,7 @@ export function inkShader() {
           if (!inside && m > 0.5) line = 0.0;
           if (fm > 1.5) { ink = uFoliageInk; line *= 0.6; }
         }
-        gl_FragColor = vec4(mix(col.rgb, ink, line), 1.0);
+        gl_FragColor = vec4(mix(mix(col.rgb, ink, line), gInk, gLine), 1.0);
       }`,
   };
 }
