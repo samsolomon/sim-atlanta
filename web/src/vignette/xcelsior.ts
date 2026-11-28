@@ -436,7 +436,8 @@ function quad(a: number[], b: number[], c: number[], d: number[]) {
  * code instead of a lit surface. Each instance carries `aGhost` (its code, written to alpha only)
  * and `aGhostClip` (a world plane; the side it faces negative is dropped, e.g. the open-air part
  * of a car at a tunnel mouth). City's ghosts ride this program so they compile none of their own:
- * it is already instanced and custom-keyed. The bus itself leaves `ghost` at 0.
+ * it is already instanced and custom-keyed. The bus itself leaves `ghost` at 0. The cutaway's real
+ * cars draw here too, with `ghost` at 0 and their line colour from `aLine` (kinds 5 and 9).
  */
 export function busMaterial(night: { value: number }, ghost: { value: number } = { value: 0 }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -444,8 +445,8 @@ export function busMaterial(night: { value: number }, ghost: { value: number } =
     sh.uniforms.uNight = night;
     sh.uniforms.uGhost = ghost;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;\nattribute float aGhost;\nattribute vec4 aGhostClip;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;\nvGhost = aGhost;\nvGhostClip = aGhostClip;')
+      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;\nattribute float aGhost;\nattribute vec4 aGhostClip;\nattribute vec4 aLine;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;\nvarying vec4 vLine;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;\nvGhost = aGhost;\nvGhostClip = aGhostClip;\nvLine = aLine;')
       .replace('#include <project_vertex>', `#include <project_vertex>
         vec4 ghostW = vec4(transformed, 1.0);
         #ifdef USE_INSTANCING
@@ -453,13 +454,17 @@ export function busMaterial(night: { value: number }, ghost: { value: number } =
         #endif
         vGhostW = (modelMatrix * ghostW).xyz;`);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uNight;\nuniform float uGhost;\nvarying float vKind;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;')
+      .replace('#include <common>', '#include <common>\nuniform float uNight;\nuniform float uGhost;\nvarying float vKind;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;\nvarying vec4 vLine;')
       .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n  if (uGhost > 0.5 && dot(vGhostClip.xyz, vGhostW) + vGhostClip.w < 0.0) discard;')
       .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  if (uGhost > 0.5) gl_FragColor = vec4(0.0, 0.0, 0.0, vGhost);')
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
-        if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = vec3(0.9, 0.08, 0.06);`,
+        if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = vec3(0.9, 0.08, 0.06);
+        // A CQ400 in a cutaway (city/ghosts.ts) takes its own line colour on its LEDs and chevron
+        // (kinds 5 and 9) from aLine with w 0; the bus leaves it at the default (0, 0, 0, 1).
+        float lineSet = (1.0 - vLine.w) * step(4.5, vKind) * (step(vKind, 5.5) + step(8.5, vKind));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vLine.rgb, lineSet);`,
       )
       .replace(
         '#include <emissivemap_fragment>',
@@ -469,7 +474,8 @@ export function busMaterial(night: { value: number }, ghost: { value: number } =
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uNight * 0.6;
         if (vKind > 3.5 && vKind < 4.5) totalEmissiveRadiance += vec3(0.84, 0.92, 1.0) * uNight * 0.4;
         if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += vec3(1.0, 0.86, 0.66) * uNight * 0.09;
-        if (vKind > 6.5) totalEmissiveRadiance += diffuseColor.rgb * (0.5 + uNight);`,
+        if (vKind > 6.5) totalEmissiveRadiance += diffuseColor.rgb * (0.5 + uNight);
+        totalEmissiveRadiance += vLine.rgb * lineSet * (0.6 + uNight);`,
       );
   };
   m.customProgramCacheKey = () => 'xcelsior';

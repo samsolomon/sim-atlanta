@@ -6,7 +6,7 @@ import { PlacementIndex } from '../vignette/spatial';
 import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '../vignette/world';
 
 import type { prepareEastCut, ServiceTrack } from './east-cut';
-import { GHOST, pushCarEnds, trackLevel, tunnelLevel, type CityGhosts } from './ghosts';
+import { CUT_HALF, cutSection, GHOST, pushCarEnds, trackLevel, tunnelLevel, type CityGhosts } from './ghosts';
 import { POOL, type PoolSink } from './headlight-pools';
 
 type Segment = { al: Alignment; i: number };
@@ -122,6 +122,17 @@ function profileAt(al: Alignment, s: number) {
   return al.elev(s) - (al.referenceY?.(s) ?? 0);
 }
 
+/**
+ * The cutaway (city/ghosts.ts): which trains in tunnel open the ground around them, and how.
+ * `all`: the `cap` nearest the camera's target; `selected`: the selected or followed train only.
+ * `cut`: a straight-sided cut with its cross-section showing; `lens`: an opening that tapers to its
+ * ends. Trains without a hole keep their ghost; `ghosts` keeps it for cutaway trains too, wherever
+ * their opening is shut (three more draws).
+ */
+export type HoleOptions = { scope: 'all' | 'selected'; shape: 'cut' | 'lens'; cap: number; ghosts?: boolean };
+/** Cutaway reach past the hidden cars (m), as a share of the consist, at least `min`. */
+export const HOLE_REACH = { cut: { share: 0.15, min: 12 }, lens: { share: 0.3, min: 20 }, pitch: 6, overlap: 0.6 } as const;
+
 /** Ghost track window each side of a ghost train, as a share of its length, and its limits (m). */
 export const TRACK_WINDOW = { share: 1.5, min: 120, max: 320, pitch: 7, dash: 4.6 } as const;
 
@@ -147,6 +158,19 @@ export class CityTrains {
   readonly xrayPoints: THREE.Vector3[] = [];
   /** Cars ghosted this frame, for tests and readouts. */
   ghostCars = 0;
+  /** The cutaway's options; null: none (ghosts only). */
+  holes: HoleOptions | null = null;
+  /** The camera's target (world x, z): the cutaway opens for the trains nearest it. */
+  readonly holeFocus = { x: 0, z: 0 };
+  /** The camera's position (world): each opening lies where the ground stands between it and the train. */
+  readonly holeEye = new THREE.Vector3(0, 1000, 0);
+  /** Trains opened this frame (chosen from the last frame's trains in tunnel) and cars drawn in them. */
+  holeTrains = new Set<string>();
+  holeCars = 0;
+  private holeCandidates: { id: string; d: number }[] = [];
+  private lineColor = new THREE.Color();
+  private cutEye = new THREE.Vector3();
+  private cutInverse = new THREE.Matrix4();
   private ghostMatrix = new THREE.Matrix4();
   private ghostQuat = new THREE.Quaternion();
   private ghostPos = new THREE.Vector3();
@@ -225,6 +249,64 @@ export class CityTrains {
     if (batch.add(this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), level, clip)) this.ghostCars++;
   }
 
+  /** A real car in a cutaway: its own geometry's colours, its line colour on its LEDs. */
+  private holeCar(color: string, cab: boolean, local: THREE.Matrix4) {
+    const g = this.ghosts;
+    if (!g) return;
+    const batch = g.batch(cab ? 'cut cab' : 'cut middle', () => this.anyGeometry(color, cab), this.clip, cab ? 32 : 96, false,
+      { pass: 'car', line: true, attrs: ['color', 'aKind'] });
+    if (batch.add(this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), 0, null, this.lineColor.set(color))) this.holeCars++;
+  }
+
+  /** The cutaway around a train's hidden cars (s0–s1 on this track), only over hidden track. */
+  private cutaway(al: Alignment, s0: number, s1: number, off: number, consist: number, shape: HoleOptions['shape']) {
+    const g = this.ghosts;
+    if (!g) return;
+    const { lid, box } = g.cutaway(this.clip);
+    const reach = HOLE_REACH[shape];
+    const r = Math.max(reach.min, reach.share * consist);
+    const a = s0 - r, e = s1 + r, mid = (a + e) / 2, half = (e - a) / 2;
+    const { pitch, overlap } = HOLE_REACH;
+    const eye = this.cutEye.copy(this.holeEye).applyMatrix4(this.cutInverse.copy(this.group.matrixWorld).invert());
+    const lidM = new THREE.Matrix4(), boxM = new THREE.Matrix4();
+    const along = new THREE.Vector3(), across = new THREE.Vector3(), centre = new THREE.Vector3();
+    const at = (t: number) => {
+      const p = al.line.at(t);
+      along.set(p.dx, 0, p.dz);
+      across.set(p.nx, 0, p.nz);
+      const floor = al.elev(t) - 0.25;
+      centre.set(p.x - p.nx * off, floor, p.z - p.nz * off);
+      // The lid stands a little over the drawn ground (decks and plazas sit above the rail reference).
+      return Math.max(floor + 2.5, (al.referenceY?.(t) ?? 0) + 1.5);
+    };
+    const put = (m: THREE.Matrix4, into: typeof lid) => into.add(this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, m), 0);
+    let first = Infinity, last = -Infinity;
+    for (let t = Math.ceil(a / pitch) * pitch; t <= e; t += pitch) {
+      if (!ghostHidden(al, t)) continue;
+      const u = (t - mid) / half;
+      // The lens narrows toward its ends; the cut keeps its width.
+      const width = shape === 'lens' ? Math.max(0.3, Math.sqrt(Math.max(0, 1 - u * u))) : 1;
+      const rim = at(t);
+      cutSection({ centre, along, across, rim, length: pitch + overlap, eye, width }, lidM, boxM);
+      put(lidM, lid);
+      put(boxM, box);
+      first = Math.min(first, t); last = Math.max(last, t);
+    }
+    // An end wall only at the far end from the eye (a near one would hide the train): a section
+    // turned across the track, its wall on the opening's end.
+    if (first <= last) {
+      for (const [t, dirn] of [[first, -1], [last, 1]] as const) {
+        const rim = at(t);
+        const u = along.clone().multiplyScalar(dirn);
+        const end = centre.clone().addScaledVector(u, (pitch + overlap) / 2);
+        if ((eye.x - end.x) * u.x + (eye.z - end.z) * u.z > 0) continue; // the eye is beyond this end
+        boxM.makeBasis(u, THREE.Object3D.DEFAULT_UP.clone().multiplyScalar(rim - centre.y), across.clone().multiplyScalar(2 * CUT_HALF))
+          .setPosition(end.x - u.x * CUT_HALF, centre.y, end.z - u.z * CUT_HALF);
+        put(boxM, box);
+      }
+    }
+  }
+
   /** The x-rayed train's centreline: each car's ends at mid-height, in world space. */
   private xrayPoint(local: THREE.Matrix4) {
     pushCarEnds(this.xrayPoints, this.ghostMatrix.multiplyMatrices(this.group.matrixWorld, local), CAR_LENGTH / 2, 1.9);
@@ -277,7 +359,14 @@ export class CityTrains {
     this.night.value = darkness;
     this.surfaceCars = 0;
     this.ghostCars = 0;
+    this.holeCars = 0;
     this.xrayPoints.length = 0;
+    // This frame's cutaways: last frame's trains in tunnel, nearest the focus first (or the selected one).
+    const holes = this.ghosts ? this.holes : null;
+    this.holeTrains = new Set(!holes ? [] : holes.scope === 'selected'
+      ? this.holeCandidates.filter(c => c.id === this.xrayId).map(c => c.id)
+      : [...this.holeCandidates].sort((p, q) => p.d - q.d).slice(0, holes.cap).map(c => c.id));
+    this.holeCandidates = [];
     for (const p of this.pools.values()) p.count = 0;
     const b = this.bounds;
     if (this.ghosts) this.group.updateWorldMatrix(true, false);
@@ -298,6 +387,9 @@ export class CityTrains {
       const xray = this.ghosts !== null && t.id === this.xrayId;
       // The consist's extent along its track, for its track window (dashes only where hidden).
       let ghostFrom = Infinity, ghostTo = -Infinity;
+      // Its hidden cars' extent, for a cutaway.
+      const hole = this.holeTrains.has(t.id);
+      let hiddenFrom = Infinity, hiddenTo = -Infinity;
       for (let i = 0; i < units; i++) {
         // The Map symbol is centred on the source position. Both ends can straddle a portal.
         const offset = ((units - 1) / 2 - i) * pitch;
@@ -370,7 +462,17 @@ export class CityTrains {
             clip = this.ghostClip.set(n.x, n.y, n.z, -n.dot(w));
             this.ghostPos.set(cx, al.elev(sc) + 0.55, cz);
           }
-          this.ghostCar(color, role !== 0, local, xray ? GHOST.xrayTrain : tunnelLevel(profileAt(al, sc)), clip);
+          if (cover.kind !== 'open') {
+            hiddenFrom = Math.min(hiddenFrom, sc - CAR_LENGTH / 2);
+            hiddenTo = Math.max(hiddenTo, sc + CAR_LENGTH / 2);
+          }
+          // A train with a cutaway shows its real cars there and no ghost (Sam: ghosts are for
+          // trains without a hole), so the cutaway's four draws replace the ghosts' three.
+          const inHole = hole && cover.kind !== 'open';
+          if (inHole) this.holeCar(color, role !== 0, local);
+          // The selected train keeps its x-ray wherever its opening is shut (a tower in front), so it is
+          // never lost; with `ghosts` set, every cutaway train keeps its ghost there too.
+          if (!inHole || xray || holes?.ghosts) this.ghostCar(color, role !== 0, local, xray ? GHOST.xrayTrain : tunnelLevel(profileAt(al, sc)), clip);
           if (xray) this.xrayPoint(local);
         }
         if (!drawn) continue;
@@ -382,7 +484,12 @@ export class CityTrains {
         this.surfaceCars++;
         if (i === 0) this.light(al, sc, dir, off);
       }
-      if (ghostFrom < ghostTo && track) this.ghostTrack(track.al, ghostFrom, ghostTo, track.dir * MARTA_TRACK_OFFSET, units * pitch - CAR_GAP);
+      if (ghostFrom < ghostTo && track && (!hole || holes?.ghosts)) this.ghostTrack(track.al, ghostFrom, ghostTo, track.dir * MARTA_TRACK_OFFSET, units * pitch - CAR_GAP);
+      if (hiddenFrom < hiddenTo && track) {
+        const p = track.al.line.at((hiddenFrom + hiddenTo) / 2);
+        this.holeCandidates.push({ id: t.id, d: Math.hypot(p.x - this.holeFocus.x, p.z - this.holeFocus.z) });
+        if (hole && holes) this.cutaway(track.al, hiddenFrom, hiddenTo, track.dir * MARTA_TRACK_OFFSET, units * pitch - CAR_GAP, holes.shape);
+      }
     }
     for (const p of this.pools.values()) {
       for (let i = p.count; i < p.meshes.length; i++) p.meshes[i].visible = false;

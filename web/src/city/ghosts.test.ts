@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { Line } from '../vignette/geom';
 import { busMaterial } from '../vignette/xcelsior';
-import { CityGhosts, GHOST, trackLevel, tunnelLevel } from './ghosts';
-import { carCover, CityTrains, TRACK_WINDOW } from './trains';
+import { CityGhosts, CUT_HALF, cutSection, GHOST, trackLevel, tunnelLevel } from './ghosts';
+import { carCover, CityTrains, TRACK_WINDOW, type HoleOptions } from './trains';
 import { VehicleFollow } from './vehicle-follow';
 import { xrayTarget } from './xray';
 
@@ -234,5 +234,87 @@ describe('Ghost draw', () => {
     expect(at('disable(12)')).toBeGreaterThan(at('draw'));
     expect(calls.filter(c => c !== 'draw').slice(-3)).toEqual(['disable(12)', 'blendEquation(10)', 'colorMask(true,true,true,true)']);
     expect(calls.some(c => c.startsWith('getParameter'))).toBe(false);
+  });
+});
+
+describe('Cutaway (Sam, 2026-11-28)', () => {
+  const along = new THREE.Vector3(1, 0, 0), across = new THREE.Vector3(0, 0, -1); // a track along +x; left is −z
+  const centre = new THREE.Vector3(0, -12, 0);
+
+  it('opens the ground where it stands between the eye and the train, wall on the far side', () => {
+    const lid = new THREE.Matrix4(), box = new THREE.Matrix4();
+    // Eye to the south (+z), up high: the floor seen from it meets the rim south of the track.
+    const eye = new THREE.Vector3(0, 300, 300);
+    const { a } = cutSection({ centre, along, across, rim: 1.5, length: 6.6, eye, width: 1 }, lid, box);
+    expect(a).toBeLessThan(0); // toward +z, which is −across
+    // The lid spans from the far rim (north, −z) to the floor's projection (south).
+    const corner = (x: number, z: number) => new THREE.Vector3(x, 0, z).applyMatrix4(lid);
+    const zs = [corner(-0.5, -0.5).z, corner(0.5, 0.5).z].sort((p, q) => p - q);
+    expect(zs[0]).toBeCloseTo(-CUT_HALF, 5);
+    const k = 13.5 / (300 + 12);
+    expect(zs[1]).toBeCloseTo(CUT_HALF + 300 * k, 4);
+    expect(corner(0, 0).y).toBeCloseTo(1.5);
+    // The box's one wall (at local +x) stands on the far, north side.
+    expect(new THREE.Vector3(CUT_HALF, 0, 0).applyMatrix4(box).z).toBeCloseTo(-CUT_HALF);
+    // Straight overhead, the opening is the rim itself.
+    cutSection({ centre, along, across, rim: 1.5, length: 6.6, eye: new THREE.Vector3(0, 500, 0), width: 1 }, lid, box);
+    expect(new THREE.Vector3(0.5, 0, 0.5).applyMatrix4(lid).z - new THREE.Vector3(-0.5, 0, -0.5).applyMatrix4(lid).z).toBeCloseTo(-2 * CUT_HALF, 5);
+  });
+
+  function cutSetup(holes: HoleOptions) {
+    const s = setup();
+    s.trains.holes = holes;
+    s.trains.holeEye.set(0, 400, 300);
+    const run = (states: ReturnType<typeof train>[]) => { for (let i = 0; i < 2; i++) s.run(states); }; // holes follow last frame's trains
+    return { ...s, run };
+  }
+
+  it('opens the nearest trains in tunnel (cap) and drops their ghost, keeping ghosts for the rest', () => {
+    const { trains, run, ghosts, edges } = cutSetup({ scope: 'all', shape: 'cut', cap: 1 });
+    trains.holeFocus.x = 300;
+    run([train('near', 300, 4), train('far', 500, 4)]);
+    expect([...trains.holeTrains]).toEqual(['near']);
+    expect(trains.holeCars).toBe(4);
+    expect(trains.ghostCars).toBe(4); // only 'far'
+    const { lid, box } = ghosts.cutaway(edges);
+    expect(lid.n).toBeGreaterThan(5);
+    expect(box.n).toBe(lid.n + 1); // one far end wall
+  });
+
+  it('opens only the selected train in the selected scope, which keeps its x-ray where shut', () => {
+    const { trains, run } = cutSetup({ scope: 'selected', shape: 'lens', cap: 4 });
+    trains.xrayId = 'sel';
+    run([train('sel', 300, 4), train('other', 500, 4)]);
+    expect([...trains.holeTrains]).toEqual(['sel']);
+    expect(trains.holeCars).toBe(4);
+    expect(trains.ghostCars).toBe(8); // its x-ray plus the other train's ghost
+  });
+
+  it('costs nothing when no train is in tunnel', () => {
+    const { trains, run, ghosts } = cutSetup({ scope: 'all', shape: 'cut', cap: 4 });
+    run([train('open', -300, 4)]);
+    expect(trains.holeTrains.size).toBe(0);
+    expect(ghosts.calls).toBe(0);
+  });
+
+  it('draws the cutaway in three state before ghosts, and clears stencil only for a lid', () => {
+    const ghosts = new CityGhosts();
+    const geo = new THREE.BoxGeometry();
+    ghosts.begin();
+    ghosts.batch('g', () => geo, [], 2).add(new THREE.Matrix4(), GHOST.tunnel);
+    const { lid, box } = ghosts.cutaway([]);
+    lid.add(new THREE.Matrix4(), 0);
+    box.add(new THREE.Matrix4(), 0);
+    ghosts.end();
+    const order: string[] = [];
+    const gl = new Proxy({ STENCIL_BUFFER_BIT: 1024, COLOR_BUFFER_BIT: 16384 } as Record<string, unknown>, { get: (t, k: string) => k in t ? t[k] : (...a: unknown[]) => { if (k === 'clear') order.push(`clear ${a[0]}`); } });
+    const renderer = { getContext: () => gl, state: { setBlending: vi.fn(), buffers: { color: { setMask: vi.fn(), setClear: vi.fn() }, stencil: { setMask: vi.fn(), setClear: vi.fn() } } },
+      renderBufferDirect: vi.fn((_c, _s, _g, m: THREE.Material) => order.push(m.name)) } as unknown as THREE.WebGLRenderer;
+    ghosts.armed = true;
+    ghosts.draw(renderer, new THREE.Scene(), new THREE.PerspectiveCamera());
+    expect(order).toEqual(['clear 1024', 'ghost lid', 'ghost box', 'clear 16384', 'ghost ghost']);
+    const m = (n: string) => (ghosts.group.children.find(c => (c as THREE.Mesh).material && ((c as THREE.Mesh).material as THREE.Material).name === n) as THREE.Mesh).material as THREE.MeshLambertMaterial;
+    expect([m('ghost lid').colorWrite, m('ghost lid').stencilZPass, m('ghost box').depthFunc, m('ghost ghost').stencilFunc]).toEqual([false, THREE.ReplaceStencilOp, THREE.AlwaysDepth, THREE.NotEqualStencilFunc]);
+    expect(m('ghost box').customProgramCacheKey()).toBe(busMaterial({ value: 0 }).customProgramCacheKey());
   });
 });

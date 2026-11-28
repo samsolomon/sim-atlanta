@@ -75,7 +75,7 @@ import { freightNight } from './freight-batches';
 import { HeadlightPools } from './headlight-pools';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
-import { CityTrains } from './trains';
+import { CityTrains, type HoleOptions } from './trains';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { CityGhosts, GHOST, pushCarEnds } from './ghosts';
 import { xrayTarget } from './xray';
@@ -326,6 +326,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
+  // The cutaway around trains in tunnel (city/ghosts.ts, trains.ts HoleOptions). Review switches
+  // (dev or ?perf): `cutaway=off|cut|lens`, `holes=all|selected`. `?perf&ghost=off` turns it off too.
+  const reviewSwitch = (k: string) => (perfEnabled || import.meta.env.DEV) ? query.get(k) : null;
+  const cutawayOptions: HoleOptions | null = reviewSwitch('cutaway') === 'off' || reviewSwitch('ghost') === 'off' ? null
+    : { shape: reviewSwitch('cutaway') === 'lens' ? 'lens' : 'cut', scope: reviewSwitch('holes') === 'selected' ? 'selected' : 'all', cap: 4, ghosts: reviewSwitch('holeghost') === '1' };
   // A/B for phone measurements: ?ground=old draws the near ground at every distance.
   GroundSurface.farLow = query.get('ground') !== 'old';
   const board = query.get('board');
@@ -1010,6 +1015,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (ghosts) {
     scene.add(ghosts.group);
     trains.ghosts = ghosts;
+    trains.holes = cutawayOptions;
     // After the scene's transparent objects, with its lights still bound (same program key).
     scene.onAfterRender = (r, sc, cam) => ghosts.draw(r, sc as THREE.Scene, cam);
   }
@@ -1580,8 +1586,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
-  const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
-  sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
+  // The cutaway (city/ghosts.ts) marks its openings in stencil: depth goes D24S8, the same 32 bits a
+  // pixel as before (24-bit depth), read by ink and AO exactly as before. Without it, plain depth.
+  const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, stencilBuffer: !!cutawayOptions });
+  sceneTarget.depthTexture = cutawayOptions
+    ? new THREE.DepthTexture(1, 1, THREE.UnsignedInt248Type, undefined, undefined, undefined, undefined, undefined, undefined, THREE.DepthStencilFormat)
+    : new THREE.DepthTexture(1, 1);
   const composer = new EffectComposer(renderer, sceneTarget);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
@@ -2359,6 +2369,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const xray = ghostsLive ? xrayTarget(options.follow?.vehicle, options.selected?.() ?? null) : null;
     ghosts?.begin();
     trains.ghosts = ghostsLive ? ghosts : null;
+    if (ghosts) {
+      ghosts.night.value = atm.dark;
+      trains.holeFocus.x = controls.target.x;
+      trains.holeFocus.z = controls.target.z;
+      trains.holeEye.copy(camera.position);
+    }
     trains.xrayId = xray?.kind === 'train' ? xray.id : null;
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
