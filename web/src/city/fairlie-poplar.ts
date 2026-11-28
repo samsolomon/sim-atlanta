@@ -293,18 +293,23 @@ const parts: [id: string, origin: P2, axis: P2, draw: (s: Shell) => void][] = [
 
 /**
  * The block as one landmark: one shell (one body, one lamps mesh) owned by Haas-Howell
- * (or the next building present), with each building that is on the board drawn in its
- * own street frame and taken off the generic list.
+ * (or the next building the shell accepts), with each building that is on the board drawn
+ * in its own street frame and taken off the generic list.
  */
 export function createFairliePoplar(buildings: VBuilding[], grid: GroundGrid) {
-  const anchor = parts.find(([id]) => buildings.some(b => b.id === id))?.[0];
-  if (!anchor) return null;
-  // The probe checks that Haas-Howell's outline is still where this skin expects it.
-  const owner = landmarkShell(buildings, grid, anchor, 'Fairlie–Poplar block (GSU)', blockOrigin, [1, 0], anchor === haasHowellId ? [[-24.5, 17.6]] : []);
+  // A missing or rejected outline costs only its own skin.
+  const rejected = new Set<string>();
+  let owner: ReturnType<typeof landmarkShell> = null;
+  for (const [id] of parts) {
+    // The probe checks that Haas-Howell's outline is still where this skin expects it.
+    owner = landmarkShell(buildings, grid, id, 'Fairlie–Poplar block (GSU)', blockOrigin, [1, 0], id === haasHowellId ? [[-24.5, 17.6]] : []);
+    if (owner) break;
+    rejected.add(id);
+  }
   if (!owner) return null;
   const drawn = new Set<string>();
   for (const [id, origin, axis, draw] of parts) {
-    const site = buildings.find(b => b.id === id);
+    const site = rejected.has(id) ? undefined : buildings.find(b => b.id === id);
     const s = site && part(owner, grid, site, origin, axis);
     if (!s) continue;
     draw(s);

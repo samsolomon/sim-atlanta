@@ -56,4 +56,10 @@ describe('Fairlie–Poplar block', () => {
     const partial = createFairliePoplar([...sites.filter(b => b.id !== haasHowellId), other], grid);
     expect(partial?.buildings).toEqual([other]);
   });
+
+  it('draws the other three when the shell rejects Haas-Howell', () => {
+    const holed = sites.map(b => b.id === haasHowellId ? { ...b, rings: [b.rings[0], b.rings[0]] } : b);
+    const partial = createFairliePoplar([...holed, other], grid);
+    expect(partial?.buildings.map(b => b.id)).toEqual([haasHowellId, other.id]);
+  });
 });
