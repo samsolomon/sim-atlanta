@@ -128,12 +128,16 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
   faces(box, (a, b, length) => {
     const bays = Math.max(1, Math.round(length / bay)), pitch = length / bays;
     for (let k = 0; k < bays; k++) {
-      const [x, z] = along(a, b, length, k * pitch, -0.6 * out);
+      const [x, z] = along(a, b, length, Math.max(0.6, k * pitch), -0.6 * out); // the corner pier sits inset on both walls
       // Only where the corner roof is exposed, outside the cross.
       if (Math.abs(x) > W - notchX + 0.4 && Math.abs(z) > D - notchZ + 0.4) finial(x, z, floor + corner, 0.55, 3.2);
     }
   });
-  cross.forEach(([x, z]) => finial(x - Math.sign(x) * 0.6, z - Math.sign(z) * 0.6, floor + parapet, 0.7, 3.4));
+  // The cross's outer corners only: at its inside corners the hip roof would bury them.
+  cross.forEach(([x, z]) => {
+    if (Math.abs(x) < W - 0.1 && Math.abs(z) < D - 0.1) return;
+    finial(x - Math.sign(x) * 0.6, z - Math.sign(z) * 0.6, floor + parapet, 0.7, 3.4);
+  });
 
   // The truncated hip roof: four slate slopes up to a flat deck with a rail. The metal is in the lamp
   // mesh so the floodlit crown glows as one even surface at night.
