@@ -53,7 +53,8 @@ export function inkShader() {
       // alpha; uGhost 1 when any did this frame. Levels 1–3 x-ray the selected bus, streetcar or
       // train; 4–9 are trains in tunnel, shallow to deep; 10–15 their track window, near to far.
       // The pass fills each level in its service colour and outlines levels 1–9. A pixel whose
-      // surface lies on the x-rayed vehicle itself (within uGhostSelfR of its centreline) is its
+      // surface lies on the x-rayed vehicle itself (inside its body around its centreline: uGhostSelfR
+      // across, uGhostSelfY below and above) is its
       // visible part and is left alone. uInvViewProj must be current while uGhost is 1.
       uGhost: { value: 0 },
       uGhostNight: { value: 0 },
@@ -62,7 +63,9 @@ export function inkShader() {
       uGhostStreetcar: { value: new THREE.Color('#3b82e6') },
       uGhostSelf: { value: Array.from({ length: GHOST_SELF_POINTS }, () => new THREE.Vector3()) },
       uGhostSelfCount: { value: 0 },
-      uGhostSelfR: { value: 2.6 },
+      uGhostSelfR: { value: 1.8 },
+      // Below (down to the ground under it) and above (its roof, short of a deck over it), metres.
+      uGhostSelfY: { value: new THREE.Vector2(2.8, 2.15) },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -79,6 +82,7 @@ export function inkShader() {
       uniform vec4 uMarkRects[${MARK_RECTS}];
       uniform mat4 uInvViewProj;
       uniform float uGhost, uGhostNight, uGhostSelfR;
+      uniform vec2 uGhostSelfY;
       uniform vec3 uGhostRail, uGhostBus, uGhostStreetcar;
       uniform vec3 uGhostSelf[${GHOST_SELF_POINTS}];
       uniform int uGhostSelfCount;
@@ -92,7 +96,9 @@ export function inkShader() {
           vec3 a = uGhostSelf[i], b = uGhostSelf[i + 1 < uGhostSelfCount ? i + 1 : i];
           vec3 ab = b - a;
           float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
-          if (length(p - a - ab * t) < uGhostSelfR) return true;
+          vec3 d = p - a - ab * t;
+          // A body, not a ball: a deck or bridge just over the roof is an occluder, not the vehicle.
+          if (length(d.xz) < uGhostSelfR && d.y > -uGhostSelfY.x && d.y < uGhostSelfY.y) return true;
         }
         return false;
       }

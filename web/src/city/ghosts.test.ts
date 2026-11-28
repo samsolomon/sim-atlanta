@@ -195,7 +195,7 @@ describe('Ghost draw', () => {
         if (k === 'getParameter') return a[0] === 3 ? new Float32Array([0.1, 0.2, 0.3, 1]) : 32774;
       },
     });
-    const renderer = { getContext: () => gl, state: { setBlending: vi.fn(), buffers: { color: { setMask: vi.fn() } } }, renderBufferDirect: vi.fn() } as unknown as THREE.WebGLRenderer;
+    const renderer = { getContext: () => gl, state: { setBlending: vi.fn(), buffers: { color: { setMask: vi.fn() } } }, renderBufferDirect: vi.fn(() => { calls.push('draw'); }) } as unknown as THREE.WebGLRenderer;
     const camera = new THREE.PerspectiveCamera();
     ghosts.draw(renderer, new THREE.Scene(), camera);
     expect(renderer.renderBufferDirect).not.toHaveBeenCalled();
@@ -204,6 +204,12 @@ describe('Ghost draw', () => {
     expect(renderer.renderBufferDirect).toHaveBeenCalledTimes(1);
     expect(ghosts.armed).toBe(false);
     expect(calls).toContain('colorMask(false,false,false,true)');
-    expect(calls.slice(-4)).toEqual(['disable(12)', 'blendEquationSeparate(32774,32774)', 'colorMask(true,true,true,true)', 'clearColor(0.10000000149011612,0.20000000298023224,0.30000001192092896,1)']);
+    // Overlaps keep the lowest code: blending on with MIN on alpha before the batch draws.
+    const at = (c: string) => calls.indexOf(c);
+    expect(at('enable(12)')).toBeGreaterThan(-1);
+    expect(at('blendEquationSeparate(10,11)')).toBeGreaterThan(at('enable(12)'));
+    expect(at('draw')).toBeGreaterThan(at('blendEquationSeparate(10,11)'));
+    expect(at('disable(12)')).toBeGreaterThan(at('draw'));
+    expect(calls.filter(c => c !== 'draw').slice(-4)).toEqual(['disable(12)', 'blendEquationSeparate(32774,32774)', 'colorMask(true,true,true,true)', 'clearColor(0.10000000149011612,0.20000000298023224,0.30000001192092896,1)']);
   });
 });

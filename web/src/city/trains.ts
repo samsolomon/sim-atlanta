@@ -317,6 +317,12 @@ export class CityTrains {
             const clip = !xray && pl ? this.ghostClip.set(-pl.normal.x, -pl.normal.y, -pl.normal.z, -pl.constant) : null;
             this.ghostCar(color, role !== 0, car.matrix, xray ? GHOST.xrayTrain : GHOST.tunnel, clip);
             if (xray) this.xrayPoint(car.matrix);
+            if (pl && track) {
+              // Its track window runs on the located track, like the cars still in tunnel.
+              const sc = track.s + track.dir * (offset + berth);
+              ghostFrom = Math.min(ghostFrom, sc - CAR_LENGTH / 2);
+              ghostTo = Math.max(ghostTo, sc + CAR_LENGTH / 2);
+            }
           }
           if (i === 0 && this.lights?.active && this.lights.inRange(placement.x, this.cut!.treadY, placement.z)) {
             // The cut's tread is level; aim along the car's own heading, which leads in the travel direction.

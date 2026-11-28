@@ -2214,7 +2214,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   /** The x-rayed vehicle's centreline (world, at mid-height) and the ink's self radius. */
   const xraySelf: THREE.Vector3[] = [];
-  let xraySelfR = 2.6;
+  /** The x-rayed body around its centreline: half width, and reach below and above (metres). */
+  const xraySelf_ = { r: 1.8, below: 2.8, above: 2.15 };
+  const BODY = { train: { r: 1.8, below: 2.8, above: 2.15 }, bus: { r: 1.5, below: 2.0, above: 1.85 }, streetcar: { r: 1.55, below: 2.2, above: 2.0 } };
+  // Downtown's board edges would cut away a car x-rayed on another board (Brookwood): such cars
+  // keep their own four planes, or none.
+  const NO_CLIP = Array.from({ length: 4 }, () => new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6));
   const xrayMatrix = new THREE.Matrix4();
   /**
    * X-ray everything of the selected vehicle that CityTrains doesn't place: a bus, a streetcar,
@@ -2230,11 +2235,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       buses.mesh.getMatrixAt(i, xrayMatrix);
       ghosts.batch(buses.mesh.geometry, () => buses.mesh.geometry, edges, 1, false).add(xrayMatrix.premultiply(buses.mesh.matrixWorld), GHOST.xrayBus);
       pushCarEnds(xraySelf, xrayMatrix, 5.5, 1.6);
-      xraySelfR = 2.3;
+      Object.assign(xraySelf_, BODY.bus);
       return;
     }
     xraySelf.push(...trains.xrayPoints);
-    xraySelfR = 2.6;
+    Object.assign(xraySelf_, BODY.train);
     const trams = new Set<THREE.Object3D>(streetcar.cars());
     const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...trams]
       .filter(c => c.visible && c.userData.trainId === target.id && !c.userData.cityTrains) as THREE.Mesh[];
@@ -2244,9 +2249,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (!car.isMesh) continue;
       const streetcarCar = trams.has(car);
       car.updateWorldMatrix(true, false);
-      ghosts.batch(car.geometry, () => car.geometry, edges, 8, false).add(car.matrixWorld, streetcarCar ? GHOST.xrayStreetcar : GHOST.xrayTrain);
+      const own = (Array.isArray(car.material) ? car.material[0] : car.material)?.clippingPlanes;
+      ghosts.batch(car.geometry, () => car.geometry, own?.length === 4 ? own : NO_CLIP, 8, false)
+        .add(car.matrixWorld, streetcarCar ? GHOST.xrayStreetcar : GHOST.xrayTrain);
       pushCarEnds(xraySelf, car.matrixWorld, (car.userData.lengthM ?? CAR_LENGTH) / 2 - 1, 1.8);
-      if (streetcarCar) xraySelfR = 2.4;
+      if (streetcarCar) Object.assign(xraySelf_, BODY.streetcar);
     }
   }
   const frame = (ts: number) => {
@@ -2478,7 +2485,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const pts = ink.uniforms.uGhostSelf.value as THREE.Vector3[];
         for (let i = 0; i < Math.min(pts.length, xraySelf.length); i++) pts[i].copy(xraySelf[i]);
         ink.uniforms.uGhostSelfCount.value = Math.min(pts.length, xraySelf.length);
-        ink.uniforms.uGhostSelfR.value = xraySelfR;
+        ink.uniforms.uGhostSelfR.value = xraySelf_.r;
+        (ink.uniforms.uGhostSelfY.value as THREE.Vector2).set(xraySelf_.below, xraySelf_.above);
       }
     }
     grade.uniforms.uAmount.value = 1;
