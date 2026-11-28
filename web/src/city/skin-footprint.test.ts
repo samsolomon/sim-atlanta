@@ -11,17 +11,21 @@ import { detachedParts, footprintReport, type FootprintLimits } from './skin-kit
 // footprints it replaced expanded by its declared maxProjection (2.5 m by default), and above
 // the lowest grade less 8 m. A skin declares a larger projection, with the photo evidence,
 // as `group.userData.footprint: FootprintLimits` where its photos show one (canopies, marquees).
+// Sweet Auburn's committed board (pipeline/prototypes/sweet-auburn, ground under ground/) is audited too.
 // Downtown's city.ts landmarks are not covered: their building data is staged, not committed.
 const source = new URL('../../../pipeline/prototypes/square-board/', import.meta.url);
-const boards = readdirSync(source).filter(id => existsSync(new URL(id + '/context.json', source)));
+const boards = [
+  ...readdirSync(source).filter(id => existsSync(new URL(id + '/context.json', source))).map(id => ({ id, dir: new URL(id + '/', source), ground: '' })),
+  { id: 'sweet-auburn', dir: new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url), ground: 'ground/' },
+];
 afterEach(() => vi.unstubAllGlobals());
 
 interface Failure { id: string; board: string; worst: number; outside: number; at: [number, number, number]; vertical: number; detached: number; detachedAt: [number, number, number]; detachedGap: number }
 
 /** Builds one board and audits every landmark on it. */
-function auditBoard(id: string, quality: 'high' | 'low') {
-  const read = (n: string) => readFileSync(new URL(id + '/' + n, source));
-  const grid = new GroundGrid(JSON.parse(read('ground.json').toString()), Uint8Array.from(read('ground.i16')).buffer);
+function auditBoard({ id, dir, ground }: (typeof boards)[number], quality: 'high' | 'low') {
+  const read = (n: string) => readFileSync(new URL(n, dir));
+  const grid = new GroundGrid(JSON.parse(read(ground + 'ground.json').toString()), Uint8Array.from(read(ground + 'ground.i16')).buffer);
   const context = JSON.parse(read('context.json').toString());
   const area = createDowntownTerrain(grid, { ...context, rail: context.rail ?? [], roads: context.roads ?? [] }, [], { quality, batchLandmarks: false });
   const byId = new Map<string, { rings: [number, number][][] }>((context.buildings as { id: string; rings: [number, number][][] }[]).map(b => [b.id, b]));

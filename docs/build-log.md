@@ -4204,3 +4204,7 @@ The chevrons are sloped quads: one rising stripe per 7 m of face on the lower ha
 ### 2026-11-24 · Renaissance Lofts, grey-white again
 
 Renaissance Lofts on Ralph McGill is a 1974 office slab that became lofts for the 1996 Olympics. City drew it as a generic glass box. The lidar puts the roof at 57.8 m, with a penthouse to 63.4 m. The photographs supply the rest: grey-white paint, deep piers framing ribbon windows, and a dark base. [Before/after](log/ui/renaissance-lofts/README.md)
+
+### 2026-11-24 · Bethel Towers, plain brick on Auburn
+
+Bethel Towers, the 13-storey apartment slab behind Big Bethel AME Church, was a pale 63 m box. The 2019 lidar puts its roof at 47 m, with a brick mechanical box 5 m higher on the west end. A 2019 Commons photograph shows a slab with no tricks: orange-red brick, a regular grid of punched windows, a thin concrete parapet. So that is what it is now, plain and honest. The garage and shops in front, on Auburn Avenue, are mapped as their own polygon, and a 1979 HABS photograph shows them: a concrete frame with shopfronts, a garage portal and a slotted parapet. They became a second, 190-triangle mass at the lidar's 4.7 m deck and 7 m frontage. Sweet Auburn sits outside the square-board footprint audit, so I ran the audit on its board by hand, and it came back clean. [Before and after](log/ui/bethel-towers/day-before-after.jpg) · [four sides](log/ui/bethel-towers/bethel-towers-four-sides.jpg)

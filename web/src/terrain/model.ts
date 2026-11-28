@@ -75,6 +75,7 @@ import { createVireo, vireoId } from '../city/vireo';
 import { createPiedmontHouse, piedmontHouseId } from '../city/piedmont-house';
 import { ansleyId, createAnsley } from '../city/ansley-above-the-park';
 import { cityHeightsId, createCityHeights } from '../city/city-heights';
+import { bethelPodiumId, bethelTowersId, createBethel } from '../city/bethel-towers';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
@@ -495,6 +496,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === piedmontHouseId ? createPiedmontHouse(sceneryCity.buildings, site, grid)
       : site.id === ansleyId ? createAnsley(sceneryCity.buildings, site, grid)
       : site.id === cityHeightsId ? createCityHeights(sceneryCity.buildings, site, grid)
+      : site.id === bethelTowersId || site.id === bethelPodiumId ? createBethel(sceneryCity.buildings, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
