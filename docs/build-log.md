@@ -4248,3 +4248,7 @@ Next to The Landmark on Piedmont Avenue stood a 68 m grey glass tower that doesn
 ### 2026-11-24 · Park Place, the right way up
 
 Overture had the two Georgia State buildings on Woodruff Park's south edge upside down. It made Ten Park Place, the 1929 brick block, the taller of the pair at 30.6 m and One Park Place 21.2 m. The lidar says 22.9 m and 35.3 m. Each skin now carries its own height: the buff brick block with a stone shop base, and the white marble one with blue punched windows. [Before/after](log/ui/park-place/README.md)
+
+### 2026-11-24 · Fairlie–Poplar's music buildings, and a 40 m theatre that was 9 m
+
+Georgia State's block between Poplar, Fairlie and Luckie Streets was four tan boxes. The Haas-Howell and Standard Buildings turned out to be siblings in Street View. Each is a 1920s office tower with a pale stone base, a red-brown brick shaft of paired white-framed sash windows, and a stone top. The lidar sets them at 30.1 m and 40.1 m. Aderhold (2002) is a 60 × 53 m cast-stone block. The lidar shows a 3 m band at 19–20 m around a 22 m roof, which is the steel trellis over its setback top storey in the photos. The surprise was next door. The Theatrical Outfit's outline was mapped at 40.4 m, a phantom tower standing in front of the Standard Building, and the lidar says 9.2 m, so it is skinned here too. The first brick and glass picks went near-black in shade (brick V 18, glass S 88), so both were lightened toward the scene's other brick and Hard Rock's sash glass. [Before/after, day and night](log/ui/fairlie-poplar/README.md)
