@@ -93,6 +93,7 @@ import { createHardRock } from './hard-rock';
 import { createTheLandmark } from './the-landmark';
 import { createInternationalGarage } from './international-garage';
 import { createLandmarkDeck } from './landmark-deck';
+import { createFairliePoplar } from './fairlie-poplar';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -520,6 +521,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let omniAtlanta: ReturnType<typeof createOmniAtlanta> = null;
   let fivePointsPlaza: ReturnType<typeof createFivePointsPlaza> = null;
   let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
+  let fairliePoplar: ReturnType<typeof createFairliePoplar> = null;
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
@@ -674,8 +676,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterFivePointsPlaza = fivePointsPlaza?.buildings ?? afterOmniAtlanta;
         twoPeachtree = createTwoPeachtree(afterFivePointsPlaza, ground);
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
-        footballHall = createFootballHall(afterTwoPeachtree, ground);
-        const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
+        fairliePoplar = createFairliePoplar(afterTwoPeachtree, ground);
+        const afterFairliePoplar = fairliePoplar?.buildings ?? afterTwoPeachtree;
+        footballHall = createFootballHall(afterFairliePoplar, ground);
+        const afterFootballHall = footballHall?.buildings ?? afterFairliePoplar;
         museumTower = createMuseumTower(afterFootballHall, ground);
         const afterMuseumTowerOnly = museumTower?.buildings ?? afterFootballHall;
         courtlandGrand = createCourtlandGrand(afterMuseumTowerOnly, ground);
@@ -800,6 +804,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (omniAtlanta) world.group.add(omniAtlanta.group);
         if (fivePointsPlaza) world.group.add(fivePointsPlaza.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
+        if (fairliePoplar) world.group.add(fairliePoplar.group);
         if (georgiaPower) world.group.add(georgiaPower.group);
         if (peachtreeTowers) world.group.add(peachtreeTowers.group);
         if (georgiaPacific) world.group.add(georgiaPacific.group);
@@ -845,7 +850,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter, internationalGarage,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
-            omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, peachtreeTowers, georgiaPacific, stack, stadium, russell,
+            omniAtlanta, fivePointsPlaza, twoPeachtree, fairliePoplar, georgiaPower, peachtreeTowers, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady, tenParkPlace, oneParkPlace, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
@@ -2044,6 +2049,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       omniAtlanta?.setNight(night);
       fivePointsPlaza?.setNight(night);
       twoPeachtree?.setNight(night);
+      fairliePoplar?.setNight(night);
       georgiaPower?.setNight(night);
       peachtreeTowers?.setNight(night);
       georgiaPacific?.setNight(night);
