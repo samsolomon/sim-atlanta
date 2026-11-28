@@ -41,4 +41,12 @@ Everything is vertex colours on `landmarkShell`, using the same two builders (`b
 
 ## Captures
 
-See the PR for the before and after stills (11:30 and 23:30, from two sides, one framed with One Atlantic Center).
+Before and after on 20 November 2026, at 11:30 and 23:30, on High. Use `/?view=city&q=high&cam=<camera>&t=2026-11-20T11:30:00-05:00`.
+
+| View | Camera | Capture |
+|---|---|---|
+| Both towers and both crowns, from the south-south-west | `345,-3700,20,66,1150` | [pair.jpg](pair.jpg) |
+| South and west faces, One Atlantic Center to the right | `330,-3684,15,55,800` | [south.jpg](south.jpg) |
+| West and north faces, One Atlantic Center behind | `345,-3684,105,52,600` | [northwest.jpg](northwest.jpg) |
+
+`compare.jpg`, `daynight.jpg` and `close.jpg` are the first pass (PR #502).
