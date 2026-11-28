@@ -70,12 +70,10 @@ const KNOWN: Record<string, number> = {
   'osm:way:269542143': 2.55, // Emmi Midtown, brookwood-south
   'osm:way:208355446': 2.5, // Fox Theatre, midtown-south
   'osm:way:885667868': 2.29, // Amli Arts Center, midtown-upper
-  'osm:way:505414294': 2.15, // Atlantic House, midtown-upper
   'osm:way:269542078': 2.1, // The Atlantic, brookwood-south
   'osm:way:886034013': 1.88, // Atlanta Biltmore, midtown-central
   'osm:way:536884432': 1.77, // Square on 5th, midtown-central
   'osm:way:789980819': 1.28, // Nine15 Midtown, midtown-central
-  'osm:way:536670474': 0.74, // ViewPoint, midtown-central
   'osm:way:885325356': 0.49, // Wimbish House, midtown-upper
   'osm:way:269843407': 0.32, // The Campanile, midtown-upper
   'osm:way:42706709': 0.12, // Tech Tower, midtown-south

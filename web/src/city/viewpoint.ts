@@ -161,5 +161,9 @@ export function createViewPoint(buildings: VBuilding[], site: VBuilding, grid: G
       }
     }
   }
-  return s.finish('#f6dcae', 0.7);
+  const skin = s.finish('#f6dcae', 0.7);
+  // The 865 Peachtree entrance canopy reaches 3.2 m over the sidewalk past the mapped outline
+  // (skins spec: "the residential bay grid above the 865 entrance canopy"; SKYDB 587877041).
+  skin.group.userData.footprint = { maxProjection: 3.5 };
+  return skin;
 }
