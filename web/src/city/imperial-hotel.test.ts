@@ -70,4 +70,9 @@ it('replaces the Imperial Hotel at the lidar heights, not the mapped 36.5 m, wit
   const door = (z: number) => new Raycaster(new Vector3(530, 314 - 300, z), new Vector3(1, 0, 0)).intersectObject(m.group)[0]?.object;
   expect(door(-1125.5)).toBe(lamps); // the second arch, on the northern edge
   expect(door(-1132.7)).toBe(lamps); // the fourth arch, on the southern edge
+  // Round heads, not flat ones: 3.7 m up, the glass reaches the middle of an arch but not its sides.
+  const head = (z: number) => new Raycaster(new Vector3(530, 312.5 - 300 + 3.7, z), new Vector3(1, 0, 0)).intersectObject(m.group)[0]?.object;
+  expect(head(-1125.55)).toBe(lamps);
+  expect(head(-1125.55 - 1.1)).not.toBe(lamps);
+  expect(head(-1125.55 + 1.1)).not.toBe(lamps);
 });

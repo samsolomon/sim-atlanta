@@ -141,11 +141,20 @@ export function createImperialHotel(buildings: VBuilding[], grid: GroundGrid) {
     const top = westGrade + arcadeRise;
     s.prism(strip, s.base, top, brick, roof);
     const front = faces(strip).reduce((m, f) => (f.n[0] < m.n[0] ? f : m));
-    const arches = 5;
+    const arches = 5, segments = 6, spring = top - 2.3;
+    const half = 0.35 / arches, radius = half * front.length;
     for (let k = 0; k < arches; k++) {
-      const l = (k + 0.15) / arches, r = (k + 0.85) / arches;
-      panel(front, l, r, westGrade + 0.2, top - 1.6, 0.05, glass, true);
-      panel(front, l - 0.02, r + 0.02, top - 1.6, top - 1.2, 0.1, stone);
+      const c = (k + 0.5) / arches;
+      panel(front, c - half, c + half, westGrade + 0.2, spring, 0.05, glass, true);
+      // A round head: lit glass inside a stone arch ring.
+      const point = (i: number, grow: number, depth: number) => {
+        const angle = Math.PI * (1 - i / segments);
+        return at(front, c + Math.cos(angle) * (radius + grow) / front.length, spring + Math.sin(angle) * (radius + grow), depth);
+      };
+      for (let i = 0; i < segments; i++) {
+        s.lights.tri(at(front, c, spring, 0.05), point(i, 0, 0.05), point(i + 1, 0, 0.05), glass);
+        s.body.quad(point(i, 0, 0.1), point(i, 0.3, 0.1), point(i + 1, 0.3, 0.1), point(i + 1, 0, 0.1), stone);
+      }
     }
     panel(front, -0.1 / front.length, 1 + 0.1 / front.length, top - 0.4, top, 0.1, stone);
   }
