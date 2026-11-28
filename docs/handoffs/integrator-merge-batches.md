@@ -5,10 +5,14 @@ go; a go covers only the PRs it lists.
 
 ## Done
 
-- Merged: batch 1 (`2c74320d`), group 2 with #727 (`da81aa24`), #729 (`584939eb`), #730, group 3
-  (`81db0d05`), #732, #736, group 4 (`0341f96f`: #624 #626 #628 #629 #630 #633 #635 #636 #640) and
-  group 5 (`3a72a96b`: #641 #642 #643 #645 #648 #650 #652 #653 #655 #637). #728, a dropped fix, is
-  closed.
+- Every group is merged: batch 1 (`2c74320d`), group 2 with #727 (`da81aa24`), #729 (`584939eb`),
+  #730, group 3 (`81db0d05`), #732, #736, group 4 (`0341f96f`: #624 #626 #628 #629 #630 #633 #635
+  #636 #640), group 5 (`3a72a96b`: #641 #642 #643 #645 #648 #650 #652 #653 #655 #637), group 6
+  (`4e901174`: #657 #658 #659 #660 #661 #662 #664) and #739, the corner sign dim (`25d11e9c`).
+  #728, a dropped fix, is closed.
+- Release 21 is packaged from `25d11e9c` for the coordinator to test on the A16 and deploy:
+  `~/Developer/releases/sim-atlanta-release-25d11e9c.tar.gz` (SHA-256 `95242f25…9790f`), evidence
+  and packaging scripts beside it in `…-25d11e9c-evidence/`.
 - Release 20 is packaged from `584939eb`:
   `~/Developer/releases/sim-atlanta-release-584939eb.tar.gz` (SHA-256 `6bd3ebda…0afad`), with its
   evidence and packaging scripts in `…-584939eb-evidence/`.
@@ -17,15 +21,13 @@ go; a go covers only the PRs it lists.
 
 ## Open
 
-1. **Group 6 is waiting for its merge go** (asked 2026-11-28): #657 #658 #659 #660 #661 #662 #664,
-   tip `b723f200` on `main` `3a72a96b`. The request is `group6-merge-go.md` and the script is
-   `evidence/merge6.sh <main-sha>`.
-2. #660's corner sign glows as a flat rectangle at night. The request asks whether to merge it and
-   dim it in a follow-up, or hold it.
-3. #679 is a draft; Sam decides. #734 and #737 are held for Sam and conflict with `main`.
-4. Release 21 is not packaged. Run `pnpm data:bake` first: it bakes the white stand-in.
-5. Budgets at group 6's tip: Low geometry 164.2 MB (reserve starts at 165), High night 485 calls
-   (reserve at 495), High programs 94 of 100 (inside the reserve), High heap 557 of 570 MB, Low
+1. #679 is a draft; Sam decides. #734 and #737 are held for Sam and conflicted with `main` on
+   2026-11-28.
+2. Startup got slower in release 21: at 6x CPU on Low, ready is 7,125 ms against release 20's
+   6,936, almost all of it in `stage:terrain` (2,648 ms, the longest task). The north route fills
+   0.8 s later. Group 5 measured about +135 ms of the stage; nothing was split by PR.
+3. Budgets at `25d11e9c`: Low geometry 164.2 MB (reserve starts at 165), High night 485 calls
+   (reserve at 495), High programs 94 of 100 (inside the reserve), High heap 558 of 570 MB, Low
    heap 442 of 460 MB. Anything past the Low geometry reserve waits for Sam.
 
 ## How a batch is built
