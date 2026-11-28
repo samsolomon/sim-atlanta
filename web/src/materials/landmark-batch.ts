@@ -168,13 +168,27 @@ function syncer(days: DayGroup[]) {
       if (d.glow) {
         // One draw: each run's light goes to its vertex range, over the day emission it shares.
         const { table, base } = d.glow, rgb = table.rgb.value;
+        let glows = false;
         d.runs.forEach((r, i) => {
           const s = r.source, k = s.emissive ? s.emissiveIntensity ?? 1 : 0;
           rgb[i * 3] = (s.emissive?.r ?? 0) * k - base[0];
           rgb[i * 3 + 1] = (s.emissive?.g ?? 0) * k - base[1];
           rgb[i * 3 + 2] = (s.emissive?.b ?? 0) * k - base[2];
+          if (rgb[i * 3] !== 0 || rgb[i * 3 + 1] !== 0 || rgb[i * 3 + 2] !== 0) glows = true;
           if (alike && lookOf(s, r.baked) !== d.look) alike = false;
         });
+        // No run glows (day, whatever the setNight curve): draw without the facade hook.
+        const material = glows || dayWallFacade ? d.glow.lit : d.glow.plain;
+        const held = d.mesh?.material as Mat | undefined;
+        if (held && held !== material) {
+          // City sets board clipping on whatever material a mesh holds when it mounts (clipScenery):
+          // carry it over, or the twin draws unclipped and compiles a program of its own.
+          material.clippingPlanes = held.clippingPlanes;
+          material.clipShadows = held.clipShadows;
+          material.clipIntersection = held.clipIntersection;
+        }
+        if (d.mesh) d.mesh.material = material;
+        if (d.far) d.far.material = material;
         d.alike = alike;
         show(d);
         continue;
@@ -440,7 +454,8 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       const full = (job.group.mesh ?? job.group.runs[0].mesh!).geometry;
       fg.boundingBox = full.boundingBox!.clone();
       fg.boundingSphere = full.boundingSphere!.clone();
-      const far = new Mesh(fg, job.material);
+      // A lit-wall group's draws share whichever material sync() last chose (plain while nothing glows).
+      const far = new Mesh(fg, job.group.glow ? job.group.mesh!.material as Mat : job.material);
       place(far, job.packing);
       far.name = 'landmark batch (far)';
       // The full version keeps casting (see hideFromView).
@@ -488,8 +503,13 @@ interface Member { mesh: Mesh; root: Object3D; bake: Color | null; day: string; 
  * of the group's one facade draw.
  */
 interface Run { source: Mat; material: Mat | null; baked: boolean; mesh: Mesh | null }
-/** A group drawn with the shared facade program: its runs' emission as glow ranges over `base`. */
-interface LitWall { table: FacadeGlow; base: [number, number, number] }
+/**
+ * A group drawn with the shared facade program: its runs' emission as glow ranges over `base`.
+ * While no run glows (by day), the group's draws use `plain`, the same material without the facade
+ * hook: the release 19 day shader, an existing program, with no glow loop or facade varyings per
+ * vertex. Its pixels are the facade program's with every glow at zero.
+ */
+interface LitWall { table: FacadeGlow; base: [number, number, number]; lit: Mat; plain: Mat }
 interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | null; cell: LandmarkCell; alike: boolean; glow: LitWall | null }
 
 /**
@@ -699,11 +719,14 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
         const base: [number, number, number] = [(source.emissive?.r ?? 0) * k, (source.emissive?.g ?? 0) * k, (source.emissive?.b ?? 0) * k];
         material.emissive!.setRGB(...base);
         material.emissiveIntensity = 1;
+        // The day twin, cloned before the hook: sync() swaps it in while no run glows.
+        const plain = material.clone() as Mat;
+        twinDispose(material, plain);
         const table = facadeGlow();
         spans.forEach((sp, j) => { table.range.value[j * 2] = sp.start; table.range.value[j * 2 + 1] = sp.end; });
         table.count.value = spans.length;
         patchFacades(material, undefined, { plain: true, glow: table });
-        dayGroup.glow = { table, base };
+        dayGroup.glow = { table, base, lit: material, plain };
         for (const sp of spans) dayGroup.runs.push({ source: sp.first.mesh.material as Mat, material: null, baked: !!sp.first.bake, mesh: null });
         dayGroup.mesh = draw(range.start, range.count, material, 'landmark batch (lit walls)');
         if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material, rep, packing });
@@ -835,6 +858,24 @@ export const landmarkBatchOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('batch') === 'off';
+})();
+
+/** Disposing either material of a lit-wall group (City disposes whichever its meshes hold) disposes both. */
+function twinDispose(a: Material, b: Material) {
+  // Each disposes only the other, once: re-disposing the one already disposing would fire its listeners twice.
+  let done = false;
+  a.addEventListener('dispose', () => { if (!done) { done = true; b.dispose(); } });
+  b.addEventListener('dispose', () => { if (!done) { done = true; a.dispose(); } });
+}
+
+/**
+ * `?perf&daywall=facade` keeps lit-wall groups on the facade program by day too (release 20), for
+ * same-build A/B runs. By default they draw without the hook while no run glows.
+ */
+const dayWallFacade = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('daywall') === 'facade';
 })();
 
 /** `?perf&nightwall=off` draws lit landmark panes as their own runs at night again (before 2026-11-27), for A/B runs. */

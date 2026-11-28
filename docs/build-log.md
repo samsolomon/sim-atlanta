@@ -4169,3 +4169,13 @@ The generic builder drew the Olympia Building at Five Points as a 27.5 m block. 
 The Courtland Grand's glass courtyard roof was lit as one 38 by 28 m sheet. Next to windows a few metres wide it read as a rendering fault, a blank cream rectangle in the middle of the block. It now lights about half of an 8 by 5 grid of panes with dark ribs between. The first attempt laid the panes on top of the roof, and by day each one left a small shadow mark and the old rim disappeared. The fix was to tile lit and unlit glass in one flat layer in one colour, so by day no more than one pixel in 100,000 differs visibly from before.
 
 ![The courtyard roof at night, one sheet against panes](log/ui/courtland-grand/skylight-night.jpg)
+
+## 2026-11-27 · Release 20's day fps and a loop that added zero
+
+Release 20 moved landmark night windows into the wall draw, and nights got 143 calls cheaper on High. On the Galaxy A16, though, days got about 9% slower: 46 fps fell to 42 at 14:00, with the median frame unchanged at 22.2 ms, so more frames were slipping to the next vsync. The suspect was the facade shader, now running on landmark batches in daylight. A per-draw capture put a number on it: at Low's default view, up to 346k of 1.68M triangles drew through the facade program, almost all in the far versions, which share the material. Each of those vertices ran a 16-step glow loop and wrote 11 floats of varyings, and by day all of it added exactly zero.
+
+The fix swaps materials, not shaders. Each lit-wall group keeps a twin cloned before the facade hook goes on: release 19's day material, on a program that already exists. Every frame `sync()` already computes each run's glow. While all of them are exactly zero, it puts the twin on the full draw and the far draw. Calls, programs, triangles and geometry stay the same at every tier and clock.
+
+What surprised me was the first night test: 81 programs instead of 80. Diffing the two programs' cache keys found a single field, `numClippingPlanes`, 4 against 0. City clips whatever material a mesh holds when it mounts, so the twin that wasn't attached then had never been clipped. The swap now carries the clipping across. Desktop can't show the win, even at 6x CPU, because the cost is GPU vertex work. The A16 run decides it, and until it reports, this is the suspected cause, not a proven win.
+
+![Main, fix and diff ×4 on matched frames](log/day-fps-r21/sheet-main-fix-diff.jpg)
