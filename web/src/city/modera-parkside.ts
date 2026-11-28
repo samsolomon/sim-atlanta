@@ -11,6 +11,9 @@ const origin: P2 = [948, -3150];
 // and leaves the podium roof exposed along 10th Street to the north.
 const tower: P2[] = [[-14.4, -18], [14.6, -18], [19.7, 39], [-13.8, 39]];
 
+/** The posts that carry the crown frame, each reaching one of its bands (tower-local metres). */
+export const moderaCrownPosts: P2[] = [[-13, -16], [13.5, -16], [18.1, 37.5], [-12.5, 37]];
+
 export function createModeraParkside(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const shell = landmarkShell(buildings, grid, site.id, 'Modera Parkside', origin, [1, 0], [[0, 0], [0, 25], [0, -30]]);
   if (!shell) return null;
@@ -78,7 +81,7 @@ export function createModeraParkside(buildings: VBuilding[], site: VBuilding, gr
     const band: P2[] = [p, q, [q[0] + nx, q[1] + nz], [p[0] + nx, p[1] + nz]];
     shell.prism(band, visorLo, visorHi, white, white);
   });
-  for (const [u, v] of [[-13, -16], [13.5, -16], [17.5, 37], [-12.5, 37]] as P2[])
+  for (const [u, v] of moderaCrownPosts)
     shell.prism([[u - .4, v - .4], [u + .4, v - .4], [u + .4, v + .4], [u - .4, v + .4]], roof, visorLo, white, white);
   // Each slat runs from the west band to the east one, which angles out with the face.
   const eastBand = (v: number) => 14.6 + (v + 18) / 57 * 5.1 - 1.3;
