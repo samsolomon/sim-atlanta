@@ -728,7 +728,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterBarclayHotel = barclayHotel?.buildings ?? afterRenaissanceLofts;
         allenPlaza55 = createAllenPlaza55(afterBarclayHotel, ground, low ? 'low' : 'high');
         // The Landmark deck draws its own lot, aisles included.
-        drawn = landmarkDeck ? { ...vd, roads: vd.roads.filter(r => !landmarkDeck!.ownDrive(r)) } : vd;
+        drawn = landmarkDeck ? { ...vd, roads: vd.roads.filter(r => !landmarkDeck!.ownDrive(r)),
+          terrainTransport: vd.terrainTransport && { ...vd.terrainTransport, roads: vd.terrainTransport.roads.filter(r => !landmarkDeck!.ownDrive(r)) } } : vd;
         const city = { ...drawn, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, yields: landmarkDeck?.yields, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });

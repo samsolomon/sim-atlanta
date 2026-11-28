@@ -180,7 +180,8 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
     return Math.hypot(x - ax - t * dx, z - az - t * dz) < 2;
   });
-  const ownDrive = (road: { cls: string; bridge?: boolean; pts: readonly number[][] }) =>
-    road.cls === 'service' && !!road.bridge && road.pts.every(q => onLot(q as P2));
+  // City holds roads twice: as mapped ways (`bridge`) and as the transport runs it draws (`kind`).
+  const ownDrive = (road: { cls: string; bridge?: boolean; kind?: string; pts: readonly number[][] }) =>
+    road.cls === 'service' && (!!road.bridge || road.kind === 'bridge') && road.pts.every(q => onLot(q as P2));
   return { ...s.finish('#f1ead6', 0.6), yields, ownDrive };
 }

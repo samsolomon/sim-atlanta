@@ -134,5 +134,7 @@ it('takes over its own mapped aisles, and no other road', () => {
   expect(model.ownDrive(way(out))).toBe(false);
   expect(model.ownDrive(way(aisle, 'residential'))).toBe(false);
   expect(model.ownDrive(way(aisle, 'service', false))).toBe(false);
+  expect(model.ownDrive({ cls: 'service', kind: 'bridge', pts: aisle })).toBe(true);
+  expect(model.ownDrive({ cls: 'service', kind: 'ground', pts: aisle })).toBe(false);
 });
 
