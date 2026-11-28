@@ -160,14 +160,15 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
       carBlock(u, v, paints[(spot + row) % paints.length]);
     }
   }
-  // The drawn ground rose through the asphalt, so it is cut just below the lot under the whole
-  // outline, one convex triangle at a time. City carves these with the street cuttings.
+  // The drawn ground rose through the asphalt, so it is cut below the lot under the whole outline,
+  // one convex triangle at a time. City carves these as it builds the ground, before streets are
+  // draped: 30 cm down, so a street ribbon running into the outline ends under the asphalt.
   const corners = plan.map(([x, z]) => new Vector2(x, z));
   const yields: GroundYield[] = ShapeUtils.triangulateShape(corners, []).flatMap(face => {
     const ring = face.map(i => [plan[i][0] + origin[0], plan[i][1] + origin[1]] as P2);
     const [[ax, az], [bx, bz], [cx, cz]] = ring;
     if (Math.abs((bx - ax) * (cz - az) - (bz - az) * (cx - ax)) < 0.02) return [];
-    return [{ ring, floor: () => lot - grid.manifest.vertical.sceneZeroNavd88M - 0.05 }];
+    return [{ ring, floor: () => lot - grid.manifest.vertical.sceneZeroNavd88M - 0.3 }];
   });
   return { ...s.finish('#f1ead6', 0.6), yields };
 }

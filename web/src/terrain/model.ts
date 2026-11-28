@@ -139,6 +139,9 @@ export interface DowntownTerrainOptions {
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   separateBuilding?: string;
+  /** Hard surfaces built outside this area that its drawn ground gives way to. Carved with the
+   * area's own, before streets and sidewalks sample the ground. */
+  yields?: readonly GroundYield[];
   /** False leaves landmark meshes in their own groups, for tests that inspect a mounted model. */
   batchLandmarks?: boolean;
   contours?: Contours;
@@ -516,7 +519,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const hasPiedmont = city.buildings.some(b => b.id === piedmontHospitalId) &&
     !sceneryCity.buildings.some(b => b.id === piedmontHospitalId);
   const piedmont = hasPiedmont ? piedmontGarden(Object.assign((x: number, z: number) => groundAt(x, z), { triangles: mesh }), options.quality) : null;
-  const yields = [...golfBowlYields(city), ...golfTeeGrades(city, bare), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
+  const yields = [...(options.yields ?? []), ...golfBowlYields(city), ...golfTeeGrades(city, bare), ...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? []), ...(piedmont?.yields ?? [])];
   if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own

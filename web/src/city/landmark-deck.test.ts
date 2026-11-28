@@ -115,7 +115,8 @@ it('hands the terrain a cut under its whole outline, below everything it draws t
     const cut = cuts.find(q => footprintContains(q.planes, x, z, .03));
     expect(cut, `${x},${z}`).toBeDefined();
     const hit = new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0];
-    expect(cut!.floor(x, z)).toBeLessThan(hit.point.y);
+    // Deep enough that a street draped on the cut ground (a few cm proud) stays under the lot.
+    expect(cut!.floor(x, z)).toBeLessThan(hit.point.y - .25);
     checked++;
   }
   expect(checked).toBeGreaterThan(1500);
