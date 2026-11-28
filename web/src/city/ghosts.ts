@@ -79,8 +79,9 @@ const KEEP_ALL = new THREE.Vector4(0, 0, 0, 1);
  * 'lid' marks the opening in stencil where the ground in front of it is what shows; 'box' paints
  * the open-top tunnel box there and resets depth to it; 'car' draws the real cars inside it.
  */
-export type Pass = 'ghost' | 'lid' | 'box' | 'car';
-const PASS_ORDER: Pass[] = ['lid', 'box', 'car', 'ghost'];
+export type Pass = 'ghost' | 'lid' | 'box' | 'car' | 'ghost-cut';
+const PASS_ORDER: Pass[] = ['lid', 'box', 'car', 'ghost', 'ghost-cut'];
+const isGhost = (p: Pass) => p === 'ghost' || p === 'ghost-cut';
 
 class Batch {
   readonly mesh: THREE.InstancedMesh;
@@ -120,14 +121,14 @@ class Batch {
     this.mesh.raycast = () => {};
   }
   get pass(): Pass { return this.mesh.userData.pass; }
-  add(matrix: THREE.Matrix4, level: number, clip?: THREE.Vector4 | null, line?: THREE.Color) {
+  add(matrix: THREE.Matrix4, level: number, clip?: THREE.Vector4 | null, line?: THREE.Color, role = 0) {
     if (this.n >= this.cap) return false;
     this.mesh.setMatrixAt(this.n, matrix);
     this.level.array[this.n] = level / 16;
     if (this.clip) (clip ?? KEEP_ALL).toArray(this.clip.array as Float32Array, this.n * 4);
     if (this.line) {
       const a = this.line.array as Float32Array;
-      if (line) { a[this.n * 4] = line.r; a[this.n * 4 + 1] = line.g; a[this.n * 4 + 2] = line.b; a[this.n * 4 + 3] = 0; }
+      if (line) { a[this.n * 4] = line.r; a[this.n * 4 + 1] = line.g; a[this.n * 4 + 2] = line.b; a[this.n * 4 + 3] = role; }
       else a.set([0, 0, 0, 1], this.n * 4);
     }
     this.n++;
@@ -264,18 +265,21 @@ export class CityGhosts {
       // The bus's program: same defines (instanced, vertex colours, double-sided, 4 planes when
       // given the board edges) and the same custom key, so three reuses it. Depth and stencil
       // state is per material and costs no program.
-      m = busMaterial(this.night, pass === 'ghost' ? this.ghost : this.lit);
+      m = busMaterial(this.night, isGhost(pass) ? this.ghost : this.lit);
       m.clippingPlanes = clip;
       m.name = `ghost ${pass}`;
       m.stencilWrite = true; // turns the stencil test on; stencilWriteMask says what it writes
       m.stencilRef = 1;
       m.stencilWriteMask = 0;
       m.stencilFunc = THREE.EqualStencilFunc;
-      if (pass === 'ghost') {
-        // Outside any cutaway: there the real train shows instead.
+      if (isGhost(pass)) {
         m.depthTest = false;
         m.depthWrite = false;
-        m.stencilFunc = THREE.NotEqualStencilFunc;
+        // A cutaway train's own ghost (its x-ray, or with `holeghost`) stays out of the openings,
+        // where the real train shows; any other train's ghost ignores them (an opening beside it
+        // must not erase it).
+        if (pass === 'ghost-cut') m.stencilFunc = THREE.NotEqualStencilFunc;
+        else m.stencilWrite = false;
       } else if (pass === 'lid') {
         // Where the ground in front of the opening is what shows (a tower in front keeps it shut).
         m.colorWrite = false;
@@ -298,7 +302,7 @@ export class CityGhosts {
     let b = this.batches.get(key);
     if (!b) {
       const pass = o.pass ?? 'ghost';
-      b = new Batch(source(), this.material(clip, pass), cap, { clips, line: o.line, attrs: o.attrs, pass }, `${pass === 'ghost' ? 'ghost' : 'cutaway'} ${typeof key === 'string' ? key : 'vehicle'}`);
+      b = new Batch(source(), this.material(clip, pass), cap, { clips, line: o.line, attrs: o.attrs, pass }, `${isGhost(pass) ? 'ghost' : 'cutaway'} ${typeof key === 'string' ? key : 'vehicle'}`);
       this.batches.set(key, b);
       this.group.add(b.mesh);
     }
@@ -314,8 +318,8 @@ export class CityGhosts {
   }
 
   /** The track window's dashes. */
-  track(clip: THREE.Plane[], cap = 768) {
-    return this.batch('track', () => this.trackSource, clip, cap, false);
+  track(clip: THREE.Plane[], cap = 768, cut = false) {
+    return this.batch(cut ? 'track cut' : 'track', () => this.trackSource, clip, cut ? 256 : cap, false, { pass: cut ? 'ghost-cut' : 'ghost' });
   }
 
   /** Start a frame: every batch empty. */
@@ -372,8 +376,8 @@ export class CityGhosts {
       state.buffers.stencil.setClear(0);
       gl.clear(gl.STENCIL_BUFFER_BIT);
     }
-    const ghosts = live.filter(b => b.pass === 'ghost');
-    for (const b of live) if (b.pass !== 'ghost') render(b);
+    const ghosts = live.filter(b => isGhost(b.pass));
+    for (const b of live) if (!isGhost(b.pass)) render(b);
     if (!ghosts.length) return;
     state.setBlending(THREE.NoBlending);
     state.buffers.color.setMask(true);

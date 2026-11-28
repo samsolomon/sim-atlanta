@@ -290,6 +290,33 @@ describe('Cutaway (Sam, 2026-11-28)', () => {
     expect(trains.ghostCars).toBe(8); // its x-ray plus the other train's ghost
   });
 
+  it("keeps a cutaway train's own ghost out of the openings, and opens even under a short roof", () => {
+    const ghosts = new CityGhosts();
+    const cut = ghosts.batch('c', () => new THREE.BoxGeometry(), [], 2, true, { pass: 'ghost-cut' }).mesh.material as THREE.Material;
+    expect([cut.stencilWrite, cut.stencilFunc, cut.stencilWriteMask]).toEqual([true, THREE.NotEqualStencilFunc, 0]);
+    // A 4 m roof between two 6 m section centres still opens, so the car under it isn't lost.
+    const edges = Array.from({ length: 4 }, () => new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6));
+    const roof = { line, elev: () => -12, openToSky: (t: number) => !(t > 601 && t < 605) };
+    const trains = new CityTrains([roof], manifest, bounds, new Map([['blue', '#0075b2']]), edges);
+    const g = new CityGhosts();
+    trains.ghosts = g;
+    trains.holes = { scope: 'all', shape: 'cut', cap: 4 };
+    for (let i = 0; i < 2; i++) { g.begin(); trains.update([train('t', -8.45, 1)], 0); g.end(); }
+    expect(trains.holeTrains.has('t')).toBe(true);
+    expect(g.cutaway(edges).lid.n).toBeGreaterThan(0);
+    expect(trains.holeCars + trains.ghostCars).toBeGreaterThan(0);
+  });
+
+  it('lays the cutaway floor where the wheels stand', () => {
+    const { trains, run, ghosts, edges } = cutSetup({ scope: 'all', shape: 'cut', cap: 4 });
+    run([train('t', 300, 4)]);
+    const m = new THREE.Matrix4();
+    ghosts.cutaway(edges).box.mesh.getMatrixAt(0, m);
+    // The tunnel's alignment is at −12; a car rides 0.55 over it; flat rails sit on the floor.
+    expect(new THREE.Vector3().setFromMatrixPosition(m).y).toBeCloseTo(-12 + 0.5, 3);
+    expect(trains.holeCars).toBe(4);
+  });
+
   it('costs nothing when no train is in tunnel', () => {
     const { trains, run, ghosts } = cutSetup({ scope: 'all', shape: 'cut', cap: 4 });
     run([train('open', -300, 4)]);
@@ -314,7 +341,9 @@ describe('Cutaway (Sam, 2026-11-28)', () => {
     ghosts.draw(renderer, new THREE.Scene(), new THREE.PerspectiveCamera());
     expect(order).toEqual(['clear 1024', 'ghost lid', 'ghost box', 'clear 16384', 'ghost ghost']);
     const m = (n: string) => (ghosts.group.children.find(c => (c as THREE.Mesh).material && ((c as THREE.Mesh).material as THREE.Material).name === n) as THREE.Mesh).material as THREE.MeshLambertMaterial;
-    expect([m('ghost lid').colorWrite, m('ghost lid').stencilZPass, m('ghost box').depthFunc, m('ghost ghost').stencilFunc]).toEqual([false, THREE.ReplaceStencilOp, THREE.AlwaysDepth, THREE.NotEqualStencilFunc]);
+    expect([m('ghost lid').colorWrite, m('ghost lid').stencilZPass, m('ghost box').depthFunc]).toEqual([false, THREE.ReplaceStencilOp, THREE.AlwaysDepth]);
+    // Another train's ghost ignores the openings (one beside it must not erase it).
+    expect(m('ghost ghost').stencilWrite).toBe(false);
     expect(m('ghost box').customProgramCacheKey()).toBe(busMaterial({ value: 0 }).customProgramCacheKey());
   });
 });

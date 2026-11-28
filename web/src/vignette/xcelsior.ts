@@ -462,15 +462,21 @@ export function busMaterial(night: { value: number }, ghost: { value: number } =
         `#include <color_fragment>
         if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = vec3(0.9, 0.08, 0.06);
         // A CQ400 in a cutaway (city/ghosts.ts) takes its own line colour on its LEDs and chevron
-        // (kinds 5 and 9) from aLine with w 0; the bus leaves it at the default (0, 0, 0, 1).
-        float lineSet = (1.0 - vLine.w) * step(4.5, vKind) * (step(vKind, 5.5) + step(8.5, vKind));
-        diffuseColor.rgb = mix(diffuseColor.rgb, vLine.rgb, lineSet);`,
+        // (kinds 5 and 9) from aLine, and its role from aLine.w: 0 a middle car, −1 the leading cab
+        // (white lights), −2 the tail (red). The bus leaves aLine at the default (0, 0, 0, 1).
+        float cq = step(vLine.w, 0.5);
+        float lineSet = cq * step(4.5, vKind) * (step(vKind, 5.5) + step(8.5, vKind));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vLine.rgb, lineSet);
+        float lead = cq * step(vLine.w, -0.5) * step(-1.5, vLine.w), tail = cq * step(vLine.w, -1.5);
+        float lamp = cq > 0.5 ? (vKind < 1.5 ? lead : tail) : 1.0;
+        if (cq > 0.5 && vKind > 0.5 && vKind < 1.5) diffuseColor.rgb = mix(vec3(0.35), vec3(1.0, 0.97, 0.88), lead);
+        if (cq > 0.5 && vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = mix(vec3(0.25, 0.08, 0.08), vec3(1.0, 0.12, 0.1), tail);`,
       )
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
         float glow = 0.3 + 1.5 * uNight;
-        if (vKind > 0.5 && vKind < 2.5) totalEmissiveRadiance += diffuseColor.rgb * glow;
+        if (vKind > 0.5 && vKind < 2.5) totalEmissiveRadiance += diffuseColor.rgb * glow * lamp;
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uNight * 0.6;
         if (vKind > 3.5 && vKind < 4.5) totalEmissiveRadiance += vec3(0.84, 0.92, 1.0) * uNight * 0.4;
         if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += vec3(1.0, 0.86, 0.66) * uNight * 0.09;
