@@ -4188,3 +4188,7 @@ slab, 49.8 m rounded part). The first glass colour, a base at S 29%, rendered
 at S 47% on the sunlit face, because the grade and the low winter sun saturate
 blue glass. It now sits at a near-neutral `#8c9bab`, which renders at S 28%.
 [Before and after](log/ui/one-midtown-plaza/compare-day.jpg) · [notes](one-midtown-plaza.md)
+
+### 2026-11-24 · City Heights, brick and white balconies
+
+City Heights is an 18-storey 1980 condominium tower east of downtown. It is mapped at 78.4 m, but the 2019 lidar puts its roof at 55 m, which matches 18 storeys. The listing photos show a red-brown brick shaft. Its stepped corners carry stacked white balconies, and white end walls and a white crown with a small pediment sit beside them. It is the first brick tower among my skins. A pane per window put it over the triangle ceiling, so each floor became one window band behind brick piers. [Before and after](log/ui/city-heights/day-before-after.jpg) · [four sides](log/ui/city-heights/four-sides.jpg)
