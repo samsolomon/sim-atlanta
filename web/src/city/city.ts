@@ -76,6 +76,8 @@ import { HeadlightPools } from './headlight-pools';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
+import { CityGhosts, GHOST } from './ghosts';
+import { xrayTarget } from './xray';
 import { registerStationLine, stationTrack, type StationTrack } from './station-track';
 import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
@@ -268,6 +270,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   beforeFrame?: (timestamp: number) => void;
   follow?: VehicleFollow;
   selectVehicle?: (vehicle: VehicleSelection | null) => void;
+  /** The vehicle the card shows now, if any: City x-rays it where it is hidden (city/ghosts.ts). */
+  selected?: () => VehicleSelection | null;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
@@ -999,6 +1003,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Added after the scenery snapshot, so a streetcar never occludes its own pick.
   scene.add(streetcar.group);
   scene.add(trains.group);
+  // Ghost tunnels and the selected vehicle's x-ray (city/ghosts.ts). `?perf&ghost=off` for A/B runs.
+  const ghosts = (perfEnabled || import.meta.env.DEV) && query.get('ghost') === 'off' ? null : new CityGhosts();
+  if (ghosts) {
+    scene.add(ghosts.group);
+    trains.ghosts = ghosts;
+    // After the scene's transparent objects, with its lights still bound (same program key).
+    scene.onAfterRender = (r, sc, cam) => ghosts.draw(r, sc as THREE.Scene, cam);
+  }
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, low) : undefined;
   // Headlight pools on the road and track ahead of every lit vehicle at night, High only (Low is at its
   // program budget). One instanced draw for all producers; the hidden template compiles it at boot.
@@ -2199,6 +2211,41 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     return null;
   }
+  /** The x-rayed vehicle's centreline (world, at mid-height) and the ink's self radius. */
+  const xraySelf: THREE.Vector3[] = [];
+  let xraySelfR = 2.6;
+  const xrayMatrix = new THREE.Matrix4();
+  /**
+   * X-ray everything of the selected vehicle that CityTrains doesn't place: a bus, a streetcar,
+   * and rail cars from other sources (the North Line, Brookwood). Each source mesh's geometry is
+   * its own batch, drawn from its world matrix; its centreline lets ink skip the visible part.
+   */
+  function xrayOthers(target: ReturnType<typeof xrayTarget>) {
+    xraySelf.length = 0;
+    if (!ghosts || !target) return;
+    if (target.kind === 'bus') {
+      const i = buses.positions.findIndex(p => p.id === target.id);
+      if (i < 0) return;
+      buses.mesh.getMatrixAt(i, xrayMatrix);
+      ghosts.batch(buses.mesh.geometry, () => buses.mesh.geometry, edges, 1, false).add(xrayMatrix.premultiply(buses.mesh.matrixWorld), GHOST.xrayBus);
+      for (const z of [-5.5, 5.5]) xraySelf.push(new THREE.Vector3(0, 1.6, z).applyMatrix4(xrayMatrix));
+      xraySelfR = 2.3;
+      return;
+    }
+    xraySelf.push(...trains.xrayPoints);
+    xraySelfR = 2.6;
+    const trams = new Set<THREE.Object3D>(streetcar.cars());
+    const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...trams]
+      .filter(c => c.visible && c.userData.trainId === target.id && !c.userData.cityTrains) as THREE.Mesh[];
+    for (const car of cars) {
+      if (!car.isMesh) continue;
+      const streetcarCar = trams.has(car);
+      car.updateWorldMatrix(true, false);
+      ghosts.batch(car.geometry, () => car.geometry, edges, 8, false).add(car.matrixWorld, streetcarCar ? GHOST.xrayStreetcar : GHOST.xrayTrain);
+      if (xraySelf.length < 10) xraySelf.push(new THREE.Vector3(0, 1.8, 0).applyMatrix4(car.matrixWorld));
+      if (streetcarCar) xraySelfR = 2.4;
+    }
+  }
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
@@ -2281,12 +2328,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
+    // The followed vehicle, else the selected one (main.ts): its cars x-ray wherever hidden.
+    const xray = ghosts ? xrayTarget(options.follow?.vehicle, options.selected?.() ?? null) : null;
+    ghosts?.begin();
+    trains.xrayId = xray?.kind === 'train' ? xray.id : null;
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     trains.surfaceCars += streetcar.update(states, atm.dark);
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
+    if (ghosts) xrayOthers(xray);
     const sceneTime = options.clockMs();
     freight?.update(sceneTime);
     brookwood?.updateFreight(sceneTime);
@@ -2409,6 +2461,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         (ink.uniforms.uInvViewProj.value as THREE.Matrix4).multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).invert();
       }
     }
+    if (ghosts) {
+      ghosts.end();
+      // Ghost codes live in the scene's alpha until ink reads them: draw only when ink runs, and
+      // not while the opening's white model stands in for colour.
+      const white = whiteModel && (whiteModel.phase === 'waiting' || whiteModel.phase === 'white');
+      ghosts.armed = ghosts.enabled && ghosts.count > 0 && ink.enabled && !white && !perfOverrides.postOff;
+      ink.uniforms.uGhost.value = ghosts.armed ? 1 : 0;
+      if (ghosts.armed) {
+        ink.uniforms.uGhostNight.value = atm.dark;
+        camera.updateMatrixWorld();
+        (ink.uniforms.uInvViewProj.value as THREE.Matrix4).multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).invert();
+        const pts = ink.uniforms.uGhostSelf.value as THREE.Vector3[];
+        for (let i = 0; i < Math.min(pts.length, xraySelf.length); i++) pts[i].copy(xraySelf[i]);
+        ink.uniforms.uGhostSelfCount.value = Math.min(pts.length, xraySelf.length);
+        ink.uniforms.uGhostSelfR.value = xraySelfR;
+      }
+    }
     grade.uniforms.uAmount.value = 1;
     grade.uniforms.uTime.value = ts / 1000;
     renderer.info.reset();
@@ -2457,7 +2526,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const whiteModel = options.whiteModel ? createWhiteModel({
     renderer, scene, camera, container,
     // Read each frame: some vehicle layers arrive after createCity returns.
-    hide: () => [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
+    hide: () => [trains.group, ghosts?.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
       brookwood?.cars, (northLine as { group?: THREE.Object3D } | undefined)?.group, rain.mesh, snow.mesh],
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
@@ -2589,7 +2658,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.zoom = zoom;
       camera.updateProjectionMatrix();
     };
-    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, controls, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
+    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, controls, ghosts, trains, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
     // Dev-only: which landmark meshes draw on their own, and why (materials/landmark-batch.ts).
     (window as unknown as Record<string, unknown>).__landmarkBatchReport = landmarkBatchReport;
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().

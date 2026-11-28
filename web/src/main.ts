@@ -700,6 +700,8 @@ async function openCity() {
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
       buses: () => (clock.isRealTime() ? buses.current() : null),
       follow,
+      // City x-rays the vehicle on the card where it is hidden (city/ghosts.ts); the card is unchanged.
+      selected: () => (selectedTrain ? { kind: 'train', id: selectedTrain } : selectedBus ? { kind: 'bus', id: selectedBus } : null),
       selectVehicle: hit => {
         follow?.stop();
         selectedTrain = hit?.kind === 'train' ? hit.id : null;

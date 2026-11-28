@@ -429,16 +429,33 @@ function quad(a: number[], b: number[], c: number[], d: number[]) {
   return g;
 }
 
-/** Material: lights glow by `night`; headlights always on, tail lights red. */
-export function busMaterial(night: { value: number }) {
+/**
+ * Material: lights glow by `night`; headlights always on, tail lights red.
+ *
+ * `ghost` (city/ghosts.ts): with its value at 1 the same program draws a hidden vehicle's ghost
+ * code instead of a lit surface. Each instance carries `aGhost` (its code, written to alpha only)
+ * and `aGhostClip` (a world plane; the side it faces negative is dropped, e.g. the open-air part
+ * of a car at a tunnel mouth). City's ghosts ride this program so they compile none of their own:
+ * it is already instanced and custom-keyed. The bus itself leaves `ghost` at 0.
+ */
+export function busMaterial(night: { value: number }, ghost: { value: number } = { value: 0 }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = night;
+    sh.uniforms.uGhost = ghost;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;');
+      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;\nattribute float aGhost;\nattribute vec4 aGhostClip;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;\nvGhost = aGhost;\nvGhostClip = aGhostClip;')
+      .replace('#include <project_vertex>', `#include <project_vertex>
+        vec4 ghostW = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          ghostW = instanceMatrix * ghostW;
+        #endif
+        vGhostW = (modelMatrix * ghostW).xyz;`);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vKind;')
+      .replace('#include <common>', '#include <common>\nuniform float uNight;\nuniform float uGhost;\nvarying float vKind;\nvarying float vGhost;\nvarying vec4 vGhostClip;\nvarying vec3 vGhostW;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n  if (uGhost > 0.5 && dot(vGhostClip.xyz, vGhostW) + vGhostClip.w < 0.0) discard;')
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\n  if (uGhost > 0.5) gl_FragColor = vec4(0.0, 0.0, 0.0, vGhost);')
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
