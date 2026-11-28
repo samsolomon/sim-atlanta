@@ -69,3 +69,40 @@ ink's 4.2 km fade (the default far view) or with `?perf&nopass=ink`.
 - The North Line in Midtown and the Brookwood cars have no tunnel ghosts. They x-ray when selected
   while drawn, but a North Line train that its own portal has dropped isn't ghosted.
 - Ghosts show through buildings in front of a tunnel as well as the ground. That is the x-ray reading.
+
+## Cutaway (step 2b, 2026-11-28)
+
+Sam's picture: Roller Coaster Tycoon's underground view, but local. The ground around a train in
+tunnel opens, and through it you see the real train in its own materials and livery, its track,
+and the tunnel's floor and far wall. The rest of the map stays shut.
+
+- **Where it opens.** Not straight above the train: through a ground-level hole above a 10–16 m
+  deep tunnel, a camera at City's usual tilt sees only the far wall. The opening is the hull of the
+  rim and of the floor seen from the eye (projected up its view rays), so it lies where the ground
+  stands between the eye and the train (`cutSection`). It's recomputed every frame as the camera
+  moves.
+- **What's inside.** An open-top tunnel box per 6 m section: a ballast floor with flat rails and ties,
+  and one wall, mirrored to the side away from the eye (no near wall to hide the train), concrete
+  with a lamp strip and a band of Georgia clay where the cut shows the ground. One end wall, at
+  the far end. The real CQ400 cars, with each train's own line colour on its LEDs and chevron
+  (`aLine`). Station platforms wait on the platform table.
+- **Occlusion.** A tower in front of the opening keeps it shut. The lid is tested against the scene's
+  depth and marks stencil only where the ground in front is what shows. The box then paints that
+  stencil and resets depth to itself, and the cars draw inside with an ordinary depth test.
+- **Ghosts.** A train with a cutaway shows no ghost (Sam: ghosts are for trains without a hole). The
+  selected train keeps its x-ray wherever its opening is shut, so it is never lost. Ghosts draw
+  with a stencil test that keeps them out of any opening.
+
+### Cost (0 programs)
+Everything draws with the bus's compiled instanced program: lid, box, cab cars and middle cars,
+four draws however many trains open. The scene's depth goes D24S8: the same 32 bits a pixel, read
+by ink and AO as before. A matched pixel diff with no opening on screen is identical on Low, and
+on High it's within the run-to-run noise. With no train in tunnel in view, or beyond ink's fade,
+nothing is built and nothing draws. The ground program is untouched (no discard), so the A16 keeps
+its early depth test.
+
+### Review switches (dev or `?perf`)
+- `cutaway=cut` (default) or `lens` (the opening tapers to its ends), or `off` (#737's ghosts only,
+  plain depth).
+- `holes=all` (default: the 4 trains in tunnel nearest the camera's target) or `selected`.
+- `holeghost=1`: cutaway trains keep their ghost where the opening is shut (three more draws).
