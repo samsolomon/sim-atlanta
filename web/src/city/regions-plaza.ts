@@ -84,7 +84,7 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
       }
     }
     // Spandrel bands at every tier line.
-    for (let t = 0; t <= tiers; t++) hband(a, b, length, floor + base + t * tier - 0.45, 0.9, 0.2);
+    for (let t = 0; t <= tiers; t++) hband(a, b, length, floor + base + t * tier - (t === tiers ? 0.9 : 0.45), 0.9, 0.2); // the top one stops at the roof
     // Base: tall lobby windows in each bay, a row of small square windows above them, and the arched
     // entrance at the middle of each face.
     const mid = length / 2;
