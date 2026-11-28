@@ -28,8 +28,9 @@ go; the go for batch 1 covered batch 1 only.
 
 ## Next
 
-1. `samsolomon/group2-fixes` (#544's south sliver, #578's trellis post) needs its own merge go.
-   With #726 it gates release 20 packaging.
+1. `samsolomon/group2-fixes` (#544's south sliver, #578's trellis post), stacked on #726
+   (`c9990e15`), needs its own merge go. It is the last gate for release 20 packaging, which needs
+   `pnpm data:bake` (`scene/placeholder/board.bin.gz`).
 2. Group 3, chained on that fix: #600 #602 #605 #606 #607 #609 #614 #617 #618 #620 and the
    approved reworks #634 (`35371006`), #573 (`efdb5923`), #587 (`c7588892`). Squash #606 and #620
    (merge commits) and check their diffs.
