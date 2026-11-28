@@ -26,10 +26,10 @@ it('steps the tower from its notched corners to the parapet and the hipped crown
   expect(createRegionsPlaza([other], site, grid)).toBeNull();
   const result = createRegionsPlaza([site, other], site, grid)!;
   expect(result.buildings).toEqual([other]);
-  // The stone shares One Atlantic Center's ashlar program; the lamps stay plain.
-  const [stoneMesh, lampMesh] = result.group.children as Mesh[];
-  expect((stoneMesh.material as Material).customProgramCacheKey()).toBe('one-atlantic-ashlar');
-  expect((lampMesh.material as Material).onBeforeCompile).toBe(Material.prototype.onBeforeCompile);
+  // Plain vertex-coloured materials, so the skin batches with its neighbours (no draw of its own).
+  const [stoneMesh] = result.group.children as Mesh[];
+  for (const m of result.group.children as Mesh[])
+    expect((m.material as Material).onBeforeCompile).toBe(Material.prototype.onBeforeCompile);
   result.group.updateMatrixWorld(true);
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x, 500, z), new Vector3(0, -1, 0)).intersectObject(result.group)[0]?.point.y + 300;

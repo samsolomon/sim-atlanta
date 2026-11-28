@@ -1,8 +1,7 @@
-import type { BufferGeometry, Material, Mesh } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { oneAtlanticAshlar, oneAtlanticFacade } from './johnson-burgee';
+import { oneAtlanticFacade } from './johnson-burgee';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 
@@ -23,8 +22,10 @@ const base = 20.4, tiers = 5, perTier = 3, tier = (corner - base) / tiers, store
 const bay = 7.1, win = 2.35, mullion = 0.35;
 
 // The stone, trim, glass and frames are One Atlantic Center's own (johnson-burgee.ts), not copies:
-// Sam (2026-11-28) wants the pair to read as one granite, as they do in life. The stone mesh takes
-// One Atlantic's ashlar too, so it shares that tower's shader program.
+// Sam (2026-11-28) wants the pair to read as one granite, as they do in life. They stay vertex
+// colours, so the skin keeps batching with its neighbours: One Atlantic's ashlar joints are a shader
+// hook that would take it out of the batch for a draw of its own, and they fade out below a pixel at
+// City range anyway (and its y < 200 m test is in One Atlantic's local frame, not this mesh's).
 const { granite: stone, trim: band, glass, frame } = oneAtlanticFacade;
 const stoneShade = band;
 // The hip roof is cool slate-grey standing-seam metal (2014 and 2025 photos), not copper.
@@ -158,8 +159,5 @@ export function createRegionsPlaza(buildings: VBuilding[], site: VBuilding, grid
     body.quad([a[0], floor + hipTop, a[1]], [a[0], floor + rail, a[1]], [b[0], floor + rail, b[1]], [b[0], floor + hipTop, b[1]], band);
   });
   // Warm lamp light for the offices and the crown wash, as in the night photo (cream roof, warm offices).
-  const model = shell.finish('#f4dcb4', 0.55);
-  // finish() adds the stone first, then the lamps; only the stone takes the ashlar.
-  oneAtlanticAshlar((model.group.children[0] as Mesh<BufferGeometry, Material>).material);
-  return model;
+  return shell.finish('#f4dcb4', 0.55);
 }
