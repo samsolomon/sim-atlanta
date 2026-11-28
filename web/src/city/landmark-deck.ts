@@ -49,9 +49,15 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid, nei
   if (!s) return null;
   const seed = seedOf(landmarkDeckId);
   const groundAt = (x: number, z: number) => grid.sample(x + origin[0], z + origin[1]) ?? lidarLot;
-  // The rendered terrain at the Piedmont corners runs up to 0.4 m above the lidar lot. Lift the
-  // lot just clear of it (at most 0.6 m) so grass never shows through the asphalt.
-  const lot = Math.min(lidarLot + 0.6, Math.max(lidarLot, ...s.ring.map(([x, z]) => groundAt(x, z) + 0.08))),
+  // The rendered terrain runs up to 0.5 m above the lidar lot, at the Piedmont corners and inside
+  // the outline. Lift the lot just clear of it (at most 0.6 m) so grass never shows through the
+  // asphalt: sample the corners and every metre between them.
+  const heights = s.ring.map(([x, z]) => groundAt(x, z));
+  const xs = s.ring.map(p => p[0]), zs = s.ring.map(p => p[1]);
+  for (let x = Math.min(...xs); x <= Math.max(...xs); x++) for (let z = Math.min(...zs); z <= Math.max(...zs); z++)
+    if (pointInRing(x, z, s.ring)) heights.push(groundAt(x, z));
+  // The drawn triangles stand up to 7 cm above the grid's samples, so the clearance is 12 cm.
+  const lot = Math.min(lidarLot + 0.6, Math.max(lidarLot, ...heights.map(y => y + 0.12))),
     parapet = lot + 0.95,
     fence = lot + 1.1;
 

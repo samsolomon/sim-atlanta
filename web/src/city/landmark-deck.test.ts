@@ -102,3 +102,22 @@ it('keeps every painted stall line on the roof', () => {
   expect(off).toEqual([]);
 });
 
+it('lies above ground that rises inside its outline, not only at its corners', () => {
+  // 5 m posts, level at the lidar lot but for one 45 cm higher inside the outline.
+  const high: number[] = [938, -716];
+  const bump = new GroundGrid({
+    version: 1, rows: 31, cols: 31, stepM: 5,
+    bounds: { minX: 863, maxX: 1013, minZ: -791, maxZ: -641 },
+    encoding: 'signed int16 little-endian',
+    vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 323.8 },
+    scaleM: 0.1, offsetM: 0, noData: -32768, sha256: '',
+  }, new Int16Array(Array.from({ length: 961 }, (_, i) =>
+    863 + (i % 31) * 5 === high[0] && -791 + Math.floor(i / 31) * 5 === high[1] ? 2974 : 2969)).buffer);
+  expect(pointInRing(high[0], high[1], deck.rings[0])).toBe(true);
+  expect(bump.sample(high[0], high[1])).toBeCloseTo(297.4, 1);
+  const model = createLandmarkDeck([deck, landmark], bump, [deck, landmark])!;
+  model.group.updateMatrixWorld(true);
+  const hit = new Raycaster(new Vector3(high[0], 200, high[1]), new Vector3(0, -1, 0)).intersectObject(model.group)[0];
+  expect(hit.point.y + 323.8).toBeGreaterThan(297.4);
+});
+
