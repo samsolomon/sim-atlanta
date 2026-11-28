@@ -128,6 +128,7 @@ import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
 import { createCapitalCityClub } from './capital-city-club';
+import { create260PeachtreeParking } from './peachtree-260-parking';
 import { createMedicalArts } from './medical-arts';
 import { createJwMarriott } from './jw-marriott-downtown';
 import { createTwelveCentennial } from './twelve-centennial';
@@ -525,6 +526,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let hub: ReturnType<typeof createHubPeachtreeCenter> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let hyatt: ReturnType<typeof createHyattRegency> = null;
+  let parking260: ReturnType<typeof create260PeachtreeParking> = null;
   let altitude: ReturnType<typeof createAltitudeApartments> = null;
   let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
@@ -602,8 +604,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
         const afterAltitude = altitude?.buildings ?? afterHilton;
-        hyatt = createHyattRegency(afterAltitude, ground);
-        const afterHyatt = hyatt?.buildings ?? afterAltitude;
+        parking260 = create260PeachtreeParking(afterAltitude, ground);
+        const afterParking260 = parking260?.buildings ?? afterAltitude;
+        hyatt = createHyattRegency(afterParking260, ground);
+        const afterHyatt = hyatt?.buildings ?? afterParking260;
         twelve = createTwelveCentennial(afterHyatt, ground);
         const afterTwelve = twelve?.buildings ?? afterHyatt;
         truist = createTruistPlaza(afterTwelve, groundAt);
@@ -738,6 +742,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const landmarksFrom = world.group.children.length;
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
+        if (parking260) world.group.add(parking260.group);
         if (marquis) world.group.add(marquis.group);
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
@@ -825,7 +830,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, capitalCityClub, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter, hub,
+            floyd, hyatt, parking260, marquis, marquisOne, marquisTwo, capitalCityClub, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter, hub,
             peachtree, library, flatiron, healey, footballHall, museumTower, courtlandGrand, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark, landmarkDeck,
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
@@ -1979,6 +1984,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       floyd?.setNight(night);
       eastRail?.setNight(night);
       hyatt?.setNight(night);
+      parking260?.setNight(night);
       marquis?.setNight(night);
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
