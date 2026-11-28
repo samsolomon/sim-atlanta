@@ -4216,3 +4216,7 @@ Next to the newly skinned downtown landmarks, the Barclay Hotel on Luckie Street
 ### 2026-11-24 · Capital City Club
 
 This was the first of the downtown generics Sam flagged next to the skinned landmarks. The 1911 club was a 33.6 m grey box. Lidar puts its brick block at 23 m, with a taller rear range and a one-storey terrace. It is now tan brick with stone trim, a balustraded cornice, and its deep porch of paired columns along John Portman Boulevard. Most City views barely see it between its tall neighbours. It mattered anyway: the grey box had read as an unfinished hole beside the Marquis towers. [Before and after](log/ui/capital-city-club/before-after.jpg)
+
+### 2026-11-24 · Elevance Health Technology Center: silver below, blue above
+
+I first planned Elevance as three blues of faceted glass. The award photographs told a different story: the angular folds belong to a pale silver fin screen wrapping the parking floors over a glass lobby, and the tower above is plain blue banded glass stepping back in tiers. That material change is what separates it from its curtain-walled neighbours. The lidar lifted the mapped 54 m "podium" to 70 m wings. The 16th-floor sky bridge to 712 West Peachtree waits: it reaches 12 m past the footprint, and the new skin audit has no way yet to allow one part to do that. [Before/after, views and four-side sheet](log/ui/elevance-tech/README.md)
