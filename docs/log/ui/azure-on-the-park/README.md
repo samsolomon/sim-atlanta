@@ -49,3 +49,18 @@ No night photograph was found. Lit rooms come from the shared `litHash(seedOf(id
 ![Low tier at the starting camera, day and night](az-low.jpg)
 ![Close view, day and night](az-close.jpg)
 ![Four-side check from N, E, S and W at 400 m](az-four.jpg)
+
+## Strengthening (recognition audit, 2026-11-24)
+
+The audit rated #546 BORDERLINE: "Tower glass matches neighbours". Two photos show what makes Azure itself, and the skyline lead confirmed both features before the build:
+
+- [11th Street, Street View, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78325,-84.38120&heading=120&pitch=32&fov=105): looking up the north-west corner at blue reflective curtain glass over the charcoal brick base, with cantilevered balconies stacked at the corner.
+- [Piedmont House rooftop photosphere, October 2019](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78340,-84.38020&heading=200&pitch=40&fov=110): a second angle from the north-east, showing the same blue glass, clearly bluer than the towers beside it, and balcony stacks running full height along the corners.
+
+Changes:
+
+- **Glass:** base `#86a0c0` (S 30%, V 75%), up from `#9aa7b3` (S 14%). Rendered at 11:30 on the high tier from the glass-check camera, the sunlit face reads **S 29 / V 65**, inside the V ≥ 62 → S ≤ 30 rule. Shaded faces are left to the shader's glass shade floor (#631), as the glass rule now says. [Glass check](strengthen-glass.jpg)
+- **Balconies:** the stacks move from mid-face (10 m spacing) to the main tower's four corners, one stack at each end of every face. The stack at each face's far end runs 1.7 m past the corner and fills the corner square, so the balconies wrap it. On the east face, the stacks start above the east step's roof (348.9 m), because the step stands flush against that face. Each has a white slab, a soffit, a dark rail and a bright nosing. The noses and slab tops now draw on the low tier too, so the corners read there; each slab runs back to the wall so nothing hangs loose.
+- **Unchanged:** lidar heights, brick base, podium, pool and night lighting.
+
+Low tier: 877 triangles (was 405), well under the lead's 2,400 guide. [Before and after](strengthen-compare.jpg) · [four sides, low tier, shared sheet script](azure-on-the-park-four-sides.jpg) · [close](strengthen-close.jpg) · [low](strengthen-low.jpg)

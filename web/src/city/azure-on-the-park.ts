@@ -50,14 +50,20 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
   // The shell's local y is NAVD88.
   const y = (navd: number) => navd;
   const brick = '#4f5052', precast = '#cdbfa6', slab = '#c9cbcc';
-  // Blue-grey curtain glass from Street View: base #9aa7b3 is S 14%, V 70%; the shadow tint adds the blue.
-  const glass = ['#9aa7b3', '#a0acb7', '#95a2ae'];
+  // Blue reflective curtain glass, visibly bluer than its neighbours in the March 2025 11th Street
+  // view and the October 2019 Piedmont House rooftop view: base #86a0c0 is S 30%, V 75%.
+  const glass = ['#86a0c0', '#8ca5c3', '#819bbb'];
   const t = local(tower), s = local(step), p = local(podium);
 
+  const podFloors = 4, towerLo = y(podiumTop) + 0.3;
   shell.prism(p, shell.base, y(podiumTop), precast, '#9c9a93');
-  shell.prism(t, shell.base, y(roof), slab, '#9fa2a4');
+  // Dark brick below the podium line (Street View on 11th Street) is the wall itself, not a layer
+  // over it, so the lower-floor panes sit a clean 7 cm off it.
+  shell.prism(t, shell.base, towerLo, brick, brick);
+  shell.prism(t, towerLo, y(roof), slab, '#9fa2a4');
   shell.prism(t, y(roof), y(parapet), slab, '#9fa2a4');
-  shell.prism(s, shell.base, y(stepTop), slab, '#9fa2a4');
+  shell.prism(s, shell.base, towerLo, brick, brick);
+  shell.prism(s, towerLo, y(stepTop), slab, '#9fa2a4');
 
   // Rooftop pool on the 23rd floor terrace, cantilevered toward the park.
   if (high) {
@@ -65,14 +71,11 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     shell.body.quad([a, y(parapet) + 0.05, b], [a, y(parapet) + 0.05, d], [c, y(parapet) + 0.05, d], [c, y(parapet) + 0.05, b], '#5fb3cf');
   }
 
-  const podFloors = 4, towerLo = y(podiumTop) + 0.3;
   const floors = Math.round((y(roof) - towerLo) / 3.1);
   const pitch = (y(roof) - 0.3 - towerLo) / floors;
   const tower3 = (ring: P2[], top: number, block: number) => edges(ring, (a, b, length, i) => {
     const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length, nx = uz, nz = -ux;
     const at = (u: number, yy: number, out: number) => [a[0] + ux * u + nx * out, yy, a[1] + uz * u + nz * out];
-    // Dark brick below the podium line, as in Street View on 11th Street.
-    shell.body.quad(at(0, shell.base, 0.06), at(0, towerLo, 0.06), at(length, towerLo, 0.06), at(length, shell.base, 0.06), brick);
     const rows = Math.round((top - towerLo) / 3.1);
     if (high) {
       litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, rows, 3.2, 0.92, 0.78, glass, 0.45);
@@ -80,18 +83,31 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     } else if (length > 8) {
       litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, Math.round(rows / 3), 12, 0.9, 0.9, glass, 0.45);
     }
-    // Cantilevered balconies with glass rails on the long faces.
-    if (!high || length < 30) return;
-    const stacks = Math.round(length / 10);
-    for (let k = 0; k < stacks; k++) for (let j = 1; j < floors; j++) {
-      const c = (k + 0.5) * length / stacks, yy = towerLo + j * pitch;
+    // Cantilevered balconies stacked full height at the main tower's corners, wrapping them
+    // (both photos), with white slab edges and dark rails. Each face carries a stack at each end.
+    if (block !== 0 || length < 15) return;
+    const w = 2.1, d = 1.7;
+    // The east step stands flush against the tower's east face up to its own roof.
+    const [sx0, sx1] = [Math.min(...s.map(p => p[0])), Math.max(...s.map(p => p[0]))];
+    const [sz0, sz1] = [Math.min(...s.map(p => p[1])), Math.max(...s.map(p => p[1]))];
+    const inStep = (u: number, out: number) => {
+      const [x, , z] = at(u, 0, out);
+      return x > sx0 - 0.5 && x < sx1 + 0.5 && z > sz0 - 0.5 && z < sz1 + 0.5;
+    };
+    for (const c of [w, length - w]) for (let j = 1; j < floors; j++) {
+      const yy = towerLo + j * pitch;
+      if (yy < y(stepTop) + 0.5 && inStep(c, d / 2)) continue;
       const q = (u: number, out: number, h: number) => at(c + u, h, out);
-      const w = 2.1, d = 1.7;
-      shell.body.quad(q(-w, 0.02, yy + 0.2), q(w, 0.02, yy + 0.2), q(w, d, yy + 0.2), q(-w, d, yy + 0.2), '#e4e5e4');
-      shell.body.quad(q(-w, 0.02, yy), q(-w, d, yy), q(w, d, yy), q(w, 0.02, yy), '#c2c4c4');
-      shell.body.quad(q(-w, d, yy), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy), '#a8b9c7');
-      // A bright slab nosing keeps the balcony rhythm legible on the shaded faces.
-      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
+      // The stack at each face's far end runs d past the corner, filling the corner square so the
+      // balconies wrap it and meet the next face's stack.
+      const hi = c > length / 2 ? w + d + 0.02 : w;
+      // A bright slab nosing keeps the stacks legible on the shaded faces, on both tiers. Its top
+      // runs back to the wall, so the slab hangs from the tower rather than floating off it.
+      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(hi, d + 0.02, yy + 0.25), q(hi, d + 0.02, yy - 0.05), '#f2f3f2');
+      shell.body.quad(q(-w, 0, yy + 0.25), q(hi, 0, yy + 0.25), q(hi, d + 0.02, yy + 0.25), q(-w, d + 0.02, yy + 0.25), high ? '#e4e5e4' : '#f2f3f2');
+      if (!high) continue;
+      shell.body.quad(q(-w, 0, yy - 0.05), q(-w, d + 0.02, yy - 0.05), q(hi, d + 0.02, yy - 0.05), q(hi, 0, yy - 0.05), '#c2c4c4');
+      shell.body.quad(q(-w, d, yy + 0.25), q(-w, d, yy + 1.1), q(hi, d, yy + 1.1), q(hi, d, yy + 0.25), '#3a3f44');
     }
   });
   tower3(t, y(roof), 0);
