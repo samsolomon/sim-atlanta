@@ -68,7 +68,7 @@ it('wraps the main tower corners in balcony stacks on both tiers', () => {
     group.updateMatrixWorld(true);
     const body = group.children[0] as Mesh;
     const position = body.geometry.attributes.position, color = body.geometry.attributes.color;
-    const v = new Vector3(), corners = new Set<string>();
+    const v = new Vector3(), corners = new Set<string>(), noses: Vector3[] = [];
     for (let i = 0; i < position.count; i++) {
       if (Math.abs(color.getX(i) - nose.r) + Math.abs(color.getY(i) - nose.g) + Math.abs(color.getZ(i) - nose.b) > 0.01) continue;
       v.fromBufferAttribute(position, i).applyMatrix4(body.matrixWorld);
@@ -77,7 +77,13 @@ it('wraps the main tower corners in balcony stacks on both tiers', () => {
       const cz = Math.abs(v.z + 3225.3) < 6 ? 's' : Math.abs(v.z + 3205.2) < 6 ? 'n' : null;
       expect(cx && cz).toBeTruthy();
       corners.add(cz! + cx!);
+      noses.push(v.clone());
     }
     expect([...corners].sort()).toEqual(['ne', 'nw', 'se', 'sw']);
+    // The slabs turn each corner: a nose reaches the outer point 1.72 m out from both faces.
+    for (const [x, z, sx, sz] of [[911, -3225.3, -1, -1], [956.4, -3225.3, 1, -1], [956.4, -3205.2, 1, 1], [911, -3205.2, -1, 1]]) {
+      const reach = Math.min(...noses.map(p => Math.hypot(p.x - x - sx * 1.72, p.z - z - sz * 1.72)));
+      expect(reach, `${x},${z}`).toBeLessThan(.15);
+    }
   }
 });
