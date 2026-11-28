@@ -1,6 +1,6 @@
 # One Midtown Plaza
 
-`osm:way:269637564`, 1360 Peachtree Street. This 14-storey office tower is the sister of Two Midtown Plaza (1986, Smallwood, Reynolds, Stewart, Stewart), and the pair were renovated together by ASD|SKY. City code: `oneMidtownPlaza` in `web/src/city/midtown-skyline-twomidtown.ts`, built by the same function as Two Midtown, with plan data in `fixtures/midtown-skyline/one-midtown-plaza.json`. Shipping it requires a web rebuild and redeploy; the data is unchanged.
+`osm:way:269637564`, 1360 Peachtree Street. This 14-storey office tower is the sister of Two Midtown Plaza (1986, Smallwood, Reynolds, Stewart, Stewart), and the pair were renovated together by ASD|SKY. City code: `oneMidtownPlaza` in `web/src/city/midtown-skyline-twomidtown.ts`, built by the same function as Two Midtown, with plan data in `fixtures/midtown-skyline/one-midtown-plaza.json`. Shipping it requires `pnpm data:bake` (the white stand-in for unloaded areas is baked from the skins), then a web rebuild and redeploy; the source data is unchanged.
 
 ## Sources
 
