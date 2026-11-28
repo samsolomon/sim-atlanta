@@ -212,8 +212,12 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
       s.prism(plan, y, y + 2 * floor, glass, frame);
       // Closed underneath, so an overhanging wedge never shows its inside from the street.
       s.body.tri([plan[0][0], y, plan[0][1]], [plan[1][0], y, plan[1][1]], [plan[2][0], y, plan[2][1]], frame);
-      // A lit room behind each bay at night.
-      if (litHash(seed, 98, j, 0) < 0.35) panel(corner, 0.2, 0.7, y + 0.5, y + 2 * floor - 0.6, out * 0.45, glass, true);
+      // A lit room in the bay at night: on the wedge's long slanted face, 7 cm proud of the glass.
+      if (litHash(seed, 98, j, 0) < 0.35) {
+        const pane = (t: number, h: number) => at(corner, t, h, out * (1 - t) / 0.85 + 0.07);
+        const lo = y + 0.5, hi = y + 2 * floor - 0.6;
+        s.lights.quad(pane(0.2, lo), pane(0.2, hi), pane(0.7, hi), pane(0.7, lo), glass);
+      }
     }
   }
 
