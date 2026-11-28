@@ -82,12 +82,12 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
     // Base: limestone with rusticated joints and boarded storefronts on the street faces.
     if (front) {
       panel(a, b, 0, 1, s.base, street + baseH, 0.05, limestone);
-      for (let y = street + 4.8; y < street + baseH - 0.3; y += 1) panel(a, b, 0, 1, y, y + 0.07, 0.07, joint);
+      for (let y = street + 4.8; y < street + baseH - 0.3; y += 1) panel(a, b, 0, 1, y, y + 0.07, 0.09, joint);
       const stores = face === 'east' ? 3 : 6;
-      for (let i = 0; i < stores; i++) panel(a, b, (i + 0.12) / stores, (i + 0.88) / stores, street + 0.2, street + 4.2, 0.08, boarded);
+      for (let i = 0; i < stores; i++) panel(a, b, (i + 0.12) / stores, (i + 0.88) / stores, street + 0.2, street + 4.2, 0.09, boarded);
       for (let i = 0; i < (face === 'east' ? 3 : 10); i++) {
         const n = face === 'east' ? 3 : 10;
-        panel(a, b, (i + 0.3) / n, (i + 0.7) / n, street + 5.4, street + 7.9, 0.08, window);
+        panel(a, b, (i + 0.3) / n, (i + 0.7) / n, street + 5.4, street + 7.9, 0.13, window);
       }
       // The limestone stringer course under the third-floor windows.
       course(a, b, street + baseH - 0.1, street + baseH + 0.45, 0.25, limestone, 0.25);
@@ -116,7 +116,7 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
     }
 
     // The south wall has a light brick stringer where the other three carry orange terracotta.
-    if (face === 'south') panel(a, b, -0.2 / length, 1 + 0.2 / length, terracottaLo, terracottaTop, 0.22, '#c9ab8a');
+    if (face === 'south') panel(a, b, -0.2 / length, 1 + 0.2 / length, terracottaLo, terracottaTop, 0.25, '#c9ab8a');
   }
   // The orange terracotta band between shaft and capital, one ring around the building.
   band(plan, terracottaLo, terracottaTop, 0.2, terracotta);
@@ -147,11 +147,11 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
   const north = faces.find(f => f.face === 'north');
   if (north) {
     const [na, nb] = [north.a, north.b];
-    panel(na, nb, 0.44, 0.56, capital + 0.3, roof - 0.3, 0.12, '#e6e1d4');
+    panel(na, nb, 0.44, 0.56, capital + 0.3, roof - 0.3, 0.14, '#e6e1d4');
     panel(na, nb, 0.46, 0.54, capital + 1.2, roof - 1.2, 0.18, terracotta);
     panel(na, nb, 0.48, 0.52, capital + 2.1, roof - 2.1, 0.24, '#4f6f9a');
     for (const t of [0.36, 0.64]) {
-      panel(na, nb, t - 0.035, t + 0.035, capital + 2, capital + 3.6, 0.09, limestone);
+      panel(na, nb, t - 0.035, t + 0.035, capital + 2, capital + 3.6, 0.14, limestone);
       panel(na, nb, t - 0.06, t + 0.06, roof, roof + 1.6, 0.01, buff);
     }
   }

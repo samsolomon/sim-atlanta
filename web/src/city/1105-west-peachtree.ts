@@ -76,7 +76,7 @@ function rooms(s: Shell, plan: P2[], lo: number, hi: number, pitch: number, glas
       panel(s.body, a, b, 0.01, 0.99, y + 0.9, y + pitch - 0.25, 0.04, glassColor);
       for (let i = 0; i < bays; i++) {
         if (hash(f, i, edge * 17 + seed) >= lit) continue;
-        panel(s.lights, a, b, i / bays + 0.06 / bays, (i + 1) / bays - 0.06 / bays, y + 0.95, y + pitch - 0.3, 0.07, glassColor);
+        panel(s.lights, a, b, i / bays + 0.06 / bays, (i + 1) / bays - 0.06 / bays, y + 0.95, y + pitch - 0.3, 0.09, glassColor);
       }
     }
   });

@@ -74,12 +74,12 @@ export function createColonyHouse(buildings: VBuilding[], site: VBuilding, grid:
     for (let f = 0; f < floors; f++) {
       const lo = entryNavd + lobbyH + f * pitch;
       if (lo + pitch <= covered) continue;
-      panel(false, a, b, 0.01, 0.99, lo + 0.75, lo + pitch, 0.02, recess);
+      panel(false, a, b, 0.01, 0.99, lo + 0.75, lo + pitch, 0.04, recess);
       // The slab edge and balcony front: a pale band standing proud of the wall.
       panel(false, a, b, 0, 1, lo, lo + 0.75, 0.12, front);
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= 0.3) continue;
-        panel(true, a, b, (i + 0.15) / bays, (i + 0.85) / bays, lo + 0.6, lo + pitch - 0.2, 0.04, recessLit);
+        panel(true, a, b, (i + 0.15) / bays, (i + 0.85) / bays, lo + 0.6, lo + pitch - 0.2, 0.08, recessLit);
       }
     }
     for (let i = 1; i < bays; i++) {
