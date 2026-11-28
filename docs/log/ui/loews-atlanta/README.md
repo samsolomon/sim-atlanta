@@ -41,4 +41,21 @@ No full-night exterior photograph was found, so this is an evidence gap. Searche
 
 ## Budget
 
-About 2,220 triangles: about 1,160 in the body and about 1,060 in lit panes and the canopy soffit. That is within the 2,400 landmark ceiling and costs two low-tier draws.
+After the rework, about 2,200 triangles: about 1,230 in the body and about 970 in lit panes. That is within the 2,400 landmark ceiling.
+
+## Rework: the residence band and the sawtooth (2026-11-24)
+
+The recognition audit rated #455 borderline, because its framed glass read like the generic glass around it. [LoewsMidtown.jpg](https://commons.wikimedia.org/wiki/File:LoewsMidtown.jpg) (2019, looking up from 11th and Peachtree) shows two features that set Loews apart, and the rework models both:
+
+1. **The residences' dark band.** The hotel residences' balcony stack crosses the top ~12 floors of the wide south-west face. In the photo it reads as a dark band over the pale shaft: median `#3a3e40`, V 25%. City draws a recessed dark wall (`#3c4347`, body, not glass) behind the balcony slabs, with the white slab edges across it. At night the residences light up in front of it.
+2. **The sawtooth west bays.** The narrow west face above the café is a column of angled bay windows. City draws a closed glass wedge, capped underneath, per two floors, alternating 0.9 m and 1.6 m deep, so the edge reads serrated. The wedges replace that face's flat curtain wall, and the band face's curtain stops below the band, so neither leaves hidden geometry behind. #562's detachment check finds no loose parts, and a test checks that the band colour and the wedges are built.
+
+**Glass stays as the photo shows it.** The photo's shaft glass is hue 208, S 17%, V 72–80%, close to the generic glass, so the base is the photo median `#a0b3c3` and not a tinted colour. At 11:30 on the high tier, the sunlit shaft renders at S 11% / V 58% and the band at V 35%.
+
+| View | Camera | Clock | Image |
+|---|---|---|---|
+| Recognition view from 11th and Peachtree | `826,-3328,45,64,700` with `&dev`, then `__setView(45, 64, 700, 826, -3328, 1.4)` | 11:30 AM / 11:30 PM | [Day](rework-before-after.jpg) · [Night](rework-night-before-after.jpg) |
+| #455's money-shot cam | `764,-3269,32,62,600` | 11:30 AM / 11:30 PM | [Day](day-before-after.jpg) · [Night](night-before-after.jpg) |
+| Four sides at 450 m, labelled by face shown | `__setView(bearing, 42, 450, 770, -3272, 1)` with bearings 0, 90, 180 and 270 | 11:30 AM | [Sheet](four-sides.jpg) |
+
+Lit windows now use skin-kit `litHash(seedOf(id), …)`.
