@@ -25,3 +25,10 @@ merge until the coordinator's go.
 
 No shared services. My vite servers (:5291, :5292), headless Chrome and the merge-base worktree
 are stopped, and the perf lock is released. Data was rsynced from `day-fps-r21`, then `pnpm data:bake` ran on this head.
+
+## Update 2026-11-28 (Sam via the coordinator)
+
+Regions now takes One Atlantic Center's exact facade values (granite `#ccaea0`, trim, glass, light
+frames) from the shared `oneAtlanticFacade` in `johnson-burgee.ts`. The massing, slate hip and lamps
+are unchanged. Vertex colours only: 0 programs, 0 draws. The ashlar hook is deliberately not used;
+see the README. #734 is rebased on main. Waiting on Sam's merge go.

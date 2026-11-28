@@ -2,14 +2,25 @@
 
 Regions Plaza (1180 West Peachtree, completed 2001, renovated 2014, formerly Atlantic Center Plaza; Smallwood, Reynolds, Stewart, Stewart) replaces the generic box on `osm:way:269843399`. It is a square, 24-floor office tower with notched corners that stop at 84 m. Above them, a cross-shaped top storey has tall round-headed windows and corner finials, under a truncated hip roof with a rail.
 
-## Second pass (release 21): its own look
+## Second pass (release 21): its own shape, One Atlantic's stone
+
+**Third revision (2026-11-28):** Sam likes the rework's shape but wants the colour and texture to match One Atlantic Center, because in life the two read as the same stone. The tiers, window pairs, arched base, slate hip and lamps stay. The stone, trim, glass and window frames now come from `oneAtlanticFacade` in `web/src/city/johnson-burgee.ts`, which One Atlantic's own skin also reads. So both towers use one set of values, not copies. The values are vertex colours, so Regions keeps batching with its neighbours: 0 programs and 0 draws.
+
+One Atlantic's ashlar joints are a shader hook. I left them off Regions on purpose, because the hook excludes a mesh from the landmark batch, which costs a draw of its own. The joints also fade out once a course is below a pixel, which happens at City range. And the hook's `y < 200 m` test is written for One Atlantic's local frame; Regions' vertices sit at NAVD88 heights (about 280 m and up), so it would draw no joints there.
+
+Captures for this revision, the first rework (ivory) against now, 20 November 2026, High: [match.jpg](match.jpg) (`345,-3700,20,66,1150`; One Atlantic's crown is at the top edge) and [match-south.jpg](match-south.jpg) (`330,-3684,15,55,800`), each at 11:30 and 23:30.
+
+**Budget** (`pnpm test:perf`, perf lock held, main's three files swapped in for A): Low calls 342 → 342, programs 80 → 80, geometry 164.2 → 164.2 MB; High calls 435 → 435, programs 94 → 94; High night calls 485 → 485.
+
+The rest of this section records the first rework, which gave Regions its own pale stone.
+
 
 Sam's note (2026-11-27): the first skin (PR #502) read as One Atlantic Center's twin. Both had the same warm pink granite, the same fine grid of dark windows and similar crowns. The photos show three differences that hold at the default ~500 m view, and the skin now draws all three:
 
 | | One Atlantic Center | Regions Plaza (this pass) |
 |---|---|---|
-| Stone | Pink Spanish granite, `#ccaea0` | Pale, near-neutral ivory, `#ddd6cc` (was `#dcc3ae`) |
-| Facade | Grouped dark strips, full height | Five tiers of three floors, each framed by a light stone spandrel band; each bay holds a pair of tall windows between wide piers |
+| Stone | Pink Spanish granite, `#ccaea0` | The same granite, `#ccaea0`, with One Atlantic's trim `#d7c1ae` (Sam, 2026-11-28; the first rework used pale ivory `#ddd6cc`) |
+| Facade | Grouped dark glass in light frames, granite bands every three floors | Five tiers of three floors, each framed by a granite spandrel band; each bay holds a pair of tall windows in One Atlantic's glass (`#485768` family) and light frame (`#d6cec4`), between wide piers |
 | Crown | Steep copper-green pyramid, gold spire, gold night wash | Low truncated hip in cool grey-green slate metal (`#717a7b`, was warm `#8f877b`), rail on top, cream night wash on the slate |
 
 **Heights are unchanged:** the 22 April 2019 lidar per mapped part.

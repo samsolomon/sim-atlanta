@@ -4285,3 +4285,9 @@ Sam's note: from 500 m, Regions Plaza and One Atlantic Center read as a pair of 
 The surprise was the window rhythm. I'd assumed the first skin's "band every third storey" was a guess. The 2005 night photo shows three lit office rows per stone-framed tier, so the module was right, but there are only five tiers, over a five-storey base. The shaft is now five tall tiers of window pairs between wide piers, in pale ivory (`#ddd6cc`). The roof is a grey-green slate hip floodlit cream at night, against One Atlantic's pink granite, copper pyramid and gold. The skin went down from 2,726 to 2,084 triangles, with 0 new programs or draws.
 
 ![Regions Plaza before and after, with One Atlantic Center](log/ui/regions-plaza/pair.jpg)
+
+### 2026-11-28 — Regions Plaza takes One Atlantic's granite after all
+
+Sam looked at the rework and kept the shape: five tiers, window pairs, the arch and the slate hip. He didn't keep the colour. "In real life the two read the same." That reverses yesterday's photo-sampled ivory: from the ground, at city scale, the pair reads as one pink granite, and that impression is what the map should keep. One Atlantic's granite, trim, glass and frame colours now live in one shared object, and both skins read it. The lesson was about cost, not looks. One Atlantic's ashlar joints are a shader hook, and a hooked mesh can't join the landmark batch. Sharing the program would have been free; sharing the hook would have cost Regions a draw for joints too small to see at City range. Codex also caught that the hook's height test only works in One Atlantic's local frame. So Regions takes the values and skips the hook.
+
+![Regions Plaza in One Atlantic's granite, day and night](log/ui/regions-plaza/match.jpg)
